@@ -1,0 +1,46 @@
+{
+  "orchestration": {
+    "maxConcurrentTasks": 5,
+    "taskTimeout": 300000,
+    "retryAttempts": 3
+  },
+  "agents": {
+    "codeGenerator": {
+      "enabled": true,
+      "priority": 1,
+      "supportedLanguages": ["javascript", "typescript", "python", "java", "go"]
+    },
+    "codeReviewer": {
+      "enabled": true,
+      "priority": 2,
+      "strictMode": false,
+      "autoFix": false
+    },
+    "refactoringAgent": {
+      "enabled": true,
+      "priority": 3,
+      "aggressiveness": "moderate"
+    },
+    "documentationAgent": {
+      "enabled": true,
+      "priority": 4,
+      "format": "markdown"
+    },
+    "testingAgent": {
+      "enabled": true,
+      "priority": 5,
+      "framework": "jest",
+      "coverageThreshold": 80
+    }
+  },
+  "kiosk": {
+    "port": 3000,
+    "enableWebInterface": false,
+    "logLevel": "info"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "outputFile": "logs/orchestration.log"
+  }
+}

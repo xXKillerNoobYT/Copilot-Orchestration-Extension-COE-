@@ -1,0 +1,23 @@
+{
+  "name": "copilot-orchestration-extension",
+  "version": "0.1.0",
+  "description": "Detailed copilot, coding agent or task orchestrator with chaos coding structure",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js --dev",
+    "kiosk": "node src/kiosk/kiosk-server.js",
+    "test": "echo \"Tests will be added as needed\" && exit 0"
+  },
+  "keywords": [
+    "copilot",
+    "orchestration",
+    "coding-agent",
+    "automation",
+    "kiosk"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
