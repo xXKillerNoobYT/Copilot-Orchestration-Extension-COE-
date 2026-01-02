@@ -1,0 +1,65 @@
+{
+  "name": "copilot-orchestrator",
+  "displayName": "Copilot Orchestrator",
+  "description": "Foundational VS Code extension scaffold for Copilot Orchestration.",
+  "version": "0.0.1",
+  "publisher": "your-publisher-id",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "copilotOrchestrator",
+          "title": "Copilot Orchestrator",
+          "icon": "./media/copilot.svg"
+        }
+      ]
+    },
+    "views": {
+      "copilotOrchestrator": [
+        {
+          "id": "copilotOrchestrator.status",
+          "name": "Status",
+          "icon": "./media/copilot.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "copilot-orchestrator.start",
+        "title": "Copilot Orchestrator: Start",
+        "category": "Copilot Orchestrator"
+      },
+      {
+        "command": "copilot-orchestrator.refreshTasks",
+        "title": "Copilot Orchestrator: Refresh Tasks",
+        "category": "Copilot Orchestrator"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack --mode production",
+    "watch": "webpack --watch --mode development",
+    "lint": "echo 'no lint configured'",
+    "test": "echo 'no tests yet'"
+  },
+  "dependencies": {
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.90.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.0",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
