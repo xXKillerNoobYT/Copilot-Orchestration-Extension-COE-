@@ -12,8 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('project_users', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('project_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
+            $table->enum('role', ['owner', 'maintainer', 'contributor', 'viewer'])->default('viewer');
+            $table->json('permissions')->nullable();
+            $table->timestamp('created_at');
+
+            $table->unique(['project_id', 'user_id']);
+            $table->index('user_id');
         });
     }
 

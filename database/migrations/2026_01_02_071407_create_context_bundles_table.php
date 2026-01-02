@@ -12,8 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('context_bundles', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('task_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('agent_id')->constrained()->cascadeOnDelete();
+            $table->enum('bundle_type', ['task_context', 'architecture_context', 'test_context', 'issue_context'])->default('task_context');
+            $table->json('files_included')->nullable();
+            $table->text('architecture_notes')->nullable();
+            $table->json('constraints')->nullable();
+            $table->json('test_failures')->nullable();
+            $table->timestamp('created_at');
+
+            $table->index('task_id');
+            $table->index('agent_id');
         });
     }
 

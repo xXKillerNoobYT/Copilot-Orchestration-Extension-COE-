@@ -12,8 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('repository_health_metrics', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('project_id')->constrained()->cascadeOnDelete();
+            $table->date('metric_date');
+            $table->integer('commit_count')->default(0);
+            $table->integer('pr_count')->default(0);
+            $table->float('test_coverage_percent')->nullable();
+            $table->float('dependency_freshness_score')->nullable()->comment('0-100');
+            $table->float('ci_stability_percent')->nullable()->comment('0-100');
+            $table->float('architecture_drift_score')->nullable()->comment('0-100, higher = more drift');
+            $table->integer('technical_debt_items')->default(0);
+            $table->timestamp('created_at');
+
+            $table->unique(['project_id', 'metric_date']);
+            $table->index('project_id');
         });
     }
 
