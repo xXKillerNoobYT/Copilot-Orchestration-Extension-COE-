@@ -1,0 +1,36 @@
+Here is a **fully realized, detailed project description** for the Copilot Orchestration Extension (COE).  
+It’s written to be clear, comprehensive, and specific enough to drive high‑quality AI task generation, architecture planning, and development workflows.
+
+---
+
+# **Copilot Orchestration Extension (COE)**  
+**Detailed Project Description**
+
+The Copilot Orchestration Extension (COE) is a VS Code extension designed to function as a full development orchestration system that coordinates planning, task management, multi‑agent reasoning, GitHub issue integration, and continuous development workflows. The extension acts as the “brain” of the development environment, while GitHub Copilot serves as the “hands,” performing all coding, file editing, repository creation, and implementation tasks.
+
+The extension uses an Autogen‑style multi‑agent architecture to manage planning, architecture design, testing, verification, dependency analysis, and issue handling. Each agent operates with isolated context and responsibilities, while the extension maintains long‑term project memory, workflow state, and architectural consistency. Copilot receives only the scoped context required for each coding task, ensuring clean separation between orchestration logic and code execution.
+
+COE provides a structured task system that supports tasks, subtasks, dependencies, and workflow state transitions. Tasks can originate from user input, GitHub Issues, CI/CD failures, dependency drift detection, or automated maintenance scans. The extension maintains a two‑way sync with GitHub Issues and sub‑issues, enabling GitHub agents to be assigned to tasks while keeping the extension in control of planning and execution.
+
+The extension enforces a safe branching strategy, automatically creating feature branches for tasks or issues, routing implementation work to Copilot, and validating merges through automated testing, architecture checks, and dependency verification. It also manages repository lifecycle operations such as initialization, environment setup, CI/CD configuration, documentation scaffolding, and branch cleanup.
+
+A continuous coding framework allows the system to operate in an ongoing development loop once the base project is scaffolded. The extension monitors repository health, dependency freshness, architecture drift, and CI/CD stability, generating tasks and routing them to the appropriate agents. It supports monorepo and polyrepo structures, coordinated versioning, and multi‑repository orchestration.
+
+The planning system adapts to user skill level, offering beginner‑friendly guidance, intermediate decision support, advanced architectural options, or expert‑level control. Human‑in‑the‑loop planning allows users to approve or modify generated plans before execution. The extension also provides guided GitHub review responses, summarizing reviewer comments and generating follow‑up tasks.
+
+COE maintains strict memory isolation: the extension stores long‑term project knowledge, architecture, decisions, and task history, while Copilot operates with short‑term context bundles. This ensures predictable behavior, prevents context drift, and maintains auditability.
+
+The system is designed to support real‑world applications, such as building a gym automation program, demonstrating the full pipeline from planning to deployment. COE effectively becomes a Copilot‑native development operating system, where the extension orchestrates the entire workflow and Copilot executes the code.
+
+---
+
+If you want, I can now turn this into:
+
+- a README  
+- a one‑page executive summary  
+- a system architecture document  
+- a feature map  
+- a task graph  
+- a workflow diagram  
+
+Just tell me what direction you want next.
