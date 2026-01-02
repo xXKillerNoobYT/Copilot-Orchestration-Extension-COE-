@@ -6,121 +6,157 @@ If you want this expanded to 30, 40, or 50 features, I can continue.
 ---
 
 # **Complete Feature List for the Copilot Orchestration Extension (COE)**  
+
 **All features combined into a single, unified, non‑redundant list.**
 
 ---
 
 ## **1. Task Orchestration Engine**  
+
 Central system that manages tasks, subtasks, dependencies, and workflow state across the entire development lifecycle.
 
 ## **2. Multi-Agent Reasoning System**  
+
 Autogen-style agents handle planning, architecture, testing, verification, and tool use with isolated roles and contexts.
 
 ## **3. Document-Driven Context System**  
+
 Uses architecture.md, base.md, task files, and context bundles as the authoritative source of truth for all decisions.
 
 ## **4. Copilot-Native VS Code Extension**  
+
 Provides UI controls for agent switching, task graph visualization, context loading, and workflow management.
 
 ## **5. Structured Planning and Architecture Tools**  
+
 Planner and Architect agents generate workflows, file structures, data models, and architectural documentation.
 
 ## **6. Guided Coding Execution (Copilot Only)**  
+
 All coding, file editing, repo creation, and implementation tasks are delegated exclusively to GitHub Copilot.
 
 ## **7. Automated Testing and Validation**  
+
 Testing agents generate and run tests; verification agents confirm task completion and enforce quality gates.
 
 ## **8. State, Memory, and Context Isolation**  
+
 Extension memory stores long-term project knowledge; Copilot receives only scoped, short-term context bundles.
 
 ## **9. Local and Cloud LLM Integration**  
+
 Supports switching between Copilot, local models, and cloud agents based on task type and capability requirements.
 
 ## **10. Applied Program Builder**  
+
 Demonstrates full system capability through real-world program generation, such as gym automation workflows.
 
 ---
 
 ## **11. Continuous Coding Framework**  
+
 After initial scaffolding, the system enters a continuous development loop with automated task routing and execution.
 
 ## **12. CI/CD Integration Layer**  
+
 Generates and maintains CI/CD pipelines, validates build steps, and enforces automated quality standards.
 
 ## **13. Intelligent Dependency Graph Manager**  
+
 Tracks module relationships, detects circular references, and enforces architectural boundaries.
 
 ## **14. Dependency Drift Detection and Auto-Correction**  
+
 Monitors for version drift, deprecated packages, and security issues, generating tasks to update dependencies.
 
 ## **15. Repository Lifecycle Management**  
+
 Instructs Copilot to create repositories, initialize structures, configure environments, and scaffold documentation.
 
 ## **16. Safe Branching Strategy Engine**  
+
 Enforces a branching model with feature, hotfix, release, and integration branches.
 
 ## **17. Automated Branch Isolation and Merge Safety**  
+
 Runs tests, verifies architecture, and validates dependencies before allowing merges.
 
 ## **18. Context-Aware Branch Cleanup**  
+
 Identifies stale branches, confirms CI/CD success, and instructs Copilot to safely delete unused branches.
 
 ## **19. Multi-Repo Orchestration**  
+
 Supports monorepo and polyrepo setups with coordinated versioning and cross-repo task routing.
 
 ## **20. Repository Health Monitoring**  
+
 Evaluates commit frequency, test coverage, dependency freshness, and CI/CD stability, generating maintenance tasks.
 
 ---
 
 ## **21. GitHub Issue and Sub-Issue Sync Engine**  
+
 Maintains two-way sync between GitHub Issues and internal tasks, including sub-issues, labels, milestones, and status.
 
 ## **22. GitHub Agent Assignment Layer**  
+
 Assigns GitHub agents to tasks via structured prompts while maintaining orchestration control.
 
 ## **23. Human-in-the-Loop Assisted Planning**  
+
 Allows users to approve, edit, or reject Planner-generated task plans, adapting to user skill level.
 
 ## **24. Guided GitHub Review Responses**  
+
 Summarizes review comments, suggests responses, and generates follow-up tasks to streamline collaboration.
 
 ## **25. Automated Project Setup and Review Pipeline**  
+
 Bootstraps new projects with architecture, repo creation, CI/CD setup, and initial task generation.
 
 ---
 
 ## **26. Planning Agent Skill-Level Adaptation**  
+
 Adjusts questioning style and depth based on user expertise, from beginner-friendly to expert-level architectural prompts.
 
 ## **27. Issue-to-Task Conversion Engine**  
+
 Automatically converts GitHub Issues into structured tasks with subtasks, dependencies, and context bundles.
 
 ## **28. Issue-Driven Branching Workflow**  
+
 Creates feature branches for issues, initializes work, and routes tasks to Copilot for implementation.
 
 ## **29. Issue-Aware Context Bundles**  
+
 Bundles issue descriptions, relevant files, architecture notes, and test failures for Copilot execution.
 
 ## **30. Issue Lifecycle Automation**  
+
 Manages issue states from intake to closure, including testing, verification, merging, and cleanup.
 
 ## **31. Issue-Driven Architecture Updates**  
+
 Updates architecture documents and dependency graphs when issues reveal drift or structural problems.
 
 ## **32. Issue Prioritization and Load Balancing**  
+
 Automatically prioritizes issues, groups related tasks, and routes work to the correct agent.
 
 ---
 
 ## **33. Autonomous Maintenance and Refactoring Mode**  
+
 Detects technical debt, proposes improvements, generates tasks, and routes refactors to Copilot.
 
 ## **34. Continuous Architecture Enforcement**  
+
 Monitors code changes for architectural violations and updates architecture documents accordingly.
 
 ## **35. Secret Project Management Layer**  
+
 Handles invisible glue work such as branch naming, architecture updates, CI/CD validation, and repo cleanup.
 
 ---
