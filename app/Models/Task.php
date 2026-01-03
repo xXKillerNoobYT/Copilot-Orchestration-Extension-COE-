@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Task extends Model
 {
@@ -114,6 +115,14 @@ class Task extends Model
     public function workflowStates(): HasMany
     {
         return $this->hasMany(WorkflowState::class);
+    }
+
+    /**
+     * Get the GitHub issue linked to this task.
+     */
+    public function githubIssue(): HasOne
+    {
+        return $this->hasOne(GithubIssue::class);
     }
 
     /**

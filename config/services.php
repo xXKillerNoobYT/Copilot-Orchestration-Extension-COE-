@@ -31,4 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'github' => [
+        'token' => env('GITHUB_TOKEN'),
+        'webhook_secret' => env('GITHUB_WEBHOOK_SECRET'),
+        'api_version' => env('GITHUB_API_VERSION', '2022-11-28'),
+    ],
+
 ];
