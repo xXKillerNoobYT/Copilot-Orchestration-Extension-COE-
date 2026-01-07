@@ -1,3 +1,181 @@
 {
-  "tasks": []
+  "tasks": [
+    {
+      "id": "TASK-mjxyxff0-vonm3",
+      "title": "Test task via tool",
+      "description": "Temporary task to validate zen-tasks_add_task tool behavior",
+      "details": "Status update test; ensure lifecycle works even while list is broken",
+      "testStrategy": "Confirm tool path works; no code execution",
+      "status": "done",
+      "priority": "medium",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:15:24.877Z",
+      "updatedAt": "2026-01-03T08:06:49.198Z"
+    },
+    {
+      "id": "TASK-mjxz0spv-m4odq",
+      "title": "Diagnose zen-tasks_list_tasks TypeError",
+      "description": "Identify and fix the z.getInstance TypeError thrown by zen-tasks_list_tasks",
+      "details": "Reproduce the list call, inspect module init and z import, ensure correct singleton export, add tests if available. Blocked: tool implementation lives outside this repo (barradevdigitalsolutions.zen-tasks-copilot); workspace lacks source to modify. Next step: obtain tool source or upstream fix.",
+      "testStrategy": "List tasks without error; ensure tasks.json unchanged except read operations",
+      "status": "blocked",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:18:02.083Z",
+      "updatedAt": "2026-01-03T07:56:09.357Z"
+    },
+    {
+      "id": "TASK-mjxz0uwm-l7qt3",
+      "title": "Fix workflow context loader path resolution",
+      "description": "Resolve missing-file error from zen-tasks_000_workflow_context despite prompts existing",
+      "details": "Verify expected paths, adjust loader to prompts/ or current workspace, add graceful fallback to direct file read. Blocked: loader lives in external tool (barradevdigitalsolutions.zen-tasks-copilot) and reports missing prompts despite files present; workspace lacks tool source to patch. Next step: obtain tool source or override loader config path.",
+      "testStrategy": "Loader succeeds in current repo; no missing-file error",
+      "status": "blocked",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:18:04.918Z",
+      "updatedAt": "2026-01-03T08:20:00.000Z"
+    },
+    {
+      "id": "TASK-mjxz0y0m-kk8ty",
+      "title": "Harden zen-tasks_parse_requirements JSON handling",
+      "description": "Ensure parse_requirements returns valid JSON and handles LLM formatting safely",
+      "details": "Constrain prompt to strict JSON, add validation/repair, surface errors clearly. Blocked: parse_requirements implemented in external tool (barradevdigitalsolutions.zen-tasks-copilot); source not available in workspace to modify. Next step: obtain tool source or add upstream fix.",
+      "testStrategy": "parse_requirements succeeds on sample input and produces valid tasks in tasks.json",
+      "status": "blocked",
+      "priority": "medium",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:18:08.950Z",
+      "updatedAt": "2026-01-03T08:24:00.000Z"
+    },
+    {
+      "id": "TASK-mjxz12m5-5w9rm",
+      "title": "Close out temporary test task",
+      "description": "Resolve lifecycle of TASK-mjxyxff0-vonm3 created for tool validation",
+      "details": "Decide whether to mark done or remove; update metadata accordingly",
+      "testStrategy": "Task status updated and no stray temp tasks remain",
+      "status": "done",
+      "priority": "low",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:18:14.909Z",
+      "updatedAt": "2026-01-03T08:06:46.009Z"
+    },
+    {
+      "id": "TASK-mjxzlwid-om9f3",
+      "title": "Embed AI prompts into task definitions",
+      "description": "Ensure new tasks include clear AI-oriented prompts so the agent can build tasks properly as if instructing an AI directly",
+      "details": "Add guidance and examples so tasks carry explicit AI prompts, including goals, acceptance criteria, outputs, and constraints. Update any templates/specs if needed.",
+      "testStrategy": "Review new tasks to confirm they include explicit AI prompts and actionable instructions; templates updated if applicable",
+      "status": "completed",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:34:26.774Z",
+      "updatedAt": "2026-01-03T08:12:00.000Z"
+    },
+    {
+      "id": "TASK-mjxzlzg2-khvh5",
+      "title": "Initialize VS Code Extension Framework",
+      "description": "Set up the foundational VS Code extension structure with TypeScript, Node 18+, activation command, bundling, and dev build scripts",
+      "details": "AI Prompt: Create the foundational structure for a VS Code extension using the VS Code Extension API. Use TypeScript and Node.js (v18+). Ensure the extension is activatable via a default command (e.g., 'copilot-orchestrator.start'). Scaffold project with 'yo code' generator, configure Webpack for bundling, and set up a development build script. Output: A compilable VS Code extension project with an initial main command.",
+      "testStrategy": "npm install; npm run build (or webpack bundle) succeeds; activation command registered; extension compiles without errors",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:34:30.578Z",
+      "updatedAt": "2026-01-03T08:02:53.691Z"
+    },
+    {
+      "id": "TASK-mjxzox1g-146wk",
+      "title": "Update agents to enforce fine-grained subtasks and post-task comments",
+      "description": "Ensure Zen Planner and Auto Zen enforce breaking work into many small, easy subtasks and require posting a comment after each task completion",
+      "details": "Edit Zen Planner and Auto Zen agent instruction files to mandate tiny, 15–45 minute subtasks, forced splitting when tasks exceed 60 minutes or have multiple actions/domains, and require a post-task comment summarizing work, files, tests, follow-ups, next step. Add microtasking rule and post-task communication sections in both files.",
+      "testStrategy": "Confirm both agent files explicitly require microtasking (15–45 min, split >60 min or multi-action) and a required post-task comment after each completion; changes saved",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:36:47.428Z",
+      "updatedAt": "2026-01-03T08:04:21.701Z"
+    },
+    {
+      "id": "TASK-mjy040m5-0ggvk",
+      "title": "Enable auto agent switching and continuous execution",
+      "description": "Add logic to automatically select the appropriate agent (Zen Planner vs Auto Zen) and continue execution without manual prompts when tasks are available",
+      "details": "Implement auto-switching between planning and execution agents: use Zen Planner for decomposition/planning, then hand off to Auto Zen for implementation; loop until queue is empty.",
+      "testStrategy": "Demonstrate auto-selection path: planning → execution → next task; no manual user intervention required",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [],
+      "createdAt": "2026-01-03T07:48:31.901Z",
+      "updatedAt": "2026-01-03T07:48:31.901Z"
+    },
+    {
+      "id": "TASK-mk3k0e09-culd4",
+      "title": "Implement Phase 7: Auto-Agent Switching & Continuous Execution",
+      "description": "Enable Auto Zen and Zen Planner to automatically switch based on task type (planning vs execution) and loop until all work is done without manual intervention.",
+      "details": "AI Prompt: Design and implement auto-switching logic in the extension entrypoint. When a planning task is ready, invoke Zen Planner and capture output. When execution tasks are ready, invoke Auto Zen. Implement a loop that continues until no pending tasks remain. Use state machine pattern for agent transitions. Output: Working auto-switch with test scenarios demonstrating plan→execute→next cycle.\",antml:parameter>\n<parameter name=\"priority\">high",
+      "testStrategy": "Demonstrate full cycle: planning task → planner output → execution task → auto zen completes → loop continues; no manual intervention. Measure loop latency and success rate.\"",
+      "status": "done",
+      "priority": "medium",
+      "dependencies": [],
+      "createdAt": "2026-01-07T05:04:25.834Z",
+      "updatedAt": "2026-01-07T05:12:28.239Z"
+    },
+    {
+      "id": "TASK-mk3k0imm-mf7ju",
+      "title": "Implement Phase 8: GitHub Issue Sync Engine (Bi-directional)",
+      "description": "Build bi-directional sync between GitHub Issues and internal COE tasks. When issues are created/updated, auto-generate tasks. When tasks complete, update/close issues. Maintain labels, milestones, assignees in sync.",
+      "details": "AI Prompt: Implement GitHub issue webhooks (using HMAC verification per Phase 4 pattern). On issue create/update: extract title/body → generate structured tasks with dependencies and context bundles. On task completion: update issue status, add completion comment, close if milestone done. Sync assignees (GitHub users → internal agents). Handle sub-issues as subtasks. Output: Working webhook receiver, task generator, issue updater; tested with real GitHub events.\",",
+      "testStrategy": "1) Create test issue on GitHub → verify task auto-generated in _ZENTASKS. 2) Complete task → verify GitHub issue gets comment + closed. 3) Test label/milestone sync. 4) Validate HMAC signature rejection for invalid payloads.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk3k0e09-culd4"
+      ],
+      "createdAt": "2026-01-07T05:04:31.822Z",
+      "updatedAt": "2026-01-07T05:04:31.822Z"
+    },
+    {
+      "id": "TASK-mk3k0njs-71qqm",
+      "title": "Implement Phase 9a: Safe Branching & Merge Validation",
+      "description": "Implement safe branching strategy (feature/hotfix/release/integration branches), automated branch isolation, merge validation via tests + architecture checks, and stale branch cleanup.",
+      "details": "AI Prompt: Create branch management service that: 1) Names branches per scheme (feature/issue-{id}, hotfix/*, release/*). 2) Instructs Copilot to create branches for tasks. 3) Runs test suite + architecture validation before merge (use existing Phase 1-3 services). 4) Detects stale branches (no commits >30d + CI passing). 5) Instructs Copilot to delete stale branches with confirmation. Output: Branch manager service, merge gate API, stale detector; tested in staging repo.\",",
+      "testStrategy": "1) Create feature branch for task; verify naming. 2) Push breaking change → verify merge blocked. 3) Fix + re-push → verify merge allowed. 4) Create stale branch → run cleanup → verify identified and deleted (with user confirm).",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk3k0imm-mf7ju"
+      ],
+      "createdAt": "2026-01-07T05:04:38.200Z",
+      "updatedAt": "2026-01-07T05:04:38.200Z"
+    },
+    {
+      "id": "TASK-mk3k0rxp-rdi8w",
+      "title": "Implement Phase 10a: Repository Health Monitoring & Auto-Maintenance",
+      "description": "Monitor repository health (commit frequency, test coverage, dependency freshness, CI/CD stability). Detect drift and auto-generate maintenance tasks. Support continuous coding framework.",
+      "details": "AI Prompt: Build health monitor service that: 1) Queries commits, tests, CI logs; calculates health scores. 2) Detects version drift (dependencies, Node, PHP versions). 3) Flags security issues (CVE scanning). 4) Tracks coverage trends. 5) Generates maintenance tasks for drift (e.g., 'Update lodash 4.17.20 → 4.17.21 [SEC]'). 6) Runs on interval (hourly/daily). 7) Integrates with Copilot for auto-fixes. Output: Health monitor service, metrics dashboard data, auto-generated maintenance tasks.\",",
+      "testStrategy": "1) Check health on test repo; verify scores calculated. 2) Introduce security issue (old dep); verify detected + task created. 3) Fix and re-check; verify score improved. 4) Validate maintenance task format is executable by Copilot.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk3k0njs-71qqm"
+      ],
+      "createdAt": "2026-01-07T05:04:43.885Z",
+      "updatedAt": "2026-01-07T05:04:43.885Z"
+    },
+    {
+      "id": "TASK-mk3k0x2r-knnt6",
+      "title": "Design Phase 7-10: Agent Roles & Integration Architecture",
+      "description": "Create guide templates and integration instructions for cloud agents (Claude, GPT-4) and background maintenance agents. Define agent roles, responsibilities, and context requirements per Phase 7+ architecture.",
+      "details": "AI Prompt: Document: 1) Cloud Agent roles: Zen Planner (planning), Zen Architect (design), Cloud Coder (complex refactors), Cloud Tester (test generation). 2) Background Agent roles: Health Monitor (polling repo), Dependency Updater (auto-fixes), Branch Cleaner (stale detection). 3) For each role: activation trigger, context bundle contents, expected outputs, success criteria. 4) Integration instructions for adding new agents (API endpoint, auth, context shape). 5) Agent hand-off protocol between extension and external LLMs. Output: Agent roles doc, integration guide, example context bundles, config schema.\",",
+      "testStrategy": "1) Review with Zen Planner to validate planning context. 2) Review with Auto Zen to validate execution context. 3) Validate against Phase 7 architecture. 4) Onboard a test agent using the guide; verify successful integration.\"",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [],
+      "createdAt": "2026-01-07T05:04:50.547Z",
+      "updatedAt": "2026-01-07T05:04:50.547Z"
+    }
+  ],
+  "metadata": {
+    "updatedAt": "2026-01-07T05:12:28.239Z"
+  }
 }

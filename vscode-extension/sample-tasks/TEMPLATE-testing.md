@@ -83,6 +83,16 @@ subtasks:
 - **Coverage:** [e.g., Istanbul, PHPUnit coverage]
 - **CI Integration:** [e.g., GitHub Actions, Laravel Dusk]
 
+## AI Prompt (for agents)
+
+- **Goal:** [One-liner objective for the AI]
+- **Context:** [System/domain context and risk areas to focus]
+- **Acceptance Criteria (bullet list):**
+  - [Criterion 1]
+  - [Criterion 2]
+- **Expected Outputs:** [e.g., failing test first, coverage report, CI link]
+- **Constraints/Guardrails:** [non-flaky requirement, runtime budget, environment limits]
+
 ---
 
 **Template Notes:**

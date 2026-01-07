@@ -46,6 +46,16 @@ format_version: "1.0"
 - [ ] [Test case 2 to prevent regression]
 - [ ] [Edge case validation]
 
+## AI Prompt (for agents)
+
+- **Goal:** [One-liner objective for the AI]
+- **Context:** [Relevant system/domain context the AI must consider]
+- **Acceptance Criteria (bullet list):**
+  - [Criterion 1]
+  - [Criterion 2]
+- **Expected Outputs:** [e.g., minimal failing repro + fix + tests]
+- **Constraints/Guardrails:** [style guides, logging rules, perf/SLOs, security/privacy limits]
+
 ---
 
 **Template Notes:**

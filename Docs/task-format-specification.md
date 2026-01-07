@@ -490,6 +490,33 @@ Context bundles provide scoped context to agents:
 
 ---
 
+## AI Prompt Block (optional)
+
+Tasks should include an AI-ready prompt so agents can execute with minimal back-and-forth. Add this to YAML front matter or a dedicated section:
+
+```yaml
+ai_prompt:
+  goal: "What the AI should accomplish"
+  context: "Relevant system/domain info the AI must respect"
+  acceptance_criteria:
+    - "Testable criterion 1"
+    - "Testable criterion 2"
+  outputs:
+    - "Expected artifact 1 (e.g., code, tests, docs)"
+  constraints:
+    - "Guardrail 1 (style/perf/security/privacy/SLOs)"
+```
+
+**Best Practices:**
+
+- Keep the goal to one sentence.
+- Use bullet acceptance criteria that are objectively testable.
+- List concrete outputs (code, tests, docs, diagrams, links).
+- State non-negotiable constraints (style guides, performance budgets, safety/privacy limits).
+- Prefer this block in addition to the Markdown sections so both humans and agents benefit.
+
+---
+
 ## Validation Rules
 
 ### Required Field Validation

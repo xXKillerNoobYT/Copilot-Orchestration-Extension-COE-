@@ -72,6 +72,16 @@ format_version: "1.0"
 - **Severity:** [Critical | High | Medium | Low]
 - **Description:** [Brief vulnerability description]
 
+## AI Prompt (for agents)
+
+- **Goal:** [One-liner objective for the AI]
+- **Context:** [Relevant system/domain context the AI must consider]
+- **Acceptance Criteria (bullet list):**
+  - [Criterion 1]
+  - [Criterion 2]
+- **Expected Outputs:** [e.g., updated deps, changelog, validation evidence]
+- **Constraints/Guardrails:** [prod safety, maintenance windows, rollback readiness, SLOs]
+
 ---
 
 **Template Notes:**

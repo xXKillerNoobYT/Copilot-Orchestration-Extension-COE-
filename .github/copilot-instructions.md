@@ -1,5 +1,37 @@
 # Copilot instructions for this repo
 
+## Zen Tasks Workflow (load first)
+
+Before any development work, load the workflow context to ensure structured, dependency-driven execution.
+
+### Primary: Use the automation tools
+1. **Load context**: `zen-tasks_000_workflow_context` — hydrates guidelines and task state.
+2. **Query tasks**: `zen-tasks_list_tasks`, `zen-tasks_get_task`, `zen-tasks_next_task`.
+3. **Manage tasks**: `zen-tasks_add_task`, `zen-tasks_update_task`, `zen-tasks_set_status`.
+4. **Bulk create**: `zen-tasks_parse_requirements` — converts requirements text into tasks.
+
+### Fallback: Read files directly (when tools fail)
+If the workflow context tool errors (e.g., "files not found"), load context from the file system:
+- `prompts/zen_tasks_workflow.md` — workflow guidelines
+- `prompts/base.md` — system overview
+- `Docs/Plan/detailed project description` — project vision
+- `Docs/Plan/feature list` — planned features
+- `_ZENTASKS/tasks.json` — current task state
+
+### Continuous development loop
+```
+1. Load workflow context (tool or fallback)
+2. Inspect current tasks (_ZENTASKS/tasks.json)
+3. Pick highest-priority ready task (zen-tasks_next_task or manual)
+4. Mark in-progress → implement → test → mark done
+5. Create follow-up tasks for discovered work
+6. Repeat
+```
+
+Operate autonomously: no oversight required—just get the job done right.
+
+---
+
 ## Architecture at a glance
 - **Laravel backend (app/)** implements task orchestration, agent management, context bundles, GitHub sync, and observability. REST endpoints live in `routes/api.php`; business logic is pushed into `app/Services` and data access into `app/Repositories` with Eloquent models in `app/Models`.
 - **Key domains**: `Task` (dependencies, GitHub linkage, soft deletes), `Agent`, `ContextBundle` (bundle_type variants), `WorkflowState`, and audit/notification helpers. See migrations in `database/migrations/2026_*` for enums and columns, and `Docs/IMPLEMENTATION-SUMMARY.md` for the delivered feature set (Phases 1–5) and planned Phase 6 work.

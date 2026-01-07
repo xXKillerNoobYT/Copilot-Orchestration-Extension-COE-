@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\GitHubController;
 use App\Http\Controllers\Api\MonitoringController;
 use App\Http\Controllers\Api\PlanningController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\AgentLoopController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -309,6 +310,27 @@ Route::prefix('v1')->group(function () {
     
     Route::get('/projects/{projectId}/planning-metrics', [PlanningController::class, 'metrics'])
         ->name('api.planning.metrics');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Agent Loop / Continuous Execution Routes
+    |--------------------------------------------------------------------------
+    | Phase 7: Auto-Agent Switching & Continuous Execution
+    */
+    
+    // Agent loop lifecycle
+    Route::post('/agent-loop/start', [AgentLoopController::class, 'start'])
+        ->name('api.agent-loop.start');
+    
+    Route::post('/agent-loop/stop', [AgentLoopController::class, 'stop'])
+        ->name('api.agent-loop.stop');
+    
+    Route::get('/agent-loop/status', [AgentLoopController::class, 'status'])
+        ->name('api.agent-loop.status');
+    
+    // For testing
+    Route::post('/agent-loop/cycle', [AgentLoopController::class, 'executeCycle'])
+        ->name('api.agent-loop.cycle');
 });
 
 /*

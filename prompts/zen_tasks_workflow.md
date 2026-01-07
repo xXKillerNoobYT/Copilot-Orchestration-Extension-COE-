@@ -4,6 +4,16 @@
 
 This document provides essential guidelines for structured, dependency-driven development using the Zen Tasks system.
 
+## Loading the workflow context (must-do)
+
+1. **Primary**: Invoke the automation entrypoint (`zen-tasks_000_workflow_context`) to hydrate the workflow context.
+2. **File-system fallback** (when the tool reports missing files or cannot run):
+	- Read this file directly from `prompts/zen_tasks_workflow.md` and `prompts/base.md`.
+	- Load project planning context from `Docs/Plan/` (e.g., `Docs/Plan/detailed project description`, `Docs/Plan/feature list`).
+	- Keep both prompt files and plan docs in sync so the automation can pick them up when it recovers.
+
+Always ensure the workflow context is loaded **before** performing any zen-tasks operations.
+
 ## Core Principles
 
 ### 1. Task-Driven Development

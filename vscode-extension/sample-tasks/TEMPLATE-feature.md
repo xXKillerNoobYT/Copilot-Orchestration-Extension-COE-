@@ -40,6 +40,16 @@ subtasks:
 
 [External factors that could impact delivery, integration points, open questions]
 
+## AI Prompt (for agents)
+
+- **Goal:** [One-liner objective for the AI]
+- **Context:** [Relevant system/domain context the AI must consider]
+- **Acceptance Criteria (bullet list):**
+  - [Criterion 1]
+  - [Criterion 2]
+- **Expected Outputs:** [e.g., code changes, tests, docs]
+- **Constraints/Guardrails:** [style guides, perf/SLOs, security/privacy limits]
+
 ---
 
 **Template Notes:**

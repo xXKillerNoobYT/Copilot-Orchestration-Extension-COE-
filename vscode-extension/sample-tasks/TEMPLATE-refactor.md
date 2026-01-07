@@ -52,6 +52,16 @@ subtasks:
 
 [Potential issues during refactoring, rollback plan, areas requiring extra caution]
 
+## AI Prompt (for agents)
+
+- **Goal:** [One-liner objective for the AI]
+- **Context:** [Relevant system/domain context the AI must consider]
+- **Acceptance Criteria (bullet list):**
+  - [Criterion 1]
+  - [Criterion 2]
+- **Expected Outputs:** [e.g., refactor commits, migration notes, updated tests]
+- **Constraints/Guardrails:** [no behavior change, perf/SLOs, style guides, safety checks]
+
 ---
 
 **Template Notes:**

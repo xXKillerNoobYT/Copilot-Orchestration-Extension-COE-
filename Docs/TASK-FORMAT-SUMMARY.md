@@ -45,6 +45,8 @@ Each template includes:
 - Priority guidelines
 - Validation notes
 
+**New:** AI Prompt scaffold in every template so each task carries an agent-ready brief (goal, context, acceptance criteria, expected outputs, constraints/guardrails).
+
 ### 3. **Enhanced TypeScript Parser**
 
 [vscode-extension/src/taskParser.ts](vscode-extension/src/taskParser.ts)

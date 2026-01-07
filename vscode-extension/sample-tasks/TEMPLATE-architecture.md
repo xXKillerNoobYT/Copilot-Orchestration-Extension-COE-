@@ -98,6 +98,16 @@ format_version: "1.0"
 - [ ] [Validation criterion 1 - how to verify this decision is working]
 - [ ] [Validation criterion 2]
 
+## AI Prompt (for agents)
+
+- **Goal:** [One-liner objective for the AI]
+- **Context:** [System/domain context and constraints relevant to the ADR]
+- **Acceptance Criteria (bullet list):**
+  - [Criterion 1]
+  - [Criterion 2]
+- **Expected Outputs:** [e.g., ADR summary, decision table, diagrams, action items]
+- **Constraints/Guardrails:** [non-negotiables such as security, latency, cost ceilings]
+
 ---
 
 **Template Notes:**

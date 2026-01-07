@@ -108,6 +108,16 @@ subtasks:
 - **Editorial Review:** [Technical writer or docs team]
 - **User Testing:** [Sample end-user validation if applicable]
 
+## AI Prompt (for agents)
+
+- **Goal:** [One-liner objective for the AI]
+- **Context:** [Audience, product area, and source materials]
+- **Acceptance Criteria (bullet list):**
+  - [Criterion 1]
+  - [Criterion 2]
+- **Expected Outputs:** [e.g., doc sections, code samples, diagrams, changelog]
+- **Constraints/Guardrails:** [style guide, reading level, link validation, accessibility]
+
 ---
 
 **Template Notes:**
