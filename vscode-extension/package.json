@@ -12,6 +12,30 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "task-markdown",
+        "aliases": [
+          "Task Markdown",
+          "task"
+        ],
+        "extensions": [
+          ".task.md"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./media/task-icon-light.svg",
+          "dark": "./media/task-icon-dark.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "task-markdown",
+        "scopeName": "text.task.markdown",
+        "path": "./syntaxes/task-markdown.json"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -40,20 +64,81 @@
         "command": "copilot-orchestrator.refreshTasks",
         "title": "Copilot Orchestrator: Refresh Tasks",
         "category": "Copilot Orchestrator"
+      },
+      {
+        "command": "copilot-orchestrator.showGraph",
+        "title": "Copilot Orchestrator: Show Task Graph",
+        "category": "Copilot Orchestrator",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "copilot-orchestrator.showDependencies",
+        "title": "Copilot Orchestrator: Show Task Dependencies",
+        "category": "Copilot Orchestrator",
+        "icon": "$(references)"
+      },
+      {
+        "command": "copilot-orchestrator.showPanel",
+        "title": "Copilot Orchestrator: Show Orchestrator Panel",
+        "category": "Copilot Orchestrator",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "copilot-orchestrator.executeTask",
+        "title": "Execute Task Now",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.changeTaskStatus",
+        "title": "Change Task Status",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.openContextBundle",
+        "title": "Open Context Bundle",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.createContextBundle",
+        "title": "Create Context Bundle",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.linkGitHubIssue",
+        "title": "Link GitHub Issue",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.openGitHubIssue",
+        "title": "Open GitHub Issue",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.showTaskMetadata",
+        "title": "Show Task Metadata",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.manageDependencies",
+        "title": "Manage Task Dependencies",
+        "category": "Task File"
       }
     ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "webpack --mode production",
-    "watch": "webpack --watch --mode development",
+    "compile": "webpack --mode production --stats=errors-only",
+    "watch": "webpack --watch --mode development --stats=errors-warnings",
     "lint": "echo 'no lint configured'",
-    "test": "echo 'no tests yet'"
+    "test": "npm run compile && node dist/taskGraphTest.js",
+    "demo": "npm run compile && node dist/taskGraphDemo.js"
   },
   "dependencies": {
+    "graphlib": "^2.1.8",
     "yaml": "^2.6.0"
   },
   "devDependencies": {
+    "@types/graphlib": "^2.1.12",
     "@types/node": "^22.19.3",
     "@types/vscode": "^1.90.0",
     "ts-loader": "^9.5.1",

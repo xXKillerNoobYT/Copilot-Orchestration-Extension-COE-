@@ -1,53 +1,79 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\ConfirmablePasswordController;
-use App\Http\Controllers\Auth\EmailVerificationNotificationController;
-use App\Http\Controllers\Auth\EmailVerificationPromptController;
-use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\Auth\PasswordController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+/**
+ * Authentication Routes
+ *
+ * Guest-only routes (not authenticated)
+ */
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-                ->name('register');
+    // Registration
+    Route::get('register', [RegisterController::class, 'create'])
+        ->name('register');
+    Route::post('register', [RegisterController::class, 'store']);
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    // Login
+    Route::get('login', [LoginController::class, 'create'])
+        ->name('login');
+    Route::post('login', [LoginController::class, 'store'])
+        ->name('login.store');
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
-                ->name('login');
+    // Password Reset
+    Route::get('forgot-password', [PasswordResetController::class, 'create'])
+        ->name('password.request');
+    Route::post('forgot-password', [PasswordResetController::class, 'store'])
+        ->name('password.email');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
-
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
-                ->name('password.request');
-
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-                ->name('password.email');
-
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
-                ->name('password.reset');
-
-    Route::post('reset-password', [NewPasswordController::class, 'store'])
-                ->name('password.store');
+    Route::get('reset-password/{token}', [PasswordResetController::class, 'edit'])
+        ->name('password.reset');
+    Route::post('reset-password', [PasswordResetController::class, 'update'])
+        ->name('password.update');
 });
 
+/**
+ * Authenticated routes (requires login)
+ */
 Route::middleware('auth')->group(function () {
-    Route::get('verify-email', EmailVerificationPromptController::class)
-                ->name('verification.notice');
+    // Email Verification
+    Route::get('email/verify', [VerifyEmailController::class, 'notice'])
+        ->name('verification.notice');
 
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-                ->middleware(['signed', 'throttle:6,1'])
-                ->name('verification.verify');
+    Route::get('email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
 
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-                ->middleware('throttle:6,1')
-                ->name('verification.send');
+    Route::post('email/verification-notification', [VerifyEmailController::class, 'send'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
 
-    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+    // Profile
+    Route::get('profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+    Route::patch('profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+    Route::patch('profile/password', [ProfileController::class, 'updatePassword'])
+        ->name('profile.password');
+    Route::delete('profile', [ProfileController::class, 'deleteAccount'])
+        ->name('profile.destroy');
+
+    // Logout
+    Route::post('logout', [LoginController::class, 'destroy'])
+        ->name('logout');
+});
+
+/**
+ * Email-verified routes (requires email verification)
+ */
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Add protected routes here that require verified email
+});
+
                 ->name('password.confirm');
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);

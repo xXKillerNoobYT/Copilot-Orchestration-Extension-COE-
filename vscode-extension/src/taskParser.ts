@@ -411,12 +411,13 @@ export async function parseTasksFromDirectory(directory: string, options: Parser
         tasks.push(result.task);
       }
       
-      // Log validation errors/warnings if present
-      if (result.errors.length > 0 || result.warnings.length > 0) {
-        console.warn(`Validation issues in ${filePath}:`);
-        result.errors.forEach(err => console.error(`  ERROR: ${err.field}: ${err.message}`));
-        result.warnings.forEach(warn => console.warn(`  WARNING: ${warn.field}: ${warn.message}`));
-      }
+      // Validation errors/warnings are now silent in production
+      // Uncomment for debugging:
+      // if (result.errors.length > 0 || result.warnings.length > 0) {
+      //   console.warn(`Validation issues in ${filePath}:`);
+      //   result.errors.forEach(err => console.error(`  ERROR: ${err.field}: ${err.message}`));
+      //   result.warnings.forEach(warn => console.warn(`  WARNING: ${warn.field}: ${warn.message}`));
+      // }
     } catch (error) {
       // Surface the error with file context for easier debugging
       throw new Error(`Error parsing task file ${filePath}: ${(error as Error).message}`);

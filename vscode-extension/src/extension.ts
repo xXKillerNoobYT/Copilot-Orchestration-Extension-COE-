@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { parseTasksFromDirectory, ParsedTask } from './taskParser';
+import { generateTaskGraph, TaskGraphGenerator, exportToMermaid } from './taskGraphGenerator';
+import { OrchestratorPanelProvider, MemoryEntry, ContextBundle } from './orchestratorPanel';
+import { TaskFileCodeLensProvider } from './taskFileCodeLens';
+import { TaskFileDocumentWatcher } from './taskFileDocumentWatcher';
+import { TaskInteractionAPI, TaskInteractionEvent } from './taskInteractionAPI';
+import { TaskFileSyntaxHighlighter } from './taskFileSyntaxHighlighter';
 
 export function activate(context: vscode.ExtensionContext) {
   // Create a status bar item on activation
@@ -21,7 +27,121 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(disposable);
 
-  // Tree view for Activity Bar "Status"
+  // ============ .task.md File Support (CodeLens, Watcher, Syntax) ============
+  // Initialize CodeLens provider for .task.md files
+  const codeLensProvider = new TaskFileCodeLensProvider();
+  context.subscriptions.push(
+    vscode.languages.registerCodeLensProvider(
+      { scheme: 'file', pattern: '**/*.task.md' },
+      codeLensProvider
+    )
+  );
+
+  // Initialize document watcher and syntax highlighter
+  const taskDocumentWatcher = new TaskFileDocumentWatcher(codeLensProvider);
+  context.subscriptions.push(...taskDocumentWatcher.startWatching());
+  context.subscriptions.push(taskDocumentWatcher);
+
+  const syntaxHighlighter = new TaskFileSyntaxHighlighter();
+  context.subscriptions.push(syntaxHighlighter);
+
+  // Initialize task interaction API
+  const taskInteractionAPI = new TaskInteractionAPI();
+  context.subscriptions.push(taskInteractionAPI);
+
+  // Listen for editor changes and apply syntax highlighting to .task.md files
+  vscode.window.onDidChangeActiveTextEditor(
+    (editor) => {
+      if (editor && editor.document.uri.fsPath.endsWith('.task.md')) {
+        syntaxHighlighter.applySyntaxHighlighting(editor);
+      }
+    },
+    null,
+    context.subscriptions
+  );
+
+  // Apply syntax highlighting to all visible editors
+  vscode.window.visibleTextEditors.forEach((editor) => {
+    if (editor.document.uri.fsPath.endsWith('.task.md')) {
+      syntaxHighlighter.applySyntaxHighlighting(editor);
+    }
+  });
+
+  // Register commands for task file interactions
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.executeTask', async (uri: vscode.Uri, taskId: string) => {
+      await taskInteractionAPI.executeTask(taskId, uri);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.changeTaskStatus', async (uri: vscode.Uri, taskId: string) => {
+      await taskInteractionAPI.changeTaskStatus(taskId, uri);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.openContextBundle', async (bundlePath: string) => {
+      await taskInteractionAPI.openContextBundle(bundlePath);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.createContextBundle', async (uri: vscode.Uri, taskId: string) => {
+      await taskInteractionAPI.createContextBundle(taskId, uri);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.linkGitHubIssue', async (uri: vscode.Uri, taskId: string) => {
+      await taskInteractionAPI.linkGitHubIssue(taskId, uri);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.openGitHubIssue', async (issueUrl: string) => {
+      await taskInteractionAPI.openGitHubIssue(issueUrl);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showTaskMetadata', async (task: ParsedTask) => {
+      await taskInteractionAPI.showTaskMetadata(task);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.manageDependencies', async (uri: vscode.Uri, taskId: string, dependencies: string[]) => {
+      await taskInteractionAPI.manageDependencies(taskId, uri, dependencies);
+    })
+  );
+
+  // Listen to task interaction events to update orchestrator workflow
+  taskInteractionAPI.onTaskInteraction((event: TaskInteractionEvent) => {
+    switch (event.type) {
+      case 'executeTask':
+        vscode.window.showInformationMessage(`Task execution initiated: ${event.taskId}`);
+        // TODO: Connect to orchestrator workflow/backend API
+        break;
+      case 'statusChanged':
+        vscode.window.showInformationMessage(`Task status updated: ${event.newStatus}`);
+        codeLensProvider.refresh();
+        break;
+      case 'contextBundleCreated':
+        vscode.window.showInformationMessage(`Context bundle created at: ${event.bundlePath}`);
+        break;
+      case 'gitHubLinked':
+        vscode.window.showInformationMessage(`GitHub issue #${event.issueNumber} linked`);
+        codeLensProvider.refresh();
+        break;
+      case 'dependenciesChanged':
+        vscode.window.showInformationMessage(`Dependencies updated`);
+        codeLensProvider.refresh();
+        break;
+    }
+  });
+
+  // ============ End of .task.md File Support ============
   const treeDataProvider = new OrchestratorStatusProvider(context);
   vscode.window.registerTreeDataProvider('copilotOrchestrator.status', treeDataProvider);
 
@@ -31,6 +151,127 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   context.subscriptions.push(refreshDisposable);
+
+  // Command to show task graph visualization
+  const graphDisposable = vscode.commands.registerCommand('copilot-orchestrator.showGraph', async () => {
+    const tasks = treeDataProvider.getTasks();
+    
+    if (tasks.length === 0) {
+      vscode.window.showWarningMessage('No tasks found to visualize.');
+      return;
+    }
+
+    const generator = new TaskGraphGenerator(tasks);
+    const graph = generator.generateGraph();
+    const stats = generator.getStats(graph);
+
+    // Show graph statistics
+    const message = `Task Graph: ${stats.totalTasks} tasks, ${stats.completedTasks} completed, ${stats.readyToExecute} ready to execute`;
+    vscode.window.showInformationMessage(message);
+
+    // Generate Mermaid diagram
+    const mermaidDiagram = exportToMermaid(graph);
+    
+    // Create and show document with Mermaid diagram
+    const doc = await vscode.workspace.openTextDocument({
+      content: mermaidDiagram,
+      language: 'mermaid',
+    });
+    await vscode.window.showTextDocument(doc);
+  });
+
+  context.subscriptions.push(graphDisposable);
+
+  // Command to show task dependencies
+  const depsDisposable = vscode.commands.registerCommand('copilot-orchestrator.showDependencies', async () => {
+    const tasks = treeDataProvider.getTasks();
+    
+    if (tasks.length === 0) {
+      vscode.window.showWarningMessage('No tasks found.');
+      return;
+    }
+
+    const generator = new TaskGraphGenerator(tasks);
+    const graph = generator.generateGraph();
+    const validation = generator.validateDependencies();
+
+    const output: string[] = [];
+    output.push('=== Task Dependencies ===\n');
+
+    if (!validation.valid) {
+      output.push('ERRORS:');
+      validation.errors.forEach(err => output.push(`  ❌ ${err}`));
+      output.push('');
+    }
+
+    if (validation.warnings.length > 0) {
+      output.push('WARNINGS:');
+      validation.warnings.forEach(warn => output.push(`  ⚠️  ${warn}`));
+      output.push('');
+    }
+
+    if (graph.cycles.length > 0) {
+      output.push('CIRCULAR DEPENDENCIES:');
+      graph.cycles.forEach((cycle, idx) => {
+        output.push(`  Cycle ${idx + 1}: ${cycle.join(' -> ')}`);
+      });
+      output.push('');
+    }
+
+    output.push('EXECUTION ORDER:');
+    graph.executionOrder.forEach((level, idx) => {
+      output.push(`  Level ${idx} (${level.length} tasks):`);
+      level.forEach(taskId => {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          output.push(`    - ${taskId}: ${task.title} [${task.status}]`);
+        }
+      });
+    });
+
+    const doc = await vscode.workspace.openTextDocument({
+      content: output.join('\n'),
+      language: 'markdown',
+    });
+    await vscode.window.showTextDocument(doc);
+  });
+
+  context.subscriptions.push(depsDisposable);
+
+  // Command to show orchestrator panel
+  const panelDisposable = vscode.commands.registerCommand('copilot-orchestrator.showPanel', async () => {
+    const tasks = treeDataProvider.getTasks();
+    
+    // Sample memory and context bundles (in real implementation, load from state/files)
+    const sampleMemory: MemoryEntry[] = [
+      { role: 'system', content: 'Orchestration system initialized', timestamp: new Date().toISOString() },
+      { role: 'user', content: 'Started working on task implementation', timestamp: new Date().toISOString() },
+    ];
+
+    const sampleBundles: ContextBundle[] = [
+      {
+        id: 'bundle-1',
+        name: 'Core Architecture',
+        files: ['src/taskParser.ts', 'src/taskGraphGenerator.ts'],
+        description: 'Main task processing files',
+      },
+      {
+        id: 'bundle-2',
+        name: 'Agent Profiles',
+        files: ['config/agents/coder.yaml', 'config/agents/planner.yaml'],
+        description: 'Agent configuration files',
+      },
+    ];
+
+    OrchestratorPanelProvider.createOrShow(
+      context.extensionUri,
+      tasks,
+      sampleMemory,
+      sampleBundles
+    );
+  });
+
+  context.subscriptions.push(panelDisposable);
 
   // Initial load of tasks
   treeDataProvider
@@ -101,5 +342,9 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<TaskTreeItem
     const tasksDir = path.join(this.context.extensionPath, 'sample-tasks');
     this.tasks = await parseTasksFromDirectory(tasksDir);
     this._onDidChangeTreeData.fire();
+  }
+
+  getTasks(): ParsedTask[] {
+    return this.tasks;
   }
 }
