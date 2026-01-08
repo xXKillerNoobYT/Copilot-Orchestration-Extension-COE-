@@ -1,3 +1,13 @@
+# Moved: Docs/Authentication/AUTHENTICATION-README.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Authentication/AUTHENTICATION-README.md
+
+Direct link: ./Docs/Authentication/AUTHENTICATION-README.md
+
+---
+
 # 🎉 AUTHENTICATION SYSTEM - IMPLEMENTATION COMPLETE
 
 **Date:** January 6, 2026  

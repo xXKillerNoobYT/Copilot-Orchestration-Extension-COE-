@@ -1,3 +1,13 @@
+# Moved: Docs/Orchestration/ORCHESTRATION-OUTPUT-SUMMARY.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Orchestration/ORCHESTRATION-OUTPUT-SUMMARY.md
+
+Direct link: ./Docs/Orchestration/ORCHESTRATION-OUTPUT-SUMMARY.md
+
+---
+
 # Workout Cycle Generator - Complete Orchestration Output
 
 **Project**: Copilot Orchestration Extension  

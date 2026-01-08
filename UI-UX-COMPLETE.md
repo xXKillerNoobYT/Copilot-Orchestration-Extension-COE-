@@ -1,3 +1,13 @@
+# Moved: Docs/UIUX/UI-UX-COMPLETE.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/UIUX/UI-UX-COMPLETE.md
+
+Direct link: ./Docs/UIUX/UI-UX-COMPLETE.md
+
+---
+
 # 🎉 UI/UX Design Phase — Completion Summary
 
 **Date:** January 6, 2026  

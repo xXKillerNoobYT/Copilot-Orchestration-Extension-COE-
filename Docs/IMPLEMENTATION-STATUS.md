@@ -373,7 +373,7 @@ public function assignAgent(string $taskId): Task
 2. ✅ [Task Orchestration Flow](Docs/task-orchestration-flow.md) - End-to-end workflow
 3. ✅ [Phase 1 Implementation](Docs/IMPLEMENTATION-PHASE1-COMPLETE.md) - Task engine docs
 4. ✅ [Phase 2 Implementation](Docs/IMPLEMENTATION-PHASE2-COMPLETE.md) - Agent system docs
-5. ✅ [Implementation README](IMPLEMENTATION-README.md) - Overall summary
+5. ✅ [Implementation README](Implementation/IMPLEMENTATION-README.md) - Overall summary
 
 ### Task Templates (7 files)
 

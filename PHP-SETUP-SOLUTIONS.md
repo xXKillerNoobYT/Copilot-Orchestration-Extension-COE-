@@ -1,3 +1,13 @@
+# Moved: Docs/Setup/PHP-SETUP-SOLUTIONS.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Setup/PHP-SETUP-SOLUTIONS.md
+
+Direct link: ./Docs/Setup/PHP-SETUP-SOLUTIONS.md
+
+---
+
 # PHP Installation Troubleshooting Guide
 
 ## Current Issue

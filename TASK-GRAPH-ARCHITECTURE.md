@@ -1,3 +1,13 @@
+# Moved: Docs/TaskGraph/TASK-GRAPH-ARCHITECTURE.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/TaskGraph/TASK-GRAPH-ARCHITECTURE.md
+
+Direct link: ./Docs/TaskGraph/TASK-GRAPH-ARCHITECTURE.md
+
+---
+
 ```mermaid
 graph TB
     subgraph "Task Files"

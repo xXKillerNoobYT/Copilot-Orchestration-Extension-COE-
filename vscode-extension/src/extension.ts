@@ -7,8 +7,12 @@ import { TaskFileCodeLensProvider } from './taskFileCodeLens';
 import { TaskFileDocumentWatcher } from './taskFileDocumentWatcher';
 import { TaskInteractionAPI, TaskInteractionEvent } from './taskInteractionAPI';
 import { TaskFileSyntaxHighlighter } from './taskFileSyntaxHighlighter';
+import { configureLlmCommand } from './commands/configureLLM';
+import { testConnectionCommand } from './commands/testConnection';
+import { readLlmConfig } from './config/llmConfig';
 
 export function activate(context: vscode.ExtensionContext) {
+  const llmStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 90);
   // Create a status bar item on activation
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   statusBarItem.text = '$(rocket) Copilot Orchestrator';
@@ -16,6 +20,8 @@ export function activate(context: vscode.ExtensionContext) {
   statusBarItem.command = 'copilot-orchestrator.start';
   statusBarItem.show();
   context.subscriptions.push(statusBarItem);
+  llmStatusBar.command = 'copilot-orchestrator.configureLLM';
+  context.subscriptions.push(llmStatusBar);
 
   const disposable = vscode.commands.registerCommand('copilot-orchestrator.start', () => {
     statusBarItem.text = '$(sync~spin) Copilot Orchestrator';
@@ -26,6 +32,19 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   context.subscriptions.push(disposable);
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.configureLLM', async () => {
+      await configureLlmCommand();
+      refreshLlmStatus(llmStatusBar);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.testConnection', async () => {
+      await testConnectionCommand();
+    })
+  );
 
   // ============ .task.md File Support (CodeLens, Watcher, Syntax) ============
   // Initialize CodeLens provider for .task.md files
@@ -277,10 +296,32 @@ export function activate(context: vscode.ExtensionContext) {
   treeDataProvider
     .refreshFromDisk()
     .catch((error) => vscode.window.showErrorMessage(`Failed to load tasks: ${error instanceof Error ? error.message : String(error)}`));
+
+  // Initialize LLM status indicator and refresh on configuration changes
+  refreshLlmStatus(llmStatusBar);
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('copilot-orchestrator.llm') || event.affectsConfiguration('copilot-orchestrator.taskRoots')) {
+        refreshLlmStatus(llmStatusBar);
+      }
+    })
+  );
 }
 
 export function deactivate() {
   // Cleanup if needed when the extension is deactivated
+}
+
+function refreshLlmStatus(statusBar: vscode.StatusBarItem) {
+  const state = readLlmConfig();
+  if (state.isConfigured) {
+    statusBar.text = '$(plug) LLM: Configured';
+    statusBar.tooltip = 'LLM settings are configured. Click to edit.';
+  } else {
+    statusBar.text = '$(alert) LLM: Missing config';
+    statusBar.tooltip = state.issues.join('; ') || 'Configure LLM settings';
+  }
+  statusBar.show();
 }
 
 class TaskTreeItem extends vscode.TreeItem {

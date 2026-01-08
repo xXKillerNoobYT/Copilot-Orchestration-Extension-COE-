@@ -54,6 +54,59 @@
         }
       ]
     },
+    "configuration": {
+      "title": "Copilot Orchestrator",
+      "properties": {
+        "copilot-orchestrator.llm.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:1234/v1",
+          "markdownDescription": "Base URL for an OpenAI-compatible endpoint (LM Studio default: http://localhost:1234/v1). Must start with http or https.",
+          "scope": "window",
+          "pattern": "^https?://.+",
+          "patternErrorMessage": "Enter a valid http(s) URL (e.g., http://localhost:1234/v1)."
+        },
+        "copilot-orchestrator.llm.apiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "API key/secret for the endpoint. Leave empty for LM Studio (no key required).",
+          "scope": "application",
+          "secret": true
+        },
+        "copilot-orchestrator.llm.defaultModel": {
+          "type": "string",
+          "default": "gpt-4.1",
+          "markdownDescription": "Default model name passed to /v1/chat/completions (e.g., gpt-4.1, gpt-4o-mini, or LM Studio-provided model).",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.temperature": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
+          "markdownDescription": "Sampling temperature for chat completions (0–2).",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "maximum": 120000,
+          "markdownDescription": "Request timeout in milliseconds for LLM calls.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.taskRoots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "_ZENTASKS"
+          ],
+          "markdownDescription": "Folders (relative to the workspace) to search for *.task.md files. First existing folder is used.",
+          "scope": "resource"
+        }
+      }
+    },
     "commands": [
       {
         "command": "copilot-orchestrator.start",
@@ -122,6 +175,18 @@
         "command": "copilot-orchestrator.manageDependencies",
         "title": "Manage Task Dependencies",
         "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.configureLLM",
+        "title": "Copilot Orchestrator: Configure LLM",
+        "category": "Copilot Orchestrator",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "copilot-orchestrator.testConnection",
+        "title": "Copilot Orchestrator: Test LLM Connection",
+        "category": "Copilot Orchestrator",
+        "icon": "$(plug)"
       }
     ]
   },
@@ -130,7 +195,7 @@
     "compile": "webpack --mode production --stats=errors-only",
     "watch": "webpack --watch --mode development --stats=errors-warnings",
     "lint": "echo 'no lint configured'",
-    "test": "npm run compile && node dist/taskGraphTest.js",
+    "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js",
     "demo": "npm run compile && node dist/taskGraphDemo.js"
   },
   "dependencies": {

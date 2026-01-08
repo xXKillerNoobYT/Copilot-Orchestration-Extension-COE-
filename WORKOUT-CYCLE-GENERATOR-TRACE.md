@@ -1,3 +1,13 @@
+# Moved: Docs/Workout/WORKOUT-CYCLE-GENERATOR-TRACE.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Workout/WORKOUT-CYCLE-GENERATOR-TRACE.md
+
+Direct link: ./Docs/Workout/WORKOUT-CYCLE-GENERATOR-TRACE.md
+
+---
+
 # Workout Cycle Generator - End-to-End Implementation Trace Log
 
 **Project**: Copilot Orchestration Extension  

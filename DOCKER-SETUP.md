@@ -1,3 +1,13 @@
+# Moved: Docs/Docker/DOCKER-SETUP.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Docker/DOCKER-SETUP.md
+
+Direct link: ./Docs/Docker/DOCKER-SETUP.md
+
+---
+
 # 🐳 Docker Setup Guide
 
 **Status:** Ready to use  

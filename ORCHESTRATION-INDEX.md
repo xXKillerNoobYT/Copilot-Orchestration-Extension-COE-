@@ -1,3 +1,13 @@
+# Moved: Docs/Orchestration/ORCHESTRATION-INDEX.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Orchestration/ORCHESTRATION-INDEX.md
+
+Direct link: ./Docs/Orchestration/ORCHESTRATION-INDEX.md
+
+---
+
 # ORCHESTRATION INDEX - All Outputs & Navigation
 
 **Project**: Copilot Orchestration Extension  

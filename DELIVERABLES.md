@@ -1,3 +1,13 @@
+# Moved: Docs/Delivery/DELIVERABLES.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Delivery/DELIVERABLES.md
+
+Direct link: ./Docs/Delivery/DELIVERABLES.md
+
+---
+
 # Task File Support - Complete Deliverables
 
 ## Summary

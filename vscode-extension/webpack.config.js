@@ -46,6 +46,8 @@ module.exports = [
     entry: {
       taskGraphTest: './src/taskGraphTest.ts',
       taskGraphDemo: './src/taskGraphDemo.ts',
+      llmConfigTest: './src/llmConfigTest.ts',
+      llmClientTest: './src/llmClientTest.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),

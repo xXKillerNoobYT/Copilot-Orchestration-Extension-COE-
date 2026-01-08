@@ -102,6 +102,18 @@ export {
   VerificationOptions,
 } from './verificationAgent';
 
+// LLM configuration helper
+export {
+  readLlmConfig,
+  isValidBaseUrl,
+  redactSecret,
+  LlmConfig,
+  LlmConfigState,
+} from './config/llmConfig';
+
+// LLM client
+export { createOpenAIClient, LlmClient, ChatMessage, ChatRole } from './llm/openaiClient';
+
 // Re-export demo and test functions for convenience
 export { runTaskGraphDemo } from './taskGraphDemo';
 export { runAllTests } from './taskGraphTest';

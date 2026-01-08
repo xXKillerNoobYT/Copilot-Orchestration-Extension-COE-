@@ -1,3 +1,13 @@
+# Moved: Docs/Setup/SETUP-LARAVEL-HERD.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Setup/SETUP-LARAVEL-HERD.md
+
+Direct link: ./Docs/Setup/SETUP-LARAVEL-HERD.md
+
+---
+
 # 🚀 Quickest Setup: Laravel Herd
 
 Since manual PHP download is having issues, **Laravel Herd** is the fastest solution. It's a complete, pre-configured package.

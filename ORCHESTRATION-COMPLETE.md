@@ -1,4 +1,8 @@
-# Orchestration Completion Summary
+# Moved: see Docs/Orchestration/ORCHESTRATION-COMPLETE.md
+
+This file has been relocated for better organization.
+
+New path: Docs/Orchestration/ORCHESTRATION-COMPLETE.md
 
 ## Project: Workout Cycle Generator
 

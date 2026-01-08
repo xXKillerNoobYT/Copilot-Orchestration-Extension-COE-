@@ -1,3 +1,13 @@
+# Moved: Docs/Setup/SETUP-WSL-UBUNTU.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Setup/SETUP-WSL-UBUNTU.md
+
+Direct link: ./Docs/Setup/SETUP-WSL-UBUNTU.md
+
+---
+
 # 🐧 Setup Using Windows Subsystem for Linux (WSL) - Simplest Option
 
 Since installing PHP directly on Windows is hitting issues, **WSL is the fastest solution**. You get Linux with full PHP 8.2 pre-available.

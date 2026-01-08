@@ -1,3 +1,13 @@
+# Moved: Docs/Changelog/CHANGELOG.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Changelog/CHANGELOG.md
+
+Direct link: ./Docs/Changelog/CHANGELOG.md
+
+---
+
 # Release Notes
 
 ## [Unreleased](https://github.com/laravel/laravel/compare/v10.3.2...10.x)

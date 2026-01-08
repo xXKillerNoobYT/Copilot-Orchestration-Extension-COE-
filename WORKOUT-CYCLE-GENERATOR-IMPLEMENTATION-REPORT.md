@@ -1,3 +1,13 @@
+# Moved: Docs/Workout/WORKOUT-CYCLE-GENERATOR-IMPLEMENTATION-REPORT.md
+
+This document has been relocated to keep the repository organized.
+
+New location: Docs/Workout/WORKOUT-CYCLE-GENERATOR-IMPLEMENTATION-REPORT.md
+
+Direct link: ./Docs/Workout/WORKOUT-CYCLE-GENERATOR-IMPLEMENTATION-REPORT.md
+
+---
+
 # Workout Cycle Generator - End-to-End Implementation Report
 
 **Project**: Copilot Orchestration Extension  

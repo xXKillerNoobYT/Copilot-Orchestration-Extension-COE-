@@ -173,9 +173,255 @@
       "dependencies": [],
       "createdAt": "2026-01-07T05:04:50.547Z",
       "updatedAt": "2026-01-07T05:04:50.547Z"
+    },
+    {
+      "id": "TASK-mk4yyrid-dfloh",
+      "title": "Add VS Code settings UI for LLM endpoints",
+      "description": "Provide extension settings and a settings panel to configure LLM providers (OpenAI-compatible HTTP, LM Studio local server) including base URL, API key, default model, temperature, and timeout. Ensure settings are surfaced in command palette and tree view context, persisted in workspace/global scope, and validated.",
+      "details": "Implement vscode workspaceConfiguration entries (schema + defaults), contribute settings to package.json, and add a webview or quick-pick to edit settings. Include validation for missing/invalid URLs and redact secrets in logs. Wire settings into orchestratorPanel/task executor configuration flow so future agent calls can use them. Provide LM Studio compatibility notes (OpenAI-style /v1/chat/completions).",
+      "testStrategy": "Manual: install extension, open Settings UI, update base URL/API key/model; confirm values persist and can be read via vscode.workspace.getConfiguration. Automated: add unit covering configuration retrieval and validation helper.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T04:50:50.437Z",
+      "updatedAt": "2026-01-08T04:50:50.437Z"
+    },
+    {
+      "id": "TASK-mk4yywrc-mr4c5",
+      "title": "Load workspace tasks instead of bundled samples",
+      "description": "Update the extension to read .task.md files from the workspace (default _ZENTASKS/ and configurable folders) instead of only sample-tasks, and refresh tree/graph views accordingly.",
+      "details": "Introduce configuration for task roots, detect workspace folder, and fall back to sample-tasks only if none found. Add refresh command wiring, error handling for malformed YAML, and status bar indicator when no workspace tasks are loaded. Ensure OrchestratorPanel and graph commands use the same data source.",
+      "testStrategy": "Manual: open a workspace with _ZENTASKS/*.task.md files and confirm they appear in the tree and graph; remove/rename folder to see fallback notice. Automated: unit test parseTasksFromDirectory using temp workspace fixtures.",
+      "status": "in-progress",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T04:50:57.240Z",
+      "updatedAt": "2026-01-08T05:52:24.280Z"
+    },
+    {
+      "id": "TASK-mk4yzupo-5g43r",
+      "title": "Implement LLM transport (OpenAI + LM Studio) and connection test",
+      "description": "Add a transport layer that sends CopilotDispatcher prompts to a configured OpenAI-compatible endpoint or LM Studio, with health check/connection test and error surfacing in the extension.",
+      "details": "Build a reusable client that reads settings (base URL, API key, model, timeout), supports http(s) and localhost LM Studio defaults, and handles /v1/chat/completions schema. Add a command to run a connection test and show success/failure in the status bar/panel. Include secret redaction in logs and resilient error messages.",
+      "testStrategy": "Automated: unit test the request builder for OpenAI and LM Studio URLs; mock fetch to validate headers/body. Manual: run connection test against LM Studio and a sample OpenAI-compatible endpoint; verify errors are shown when unreachable or unauthorized.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4yyrid-dfloh"
+      ],
+      "createdAt": "2026-01-08T04:51:41.244Z",
+      "updatedAt": "2026-01-08T04:51:41.244Z"
+    },
+    {
+      "id": "TASK-mk4yzzaz-tip0b",
+      "title": "Make Orchestrator panel live with workspace data",
+      "description": "Replace stub OrchestratorPanel data with live workspace tasks, memory, and context bundles; add task-level actions and plan breakdown rendering.",
+      "details": "Wire the panel to the same task source as the tree/graph, render dependencies and readiness, show linked GitHub issue/context bundle if present, and expose actions (execute, change status, open issue/context). Add a real memory feed (recent agent/user actions) and placeholder for backend plan/loop status. Ensure refresh works and performance remains snappy.",
+      "testStrategy": "Manual: open panel with workspace tasks; confirm tasks, dependencies, and metadata render and actions work. Automated: snapshot/basic render test for webview HTML generation when tasks/graph are provided.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk4yywrc-mr4c5"
+      ],
+      "createdAt": "2026-01-08T04:51:47.195Z",
+      "updatedAt": "2026-01-08T04:51:47.195Z"
+    },
+    {
+      "id": "TASK-mk4z07r5-d2065",
+      "title": "Update documentation to reflect current state and new LLM settings flow",
+      "description": "Revise docs to include LLM configuration (cloud + LM Studio), workspace task loading, and to clarify which plan phases are implemented vs pending in the extension vs backend.",
+      "details": "Add a short setup guide for configuring LLM endpoints and task roots, and append an addendum to implementation status noting extension gaps (settings, transport, panel wiring) and backend linkage requirements. Keep existing summaries but add an explicit reality check and next steps section.",
+      "testStrategy": "Docs review: ensure README/QUICKSTART or dedicated doc contains LLM setup steps and that status pages explicitly call out remaining extension work.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk4yyrid-dfloh",
+        "TASK-mk4yzupo-5g43r",
+        "TASK-mk4yywrc-mr4c5"
+      ],
+      "createdAt": "2026-01-08T04:51:58.145Z",
+      "updatedAt": "2026-01-08T04:51:58.145Z"
+    },
+    {
+      "id": "TASK-mk4z3qpm-yj5zb",
+      "title": "Survey extension config patterns for LLM settings",
+      "description": "Review vscode-extension structure (package.json contributions, activation commands, config helpers/tests) to choose consistent patterns for new LLM settings UI and persistence.",
+      "details": "Inspect existing settings, command registrations, tree/status bar wiring, and test harness. Identify files to touch for LLM settings (package.json, extension.ts, tree/panel modules). Note current strict tsconfig constraints and mocking approach.",
+      "testStrategy": "Checklist of target files + decisions documented; no code change yet.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T04:54:42.682Z",
+      "updatedAt": "2026-01-08T04:59:16.165Z"
+    },
+    {
+      "id": "TASK-mk4z3vbw-6a1s0",
+      "title": "Add LLM configuration contributions to package.json",
+      "description": "Define VS Code settings for LLM endpoints (base URL, API key/secret, default model, temperature, timeout, task roots) in vscode-extension/package.json with appropriate types, defaults, and secret handling.",
+      "details": "Add configuration schema entries under copilot-orchestrator.* namespace; mark secret fields as password; include descriptions for OpenAI-compatible and LM Studio usage; ensure activationEvents include settings change if needed.",
+      "testStrategy": "Manually inspect package.json; run VS Code validations or unit snapshots if present; ensure schema loads without errors.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4z3qpm-yj5zb"
+      ],
+      "createdAt": "2026-01-08T04:54:48.668Z",
+      "updatedAt": "2026-01-08T05:04:24.857Z"
+    },
+    {
+      "id": "TASK-mk4z40u9-norsa",
+      "title": "Implement llmConfig helper with validation and redaction",
+      "description": "Create a config helper (e.g., vscode-extension/src/config/llmConfig.ts) to read LLM settings, validate URLs/timeouts/temperature, supply defaults, and redact secrets in logs/errors.",
+      "details": "Expose typed getters for baseUrl, apiKey, model, temperature, timeout, taskRoots; perform URL validation (http/https), clamp temperature; provide isConfigured flag and redaction utility. Keep TypeScript strict.",
+      "testStrategy": "Unit tests covering valid/invalid configs, redaction behavior, defaults, and isConfigured logic.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4z3vbw-6a1s0"
+      ],
+      "createdAt": "2026-01-08T04:54:55.809Z",
+      "updatedAt": "2026-01-08T05:07:07.580Z"
+    },
+    {
+      "id": "TASK-mk4z449m-lnk5z",
+      "title": "Add LLM settings command/panel for editing configuration",
+      "description": "Implement a command (quick pick or webview) to edit LLM settings, persisting via workspace.getConfiguration (workspace/global), with URL validation and secret redaction in logs.",
+      "details": "Register command (e.g., copilot-orchestrator.configureLLM). Use quick input forms for base URL, API key, model, temperature, timeout, task roots. Validate URL, clamp temperature, and handle cancellation gracefully. Persist to correct scope. Wire logging with redaction.",
+      "testStrategy": "Manual: invoke command, update settings, verify persistence and validation. Add unit/command handler test if feasible.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4z40u9-norsa"
+      ],
+      "createdAt": "2026-01-08T04:55:00.251Z",
+      "updatedAt": "2026-01-08T05:17:32.204Z"
+    },
+    {
+      "id": "TASK-mk4z47t0-6psbz",
+      "title": "Indicate missing/invalid LLM config in status bar or tree view",
+      "description": "Wire a status bar item or tree view banner to show when LLM configuration is missing/invalid, with action to open the settings command.",
+      "details": "Use llmConfig helper isConfigured/validation to drive indicator state. Update activation/refresh flow to re-evaluate on configuration changes; add command binding to open configure UI.",
+      "testStrategy": "Manual: launch extension with/without settings; confirm indicator appears and opens configuration; verify hides when valid.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4z449m-lnk5z"
+      ],
+      "createdAt": "2026-01-08T04:55:04.836Z",
+      "updatedAt": "2026-01-08T05:17:36.327Z"
+    },
+    {
+      "id": "TASK-mk4z4b3y-6jpw0",
+      "title": "Add unit tests/mocks for LLM config helper and settings flow",
+      "description": "Write minimal tests covering llmConfig helper (validation, defaults, redaction) and update mocks to support configuration command interactions under strict TypeScript.",
+      "details": "Add tests in vscode-extension (e.g., src/test or __tests__) to verify valid/invalid configs, secret redaction. Mock workspace configuration for command handler as needed. Ensure tsconfig strict compatibility.",
+      "testStrategy": "Run npm test/extension test suite; ensure new tests pass and existing tests unchanged.",
+      "status": "done",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk4z40u9-norsa",
+        "TASK-mk4z449m-lnk5z"
+      ],
+      "createdAt": "2026-01-08T04:55:09.118Z",
+      "updatedAt": "2026-01-08T05:07:17.048Z"
+    },
+    {
+      "id": "TASK-mk4z4for-cgsft",
+      "title": "Wire LLM settings command and config helper into extension activation",
+      "description": "Register the configure command, expose llmConfig helper to activation/trees, and ensure configuration change listeners refresh status and views.",
+      "details": "Update vscode-extension/src/extension.ts (or entry) to register command, set activationEvents for command/settings change, pass llmConfig to tree/panel providers, and handle disposables.",
+      "testStrategy": "Manual: activate extension, trigger command via palette; verify activation events include command; check no activation errors.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4z449m-lnk5z",
+        "TASK-mk4z47t0-6psbz"
+      ],
+      "createdAt": "2026-01-08T04:55:15.051Z",
+      "updatedAt": "2026-01-08T05:17:40.263Z"
+    },
+    {
+      "id": "TASK-mk4zb7ym-qy4ay",
+      "title": "Survey dispatcher output and test harness for transport client",
+      "description": "Inspect CopilotDispatcher.composePrompt output shape and existing tests to design chat/completions payload mapping and mocks.",
+      "details": "Review copilotDispatcher.ts, agent profiles, and any tests to determine message format and metadata needed for transport. Note current testing approach (taskGraphTest) and plan new tests directory or harness.",
+      "testStrategy": "Document mapping decisions; no code yet.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T05:00:31.630Z",
+      "updatedAt": "2026-01-08T05:00:31.630Z"
+    },
+    {
+      "id": "TASK-mk4zbbl0-d15zk",
+      "title": "Implement OpenAI-compatible LLM client",
+      "description": "Create a transport client that builds /v1/chat/completions requests from composePrompt output, supporting configurable base URL (http/https, LM Studio), model, temperature, timeout, and optional API key header with redaction.",
+      "details": "Add TypeScript module (e.g., src/llm/openaiClient.ts) exporting a function/class to send chat completions. Validate URL, build headers/body, handle timeouts, return parsed response. Include redaction utility for secrets in logs/errors.",
+      "testStrategy": "Unit tests for request builder (OpenAI and LM Studio base URLs) and secret redaction logic.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4zb7ym-qy4ay"
+      ],
+      "createdAt": "2026-01-08T05:00:36.324Z",
+      "updatedAt": "2026-01-08T05:17:44.214Z"
+    },
+    {
+      "id": "TASK-mk4zbeu8-0p8vi",
+      "title": "Add connection test command for LLM transport",
+      "description": "Register copilot-orchestrator.testConnection command to send a minimal ping using the LLM client, show success/failure via notifications/status bar, and redact secrets in surfaced errors.",
+      "details": "Implement command handler wired in extension activation; leverage llm client and config helper; provide status bar spinner/success/failure messaging and actionable errors for 401/404/ECONNREFUSED.",
+      "testStrategy": "Manual command invocation; unit test error handling paths if feasible.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4zbbl0-d15zk"
+      ],
+      "createdAt": "2026-01-08T05:00:40.544Z",
+      "updatedAt": "2026-01-08T05:17:48.879Z"
+    },
+    {
+      "id": "TASK-mk4zbhsn-6n8dk",
+      "title": "Unit tests for LLM client request building and error handling",
+      "description": "Add tests covering request body/header builder (OpenAI + LM Studio), timeout, and error mapping (401/404/ECONNREFUSED) with secret redaction.",
+      "details": "Create test suite (e.g., in src/__tests__/llmClient.test.ts) mocking fetch to validate payload, headers, base URL handling, and error messaging.",
+      "testStrategy": "Run npm test; ensure tests cover both success and failure scenarios.",
+      "status": "done",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk4zbbl0-d15zk"
+      ],
+      "createdAt": "2026-01-08T05:00:44.375Z",
+      "updatedAt": "2026-01-08T05:17:54.206Z"
+    },
+    {
+      "id": "TASK-mk4zbk2s-2llqw",
+      "title": "Optional dispatcher integration hook for LLM client",
+      "description": "Expose the LLM client for future dispatcher use without altering current behavior; provide an optional integration hook or export.",
+      "details": "Export client from an index or service module so future wiring is trivial; ensure no behavior change to dispatcher now.",
+      "testStrategy": "Verify build succeeds and exports are reachable via import.",
+      "status": "done",
+      "priority": "low",
+      "dependencies": [
+        "TASK-mk4zbbl0-d15zk"
+      ],
+      "createdAt": "2026-01-08T05:00:47.332Z",
+      "updatedAt": "2026-01-08T05:17:58.474Z"
+    },
+    {
+      "id": "TASK-mk4zk571-uv0j5",
+      "title": "Fix impact analysis assertion in taskGraphTest",
+      "description": "Resolve console.assert warning 'Should impact 3 tasks (B, C, D)' printed during testGraphTest despite passing exit code. Ensure test fails on incorrect impact calculation or update expectation.",
+      "details": "Investigate getImpactedTasks output vs expected; adjust logic or test to avoid silent assertion failures. Make console.assert throw or use proper assertion library.",
+      "testStrategy": "Run npm test; confirm no assertion warnings and exit code reflects failures correctly.",
+      "status": "in-progress",
+      "priority": "low",
+      "dependencies": [],
+      "createdAt": "2026-01-08T05:07:27.949Z",
+      "updatedAt": "2026-01-08T05:51:28.926Z"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-07T05:12:28.239Z"
+    "updatedAt": "2026-01-08T05:52:24.280Z"
   }
 }
