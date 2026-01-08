@@ -12,8 +12,11 @@ import { configureLlmCommand } from './commands/configureLLM';
 import { testConnectionCommand } from './commands/testConnection';
 import { executeLlmCommand } from './commands/executeLLM';
 import { readLlmConfig } from './config/llmConfig';
+import { AutoAgentLoopCommand } from './commands/autoAgentLoop';
 
 export function activate(context: vscode.ExtensionContext) {
+    // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
+    new AutoAgentLoopCommand(context);
   const llmStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 90);
   // Create a status bar item on activation
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);

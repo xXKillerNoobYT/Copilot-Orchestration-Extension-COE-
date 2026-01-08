@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\MonitoringController;
 use App\Http\Controllers\Api\PlanningController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\AgentLoopController;
+use App\Http\Controllers\Api\RepositoryController;
+use App\Http\Controllers\Api\RepositoryHealthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -313,6 +315,81 @@ Route::prefix('v1')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Repository Management Routes
+    |--------------------------------------------------------------------------
+    | Phase 9a: Safe Branching & Merge Validation
+    */
+
+    // Repository management (8 endpoints)
+    Route::post('/projects/{projectId}/repositories', [RepositoryController::class, 'createRepository'])
+        ->name('api.repositories.create');
+
+    Route::get('/projects/{projectId}/repositories', [RepositoryController::class, 'listRepositories'])
+        ->name('api.repositories.list');
+
+    Route::get('/repositories/{repositoryId}', [RepositoryController::class, 'getRepository'])
+        ->name('api.repositories.show');
+
+    Route::patch('/repositories/{repositoryId}', [RepositoryController::class, 'updateRepository'])
+        ->name('api.repositories.update');
+
+    Route::delete('/repositories/{repositoryId}', [RepositoryController::class, 'archiveRepository'])
+        ->name('api.repositories.delete');
+
+    Route::post('/repositories/{repositoryId}/initialize', [RepositoryController::class, 'initializeRepository'])
+        ->name('api.repositories.initialize');
+
+    Route::get('/repositories/{repositoryId}/health', [RepositoryController::class, 'getRepositoryHealth'])
+        ->name('api.repositories.health');
+
+    Route::get('/projects/{projectId}/repo-status', [RepositoryController::class, 'getProjectRepositoryStatus'])
+        ->name('api.projects.repo-status');
+
+    // Branch management (9 endpoints)
+    Route::post('/repositories/{repositoryId}/branches', [RepositoryController::class, 'createBranch'])
+        ->name('api.branches.create');
+
+    Route::get('/repositories/{repositoryId}/branches', [RepositoryController::class, 'listBranches'])
+        ->name('api.branches.list');
+
+    Route::get('/repositories/{repositoryId}/branches/active', [RepositoryController::class, 'getActiveBranches'])
+        ->name('api.branches.active');
+
+    Route::get('/repositories/{repositoryId}/branches/stale', [RepositoryController::class, 'getStaleBranches'])
+        ->name('api.branches.stale');
+
+    Route::get('/branches/{branchId}', [RepositoryController::class, 'getBranch'])
+        ->name('api.branches.show');
+
+    Route::patch('/branches/{branchId}', [RepositoryController::class, 'updateBranch'])
+        ->name('api.branches.update');
+
+    Route::delete('/branches/{branchId}', [RepositoryController::class, 'deleteBranch'])
+        ->name('api.branches.delete');
+
+    Route::post('/branches/{branchId}/protect', [RepositoryController::class, 'protectBranch'])
+        ->name('api.branches.protect');
+
+    Route::post('/repositories/{repositoryId}/branches/strategy', [RepositoryController::class, 'validateStrategy'])
+        ->name('api.branches.validate-strategy');
+
+    // Merge & validation (8 endpoints)
+    Route::post('/branches/{branchId}/validate-merge', [RepositoryController::class, 'validateMerge'])
+        ->name('api.branches.validate-merge');
+
+    Route::post('/branches/{branchId}/merge-gates', [RepositoryController::class, 'runMergeGates'])
+        ->name('api.branches.merge-gates');
+
+    Route::get('/branches/{branchId}/merge-status', [RepositoryController::class, 'getMergeStatus'])
+        ->name('api.branches.merge-status');
+
+    Route::post('/branches/{branchId}/authorize-merge', [RepositoryController::class, 'authorizeMerge'])
+        ->name('api.branches.authorize-merge');
+
+    Route::post('/branches/{branchId}/reject-merge', [RepositoryController::class, 'rejectMerge'])
+        ->name('api.branches.reject-merge');
+    /*
+    |--------------------------------------------------------------------------
     | Agent Loop / Continuous Execution Routes
     |--------------------------------------------------------------------------
     | Phase 7: Auto-Agent Switching & Continuous Execution
@@ -333,6 +410,31 @@ Route::prefix('v1')->group(function () {
         ->name('api.agent-loop.cycle');
 });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Repository Health Monitoring Routes
+    |--------------------------------------------------------------------------
+    | Phase 10a: Repository Health Monitoring & Auto-Maintenance
+    */
+
+    // Health check operations
+    Route::post('/repositories/{repositoryId}/health-check', [RepositoryHealthController::class, 'checkHealth'])
+        ->name('api.health.check');
+
+    Route::get('/repositories/{repositoryId}/health', [RepositoryHealthController::class, 'getLatestHealth'])
+        ->name('api.health.latest');
+
+    Route::get('/repositories/{repositoryId}/health-history', [RepositoryHealthController::class, 'getHealthHistory'])
+        ->name('api.health.history');
+
+    Route::get('/repositories/{repositoryId}/health-report', [RepositoryHealthController::class, 'generateReport'])
+        ->name('api.health.report');
+
+    Route::get('/repositories/health/critical', [RepositoryHealthController::class, 'getCriticalRepositories'])
+        ->name('api.health.critical');
+
+    Route::get('/projects/{projectId}/health-metrics', [RepositoryHealthController::class, 'getProjectMetrics'])
+        ->name('api.health.project-metrics');
 /*
 |--------------------------------------------------------------------------
 | GitHub Webhook Routes
