@@ -26,7 +26,7 @@ const mockConfig: LlmConfig = {
   apiKey: 'test-api-key-12345',
   defaultModel: 'gpt-4',
   temperature: 0.7,
-  timeout: 30000,
+  timeoutMs: 30000,
   taskRoots: ['_ZENTASKS'],
 };
 
@@ -468,7 +468,7 @@ function testLmStudioCompatibility() {
     apiKey: '',
     defaultModel: 'local-model',
     temperature: 0.7,
-    timeout: 30000,
+    timeoutMs: 30000,
     taskRoots: ['_ZENTASKS'],
   };
 
@@ -548,7 +548,7 @@ function testOpenAIAndLmStudioCompatibility() {
     apiKey: 'sk-test-key',
     defaultModel: 'gpt-4-turbo',
     temperature: 0.8,
-    timeout: 60000,
+    timeoutMs: 60000,
     taskRoots: ['_ZENTASKS'],
   };
 

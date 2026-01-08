@@ -48,6 +48,7 @@ module.exports = [
       taskGraphDemo: './src/taskGraphDemo.ts',
       llmConfigTest: './src/llmConfigTest.ts',
       llmClientTest: './src/llmClientTest.ts',
+      'llm/clientTest': './src/llm/clientTest.ts',
       'llm/transportTest': './src/llm/transportTest.ts',
       'copilotDispatcher.test': './src/copilotDispatcher.test.ts',
       'workspace/tasksSourceTest': './src/workspace/tasksSourceTest.ts',

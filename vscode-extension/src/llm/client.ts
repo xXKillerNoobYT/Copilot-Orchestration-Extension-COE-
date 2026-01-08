@@ -172,8 +172,8 @@ export function buildRequestMetadata(payload: PromptPayload): RequestMetadata {
     taskId: payload.taskId,
     agentName: payload.agent.name,
     timestamp: new Date().toISOString(),
-    contextFileCount: payload.metadata?.contextFileCount || 0,
-    memoryCount: payload.metadata?.memoryCount || 0,
+    contextFileCount: (payload.metadata?.contextFileCount as number) ?? 0,
+    memoryCount: (payload.metadata?.memoryCount as number) ?? 0,
     messageCount: payload.messages.length,
     totalCharacters,
   };
@@ -207,12 +207,12 @@ export function validateRequestBody(request: ChatCompletionsRequest): void {
       throw new Error(`ChatCompletionsRequest: messages[${i}] missing role`);
     }
 
-    const validRoles = ['system', 'user', 'assistant', 'function'];
+    const validRoles = ['system', 'user', 'assistant'];
     if (!validRoles.includes(msg.role)) {
       throw new Error(`ChatCompletionsRequest: messages[${i}] invalid role '${msg.role}'`);
     }
 
-    if (!msg.content && msg.role !== 'function') {
+    if (!msg.content) {
       throw new Error(`ChatCompletionsRequest: messages[${i}] missing content`);
     }
   }
