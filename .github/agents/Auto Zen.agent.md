@@ -5,7 +5,7 @@ tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'copilot-container
 
 # Auto Zen — Autonomous Development Agent
 
-Key file 
+Key file .github/copilot-instructions.md
 
 ## Purpose
 

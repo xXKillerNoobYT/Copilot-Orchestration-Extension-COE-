@@ -232,7 +232,7 @@
       "description": "Revise docs to include LLM configuration (cloud + LM Studio), workspace task loading, and to clarify which plan phases are implemented vs pending in the extension vs backend.",
       "details": "Add a short setup guide for configuring LLM endpoints and task roots, and append an addendum to implementation status noting extension gaps (settings, transport, panel wiring) and backend linkage requirements. Keep existing summaries but add an explicit reality check and next steps section.",
       "testStrategy": "Docs review: ensure README/QUICKSTART or dedicated doc contains LLM setup steps and that status pages explicitly call out remaining extension work.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "TASK-mk4yyrid-dfloh",
@@ -240,7 +240,7 @@
         "TASK-mk4yywrc-mr4c5"
       ],
       "createdAt": "2026-01-08T04:51:58.145Z",
-      "updatedAt": "2026-01-08T05:58:00.000Z"
+      "updatedAt": "2026-01-08T06:00:00.000Z"
     },
     {
       "id": "TASK-mk4z3qpm-yj5zb",
