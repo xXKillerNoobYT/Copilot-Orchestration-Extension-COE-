@@ -1,0 +1,53 @@
+
+> copilot-orchestrator@0.0.1 test
+> npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js
+
+
+> copilot-orchestrator@0.0.1 compile
+> webpack --mode production --stats=errors-only
+
+=== Task Graph Generator Tests ===
+
+Test: Basic Graph Generation
+Γ£ô Basic graph generation passed
+
+Test: Parallel Execution Levels
+Γ£ô Parallel execution levels passed
+
+Test: Cycle Detection
+Γ£ô Cycle detection passed
+
+Test: No Cycles in Valid Graph
+Γ£ô No cycles detection passed
+
+Test: Ready Tasks Detection
+Γ£ô Ready tasks detection passed
+
+Test: Orphaned Task Detection
+Γ£ô Orphaned task detection passed
+
+Test: Depth Calculation
+Γ£ô Depth calculation passed
+
+Test: Critical Path Detection
+Critical path: A -> C -> E -> F
+Γ£ô Critical path detection passed
+
+Test: Impact Analysis
+Assertion failed: Should impact 3 tasks (B, C, D)
+Γ£ô Impact analysis passed
+
+Test: Dependency Validation
+Γ£ô Dependency validation passed
+
+Test: Export Formats
+Γ£ô Export formats passed
+
+Test: Graph Statistics
+Γ£ô Graph statistics passed
+
+=== All Tests Passed Γ£ô ===
+=== LLM Config Tests ===
+=== LLM Config Tests Passed Γ£ô ===
+=== LLM Client Tests ===
+=== LLM Client Tests Passed Γ£ô ===

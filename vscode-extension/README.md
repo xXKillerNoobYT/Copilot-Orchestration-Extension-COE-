@@ -36,6 +36,8 @@ A foundational VS Code extension scaffold for Copilot Orchestration with advance
 ### Prerequisites
 - VS Code 1.90.0 or higher
 - Node.js 14+
+- (Optional) OpenAI API key for cloud LLM models
+- (Optional) LM Studio for local LLM inference
 
 ### Setup
 
@@ -59,6 +61,67 @@ A foundational VS Code extension scaffold for Copilot Orchestration with advance
    ```bash
    npm test
    ```
+
+## LLM Configuration
+
+The extension supports OpenAI-compatible LLM endpoints including cloud providers and local inference servers.
+
+### Configuring LLM Settings
+
+1. **Open Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P`)
+2. **Type** "Configure LLM Settings"
+3. **Enter** the following when prompted:
+   - **Base URL**: OpenAI endpoint (default: `http://localhost:1234/v1` for LM Studio)
+   - **API Key**: Your API key (marked secret in settings)
+   - **Default Model**: Model name (e.g., `gpt-4`, `gpt-4-turbo`, `neural-chat`)
+   - **Temperature**: Randomness 0.0–2.0 (default: 0.7)
+   - **Timeout (ms)**: Request timeout in milliseconds (default: 30000)
+   - **Task Roots**: Comma-separated folders to scan for workspace tasks (default: `_ZENTASKS`)
+
+### LM Studio Setup (Local Inference)
+
+1. Download [LM Studio](https://lmstudio.ai)
+2. Download a model (e.g., Neural Chat, Dolphin, Mistral)
+3. Start the local server (default: `http://localhost:1234`)
+4. Configure the extension:
+   - **Base URL**: `http://localhost:1234/v1`
+   - **API Key**: `lm-studio` (dummy key, ignored locally)
+   - **Model**: Name of downloaded model
+
+### Cloud Providers
+
+**OpenAI:**
+- Base URL: `https://api.openai.com/v1`
+- Model: `gpt-4`, `gpt-4-turbo`, `gpt-3.5-turbo`
+- API Key: Get from [OpenAI Platform](https://platform.openai.com/api-keys)
+
+**Azure OpenAI:**
+- Base URL: `https://{resource}.openai.azure.com/v1`
+- Model: Deployment name
+- API Key: Get from Azure Portal
+
+### Test Connection
+
+1. **Open Command Palette** and type "Test LLM Connection"
+2. Extension will ping your configured endpoint
+3. Status shown in extension status bar and notification
+
+## Workspace Task Loading
+
+The extension automatically loads task files from your workspace:
+
+### Default Behavior
+
+- Scans `_ZENTASKS/` directory for `.task.md` and `.md` files
+- Falls back to bundled `sample-tasks/` if workspace directory not found
+- Shows status in tree view when tasks are loaded from workspace
+
+### Custom Task Roots
+
+Configure custom directories in LLM Settings (Task Roots field):
+- Comma-separated list: `_ZENTASKS,docs/plans,backlog`
+- Extension tries each in order until one is found
+- Useful for monorepos with multiple task roots
 
 ## Usage
 

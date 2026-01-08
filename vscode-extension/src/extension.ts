@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { promises as fs } from 'fs';
 import { parseTasksFromDirectory, ParsedTask } from './taskParser';
 import { generateTaskGraph, TaskGraphGenerator, exportToMermaid } from './taskGraphGenerator';
 import { OrchestratorPanelProvider, MemoryEntry, ContextBundle } from './orchestratorPanel';
@@ -351,6 +352,7 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<TaskTreeItem
   readonly onDidChangeTreeData: vscode.Event<TaskTreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
   private tasks: ParsedTask[] = [];
+  private taskSource: string = 'unknown';
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -364,10 +366,13 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<TaskTreeItem
     }
 
     if (!this.tasks.length) {
+      const source = this.taskSource === 'error' ? 'Failed to load tasks' : 
+                     this.taskSource === 'workspace' ? 'No workspace tasks found' :
+                     'No bundled tasks found';
       return [new TaskTreeItem({
         id: 'no-tasks',
         title: 'No tasks found',
-        description: 'Add Markdown tasks with YAML front matter to sample-tasks/',
+        description: source,
         dependencies: [],
         assignees: [],
         labels: [],
@@ -380,12 +385,48 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<TaskTreeItem
   }
 
   async refreshFromDisk(): Promise<void> {
-    const tasksDir = path.join(this.context.extensionPath, 'sample-tasks');
-    this.tasks = await parseTasksFromDirectory(tasksDir);
+    const config = readLlmConfig();
+    const taskRoots = config.config.taskRoots || ['_ZENTASKS'];
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    let tasksDir: string | undefined;
+    let loadedFromWorkspace = false;
+
+    if (workspaceFolder) {
+      for (const root of taskRoots) {
+        const candidate = path.join(workspaceFolder.uri.fsPath, root);
+        try {
+          const stat = await fs.stat(candidate);
+          if (stat.isDirectory()) {
+            tasksDir = candidate;
+            loadedFromWorkspace = true;
+            break;
+          }
+        } catch {
+          // Directory doesn't exist, try next root
+        }
+      }
+    }
+
+    if (!tasksDir) {
+      tasksDir = path.join(this.context.extensionPath, 'sample-tasks');
+    }
+
+    try {
+      this.tasks = await parseTasksFromDirectory(tasksDir);
+      this.taskSource = loadedFromWorkspace ? 'workspace' : 'bundled';
+    } catch (error) {
+      console.error(`Failed to load tasks from ${tasksDir}:`, error);
+      this.tasks = [];
+      this.taskSource = 'error';
+    }
     this._onDidChangeTreeData.fire();
   }
 
   getTasks(): ParsedTask[] {
     return this.tasks;
+  }
+
+  getTaskSource(): string {
+    return this.taskSource;
   }
 }

@@ -192,7 +192,7 @@
       "description": "Update the extension to read .task.md files from the workspace (default _ZENTASKS/ and configurable folders) instead of only sample-tasks, and refresh tree/graph views accordingly.",
       "details": "Introduce configuration for task roots, detect workspace folder, and fall back to sample-tasks only if none found. Add refresh command wiring, error handling for malformed YAML, and status bar indicator when no workspace tasks are loaded. Ensure OrchestratorPanel and graph commands use the same data source.",
       "testStrategy": "Manual: open a workspace with _ZENTASKS/*.task.md files and confirm they appear in the tree and graph; remove/rename folder to see fallback notice. Automated: unit test parseTasksFromDirectory using temp workspace fixtures.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-08T04:50:57.240Z",
@@ -218,13 +218,13 @@
       "description": "Replace stub OrchestratorPanel data with live workspace tasks, memory, and context bundles; add task-level actions and plan breakdown rendering.",
       "details": "Wire the panel to the same task source as the tree/graph, render dependencies and readiness, show linked GitHub issue/context bundle if present, and expose actions (execute, change status, open issue/context). Add a real memory feed (recent agent/user actions) and placeholder for backend plan/loop status. Ensure refresh works and performance remains snappy.",
       "testStrategy": "Manual: open panel with workspace tasks; confirm tasks, dependencies, and metadata render and actions work. Automated: snapshot/basic render test for webview HTML generation when tasks/graph are provided.",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "TASK-mk4yywrc-mr4c5"
       ],
       "createdAt": "2026-01-08T04:51:47.195Z",
-      "updatedAt": "2026-01-08T04:51:47.195Z"
+      "updatedAt": "2026-01-08T05:57:30.000Z"
     },
     {
       "id": "TASK-mk4z07r5-d2065",
@@ -232,7 +232,7 @@
       "description": "Revise docs to include LLM configuration (cloud + LM Studio), workspace task loading, and to clarify which plan phases are implemented vs pending in the extension vs backend.",
       "details": "Add a short setup guide for configuring LLM endpoints and task roots, and append an addendum to implementation status noting extension gaps (settings, transport, panel wiring) and backend linkage requirements. Keep existing summaries but add an explicit reality check and next steps section.",
       "testStrategy": "Docs review: ensure README/QUICKSTART or dedicated doc contains LLM setup steps and that status pages explicitly call out remaining extension work.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "medium",
       "dependencies": [
         "TASK-mk4yyrid-dfloh",
@@ -240,7 +240,7 @@
         "TASK-mk4yywrc-mr4c5"
       ],
       "createdAt": "2026-01-08T04:51:58.145Z",
-      "updatedAt": "2026-01-08T04:51:58.145Z"
+      "updatedAt": "2026-01-08T05:58:00.000Z"
     },
     {
       "id": "TASK-mk4z3qpm-yj5zb",
