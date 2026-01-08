@@ -187,6 +187,12 @@
         "title": "Copilot Orchestrator: Test LLM Connection",
         "category": "Copilot Orchestrator",
         "icon": "$(plug)"
+      },
+      {
+        "command": "copilot-orchestrator.executeLLM",
+        "title": "Copilot Orchestrator: Execute LLM Task",
+        "category": "Copilot Orchestrator",
+        "icon": "$(play)"
       }
     ]
   },
@@ -195,7 +201,7 @@
     "compile": "webpack --mode production --stats=errors-only",
     "watch": "webpack --watch --mode development --stats=errors-warnings",
     "lint": "echo 'no lint configured'",
-    "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js",
+    "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js && node dist/workspace/tasksSourceTest.js && node dist/commands/executeLLMTest.js && node dist/github/githubSyncTest.js && node dist/panels/llmResponsePanelTest.js && node dist/transport/transportTest.js",
     "demo": "npm run compile && node dist/taskGraphDemo.js"
   },
   "dependencies": {

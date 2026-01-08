@@ -177,61 +177,61 @@
     {
       "id": "TASK-mk4yyrid-dfloh",
       "title": "Add VS Code settings UI for LLM endpoints",
-      "description": "Provide extension settings and a settings panel to configure LLM providers (OpenAI-compatible HTTP, LM Studio local server) including base URL, API key, default model, temperature, and timeout. Ensure settings are surfaced in command palette and tree view context, persisted in workspace/global scope, and validated.",
-      "details": "Implement vscode workspaceConfiguration entries (schema + defaults), contribute settings to package.json, and add a webview or quick-pick to edit settings. Include validation for missing/invalid URLs and redact secrets in logs. Wire settings into orchestratorPanel/task executor configuration flow so future agent calls can use them. Provide LM Studio compatibility notes (OpenAI-style /v1/chat/completions).",
-      "testStrategy": "Manual: install extension, open Settings UI, update base URL/API key/model; confirm values persist and can be read via vscode.workspace.getConfiguration. Automated: add unit covering configuration retrieval and validation helper.",
-      "status": "pending",
+      "description": "Contribute configuration in vscode-extension/package.json for LLM endpoint settings (base URL, API key/secret, default model, temperature, timeout, task roots). Add a settings command/panel to edit/persist via workspace.getConfiguration (workspace or global). Validate URLs; redact secrets in logs. Provide helper module vscode-extension/src/config/llmConfig.ts to read and validate settings.",
+      "details": "Files: vscode-extension/package.json, vscode-extension/src/extension.ts, vscode-extension/src/config/llmConfig.ts, vscode-extension/src/commands/configureLlm.ts. Status bar/tree view indicates missing or invalid config. TypeScript strict mode preserved.",
+      "testStrategy": "Unit tests for llmConfig.ts (URL validation, defaults, secret redaction). Mock workspace.getConfiguration. Verify status bar indicator when config missing.",
+      "status": "done",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-08T04:50:50.437Z",
-      "updatedAt": "2026-01-08T04:50:50.437Z"
+      "updatedAt": "2026-01-08T06:44:20.971Z"
     },
     {
       "id": "TASK-mk4yywrc-mr4c5",
       "title": "Load workspace tasks instead of bundled samples",
-      "description": "Update the extension to read .task.md files from the workspace (default _ZENTASKS/ and configurable folders) instead of only sample-tasks, and refresh tree/graph views accordingly.",
-      "details": "Introduce configuration for task roots, detect workspace folder, and fall back to sample-tasks only if none found. Add refresh command wiring, error handling for malformed YAML, and status bar indicator when no workspace tasks are loaded. Ensure OrchestratorPanel and graph commands use the same data source.",
-      "testStrategy": "Manual: open a workspace with _ZENTASKS/*.task.md files and confirm they appear in the tree and graph; remove/rename folder to see fallback notice. Automated: unit test parseTasksFromDirectory using temp workspace fixtures.",
+      "description": "Update extension.ts data source to load tasks from workspace _ZENTASKS/tasks.json. Add fallback message when no workspace tasks exist. Status bar reflects load errors. Unify source for tree/graph/panel to use workspace tasks.",
+      "details": "Files: vscode-extension/src/extension.ts, vscode-extension/src/data/tasksSource.ts. Robust JSON parsing, graceful error handling, and empty-state messaging.",
+      "testStrategy": "Snapshot/parse tests for tasks loader with valid/missing/invalid tasks.json. Status bar state update tests.",
       "status": "done",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-08T04:50:57.240Z",
-      "updatedAt": "2026-01-08T05:52:24.280Z"
+      "updatedAt": "2026-01-08T06:14:59.453Z"
     },
     {
       "id": "TASK-mk4yzupo-5g43r",
       "title": "Implement LLM transport (OpenAI + LM Studio) and connection test",
-      "description": "Add a transport layer that sends CopilotDispatcher prompts to a configured OpenAI-compatible endpoint or LM Studio, with health check/connection test and error surfacing in the extension.",
-      "details": "Build a reusable client that reads settings (base URL, API key, model, timeout), supports http(s) and localhost LM Studio defaults, and handles /v1/chat/completions schema. Add a command to run a connection test and show success/failure in the status bar/panel. Include secret redaction in logs and resilient error messages.",
-      "testStrategy": "Automated: unit test the request builder for OpenAI and LM Studio URLs; mock fetch to validate headers/body. Manual: run connection test against LM Studio and a sample OpenAI-compatible endpoint; verify errors are shown when unreachable or unauthorized.",
+      "description": "Add a TypeScript client that builds /v1/chat/completions requests from CopilotDispatcher.composePrompt output. Support http/https base URL, configurable model, temperature, timeout, optional API key header. Provide copilot-orchestrator.testConnection command to send a minimal ping and report success/failure via notifications/status bar. Redact secrets in logs; surface actionable error messages.",
+      "details": "Files: vscode-extension/src/llm/client.ts, vscode-extension/src/commands/testConnection.ts. Error handling for 401/404/ECONNREFUSED with user-friendly messages. Optional integration hook to dispatcher.",
+      "testStrategy": "Unit tests for request builder (OpenAI + LM Studio) and header construction. Error handling for 401, 404, ECONNREFUSED, timeouts. Log redaction for secrets.",
       "status": "pending",
       "priority": "high",
       "dependencies": [
         "TASK-mk4yyrid-dfloh"
       ],
       "createdAt": "2026-01-08T04:51:41.244Z",
-      "updatedAt": "2026-01-08T04:51:41.244Z"
+      "updatedAt": "2026-01-08T06:14:58.537Z"
     },
     {
       "id": "TASK-mk4yzzaz-tip0b",
       "title": "Make Orchestrator panel live with workspace data",
-      "description": "Replace stub OrchestratorPanel data with live workspace tasks, memory, and context bundles; add task-level actions and plan breakdown rendering.",
-      "details": "Wire the panel to the same task source as the tree/graph, render dependencies and readiness, show linked GitHub issue/context bundle if present, and expose actions (execute, change status, open issue/context). Add a real memory feed (recent agent/user actions) and placeholder for backend plan/loop status. Ensure refresh works and performance remains snappy.",
-      "testStrategy": "Manual: open panel with workspace tasks; confirm tasks, dependencies, and metadata render and actions work. Automated: snapshot/basic render test for webview HTML generation when tasks/graph are provided.",
+      "description": "Orchestrator panel renders live tasks, dependencies, GitHub links, and context bundle path if present. Supports actions: execute, change status, open linked issue/context. Keep panel lightweight; avoid blocking UI.",
+      "details": "Files: vscode-extension/src/panels/orchestratorPanel.ts, templates, command handlers. Pulls unified data from tasksSource.",
+      "testStrategy": "Snapshot tests for HTML generation; mock command handlers to verify UI updates.",
       "status": "done",
-      "priority": "medium",
+      "priority": "high",
       "dependencies": [
         "TASK-mk4yywrc-mr4c5"
       ],
       "createdAt": "2026-01-08T04:51:47.195Z",
-      "updatedAt": "2026-01-08T05:57:30.000Z"
+      "updatedAt": "2026-01-08T06:15:00.415Z"
     },
     {
       "id": "TASK-mk4z07r5-d2065",
       "title": "Update documentation to reflect current state and new LLM settings flow",
-      "description": "Revise docs to include LLM configuration (cloud + LM Studio), workspace task loading, and to clarify which plan phases are implemented vs pending in the extension vs backend.",
-      "details": "Add a short setup guide for configuring LLM endpoints and task roots, and append an addendum to implementation status noting extension gaps (settings, transport, panel wiring) and backend linkage requirements. Keep existing summaries but add an explicit reality check and next steps section.",
-      "testStrategy": "Docs review: ensure README/QUICKSTART or dedicated doc contains LLM setup steps and that status pages explicitly call out remaining extension work.",
+      "description": "Update docs to describe the new LLM settings flow and LM Studio compatibility (OpenAI-style endpoint, default port). Clarify implemented features in the extension vs. backend. Add LLM-SETUP.md and update Docs/IMPLEMENTATION-SUMMARY.md addendum with reality-check bullets and task links.",
+      "details": "Files: vscode-extension/LLM-SETUP.md, Docs/IMPLEMENTATION-SUMMARY.md (or addendum). Include connection checklist for LM Studio.",
+      "testStrategy": "Documentation consistency checks; link validation; ensure steps align with implemented commands and settings.",
       "status": "done",
       "priority": "medium",
       "dependencies": [
@@ -240,7 +240,7 @@
         "TASK-mk4yywrc-mr4c5"
       ],
       "createdAt": "2026-01-08T04:51:58.145Z",
-      "updatedAt": "2026-01-08T06:00:00.000Z"
+      "updatedAt": "2026-01-08T06:15:01.316Z"
     },
     {
       "id": "TASK-mk4z3qpm-yj5zb",
@@ -419,9 +419,340 @@
       "dependencies": [],
       "createdAt": "2026-01-08T05:07:27.949Z",
       "updatedAt": "2026-01-08T05:51:28.926Z"
+    },
+    {
+      "id": "TASK-mk5216pq-b5orl",
+      "title": "Settings: Define configuration schema in package.json",
+      "description": "Add contributes.configuration entries in vscode-extension/package.json for LLM settings: base URL, API key/secret, default model, temperature, timeout, task roots. Use proper types and descriptions; mark secrets as sensitive.",
+      "details": "File: vscode-extension/package.json. Add configuration schema with defaults and descriptions; ensure strict typing.",
+      "testStrategy": "Manual validation: settings appear in VS Code Settings UI; JSON schema validates types; secrets rendered as password inputs.",
+      "status": "in-progress",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T06:16:42.302Z",
+      "updatedAt": "2026-01-08T06:27:04.604Z"
+    },
+    {
+      "id": "TASK-mk521a0n-rfaih",
+      "title": "Settings: Implement llmConfig.ts helper",
+      "description": "Create helper module to read, validate, and expose typed LLM settings. Validate URL format, handle defaults, redact secrets in logs, and provide getters for model/temperature/timeout/task roots.",
+      "details": "File: vscode-extension/src/config/llmConfig.ts. Use workspace.getConfiguration (global/workspace). Include URL validation and secret redaction utilities.",
+      "testStrategy": "Unit tests for URL validation, default handling, and secret redaction. Mock workspace.getConfiguration for both scopes.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk5216pq-b5orl"
+      ],
+      "createdAt": "2026-01-08T06:16:46.583Z",
+      "updatedAt": "2026-01-08T06:16:46.583Z"
+    },
+    {
+      "id": "TASK-mk521dvr-8f9uo",
+      "title": "Settings: Configure command (Quick Pick/Webview)",
+      "description": "Add a command to edit LLM settings via Quick Pick or Webview. Persist values via workspace.getConfiguration, validate URLs inline, and show success/error notifications.",
+      "details": "File: vscode-extension/src/commands/configureLlm.ts. Register command in extension.ts with contributes.commands.",
+      "testStrategy": "Manual test the command flow; mock configuration persistence in unit tests for command handler validation.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk521a0n-rfaih"
+      ],
+      "createdAt": "2026-01-08T06:16:51.591Z",
+      "updatedAt": "2026-01-08T06:16:51.591Z"
+    },
+    {
+      "id": "TASK-mk521hgp-9gf4p",
+      "title": "Settings: Status bar indicator for missing config",
+      "description": "Add status bar or tree view indicator showing when LLM config is missing/invalid. Provide a quick action to open the configure command.",
+      "details": "Files: vscode-extension/src/extension.ts (status bar), src/views/* if tree. Integrate llmConfig.ts checks.",
+      "testStrategy": "Manual verification of indicator behavior with missing/invalid settings; unit test llmConfig.ts check integration if feasible.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk521a0n-rfaih"
+      ],
+      "createdAt": "2026-01-08T06:16:56.233Z",
+      "updatedAt": "2026-01-08T06:16:56.233Z"
+    },
+    {
+      "id": "TASK-mk521pdg-bdh98",
+      "title": "Settings: Unit tests for llmConfig.ts",
+      "description": "Write unit tests covering URL validation, default values handling, and secret redaction. Ensure strict typing and mocked configuration scopes.",
+      "details": "Files: vscode-extension/src/config/__tests__/llmConfig.test.ts (or similar). Use Jest/VS Code test runner.",
+      "testStrategy": "Run unit tests locally; verify pass/fail criteria and coverage for validation and redaction paths.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk521a0n-rfaih"
+      ],
+      "createdAt": "2026-01-08T06:17:06.484Z",
+      "updatedAt": "2026-01-08T06:17:06.484Z"
+    },
+    {
+      "id": "TASK-mk521vbf-ulaic",
+      "title": "Transport: Implement client.ts request builder",
+      "description": "Create a TypeScript client to build /v1/chat/completions requests from CopilotDispatcher.composePrompt output. Support configurable base URL (http/https), model, temperature, timeout, optional API key header.",
+      "details": "File: vscode-extension/src/llm/client.ts. Pure functions to build body/headers and a send function with timeout.",
+      "testStrategy": "Unit tests for body construction (OpenAI + LM Studio) and header building with/without secrets.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk521a0n-rfaih"
+      ],
+      "createdAt": "2026-01-08T06:17:14.187Z",
+      "updatedAt": "2026-01-08T06:17:14.187Z"
+    },
+    {
+      "id": "TASK-mk521zai-ehluc",
+      "title": "Transport: Implement testConnection command",
+      "description": "Add copilot-orchestrator.testConnection to send minimal ping via client. Show notifications/status bar for success/failure. Redact secrets in logs/errors; provide actionable messages.",
+      "details": "File: vscode-extension/src/commands/testConnection.ts. Hook into extension.ts; optionally expose a dispatcher integration hook.",
+      "testStrategy": "Mock client responses for success and failure (401/404/ECONNREFUSED/timeout); verify user messaging and redaction.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk521vbf-ulaic",
+        "TASK-mk521a0n-rfaih"
+      ],
+      "createdAt": "2026-01-08T06:17:19.338Z",
+      "updatedAt": "2026-01-08T06:17:19.338Z"
+    },
+    {
+      "id": "TASK-mk5224hu-1c0si",
+      "title": "Transport: Error handling and log redaction",
+      "description": "Implement error mapping for common codes (401, 404, ECONNREFUSED, timeout) and ensure secrets are redacted in logs/messages.",
+      "details": "Files: vscode-extension/src/llm/errors.ts or within client.ts; utility to redact sensitive strings.",
+      "testStrategy": "Unit tests for error mapping and redaction logic; simulate diverse error inputs.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk521vbf-ulaic"
+      ],
+      "createdAt": "2026-01-08T06:17:26.082Z",
+      "updatedAt": "2026-01-08T06:17:26.082Z"
+    },
+    {
+      "id": "TASK-mk5228yz-49ig9",
+      "title": "Transport: Unit tests (builder and errors)",
+      "description": "Write unit tests for request body/header builder (OpenAI + LM Studio) and error handling (401/404/ECONNREFUSED/timeout).",
+      "details": "Files: vscode-extension/src/llm/__tests__/client.test.ts, errors.test.ts",
+      "testStrategy": "Run unit tests; validate coverage; ensure secret redaction verified.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk521vbf-ulaic",
+        "TASK-mk5224hu-1c0si"
+      ],
+      "createdAt": "2026-01-08T06:17:31.883Z",
+      "updatedAt": "2026-01-08T06:17:31.883Z"
+    },
+    {
+      "id": "TASK-mk522fdx-o81rm",
+      "title": "Workspace: Implement tasksSource.ts loader",
+      "description": "Create a loader that reads workspace _ZENTASKS/tasks.json, parses tasks with validation, and exposes a typed data source for the extension.",
+      "details": "File: vscode-extension/src/data/tasksSource.ts. Handle missing file and invalid JSON gracefully.",
+      "testStrategy": "Snapshot/parse tests with valid, missing, and invalid tasks.json; ensure robust fallback behavior.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T06:17:40.197Z",
+      "updatedAt": "2026-01-08T06:17:40.197Z"
+    },
+    {
+      "id": "TASK-mk522llm-mvpvd",
+      "title": "Workspace: Wire extension.ts to tasksSource",
+      "description": "Replace bundled sample source with workspace tasks loader in extension.ts. Provide fallback message and status bar error indicators when tasks cannot be loaded.",
+      "details": "File: vscode-extension/src/extension.ts. Initialize tasksSource; update tree/graph/panel data feeds.",
+      "testStrategy": "Manual verification of tree/panel updates; unit tests to simulate loader errors and check status bar updates.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk522fdx-o81rm"
+      ],
+      "createdAt": "2026-01-08T06:17:48.250Z",
+      "updatedAt": "2026-01-08T06:17:48.250Z"
+    },
+    {
+      "id": "TASK-mk522p4l-vxfog",
+      "title": "Workspace: Empty-state messaging and status bar",
+      "description": "Add clear empty-state messages when no workspace tasks exist. Update status bar to reflect load errors.",
+      "details": "Files: vscode-extension/src/extension.ts and any panel views. Ensure messaging consistent across views.",
+      "testStrategy": "Manual verification across tree and panel; unit tests for messaging triggers on empty/invalid state.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk522fdx-o81rm"
+      ],
+      "createdAt": "2026-01-08T06:17:52.821Z",
+      "updatedAt": "2026-01-08T06:17:52.821Z"
+    },
+    {
+      "id": "TASK-mk522us5-v7ch2",
+      "title": "Panel: Implement orchestratorPanel scaffold and templates",
+      "description": "Create orchestratorPanel that renders live tasks and dependencies using unified data source. Keep rendering lightweight and non-blocking.",
+      "details": "Files: vscode-extension/src/panels/orchestratorPanel.ts and templates under src/panels/templates/.",
+      "testStrategy": "Snapshot tests for HTML generation with various task graphs; performance sanity checks.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk522fdx-o81rm"
+      ],
+      "createdAt": "2026-01-08T06:18:00.149Z",
+      "updatedAt": "2026-01-08T06:18:00.149Z"
+    },
+    {
+      "id": "TASK-mk522ycm-mglc0",
+      "title": "Panel: Bind actions (execute/change status/open links)",
+      "description": "Wire panel actions to extension commands: execute tasks, change status, open linked GitHub issues or context bundles.",
+      "details": "Files: vscode-extension/src/commands/*; panel action bindings in orchestratorPanel.ts.",
+      "testStrategy": "Mock command handlers; unit tests that actions trigger correct handlers and update UI/state.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk522us5-v7ch2",
+        "TASK-mk522llm-mvpvd",
+        "TASK-mk521zai-ehluc"
+      ],
+      "createdAt": "2026-01-08T06:18:04.774Z",
+      "updatedAt": "2026-01-08T06:18:04.774Z"
+    },
+    {
+      "id": "TASK-mk523275-cskmx",
+      "title": "Panel: Snapshot tests for orchestratorPanel",
+      "description": "Add snapshot/render tests for panel HTML generation and verify non-blocking rendering behavior.",
+      "details": "Files: vscode-extension/src/panels/__tests__/orchestratorPanel.test.ts",
+      "testStrategy": "Run snapshot tests across multiple task datasets; ensure consistent HTML output and performance checks.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk522us5-v7ch2"
+      ],
+      "createdAt": "2026-01-08T06:18:09.761Z",
+      "updatedAt": "2026-01-08T06:18:09.761Z"
+    },
+    {
+      "id": "TASK-mk523802-c2ap6",
+      "title": "Docs: Create LLM-SETUP.md",
+      "description": "Add LLM-SETUP.md under vscode-extension/ explaining how to configure LLM endpoints (OpenAI-compatible + LM Studio), default port, model naming, and connection checklist.",
+      "details": "File: vscode-extension/LLM-SETUP.md. Include steps using the new settings command and testConnection.",
+      "testStrategy": "Documentation consistency check; copy-through instructions tested locally; link validation.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk521dvr-8f9uo",
+        "TASK-mk521zai-ehluc"
+      ],
+      "createdAt": "2026-01-08T06:18:17.282Z",
+      "updatedAt": "2026-01-08T06:18:17.282Z"
+    },
+    {
+      "id": "TASK-mk523cbm-so8b0",
+      "title": "Docs: Update IMPLEMENTATION-SUMMARY addendum",
+      "description": "Append extension status note to Docs/IMPLEMENTATION-SUMMARY.md calling out missing wiring (settings, transport, panel) and linking to tasks.",
+      "details": "File: Docs/IMPLEMENTATION-SUMMARY.md (or addendum). Keep existing marketing text; add reality-check bullets and task links.",
+      "testStrategy": "Documentation review; validate links to tasks and correctness of status statements.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk523802-c2ap6"
+      ],
+      "createdAt": "2026-01-08T06:18:22.882Z",
+      "updatedAt": "2026-01-08T06:18:22.882Z"
+    },
+    {
+      "id": "TASK-mk530r89-86665",
+      "title": "Implement transport client for dispatcher integration",
+      "description": "Wire the LLM settings UI to the OpenAI-compatible transport client (openaiClient.ts) and integrate with CopilotDispatcher for prompt composition and chat completions. Ensure prompt history, token counting, and streaming responses are handled correctly.",
+      "details": "Create transport integration that reads LLM config, sends composed prompts from CopilotDispatcher to /chat/completions endpoint, handles streaming vs. non-streaming responses, manages context windows, and logs interactions with proper secret redaction. Files: src/llm/openaiClient.ts (already present), src/commands/executeLLM.ts (new), src/transport/dispatcher.ts (new).",
+      "testStrategy": "Unit tests for transport client with mocked OpenAI responses. Integration test with real LM Studio endpoint. Verify secret redaction in logs. Test streaming and non-streaming modes. Verify context window management.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk4yyrid-dfloh"
+      ],
+      "createdAt": "2026-01-08T06:44:21.849Z",
+      "updatedAt": "2026-01-08T06:54:42.376Z"
+    },
+    {
+      "id": "TASK-mk530s0c-toc0y",
+      "title": "Implement GitHub Issue Sync bi-directional engine",
+      "description": "Build bi-directional sync between GitHub Issues and internal COE tasks. When issues are created/updated on GitHub, auto-generate or update matching COE tasks. When tasks complete, update/close related issues. Maintain labels, milestones, assignees in sync.",
+      "details": "Create GitHub API integration (using Octokit), webhook listener for issue events, task creation/update logic, and status-to-issue-state mapping. Support auto-labeling, milestone assignment, and assignee sync. Files: src/github/githubClient.ts (new), src/github/webhookHandler.ts (new), src/services/githubSyncService.ts (new).",
+      "testStrategy": "Mock GitHub API responses. Test webhook payload handling. Verify task creation from issues with correct metadata. Test status sync in both directions. Verify label and assignee preservation.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T06:44:22.860Z",
+      "updatedAt": "2026-01-08T06:44:22.860Z"
+    },
+    {
+      "id": "TASK-mk530so3-ekbbc",
+      "title": "Create workspace task source loader (tasksSource.ts)",
+      "description": "Implement a typed data source that reads workspace _ZENTASKS/tasks.json, validates task schema, handles missing or corrupted files gracefully, and exposes a clean API for the extension to query and manage tasks.",
+      "details": "Create src/workspace/tasksSource.ts with TypeScript interfaces for Task, TaskSource, and validation logic. Support file watching, in-memory caching, and refresh operations. Handle edge cases: missing file, invalid JSON, corrupted tasks, concurrent writes.",
+      "testStrategy": "Unit tests for schema validation. Mock file system for error cases. Integration test with real tasks.json. Verify file watcher triggers updates. Test concurrent access handling.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T06:44:23.715Z",
+      "updatedAt": "2026-01-08T06:47:40.210Z"
+    },
+    {
+      "id": "TASK-mk53e2o4-mq4cs",
+      "title": "Implement multi-provider transport layer with retry/rate limiting",
+      "description": "Create a comprehensive transport layer that handles multiple LLM providers (OpenAI, Azure OpenAI, LM Studio). Implement retry logic, rate limiting, streaming response handling, and token counting. Add provider detection and automatic fallback.",
+      "details": "Create src/transport/llmTransport.ts with abstract provider interface. Implement: OpenAI provider (openai.ts), Azure OpenAI provider (azure.ts), LM Studio provider (lmstudio.ts). Add retry policy (exponential backoff), rate limiter, streaming response buffer, token counter using js-tiktoken. Support both chat and completion endpoints.",
+      "testStrategy": "Unit tests for each provider with mocked responses. Integration tests with real endpoints. Test retry logic with simulated failures. Verify token counting accuracy. Test streaming response chunking.",
+      "status": "done",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk530r89-86665"
+      ],
+      "createdAt": "2026-01-08T06:54:43.204Z",
+      "updatedAt": "2026-01-08T07:13:04.461Z"
+    },
+    {
+      "id": "TASK-mk53e3de-b6uhg",
+      "title": "Implement prompt caching with TTL and LRU eviction",
+      "description": "Create a prompt caching and history system that stores LLM interactions for context reuse. Implement memory management with size limits, TTL support, and efficient retrieval by task/agent.",
+      "details": "Create src/llm/promptCache.ts with LRU cache and TTL support. Store cache as JSON in workspace. APIs: cache(key, payload), retrieve(key), evictByAge(ttlMs), clear(). Support compression for large payloads. Add cache statistics (hits, misses, size).",
+      "testStrategy": "Unit tests for cache insertion, retrieval, eviction. Test TTL expiration. Test LRU eviction when limit reached. Verify workspace file I/O. Test compression on large payloads.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-mk530r89-86665"
+      ],
+      "createdAt": "2026-01-08T06:54:44.114Z",
+      "updatedAt": "2026-01-08T06:54:44.114Z"
+    },
+    {
+      "id": "TASK-mk53e45b-ekrxx",
+      "title": "Wire orchestrator panel to executeLLM with response display",
+      "description": "Wire the orchestrator panel to the new executeLLM command. Add execute button to task cards, show LLM responses in a side panel, and track execution history.",
+      "details": "Update orchestratorPanel.ts to add execute button binding. Create llmResponsePanel.ts to display responses with syntax highlighting. Update taskInteractionAPI.ts to handle LLM execution events. Store execution history in memory entries.",
+      "testStrategy": "Integration test: click execute button → see response panel. Verify syntax highlighting for different response types. Test history accumulation.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk530r89-86665"
+      ],
+      "createdAt": "2026-01-08T06:54:45.119Z",
+      "updatedAt": "2026-01-08T07:03:48.789Z"
+    },
+    {
+      "id": "TASK-mk53e4ye-98ngj",
+      "title": "Implement GitHub Issue Sync bi-directional engine",
+      "description": "Build GitHub Issue Sync engine that maintains bidirectional sync between GitHub Issues and internal COE tasks. When issues are created/updated, auto-generate tasks. When tasks complete, update/close issues.",
+      "details": "Create src/github/githubClient.ts (Octokit), src/github/webhookHandler.ts, src/services/githubSyncService.ts. Implement: issue → task mapping, task → issue mapping, label sync, milestone sync, assignee sync. Support webhook triggers and manual sync via command.",
+      "testStrategy": "Mock GitHub API responses. Test webhook payload parsing. Verify task creation from issues with correct metadata. Test bidirectional status sync. Verify label/milestone/assignee preservation.",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T06:54:46.166Z",
+      "updatedAt": "2026-01-08T07:00:31.015Z"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-08T05:52:24.280Z"
+    "updatedAt": "2026-01-08T07:13:04.461Z"
   }
 }

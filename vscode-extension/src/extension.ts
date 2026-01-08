@@ -10,6 +10,7 @@ import { TaskInteractionAPI, TaskInteractionEvent } from './taskInteractionAPI';
 import { TaskFileSyntaxHighlighter } from './taskFileSyntaxHighlighter';
 import { configureLlmCommand } from './commands/configureLLM';
 import { testConnectionCommand } from './commands/testConnection';
+import { executeLlmCommand } from './commands/executeLLM';
 import { readLlmConfig } from './config/llmConfig';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -44,6 +45,12 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.testConnection', async () => {
       await testConnectionCommand();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.executeLLM', async () => {
+      await executeLlmCommand();
     })
   );
 

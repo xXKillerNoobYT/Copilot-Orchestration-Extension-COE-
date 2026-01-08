@@ -66,6 +66,7 @@ Always ensure the workflow context is loaded **before** performing any zen-tasks
 2. Mark tasks as `in-progress` before beginning work
 3. Follow test-driven development when appropriate
 4. Update task status as work progresses
+5. Maintain a human-readable checklist in `Docs/TO DO/` (e.g., `EXECUTION-ORDER.md`) mirroring the Zen Tasks DAG and critical path to aid multi-task coordination and handoffs.
 
 ### Phase 4: Validation
 
@@ -97,6 +98,28 @@ Always ensure the workflow context is loaded **before** performing any zen-tasks
 - Identify and break circular dependencies early
 - Consider parallelizable work streams
 - Keep dependency graphs shallow when possible
+ - Publish an ordered execution list under `Docs/TO DO/` to align team communication with Zen Tasks status, especially during multi-task execution.
+
+### Multi-Task Coordination and Handoffs
+
+- Use agent handoffs to keep work flowing:
+	- Main: Auto Zen executes; Zen Planner refines when blockers arise.
+	- Specialty: Planning assistance (blockers) and completion/next steps (milestones).
+- For complex iterations, keep a synchronized "Order of Execution" document (`Docs/TO DO/EXECUTION-ORDER.md`) listing:
+	- Critical path tasks in sequence
+	- Parallelizable tracks
+	- Requirements to-do checklist
+	- Handoffs used and next steps
+
+### To-Do Checklist Integration
+
+- Maintain a lightweight, human-facing checklist in `Docs/TO DO/` to summarize:
+	- Greeting and context
+	- Ordered task list (critical path + parallel tracks)
+	- Requirements to-do items
+	- Agent handoffs in use
+	- Notes (testing, strict typing, secret redaction)
+ - Update this checklist alongside Zen Tasks status changes to preserve clarity during multitasking.
 
 ### Test Strategies
 

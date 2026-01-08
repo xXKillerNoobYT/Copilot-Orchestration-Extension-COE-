@@ -110,6 +110,18 @@ export class OrchestratorPanelProvider {
           case 'refreshGraph':
             this.refreshGraph();
             break;
+          case 'executeTask':
+            this.executeTask(message.taskId, message.source);
+            break;
+          case 'changeStatus':
+            this.changeStatus(message.taskId, message.source);
+            break;
+          case 'openIssue':
+            this.openIssue(message.issueUrl);
+            break;
+          case 'openContext':
+            this.openContext(message.bundlePath);
+            break;
         }
       },
       null,
@@ -176,6 +188,40 @@ export class OrchestratorPanelProvider {
     }
   }
 
+  private async executeTask(taskId: string, source: string) {
+    if (!source) {
+      void vscode.window.showWarningMessage('Cannot execute task: missing source file path');
+      return;
+    }
+    const uri = vscode.Uri.file(source);
+    await vscode.commands.executeCommand('copilot-orchestrator.executeTask', uri, taskId);
+  }
+
+  private async changeStatus(taskId: string, source: string) {
+    if (!source) {
+      void vscode.window.showWarningMessage('Cannot change status: missing source file path');
+      return;
+    }
+    const uri = vscode.Uri.file(source);
+    await vscode.commands.executeCommand('copilot-orchestrator.changeTaskStatus', uri, taskId);
+  }
+
+  private async openIssue(issueUrl: string) {
+    if (!issueUrl) {
+      void vscode.window.showWarningMessage('No GitHub issue linked to this task');
+      return;
+    }
+    await vscode.commands.executeCommand('copilot-orchestrator.openGitHubIssue', issueUrl);
+  }
+
+  private async openContext(bundlePath: string) {
+    if (!bundlePath) {
+      void vscode.window.showWarningMessage('No context bundle associated with this task');
+      return;
+    }
+    await vscode.commands.executeCommand('copilot-orchestrator.openContextBundle', bundlePath);
+  }
+
   public dispose() {
     OrchestratorPanelProvider.currentPanel = undefined;
 
@@ -207,6 +253,9 @@ export class OrchestratorPanelProvider {
       dependencies: task.dependencies,
       assignees: task.assignees,
       description: task.description,
+      source: task.source || '',
+      github_issue_url: task.github_issue_url || '',
+      context_bundle: task.context_bundle || ''
     }));
 
     const agentsData = this.agents.map(agent => ({
@@ -645,6 +694,12 @@ export class OrchestratorPanelProvider {
               ID: \${task.id} | Type: \${task.type}
               \${task.dependencies.length ? \` | Dependencies: \${task.dependencies.length}\` : ''}
             </div>
+            <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn" onclick="handleExecute('\${task.id}', '\${task.source}')">Execute</button>
+              <button class="btn" onclick="handleChangeStatus('\${task.id}', '\${task.source}')">Change Status</button>
+              <button class="btn" onclick="handleOpenIssue('\${task.github_issue_url || ''}')">Open Issue</button>
+              <button class="btn" onclick="handleOpenContext('\${task.context_bundle || ''}')">Open Context</button>
+            </div>
           </div>
         \`;
       }).join('');
@@ -757,6 +812,22 @@ export class OrchestratorPanelProvider {
 
     function handleRefreshGraph() {
       vscode.postMessage({ command: 'refreshGraph' });
+    }
+
+    function handleExecute(taskId, source) {
+      vscode.postMessage({ command: 'executeTask', taskId, source });
+    }
+
+    function handleChangeStatus(taskId, source) {
+      vscode.postMessage({ command: 'changeStatus', taskId, source });
+    }
+
+    function handleOpenIssue(issueUrl) {
+      vscode.postMessage({ command: 'openIssue', issueUrl });
+    }
+
+    function handleOpenContext(bundlePath) {
+      vscode.postMessage({ command: 'openContext', bundlePath });
     }
 
     function escapeHtml(text) {
