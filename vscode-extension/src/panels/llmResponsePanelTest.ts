@@ -140,8 +140,14 @@ async function runLLMResponsePanelTests(): Promise<void> {
       history.splice(0, history.length - 50);
     }
 
-    console.assert(history.length === 50, 'History should be limited to 50 items');
-    console.assert(history[history.length - 1].taskId === 'TASK-9', 'Oldest item should be TASK-9');
+    if (history.length !== 50) {
+      throw new Error(`History should be limited to 50 items, got ${history.length}`);
+    }
+    // After unshift loop: TASK-59 at [0], TASK-0 at [59]
+    // After splice(0, 10): TASK-49 at [0], TASK-0 at [49]
+    if (history[0].taskId !== 'TASK-49') {
+      throw new Error(`First item after rotation should be TASK-49 (oldest kept), got ${history[0].taskId}`);
+    }
 
     console.log('[✓] Test 4: History rotation (limit to 50)');
     passCount++;

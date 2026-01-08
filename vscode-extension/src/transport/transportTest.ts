@@ -78,10 +78,18 @@ async function runTransportTests(): Promise<void> {
 
     limiter.recordRequest(500);
     const allowed1 = await limiter.checkLimit(400);
-    console.assert(allowed1 === true, '900 tokens should be under 1000 limit');
-
+    if (allowed1 !== true) {
+      throw new Error(`900 tokens should be under 1000 limit, but was blocked`);
+    }
+    
+    // After first request is approved, record it
+    limiter.recordRequest(400);
+    
+    // Now we have 500 + 400 = 900 tokens used, checking 200 more would be 1100 > 1000
     const allowed2 = await limiter.checkLimit(200);
-    console.assert(allowed2 === false, '1100 tokens should exceed limit');
+    if (allowed2 !== false) {
+      throw new Error(`1100 tokens should exceed limit, but was allowed`);
+    }
 
     console.log('[✓] Test 4: Rate limiter token limit');
     passCount++;

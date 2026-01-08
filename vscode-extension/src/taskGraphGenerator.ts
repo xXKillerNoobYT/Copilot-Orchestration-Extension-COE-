@@ -366,7 +366,9 @@ export class TaskGraphGenerator {
       
       const successors = this.graph.successors(id) || [];
       for (const successor of successors) {
-        impacted.push(successor);
+        if (!visited.has(successor)) {
+          impacted.push(successor);
+        }
         visit(successor);
       }
     };

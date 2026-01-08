@@ -196,10 +196,18 @@ function testImpactAnalysis() {
   generator.generateGraph();
   const impacted = generator.getImpactedTasks('A');
   
-  console.assert(impacted.length === 3, 'Should impact 3 tasks (B, C, D)');
-  console.assert(impacted.includes('B'), 'Should include B');
-  console.assert(impacted.includes('C'), 'Should include C');
-  console.assert(impacted.includes('D'), 'Should include D');
+  if (impacted.length !== 3) {
+    throw new Error(`Expected 3 impacted tasks, got ${impacted.length}: ${JSON.stringify(impacted)}`);
+  }
+  if (!impacted.includes('B')) {
+    throw new Error('Should include B');
+  }
+  if (!impacted.includes('C')) {
+    throw new Error('Should include C');
+  }
+  if (!impacted.includes('D')) {
+    throw new Error('Should include D');
+  }
   
   console.log('✓ Impact analysis passed\n');
 }
