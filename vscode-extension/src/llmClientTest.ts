@@ -28,7 +28,8 @@ function baseConfig(): LlmConfig {
   return {
     baseUrl: 'http://localhost:1234/v1',
     apiKey: 'sk-test-key',
-    defaultModel: 'gpt-4.1',
+    defaultModel: 'gpt-4o',
+    customModel: 'llama2',
     temperature: 0.5,
     timeoutMs: 5000,
     taskRoots: ['_ZENTASKS'],

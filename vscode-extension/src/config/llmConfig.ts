@@ -4,6 +4,7 @@ export interface LlmConfig {
   baseUrl: string;
   apiKey: string;
   defaultModel: string;
+  customModel: string;
   temperature: number;
   timeoutMs: number;
   taskRoots: string[];
@@ -22,7 +23,8 @@ interface ConfigLike {
 const DEFAULTS: LlmConfig = {
   baseUrl: 'http://localhost:1234/v1',
   apiKey: '',
-  defaultModel: 'gpt-4.1',
+  defaultModel: 'gpt-4o',
+  customModel: 'llama2',
   temperature: 0.7,
   timeoutMs: 30000,
   taskRoots: ['_ZENTASKS'],
@@ -42,6 +44,7 @@ export function readLlmConfig(options?: { configuration?: ConfigLike }): LlmConf
   const baseUrl = configuration?.get<string>('copilot-orchestrator.llm.baseUrl', DEFAULTS.baseUrl) ?? DEFAULTS.baseUrl;
   const apiKey = configuration?.get<string>('copilot-orchestrator.llm.apiKey', DEFAULTS.apiKey) ?? DEFAULTS.apiKey;
   const defaultModel = configuration?.get<string>('copilot-orchestrator.llm.defaultModel', DEFAULTS.defaultModel) ?? DEFAULTS.defaultModel;
+  const customModel = configuration?.get<string>('copilot-orchestrator.llm.customModel', DEFAULTS.customModel) ?? DEFAULTS.customModel;
   const temperatureRaw = configuration?.get<number>('copilot-orchestrator.llm.temperature', DEFAULTS.temperature);
   const timeoutRaw = configuration?.get<number>('copilot-orchestrator.llm.timeoutMs', DEFAULTS.timeoutMs);
   const taskRootsRaw = configuration?.get<string[]>('copilot-orchestrator.taskRoots', DEFAULTS.taskRoots);
@@ -61,10 +64,16 @@ export function readLlmConfig(options?: { configuration?: ConfigLike }): LlmConf
     issues.push('Missing default model');
   }
 
+  // Validate customModel if defaultModel is 'custom'
+  if (defaultModel === 'custom' && (!customModel || customModel.trim().length === 0)) {
+    issues.push('Custom model name is required when defaultModel is set to "custom"');
+  }
+
   const config: LlmConfig = {
     baseUrl: baseUrlTrimmed,
     apiKey: apiKey ?? '',
     defaultModel: defaultModel ?? DEFAULTS.defaultModel,
+    customModel: customModel ?? DEFAULTS.customModel,
     temperature: normalizedTemperature,
     timeoutMs: normalizedTimeout,
     taskRoots: normalizedTaskRoots,

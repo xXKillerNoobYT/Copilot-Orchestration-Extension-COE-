@@ -154,7 +154,7 @@ Transport layer tests completed
 
   AgentLoopService
     API Communication
-      Γ£ö should start loop with default cycles (74ms)
+      Γ£ö should start loop with default cycles (54ms)
       Γ£ö should get current status
       Γ£ö should execute single cycle
       Γ£ö should stop loop gracefully
@@ -165,7 +165,7 @@ Transport layer tests completed
       - should handle connection errors gracefully (network-dependent)
       Γ£ö should handle malformed responses
     Polling
-      Γ£ö should poll status with configurable interval (1005ms)
+      Γ£ö should poll status with configurable interval (1007ms)
 
   AutoAgentLoopCommand Integration
     Γ£ö should register all necessary commands

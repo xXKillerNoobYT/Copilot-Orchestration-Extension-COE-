@@ -122,6 +122,14 @@ export class OrchestratorPanelProvider {
           case 'openContext':
             this.openContext(message.bundlePath);
             break;
+          case 'getLoopStatus':
+            void this.updateLiveStatus();
+            break;
+          case 'runCommand':
+            if (message.id) {
+              void vscode.commands.executeCommand(message.id);
+            }
+            break;
         }
       },
       null,
@@ -140,6 +148,55 @@ export class OrchestratorPanelProvider {
       }
     } catch (error) {
       console.error('Failed to load agent profiles:', error);
+    }
+  }
+
+  /**
+   * Request live status from the backend and update the panel display
+   */
+  private async updateLiveStatus() {
+    try {
+      const backendUrl = vscode.workspace.getConfiguration('copilot-orchestrator').get<string>('backendUrl') || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/v1/agent-loop/status`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!response.ok) {
+        this._panel.webview.postMessage({
+          command: 'updateLoopStatus',
+          status: {
+            running: false,
+            error: `Failed to fetch status: ${response.status}`,
+          },
+        });
+        return;
+      }
+
+      const data = await response.json() as any;
+      const stats = data.stats || data;
+
+      this._panel.webview.postMessage({
+        command: 'updateLoopStatus',
+        status: {
+          running: stats.running || false,
+          state: stats.state || 'idle',
+          cycles: stats.cycles_executed || 0,
+          successes: stats.successes || 0,
+          errors: stats.errors || 0,
+          avgTime: stats.avg_cycle_time || 0,
+          currentTask: stats.current_task_id || 'none',
+        },
+      });
+    } catch (error) {
+      console.error('Error updating loop status:', error);
+      this._panel.webview.postMessage({
+        command: 'updateLoopStatus',
+        status: {
+          running: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      });
     }
   }
 
@@ -563,6 +620,18 @@ export class OrchestratorPanelProvider {
   <div class="container">
     <h1>🚀 Copilot Orchestrator Panel</h1>
 
+    <!-- Orchestrator Controls -->
+    <div class="section" style="margin-top: 8px;">
+      <h2>⚙️ Orchestrator Controls</h2>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+        <button class="btn" onclick="handleStartLoop()">Start Loop</button>
+        <button class="btn" onclick="handleStopLoop()">Stop Loop</button>
+        <button class="btn" onclick="handleAutoLoopStatus()">Show Loop Status</button>
+        <button class="btn" onclick="handleExecuteSingleCycle()">Execute Single Cycle</button>
+      </div>
+      <div id="loop-status-inline" style="margin-top:10px; font-size:12px; color: var(--vscode-descriptionForeground);"></div>
+    </div>
+
     <!-- Statistics -->
     <div class="stats">
       <div class="stat-card">
@@ -834,6 +903,97 @@ export class OrchestratorPanelProvider {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function handleStartLoop() {
+      vscode.postMessage({ command: 'runCommand', id: 'copilot-orchestrator.startAutoLoop' });
+      // Request live status updates after a brief delay
+      setTimeout(() => pollLoopStatus(), 500);
+    }
+    function handleStopLoop() {
+      vscode.postMessage({ command: 'runCommand', id: 'copilot-orchestrator.stopAutoLoop' });
+      // Request status after stopping
+      setTimeout(() => pollLoopStatus(), 500);
+    }
+    function handleAutoLoopStatus() {
+      pollLoopStatus();
+    }
+    function handleExecuteSingleCycle() {
+      vscode.postMessage({ command: 'runCommand', id: 'copilot-orchestrator.executeSingleCycle' });
+      // Request status after cycle
+      setTimeout(() => pollLoopStatus(), 1000);
+    }
+
+    /**
+     * Poll the backend for live loop status and update the display
+     */
+    function pollLoopStatus() {
+      vscode.postMessage({ command: 'getLoopStatus' });
+    }
+
+    /**
+     * Handle incoming status updates from the backend
+     */
+    let loopStatusPoller = null;
+    window.addEventListener('message', (event) => {
+      const message = event.data;
+      
+      if (message.command === 'updateLoopStatus') {
+        updateLoopStatusDisplay(message.status);
+      }
+    });
+
+    function updateLoopStatusDisplay(status) {
+      const container = document.getElementById('loop-status-inline');
+      if (!container) return;
+
+      if (status.error) {
+        container.innerHTML = '<div style="color: #dc3545;">⚠️ ' + escapeHtml(status.error) + '</div>';
+        return;
+      }
+
+      const running = status.running ? '🟢' : '🔴';
+      const state = status.state || 'idle';
+      const cycles = status.cycles || 0;
+      const successes = status.successes || 0;
+      const errors = status.errors || 0;
+      const avgTime = (status.avgTime || 0).toFixed(2);
+      const currentTask = status.currentTask || 'none';
+
+      container.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-top: 8px;">' +
+        '<div style="padding: 8px; background-color: var(--vscode-editor-background); border-radius: 4px; border-left: 3px solid ' + (running === '🟢' ? '#28a745' : '#dc3545') + ';">' +
+          '<div style="font-size: 11px; color: var(--vscode-descriptionForeground); text-transform: uppercase; margin-bottom: 4px;">Status</div>' +
+          '<div style="font-size: 14px; font-weight: 600;">' + running + ' ' + state + '</div>' +
+        '</div>' +
+        '<div style="padding: 8px; background-color: var(--vscode-editor-background); border-radius: 4px; border-left: 3px solid #0275d8;">' +
+          '<div style="font-size: 11px; color: var(--vscode-descriptionForeground); text-transform: uppercase; margin-bottom: 4px;">Cycles</div>' +
+          '<div style="font-size: 14px; font-weight: 600;">' + cycles + '</div>' +
+        '</div>' +
+        '<div style="padding: 8px; background-color: var(--vscode-editor-background); border-radius: 4px; border-left: 3px solid #28a745;">' +
+          '<div style="font-size: 11px; color: var(--vscode-descriptionForeground); text-transform: uppercase; margin-bottom: 4px;">Successes</div>' +
+          '<div style="font-size: 14px; font-weight: 600;">' + successes + '</div>' +
+        '</div>' +
+        '<div style="padding: 8px; background-color: var(--vscode-editor-background); border-radius: 4px; border-left: 3px solid #dc3545;">' +
+          '<div style="font-size: 11px; color: var(--vscode-descriptionForeground); text-transform: uppercase; margin-bottom: 4px;">Errors</div>' +
+          '<div style="font-size: 14px; font-weight: 600;">' + errors + '</div>' +
+        '</div>' +
+        '<div style="padding: 8px; background-color: var(--vscode-editor-background); border-radius: 4px; border-left: 3px solid #ffc107;">' +
+          '<div style="font-size: 11px; color: var(--vscode-descriptionForeground); text-transform: uppercase; margin-bottom: 4px;">Avg Time</div>' +
+          '<div style="font-size: 14px; font-weight: 600;">' + avgTime + 'ms</div>' +
+        '</div>' +
+        '<div style="padding: 8px; background-color: var(--vscode-editor-background); border-radius: 4px; border-left: 3px solid #17a2b8;">' +
+          '<div style="font-size: 11px; color: var(--vscode-descriptionForeground); text-transform: uppercase; margin-bottom: 4px;">Current Task</div>' +
+          '<div style="font-size: 12px; font-weight: 600; word-break: break-all;">' + escapeHtml(currentTask) + '</div>' +
+        '</div>' +
+      '</div>';
+
+      // Auto-refresh every 5 seconds if running
+      if (status.running) {
+        clearTimeout(loopStatusPoller);
+        loopStatusPoller = setTimeout(() => pollLoopStatus(), 5000);
+      } else {
+        clearTimeout(loopStatusPoller);
+      }
     }
 
     // Initialize on load

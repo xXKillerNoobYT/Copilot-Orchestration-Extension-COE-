@@ -62,8 +62,11 @@ export function createOpenAIClient(config: LlmConfig): LlmClient {
   }
 
   async function sendChat(messages: ChatMessage[], options?: ChatRequestOptions): Promise<OpenAIChatResponse> {
+    // Use customModel if defaultModel is "custom", otherwise use defaultModel
+    const model = options?.model ?? (config.defaultModel === 'custom' ? config.customModel : config.defaultModel);
+    
     const body = {
-      model: options?.model ?? config.defaultModel,
+      model,
       messages,
       temperature: options?.temperature ?? config.temperature,
     };

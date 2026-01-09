@@ -8,11 +8,11 @@ import { TaskFileCodeLensProvider } from './taskFileCodeLens';
 import { TaskFileDocumentWatcher } from './taskFileDocumentWatcher';
 import { TaskInteractionAPI, TaskInteractionEvent } from './taskInteractionAPI';
 import { TaskFileSyntaxHighlighter } from './taskFileSyntaxHighlighter';
-import { configureLlmCommand } from './commands/configureLLM';
 import { testConnectionCommand } from './commands/testConnection';
 import { executeLlmCommand } from './commands/executeLLM';
 import { readLlmConfig } from './config/llmConfig';
 import { AutoAgentLoopCommand } from './commands/autoAgentLoop';
+import { SettingsPanel } from './webviews/settingsPanel';
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
@@ -40,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.configureLLM', async () => {
-      await configureLlmCommand();
+      SettingsPanel.createOrShow(context.extensionUri);
       refreshLlmStatus(llmStatusBar);
     })
   );
@@ -303,6 +303,58 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(panelDisposable);
 
+  // Planning Phase Commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.planningPhase', async () => {
+      const message = 'Planning Phase: Define scope, dependencies, and task structure.\n\nActions:\n1. Open _ZENTASKS folder\n2. Create task hierarchy\n3. Define dependencies and priorities';
+      await vscode.window.showInformationMessage(message, 'Open Tasks Folder', 'Show Example').then((selection) => {
+        if (selection === 'Open Tasks Folder') {
+          void vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath + '/_ZENTASKS'));
+        } else if (selection === 'Show Example') {
+          vscode.window.showInformationMessage('See TASK-*.md files in _ZENTASKS for examples');
+        }
+      });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.aiDevPlanning', async () => {
+      const message = 'AI Development Planning: Generate AI-driven implementation plan.\n\nThis phase:\n1. Analyzes task requirements\n2. Generates implementation strategy\n3. Creates subtasks for AI execution\n\nLaunch Zen Planner agent?';
+      await vscode.window.showInformationMessage(message, 'Launch Zen Planner', 'Cancel').then((selection) => {
+        if (selection === 'Launch Zen Planner') {
+          vscode.window.showInformationMessage('Zen Planner: Analyzing tasks and generating plan...');
+          // In a full implementation, this would invoke Zen Planner agent
+        }
+      });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.guidanceExecution', async () => {
+      const message = 'Guidance & Execution: Guide AI through implementation.\n\nThis phase:\n1. Shows real-time AI progress\n2. Allows course correction\n3. Executes Auto Zen agent loop\n\nStart execution?';
+      await vscode.window.showInformationMessage(message, 'Start Auto Zen', 'Show Status', 'Cancel').then((selection) => {
+        if (selection === 'Start Auto Zen') {
+          void vscode.commands.executeCommand('copilot-orchestrator.startAutoLoop');
+        } else if (selection === 'Show Status') {
+          void vscode.commands.executeCommand('copilot-orchestrator.showPanel');
+        }
+      });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.reviewCompletion', async () => {
+      const message = 'Review & Completion: Verify and complete tasks.\n\nActions:\n1. Review implementation\n2. Run tests\n3. Mark tasks as complete\n4. Update documentation';
+      await vscode.window.showInformationMessage(message, 'Open Orchestrator Panel', 'Show Tasks').then((selection) => {
+        if (selection === 'Open Orchestrator Panel') {
+          void vscode.commands.executeCommand('copilot-orchestrator.showPanel');
+        } else if (selection === 'Show Tasks') {
+          void vscode.commands.executeCommand('copilot-orchestrator.refreshTasks');
+        }
+      });
+    })
+  );
+
   // Initial load of tasks
   treeDataProvider
     .refreshFromDisk()
@@ -356,42 +408,142 @@ class TaskTreeItem extends vscode.TreeItem {
   }
 }
 
-class OrchestratorStatusProvider implements vscode.TreeDataProvider<TaskTreeItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<TaskTreeItem | undefined | void> =
-    new vscode.EventEmitter<TaskTreeItem | undefined | void>();
-  readonly onDidChangeTreeData: vscode.Event<TaskTreeItem | undefined | void> = this._onDidChangeTreeData.event;
+class ActionTreeItem extends vscode.TreeItem {
+  constructor(
+    label: string,
+    public readonly commandId: string,
+    description?: string,
+    icon?: string
+  ) {
+    super(label, vscode.TreeItemCollapsibleState.None);
+    this.description = description;
+    this.command = {
+      command: commandId,
+      title: label,
+    };
+    this.iconPath = new vscode.ThemeIcon(icon || 'chevron-right');
+    this.contextValue = 'copilotOrchestratorAction';
+  }
+}
+
+class SectionTreeItem extends vscode.TreeItem {
+  constructor(
+    label: string,
+    public readonly children: vscode.TreeItem[],
+    icon?: string
+  ) {
+    super(label, vscode.TreeItemCollapsibleState.Expanded);
+    this.iconPath = new vscode.ThemeIcon(icon || 'folder');
+    this.contextValue = 'copilotOrchestratorSection';
+  }
+}
+
+class OrchestratorStatusProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+  private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | void> =
+    new vscode.EventEmitter<vscode.TreeItem | undefined | void>();
+  readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
   private tasks: ParsedTask[] = [];
   private taskSource: string = 'unknown';
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
-  getTreeItem(element: TaskTreeItem): vscode.TreeItem {
+  getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
     return element;
   }
 
-  async getChildren(element?: TaskTreeItem): Promise<TaskTreeItem[]> {
-    if (element) {
+  async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[]> {
+    // Handle task children
+    if (element instanceof TaskTreeItem) {
       return element.task.subtasks.map((task) => new TaskTreeItem(task));
     }
 
-    if (!this.tasks.length) {
-      const source = this.taskSource === 'error' ? 'Failed to load tasks' : 
-                     this.taskSource === 'workspace' ? 'No workspace tasks found' :
-                     'No bundled tasks found';
-      return [new TaskTreeItem({
-        id: 'no-tasks',
-        title: 'No tasks found',
-        description: source,
-        dependencies: [],
-        assignees: [],
-        labels: [],
-        subtasks: [],
-        rawFrontMatter: {},
-      })];
+    // Handle section children
+    if (element instanceof SectionTreeItem) {
+      return element.children;
     }
 
-    return this.tasks.map((task) => new TaskTreeItem(task));
+    // Root level - show sections
+    if (!element) {
+      const sections: vscode.TreeItem[] = [];
+
+      // Agent Loop Controls Section
+      sections.push(new SectionTreeItem(
+        '🤖 Agent Loop Controls',
+        [
+          new ActionTreeItem('▶️ Start Auto Loop', 'copilot-orchestrator.startAutoLoop', 'Start continuous agent switching', 'play'),
+          new ActionTreeItem('⏸️ Stop Auto Loop', 'copilot-orchestrator.stopAutoLoop', 'Stop the agent loop', 'debug-stop'),
+          new ActionTreeItem('📊 Loop Status', 'copilot-orchestrator.autoLoopStatus', 'View loop statistics', 'info'),
+          new ActionTreeItem('⚡ Execute Single Cycle', 'copilot-orchestrator.executeSingleCycle', 'Run one cycle', 'debug-step-into'),
+        ],
+        'debug-alt'
+      ));
+
+      // Settings & Configuration Section
+      sections.push(new SectionTreeItem(
+        '⚙️ Settings & Configuration',
+        [
+          new ActionTreeItem('🔧 Configure LLM', 'copilot-orchestrator.configureLLM', 'Set up LLM provider', 'settings-gear'),
+          new ActionTreeItem('🔌 Test LLM Connection', 'copilot-orchestrator.testConnection', 'Verify LLM connectivity', 'plug'),
+          new ActionTreeItem('🎯 Execute LLM Task', 'copilot-orchestrator.executeLLM', 'Run LLM prompt', 'play-circle'),
+        ],
+        'gear'
+      ));
+
+      // Tools & Visualization Section
+      sections.push(new SectionTreeItem(
+        '🛠️ Tools & Visualization',
+        [
+          new ActionTreeItem('📊 Show Task Graph', 'copilot-orchestrator.showGraph', 'Visualize task dependencies', 'graph'),
+          new ActionTreeItem('🔗 Show Dependencies', 'copilot-orchestrator.showDependencies', 'View dependency tree', 'references'),
+          new ActionTreeItem('🎛️ Open Orchestrator Panel', 'copilot-orchestrator.showPanel', 'Full orchestrator dashboard', 'dashboard'),
+          new ActionTreeItem('🔄 Refresh Tasks', 'copilot-orchestrator.refreshTasks', 'Reload tasks from disk', 'refresh'),
+        ],
+        'tools'
+      ));
+
+      // Planning & Workflow Section
+      sections.push(new SectionTreeItem(
+        '🗂️ Planning & Workflow',
+        [
+          new ActionTreeItem('📐 Planning Phase', 'copilot-orchestrator.planningPhase', 'Define task scope and dependencies', 'pencil'),
+          new ActionTreeItem('🧠 AI Development Planning', 'copilot-orchestrator.aiDevPlanning', 'Generate AI-driven development plan', 'lightbulb'),
+          new ActionTreeItem('🎯 Guidance & Execution', 'copilot-orchestrator.guidanceExecution', 'Guide AI through implementation', 'rocket'),
+          new ActionTreeItem('✅ Review & Completion', 'copilot-orchestrator.reviewCompletion', 'Review and mark tasks complete', 'check'),
+        ],
+        'organization'
+      ));
+
+      // Tasks Section
+      const taskItems: vscode.TreeItem[] = [];
+      if (!this.tasks.length) {
+        const source = this.taskSource === 'error' ? 'Failed to load tasks' : 
+                       this.taskSource === 'workspace' ? 'No workspace tasks found' :
+                       'No bundled tasks found';
+        taskItems.push(new TaskTreeItem({
+          id: 'no-tasks',
+          title: 'No tasks found',
+          description: source,
+          dependencies: [],
+          assignees: [],
+          labels: [],
+          subtasks: [],
+          rawFrontMatter: {},
+        }));
+      } else {
+        taskItems.push(...this.tasks.map((task) => new TaskTreeItem(task)));
+      }
+
+      sections.push(new SectionTreeItem(
+        '📋 Tasks',
+        taskItems,
+        'list-unordered'
+      ));
+
+      return sections;
+    }
+
+    return [];
   }
 
   async refreshFromDisk(): Promise<void> {

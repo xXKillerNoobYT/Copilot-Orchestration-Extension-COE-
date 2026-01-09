@@ -14,7 +14,7 @@ This extension speaks to OpenAI-compatible chat endpoints (OpenAI, Azure OpenAI 
    - **Task Roots** (comma-separated, defaults to `_ZENTASKS`).
 3. Save when prompted; secrets are redacted in logs.
 4. Run **“Copilot Orchestrator: Test Connection”** to confirm reachability and credentials.
-5. Check the status bar: 
+5. Check the status bar:
    - `LLM: Configured` when settings are valid.
    - `LLM: Not configured` with tooltip reasons when invalid or missing.
 
@@ -39,12 +39,12 @@ This extension speaks to OpenAI-compatible chat endpoints (OpenAI, Azure OpenAI 
 
 | Setting | Key | Default | Notes |
 | --- | --- | --- | --- |
-| Base URL | `copilot-orchestrator.llm.baseUrl` | `http://localhost:1234/v1` | Must start with `http` or `https`.
-| API Key | `copilot-orchestrator.llm.apiKey` | empty | Stored in global scope; redacted in logs.
-| Default Model | `copilot-orchestrator.llm.defaultModel` | `gpt-4.1` | Required; non-empty string.
-| Temperature | `copilot-orchestrator.llm.temperature` | `0.7` | 0–2 inclusive.
-| Timeout (ms) | `copilot-orchestrator.llm.timeoutMs` | `30000` | 1000–120000 ms.
-| Task Roots | `copilot-orchestrator.taskRoots` | `_ZENTASKS` | Comma-separated list of workspace-relative paths.
+| Base URL | `copilot-orchestrator.llm.baseUrl` | `http://localhost:1234/v1` | Must start with `http` or `https`. |
+| API Key | `copilot-orchestrator.llm.apiKey` | empty | Stored in global scope; redacted in logs. |
+| Default Model | `copilot-orchestrator.llm.defaultModel` | `gpt-4.1` | Required; non-empty string. |
+| Temperature | `copilot-orchestrator.llm.temperature` | `0.7` | 0–2 inclusive. |
+| Timeout (ms) | `copilot-orchestrator.llm.timeoutMs` | `30000` | 1000–120000 ms. |
+| Task Roots | `copilot-orchestrator.taskRoots` | `_ZENTASKS` | Comma-separated list of workspace-relative paths. |
 
 ## Troubleshooting
 

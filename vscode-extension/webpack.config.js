@@ -11,7 +11,8 @@ module.exports = [
     entry: './src/extension.ts',
     output: {
       path: path.resolve(__dirname, 'dist'),
-      filename: 'extension.js',
+      filename: '[name].js',
+        filename: 'extension.js',
       libraryTarget: 'commonjs2',
     },
     devtool: 'source-map',
@@ -56,6 +57,17 @@ module.exports = [
       'github/githubSyncTest': './src/github/githubSyncTest.ts',
       'panels/llmResponsePanelTest': './src/panels/llmResponsePanelTest.ts',
       'transport/transportTest': './src/transport/transportTest.ts',
+      'extension.agentLoop.test': './src/extension.agentLoop.test.ts',
+      // Integration test files
+      // Note: index.ts initializes Mocha programmatically and loads *.test.js
+      // from dist/integration via INTEGRATION_TEST_DIR env. We keep tests compiled
+      // as separate files to avoid global suite/test reliance.
+      'integration/index': './src/integration/index.ts',
+      'integration/runTest': './src/integration/runTest.ts',
+      'integration/extension.integration.test': './src/integration/extension.integration.test.ts',
+      'integration/statusBarLifecycle.integration.test': './src/integration/statusBarLifecycle.integration.test.ts',
+      'integration/activationFlows.integration.test': './src/integration/activationFlows.integration.test.ts',
+      'integration/panelLiveStatus.integration.test': './src/integration/panelLiveStatus.integration.test.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -65,6 +77,7 @@ module.exports = [
     devtool: 'source-map',
     externals: {
       vscode: 'commonjs vscode',
+      mocha: 'commonjs mocha'
     },
     stats: {
       warnings: false,

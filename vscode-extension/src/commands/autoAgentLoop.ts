@@ -15,7 +15,7 @@ export class AutoAgentLoopCommand {
   private statusBarItem: vscode.StatusBarItem;
   private outputChannel: vscode.OutputChannel;
   private loopRunning: boolean = false;
-  private pollingInterval: NodeJS.Timer | null = null;
+  private pollingInterval: NodeJS.Timeout | null = null;
 
   constructor(context: vscode.ExtensionContext) {
     // Get backend URL from extension settings or use default

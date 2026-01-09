@@ -1,0 +1,6 @@
+{
+  "copilot-orchestrator.llm.baseUrl": "http://localhost:1234/v1",
+  "copilot-orchestrator.llm.defaultModel": "gpt-4o",
+  "copilot-orchestrator.llm.temperature": 0.7,
+  "copilot-orchestrator.llm.timeoutMs": 30000
+}

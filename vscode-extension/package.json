@@ -57,6 +57,14 @@
     "configuration": {
       "title": "Copilot Orchestrator",
       "properties": {
+        "copilot-orchestrator.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "markdownDescription": "Base URL for the orchestrator backend (Laravel) providing agent loop and task APIs.",
+          "scope": "window",
+          "pattern": "^https?://.+",
+          "patternErrorMessage": "Enter a valid http(s) URL (e.g., http://localhost:8000)."
+        },
         "copilot-orchestrator.llm.baseUrl": {
           "type": "string",
           "default": "http://localhost:1234/v1",
@@ -194,15 +202,42 @@
         "category": "Copilot Orchestrator",
         "icon": "$(play)"
       }
+      ,
+      {
+        "command": "copilot-orchestrator.startAutoLoop",
+        "title": "Copilot Orchestrator: Start Auto Loop",
+        "category": "Copilot Orchestrator",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "copilot-orchestrator.stopAutoLoop",
+        "title": "Copilot Orchestrator: Stop Auto Loop",
+        "category": "Copilot Orchestrator",
+        "icon": "$(primitive-square)"
+      },
+      {
+        "command": "copilot-orchestrator.autoLoopStatus",
+        "title": "Copilot Orchestrator: Auto Loop Status",
+        "category": "Copilot Orchestrator",
+        "icon": "$(info)"
+      },
+      {
+        "command": "copilot-orchestrator.executeSingleCycle",
+        "title": "Copilot Orchestrator: Execute Single Cycle",
+        "category": "Copilot Orchestrator",
+        "icon": "$(run)"
+      }
     ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "webpack --mode production --stats=errors-only",
     "watch": "webpack --watch --mode development --stats=errors-warnings",
-    "lint": "echo 'no lint configured'",
-    "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js && node dist/workspace/tasksSourceTest.js && node dist/commands/executeLLMTest.js && node dist/github/githubSyncTest.js && node dist/panels/llmResponsePanelTest.js && node dist/llm/transportTest.js && node dist/transport/transportTest.js",
-    "demo": "npm run compile && node dist/taskGraphDemo.js"
+      "lint": "echo 'no lint configured'",
+      "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js && node dist/workspace/tasksSourceTest.js && node dist/commands/executeLLMTest.js && node dist/github/githubSyncTest.js && node dist/panels/llmResponsePanelTest.js && node dist/llm/transportTest.js && node dist/transport/transportTest.js && npx mocha dist/extension.agentLoop.test.js",
+      "test:integration": "npm run compile && node scripts/runIntegrationTests.js",
+      "test:integration:ci": "xvfb-run -a node scripts/runIntegrationTests.js",
+      "demo": "npm run compile && node dist/taskGraphDemo.js"
   },
   "dependencies": {
     "graphlib": "^2.1.8",
@@ -213,6 +248,9 @@
     "@types/node": "^22.19.3",
     "@types/vscode": "^1.90.0",
     "ts-loader": "^9.5.1",
+      "@vscode/test-electron": "^2.3.9",
+      "mocha": "^11.7.5",
+      "@types/mocha": "^10.0.10",
     "typescript": "^5.4.0",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4"
