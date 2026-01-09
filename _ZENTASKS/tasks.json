@@ -168,11 +168,11 @@
       "description": "Create guide templates and integration instructions for cloud agents (Claude, GPT-4) and background maintenance agents. Define agent roles, responsibilities, and context requirements per Phase 7+ architecture.",
       "details": "AI Prompt: Document: 1) Cloud Agent roles: Zen Planner (planning), Zen Architect (design), Cloud Coder (complex refactors), Cloud Tester (test generation). 2) Background Agent roles: Health Monitor (polling repo), Dependency Updater (auto-fixes), Branch Cleaner (stale detection). 3) For each role: activation trigger, context bundle contents, expected outputs, success criteria. 4) Integration instructions for adding new agents (API endpoint, auth, context shape). 5) Agent hand-off protocol between extension and external LLMs. Output: Agent roles doc, integration guide, example context bundles, config schema.\",",
       "testStrategy": "1) Review with Zen Planner to validate planning context. 2) Review with Auto Zen to validate execution context. 3) Validate against Phase 7 architecture. 4) Onboard a test agent using the guide; verify successful integration.\"",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": [],
       "createdAt": "2026-01-07T05:04:50.547Z",
-      "updatedAt": "2026-01-07T05:04:50.547Z"
+      "updatedAt": "2026-01-08T08:10:00.000Z"
     },
     {
       "id": "TASK-mk4yyrid-dfloh",
@@ -622,13 +622,13 @@
       "description": "Add snapshot/render tests for panel HTML generation and verify non-blocking rendering behavior.",
       "details": "Files: vscode-extension/src/panels/__tests__/orchestratorPanel.test.ts",
       "testStrategy": "Run snapshot tests across multiple task datasets; ensure consistent HTML output and performance checks.",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "TASK-mk522us5-v7ch2"
       ],
       "createdAt": "2026-01-08T06:18:09.761Z",
-      "updatedAt": "2026-01-08T06:18:09.761Z"
+      "updatedAt": "2026-01-08T08:19:09.814Z"
     },
     {
       "id": "TASK-mk523802-c2ap6",
@@ -636,14 +636,14 @@
       "description": "Add LLM-SETUP.md under vscode-extension/ explaining how to configure LLM endpoints (OpenAI-compatible + LM Studio), default port, model naming, and connection checklist.",
       "details": "File: vscode-extension/LLM-SETUP.md. Include steps using the new settings command and testConnection.",
       "testStrategy": "Documentation consistency check; copy-through instructions tested locally; link validation.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "TASK-mk521dvr-8f9uo",
         "TASK-mk521zai-ehluc"
       ],
       "createdAt": "2026-01-08T06:18:17.282Z",
-      "updatedAt": "2026-01-08T08:02:30.000Z"
+      "updatedAt": "2026-01-08T09:10:00.000Z"
     },
     {
       "id": "TASK-mk523cbm-so8b0",
@@ -651,13 +651,13 @@
       "description": "Append extension status note to Docs/IMPLEMENTATION-SUMMARY.md calling out missing wiring (settings, transport, panel) and linking to tasks.",
       "details": "File: Docs/IMPLEMENTATION-SUMMARY.md (or addendum). Keep existing marketing text; add reality-check bullets and task links.",
       "testStrategy": "Documentation review; validate links to tasks and correctness of status statements.",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "TASK-mk523802-c2ap6"
       ],
       "createdAt": "2026-01-08T06:18:22.882Z",
-      "updatedAt": "2026-01-08T06:18:22.882Z"
+      "updatedAt": "2026-01-08T09:20:00.000Z"
     },
     {
       "id": "TASK-mk530r89-86665",
@@ -717,13 +717,25 @@
       "description": "Create a prompt caching and history system that stores LLM interactions for context reuse. Implement memory management with size limits, TTL support, and efficient retrieval by task/agent.",
       "details": "Create src/llm/promptCache.ts with LRU cache and TTL support. Store cache as JSON in workspace. APIs: cache(key, payload), retrieve(key), evictByAge(ttlMs), clear(). Support compression for large payloads. Add cache statistics (hits, misses, size).",
       "testStrategy": "Unit tests for cache insertion, retrieval, eviction. Test TTL expiration. Test LRU eviction when limit reached. Verify workspace file I/O. Test compression on large payloads.",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "TASK-mk530r89-86665"
       ],
       "createdAt": "2026-01-08T06:54:44.114Z",
-      "updatedAt": "2026-01-08T06:54:44.114Z"
+      "updatedAt": "2026-01-08T08:53:32.824Z"
+    },
+    {
+      "id": "TASK-mk5buildfix-compile",
+      "title": "Stabilize extension build by cleaning legacy agentLoop tests",
+      "description": "Build currently fails due to legacy extension.agentLoop.test.ts referencing missing services and mocha globals, plus stray duplicate promptCache test path. Remove or refactor legacy tests, align typings, and ensure webpack/tsc compile cleanly.",
+      "details": "Address missing ../services/agentLoopService reference, undefined describe/it/before in agentLoop tests, and Timer vs Timeout type mismatch in autoAgentLoop.ts. Remove duplicate nested promptCache test file path (vscode-extension/vscode-extension/src/llm/promptCache.test.ts) to avoid module resolution issues. Ensure build passes without disabling type safety.",
+      "testStrategy": "npm run compile succeeds without errors; targeted unit tests updated or removed; lint pass on affected files.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-08T09:22:00.000Z",
+      "updatedAt": "2026-01-08T09:22:00.000Z"
     },
     {
       "id": "TASK-mk53e45b-ekrxx",
@@ -809,6 +821,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-08T08:04:04.936Z"
+    "updatedAt": "2026-01-08T08:53:32.825Z"
   }
 }

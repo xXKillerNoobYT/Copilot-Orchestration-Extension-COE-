@@ -66,7 +66,7 @@ export class OrchestratorPanelProvider {
     );
   }
 
-  private constructor(
+  public constructor(
     panel: vscode.WebviewPanel,
     extensionUri: vscode.Uri,
     tasks: ParsedTask[],
@@ -242,7 +242,7 @@ export class OrchestratorPanelProvider {
     this._panel.webview.html = this._getHtmlForWebview(webview);
   }
 
-  private _getHtmlForWebview(webview: vscode.Webview): string {
+  public _getHtmlForWebview(webview: vscode.Webview): string {
     // Prepare data for webview
     const tasksData = this.tasks.map(task => ({
       id: task.id,

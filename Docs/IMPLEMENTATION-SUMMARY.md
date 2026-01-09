@@ -241,6 +241,18 @@ This feature alone makes COE **significantly more powerful** than current projec
 
 ---
 
+## 📌 VS Code Extension Reality Check (Addendum)
+
+- **LLM settings UI and validation**: Implemented via `copilot-orchestrator.configureLLM` and `copilot-orchestrator.testConnection` (TASK-mk4yyrid-dfloh, TASK-mk4z40u9-norsa, TASK-mk4z449m-lnk5z, TASK-mk4z47t0-6psbz, TASK-mk4z4b3y-6jpw0).
+- **OpenAI/LM Studio transport**: OpenAI-compatible client and connection command wired (TASK-mk4yzupo-5g43r, TASK-mk4zbbl0-d15zk, TASK-mk4zbeu8-0p8vi, TASK-mk4zbhsn-6n8dk).
+- **Workspace tasks + Orchestrator panel**: Loads `_ZENTASKS/tasks.json`, live panel actions, snapshot tests (TASK-mk4yywrc-mr4c5, TASK-mk522llm-mvpvd, TASK-mk522us5-v7ch2, TASK-mk522ycm-mglc0, TASK-mk523275-cskmx).
+- **Prompt cache**: LRU + TTL cache with compression and persistence for LLM prompts (TASK-mk53e3de-b6uhg).
+- **Docs**: LLM setup guide added at `vscode-extension/LLM-SETUP.md` (TASK-mk523802-c2ap6).
+
+✅ Current extension wiring is in place for settings, transport, workspace loading, panel rendering, caching, and documentation.
+
+---
+
 ## 📖 Documentation
 
 All documentation is ready:
@@ -259,10 +271,11 @@ All documentation is ready:
 ## ❓ What Would You Like to Do?
 
 **Tell me:**
+ 
 1. Should I begin Phase 6A implementation?
 2. Do you want to review/refine the Phase 6 plan first?
 3. Should I focus on a specific feature?
 4. Do you want production deployment guidance?
 5. Something else?
 
-**I'm ready to continue building! 🚀**
+I'm ready to continue building! 🚀

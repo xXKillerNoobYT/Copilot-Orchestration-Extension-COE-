@@ -42,7 +42,7 @@ WHILE work exists:
   4. Execute task (implement, fix, refactor) in accordance with the plan
   5. Verify completion (run tests, check errors)
   6. Mark task done
-  7. Observe for new issues → create tasks (linked to plan sections)
+  7. Observe for new issues / new tasks that arise → create tasks (linked to plan sections)
   8. Repeat
 ```
 
