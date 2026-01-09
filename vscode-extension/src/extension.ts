@@ -88,6 +88,13 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
+      const { AuditDashboardPanel } = await import('./panels/auditDashboardPanel');
+      AuditDashboardPanel.createOrShow(context.extensionUri);
+    })
+  );
+
   // ============ .task.md File Support (CodeLens, Watcher, Syntax) ============
   // Initialize CodeLens provider for .task.md files
   const codeLensProvider = new TaskFileCodeLensProvider();

@@ -232,6 +232,12 @@
         "title": "Copilot Orchestrator: Execute Single Cycle",
         "category": "Copilot Orchestrator",
         "icon": "$(run)"
+      },
+      {
+        "command": "copilot-orchestrator.showAuditDashboard",
+        "title": "Copilot Orchestrator: Show Audit Dashboard",
+        "category": "Copilot Orchestrator",
+        "icon": "$(report)"
       }
     ]
   },
