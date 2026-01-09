@@ -5,12 +5,14 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { ProgrammingOrchestratorManager } from './programmingOrchestratorTab';
 
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
+  private orchestratorManager: ProgrammingOrchestratorManager;
 
   public static createOrShow(extensionUri: vscode.Uri) {
     const column = vscode.window.activeTextEditor
@@ -45,6 +47,9 @@ export class SettingsPanel {
     this._panel = panel;
     this._extensionUri = extensionUri;
 
+    // Initialize orchestrator manager
+    this.orchestratorManager = ProgrammingOrchestratorManager.getInstance();
+
     // Set the webview's initial html content
     this._update();
 
@@ -53,7 +58,7 @@ export class SettingsPanel {
 
     // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
-      async (message) => {
+      async (message: any) => {
         switch (message.command) {
           case 'getModels':
             await this._getModelsFromEndpoint(message.baseUrl);
@@ -66,6 +71,25 @@ export class SettingsPanel {
             return;
           case 'loadSettings':
             await this._loadSettings();
+            return;
+          case 'orchestrator:updateCoordination':
+            this.orchestratorManager.updateCoordinationSettings(message.settings);
+            this._update();
+            return;
+          case 'orchestrator:selectPlan':
+            this.orchestratorManager.setActivePlan(message.plan);
+            this._update();
+            return;
+          case 'orchestrator:openVerification':
+            vscode.commands.executeCommand('copilot-orchestrator.openVisualVerification');
+            return;
+          case 'orchestrator:refreshTeams':
+            // TODO: Implement team state refresh from MCP
+            vscode.window.showInformationMessage('Refreshing team state...');
+            return;
+          case 'orchestrator:rerunAnalysis':
+            // TODO: Implement impact analysis rerun
+            vscode.window.showInformationMessage('Running impact analysis...');
             return;
         }
       },
@@ -427,6 +451,7 @@ export class SettingsPanel {
       <button class="tab" data-tab="models">Models</button>
       <button class="tab" data-tab="advanced">Advanced</button>
       <button class="tab" data-tab="endpoints">Endpoints</button>
+      <button class="tab" data-tab="orchestrator">Programming Orchestrator</button>
     </div>
 
     <!-- Connection Tab -->
@@ -519,6 +544,11 @@ export class SettingsPanel {
         <div>Embeddings: <span id="endpointEmbeddings">-</span></div>
         <div>Models: <span id="endpointModels">-</span></div>
       </div>
+    </div>
+
+    <!-- Programming Orchestrator Tab -->
+    <div class="tab-content" id="orchestrator">
+      ${this.orchestratorManager.getTabHtml()}
     </div>
   </div>
 
@@ -660,6 +690,47 @@ export class SettingsPanel {
     // Update endpoints when base URL changes
     document.getElementById('baseUrl').addEventListener('input', (e) => {
       updateEndpoints(e.target.value);
+    });
+
+    // Programming Orchestrator event handlers
+    document.querySelectorAll('[data-setting]').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const setting = e.target.getAttribute('data-setting');
+        const value = e.target.checked;
+        vscode.postMessage({
+          command: 'orchestrator:updateCoordination',
+          settings: { [setting]: value }
+        });
+      });
+    });
+
+    document.getElementById('planSelect')?.addEventListener('change', (e) => {
+      vscode.postMessage({
+        command: 'orchestrator:selectPlan',
+        plan: e.target.value
+      });
+    });
+
+    document.querySelectorAll('[data-action]').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const action = e.target.getAttribute('data-action');
+        switch (action) {
+          case 'open-verification':
+            vscode.postMessage({ command: 'orchestrator:openVerification' });
+            break;
+          case 'refresh-teams':
+            vscode.postMessage({ command: 'orchestrator:refreshTeams' });
+            break;
+          case 'rerun-analysis':
+            vscode.postMessage({ command: 'orchestrator:rerunAnalysis' });
+            break;
+          case 'configure-team':
+            const team = e.target.getAttribute('data-team');
+            console.log('Configure team:', team);
+            // TODO: Open team configuration dialog
+            break;
+        }
+      });
     });
   </script>
 </body>

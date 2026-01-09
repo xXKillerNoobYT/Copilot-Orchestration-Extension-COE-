@@ -7,6 +7,22 @@ export async function run(): Promise<void> {
   const ui = 'tdd';
   const mocha = new Mocha({ ui, color: true, timeout: 20000 });
 
+  // Register Mocha TDD globals BEFORE loading test files
+  // This ensures suite/test/it are available when test modules are required
+  const mochaGlobals = (mocha as any).interfaces[ui];
+  if (mochaGlobals) {
+    (global as any).suite = mochaGlobals.suite || mochaGlobals.describe;
+    (global as any).test = mochaGlobals.test || mochaGlobals.it;
+    (global as any).it = mochaGlobals.it;
+    (global as any).describe = mochaGlobals.describe;
+    (global as any).before = mochaGlobals.before;
+    (global as any).beforeEach = mochaGlobals.beforeEach;
+    (global as any).after = mochaGlobals.after;
+    (global as any).afterEach = mochaGlobals.afterEach;
+    (global as any).skip = mochaGlobals.skip;
+    (global as any).only = mochaGlobals.only;
+  }
+
   // Discover test files from env or fallback to current directory
   const baseDir = process.env.INTEGRATION_TEST_DIR || __dirname;
   const testDir = path.resolve(baseDir);

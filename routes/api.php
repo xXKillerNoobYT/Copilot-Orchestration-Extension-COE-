@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\GitHubController;
+use App\Http\Controllers\Api\McpController;
 use App\Http\Controllers\Api\MonitoringController;
 use App\Http\Controllers\Api\PlanningController;
 use App\Http\Controllers\Api\TaskController;
@@ -408,7 +409,28 @@ Route::prefix('v1')->group(function () {
     // For testing
     Route::post('/agent-loop/cycle', [AgentLoopController::class, 'executeCycle'])
         ->name('api.agent-loop.cycle');
-});
+
+    /*
+    |--------------------------------------------------------------------------
+    | Model Context Protocol (MCP) Server Routes
+    |--------------------------------------------------------------------------
+    | Phase 1: MCP Integration for Autonomous Agent Execution
+    | Reference: Code Master notebook, Section 11.7-11.8
+    */
+    Route::prefix('mcp')->group(function () {
+        Route::get('/nextTask', [McpController::class, 'getNextTask'])
+            ->name('api.mcp.nextTask');
+        Route::post('/reportTaskStatus', [McpController::class, 'reportTaskStatus'])
+            ->name('api.mcp.reportTaskStatus');
+        Route::post('/reportObservation', [McpController::class, 'reportObservation'])
+            ->name('api.mcp.reportObservation');
+        Route::post('/reportTestFailure', [McpController::class, 'reportTestFailure'])
+            ->name('api.mcp.reportTestFailure');
+        Route::post('/reportVerificationResult', [McpController::class, 'reportVerificationResult'])
+            ->name('api.mcp.reportVerificationResult');
+        Route::post('/askQuestion', [McpController::class, 'askQuestion'])
+            ->name('api.mcp.askQuestion');
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -435,6 +457,7 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/projects/{projectId}/health-metrics', [RepositoryHealthController::class, 'getProjectMetrics'])
         ->name('api.health.project-metrics');
+});
 /*
 |--------------------------------------------------------------------------
 | GitHub Webhook Routes

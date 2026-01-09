@@ -13,6 +13,8 @@ import { executeLlmCommand } from './commands/executeLLM';
 import { readLlmConfig } from './config/llmConfig';
 import { AutoAgentLoopCommand } from './commands/autoAgentLoop';
 import { SettingsPanel } from './webviews/settingsPanel';
+import { VisualVerificationPanel } from './panels/visualVerificationPanel';
+import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
@@ -42,6 +44,35 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('copilot-orchestrator.configureLLM', async () => {
       SettingsPanel.createOrShow(context.extensionUri);
       refreshLlmStatus(llmStatusBar);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showVisualVerification', async () => {
+      VisualVerificationPanel.createOrShow(context.extensionUri, {
+        taskId: 'TASK-001',
+        taskTitle: 'Implement color palette system',
+        planVersion: '1.0.0',
+        serverUrl: 'http://localhost:3000',
+        requiresUserReady: true,
+      });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.openPlanAdjustmentWizard', async () => {
+      const summary = await vscode.window.showInputBox({
+        prompt: 'Briefly describe the plan change',
+        placeHolder: 'e.g., Add user authentication module',
+      });
+
+      if (summary) {
+        PlanAdjustmentWizard.createOrShow(context.extensionUri, {
+          summary,
+          impact: undefined,
+          proposedChange: summary,
+        });
+      }
     })
   );
 

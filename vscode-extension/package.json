@@ -204,6 +204,12 @@
       }
       ,
       {
+        "command": "copilot-orchestrator.showVisualVerification",
+        "title": "Copilot Orchestrator: Show Visual Verification",
+        "category": "Copilot Orchestrator",
+        "icon": "$(eye)"
+      },
+      {
         "command": "copilot-orchestrator.startAutoLoop",
         "title": "Copilot Orchestrator: Start Auto Loop",
         "category": "Copilot Orchestrator",
