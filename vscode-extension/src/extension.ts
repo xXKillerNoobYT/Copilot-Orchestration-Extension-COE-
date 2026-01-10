@@ -18,10 +18,23 @@ import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
 import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
+import { ConnectionMonitor, createConnectionStatusBarItem } from './services/connectionMonitor';
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
     new AutoAgentLoopCommand(context);
+
+  // Start connection monitoring (Phase 3: MCP/WebSocket status badges)
+  const connectionMonitor = ConnectionMonitor.getInstance();
+  connectionMonitor.start();
+  context.subscriptions.push({
+    dispose: () => connectionMonitor.dispose(),
+  });
+
+  // Create connection status bar item
+  const connectionStatusBar = createConnectionStatusBarItem(context);
+  context.subscriptions.push(connectionStatusBar);
+
   const llmStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 90);
   // Create a status bar item on activation
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -202,6 +215,25 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('copilot-orchestrator.openTaskList', async () => {
       const { openTaskList } = await import('./commands/openTaskList');
       await openTaskList();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showConnectionDetails', async () => {
+      const monitor = ConnectionMonitor.getInstance();
+      const state = monitor.getState();
+      const details = `
+MCP Connection: ${state.mcp === 'connected' ? '✓' : state.mcp === 'degraded' ? '⚠' : '✗'} ${state.mcp.toUpperCase()}
+Last Check: ${new Date(state.lastMcpCheck).toLocaleTimeString()}
+${state.mcpError ? `Error: ${state.mcpError}` : ''}
+
+WebSocket: ${state.websocket === 'connected' ? '✓' : state.websocket === 'degraded' ? '⚠' : '✗'} ${state.websocket.toUpperCase()}
+Last Check: ${new Date(state.lastWsCheck).toLocaleTimeString()}
+${state.wsError ? `Error: ${state.wsError}` : ''}
+
+Retries: ${state.retryCount}
+      `;
+      vscode.window.showInformationMessage(details);
     })
   );
 
