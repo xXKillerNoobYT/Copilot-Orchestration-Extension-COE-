@@ -124,18 +124,17 @@ Quick reference for all agents:
 
 ## 📊 Agent Capability Matrix
 
-| Capability | Zen Planner | Plan Agent | Auto Zen | Testing Agent | Dependency Agent | Issue Handler |
-|-----------|:-------:|:---:|:-----:|:-------:|:------:|:---:|
-| Break requirements | ✅ | - | - | - | - | - |
-| Design architecture | - | ✅ | - | - | - | - |
-| Write code | - | - | ✅ | - | - | - |
-| Generate tests | - | - | - | ✅ | - | - |
-| Update dependencies | - | - | - | - | ✅ | - |
-| Sync GitHub | - | - | - | - | - | ✅ |
-| Validate quality | - | - | - | ✅ | - | - |
-| Enforce constraints | - | ✅ | - | - | - | - |
-| Create follow-ups | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
+| Capability               | Zen Planner | Plan Agent | Auto Zen | Testing Agent | Dependency Agent | Issue Handler |
+|--------------------------|:-----------:|:----------:|:--------:|:-------------:|:----------------:|:-------------:|
+| Break requirements       | ✅          | -          | -        | -             | -                | -             |
+| Design architecture      | -          | ✅         | -        | -             | -                | -             |
+| Write code               | -          | -          | ✅       | -             | -                | -             |
+| Generate tests           | -          | -          | -        | ✅            | -                | -             |
+| Update dependencies      | -          | -          | -        | -             | ✅                | -             |
+| Sync GitHub              | -          | -          | -        | -             | -                | ✅             |
+| Validate quality         | -          | -          | -        | ✅            | -                | -             |
+| Enforce constraints      | -          | ✅         | -        | -             | -                | -             |
+| Create follow-ups        | ✅        | ✅         | ✅       | ✅            | ✅                | ✅             |
 ---
 
 ## 🔄 Common Workflows

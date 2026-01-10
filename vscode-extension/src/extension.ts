@@ -15,6 +15,8 @@ import { AutoAgentLoopCommand } from './commands/autoAgentLoop';
 import { SettingsPanel } from './webviews/settingsPanel';
 import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
+import { WebSocketConfigManager } from './services/webSocketConfigManager';
+import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
@@ -73,6 +75,73 @@ export function activate(context: vscode.ExtensionContext) {
           proposedChange: summary,
         });
       }
+    })
+  );
+
+  // ============ WebSocket Broadcasting (Code Master Section 11.8-11.9) ============
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.configureWebSocket', async () => {
+      await WebSocketConfigManager.showConfigurationPanel();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.testWebSocket', async () => {
+      await WebSocketConfigManager.testConnection();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.connectWebSocket', async () => {
+      try {
+        const config = WebSocketConfigManager.getConfig();
+        const clientConfig = WebSocketConfigManager.toClientConfig();
+        
+        vscode.window.showInformationMessage(
+          `[WebSocket] Connecting to ${config.driver}...`
+        );
+        
+        const wsClient = await initializeWebSocketClient(clientConfig);
+        
+        // Subscribe to common event channels
+        wsClient.subscribe('mcp-events', 'task-status-updated', (data) => {
+          vscode.window.showInformationMessage(
+            `[Task] ${data.taskId} → ${data.status}`
+          );
+        });
+
+        wsClient.subscribe('mcp-events', 'test-failure-alert', (data) => {
+          vscode.window.showErrorMessage(
+            `[Test Failure] ${data.message}`
+          );
+        });
+
+        wsClient.subscribe('mcp-events', 'observation-logged', (data) => {
+          console.log('[Observation]', data.message);
+        });
+
+        wsClient.subscribe('mcp-events', 'verification-completed', (data) => {
+          vscode.window.showInformationMessage(
+            `[Verification] ${data.status}`
+          );
+        });
+
+        const status = wsClient.getStatus();
+        vscode.window.showInformationMessage(
+          `[WebSocket] Connected to ${status.driver} ✓`
+        );
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `[WebSocket] Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.disconnectWebSocket', async () => {
+      disposeWebSocketClient();
+      vscode.window.showInformationMessage('[WebSocket] Disconnected ✓');
     })
   );
 
@@ -410,7 +479,8 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  // Cleanup if needed when the extension is deactivated
+  // Cleanup WebSocket connection on extension deactivation
+  disposeWebSocketClient();
 }
 
 function refreshLlmStatus(statusBar: vscode.StatusBarItem) {
