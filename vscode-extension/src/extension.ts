@@ -15,6 +15,7 @@ import { AutoAgentLoopCommand } from './commands/autoAgentLoop';
 import { SettingsPanel } from './webviews/settingsPanel';
 import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
+import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 
@@ -74,6 +75,46 @@ export function activate(context: vscode.ExtensionContext) {
           impact: undefined,
           proposedChange: summary,
         });
+      }
+    })
+  );
+
+  // Plan Builder Commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.openPlanBuilder', async () => {
+      PlanBuilderPanel.createOrShow(context.extensionUri);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.savePlan', async () => {
+      // Get active plan builder panel and send message
+      if (PlanBuilderPanel.currentPanel) {
+        PlanBuilderPanel.currentPanel._panel.webview.postMessage({ type: 'savePlan' });
+      } else {
+        vscode.window.showWarningMessage('Plan Builder panel is not open');
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.loadPlan', async () => {
+      // Get active plan builder panel and send message
+      if (PlanBuilderPanel.currentPanel) {
+        PlanBuilderPanel.currentPanel._panel.webview.postMessage({ type: 'loadPlan' });
+      } else {
+        vscode.window.showWarningMessage('Plan Builder panel is not open');
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.listPlans', async () => {
+      // Get active plan builder panel and send message
+      if (PlanBuilderPanel.currentPanel) {
+        PlanBuilderPanel.currentPanel._panel.webview.postMessage({ type: 'listPlans' });
+      } else {
+        vscode.window.showWarningMessage('Plan Builder panel is not open');
       }
     })
   );

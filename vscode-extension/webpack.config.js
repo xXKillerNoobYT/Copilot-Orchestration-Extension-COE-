@@ -33,7 +33,7 @@ module.exports = [
       rules: [
         {
           test: /\.ts$/,
-          exclude: /node_modules/,
+          exclude: [/node_modules/, /__tests__/, /\.test\.ts$/],
           use: [{ loader: 'ts-loader' }],
         },
       ],
@@ -93,7 +93,7 @@ module.exports = [
       rules: [
         {
           test: /\.ts$/,
-          exclude: /node_modules/,
+          exclude: [/node_modules/, /__tests__/, /\.test\.ts$/],
           use: [{ loader: 'ts-loader' }],
         },
       ],

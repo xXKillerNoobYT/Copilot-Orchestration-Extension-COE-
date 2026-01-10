@@ -433,6 +433,14 @@ Route::prefix('v1')->group(function () {
             ->name('api.mcp.reportVerificationResult');
         Route::post('/askQuestion', [McpController::class, 'askQuestion'])
             ->name('api.mcp.askQuestion');
+        
+        // Plan persistence endpoints
+        Route::post('/savePlan', [McpController::class, 'savePlan'])
+            ->name('api.mcp.savePlan');
+        Route::get('/loadPlan/{id}', [McpController::class, 'loadPlan'])
+            ->name('api.mcp.loadPlan');
+        Route::get('/listPlans', [McpController::class, 'listPlans'])
+            ->name('api.mcp.listPlans');
     });
 
     /*
