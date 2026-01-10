@@ -15,12 +15,72 @@ import { AutoAgentLoopCommand } from './commands/autoAgentLoop';
 import { SettingsPanel } from './webviews/settingsPanel';
 import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
+import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
+import { LLMIPMonitor } from './services/llmIPMonitor';
+import { exportPlanCommand } from './commands/exportPlan';
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
     new AutoAgentLoopCommand(context);
+
+  // ============ LLM IP Monitor Service (Production-Ready) ============
+  const llmMonitor = LLMIPMonitor.getInstance();
+  llmMonitor.start();
+  
+  // Dispose monitor on extension deactivation
+  context.subscriptions.push({
+    dispose: () => llmMonitor.dispose(),
+  });
+
+  // Register LLM monitor commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showLLMStatus', async () => {
+      const state = llmMonitor.getState();
+      const statusMessage = `LLM Status: ${state.status.toUpperCase()}\n\n` +
+        `IP Address: ${state.currentIP}\n` +
+        `Check Count: ${state.checkCount}\n` +
+        `Consecutive Failures: ${state.consecutiveFailures}\n` +
+        `Last Check: ${state.lastCheck ? state.lastCheck.toLocaleString() : 'Never'}\n` +
+        `${state.discoveredIPs.length > 0 ? `\nDiscovered IPs: ${state.discoveredIPs.join(', ')}\n` : ''}`;
+      
+      await vscode.window.showInformationMessage(statusMessage, 'View Logs', 'Configure IP');
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.configureLLMIP', async () => {
+      const newIP = await vscode.window.showInputBox({
+        prompt: 'Enter LLM/LM Studio IP address',
+        value: llmMonitor.getState().currentIP,
+        placeHolder: '192.168.137.215',
+        validateInput: (value) => {
+          const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+          return ipRegex.test(value) ? '' : 'Invalid IP address';
+        },
+      });
+
+      if (newIP) {
+        await llmMonitor.setIP(newIP);
+        vscode.window.showInformationMessage(`LLM IP updated to ${newIP}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showLLMMonitorOutput', async () => {
+      const logs = llmMonitor.getLogs();
+      const logContent = logs.join('\n');
+      
+      const doc = await vscode.workspace.openTextDocument({
+        content: logContent,
+        language: 'log',
+      });
+      await vscode.window.showTextDocument(doc);
+    })
+  );
+
   const llmStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 90);
   // Create a status bar item on activation
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -75,6 +135,13 @@ export function activate(context: vscode.ExtensionContext) {
           proposedChange: summary,
         });
       }
+    })
+  );
+
+  // ============ Plan Export Command (Production-Ready) ============
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.exportPlan', async () => {
+      await exportPlanCommand();
     })
   );
 
