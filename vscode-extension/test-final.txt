@@ -1,0 +1,190 @@
+
+> copilot-orchestrator@0.0.1 test
+> npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js && node dist/workspace/tasksSourceTest.js && node dist/commands/executeLLMTest.js && node dist/github/githubSyncTest.js && node dist/panels/llmResponsePanelTest.js && node dist/llm/transportTest.js && node dist/transport/transportTest.js && npx mocha dist/extension.agentLoop.test.js
+
+
+> copilot-orchestrator@0.0.1 compile
+> webpack --mode production --stats=errors-only
+
+=== Task Graph Generator Tests ===
+
+Test: Basic Graph Generation
+Γ£ô Basic graph generation passed
+
+Test: Parallel Execution Levels
+Γ£ô Parallel execution levels passed
+
+Test: Cycle Detection
+Γ£ô Cycle detection passed
+
+Test: No Cycles in Valid Graph
+Γ£ô No cycles detection passed
+
+Test: Ready Tasks Detection
+Γ£ô Ready tasks detection passed
+
+Test: Orphaned Task Detection
+Γ£ô Orphaned task detection passed
+
+Test: Depth Calculation
+Γ£ô Depth calculation passed
+
+Test: Critical Path Detection
+Critical path: A -> C -> E -> F
+Γ£ô Critical path detection passed
+
+Test: Impact Analysis
+Γ£ô Impact analysis passed
+
+Test: Dependency Validation
+Γ£ô Dependency validation passed
+
+Test: Export Formats
+Γ£ô Export formats passed
+
+Test: Graph Statistics
+Γ£ô Graph statistics passed
+
+=== All Tests Passed Γ£ô ===
+=== LLM Config Tests ===
+Assertion failed: Default model mismatch
+=== LLM Config Tests Passed Γ£ô ===
+=== LLM Client Tests ===
+Assertion failed: Model should default
+=== LLM Client Tests Passed Γ£ô ===
+=== TasksSource Tests ===
+Γ£ô Load valid tasks
+Γ£ô Load missing file
+Γ£ô Load invalid JSON
+Γ£ô Load invalid structure
+Γ£ô Load missing required fields
+Γ£ô Load invalid status
+Γ£ô Load invalid priority
+Γ£ô Load with optional fields
+Γ£ô Get cached
+Γ£ô Refresh
+Γ£ô Exists
+Γ£ô Get task file path
+=== TasksSource Tests Complete Γ£ô ===
+=== ExecuteLLM Integration Tests ===
+Γ£ô Execution context creation
+Γ£ô Context validation (valid)
+Γ£ô Context validation (missing taskId)
+Γ£ô Context validation (endTime before startTime)
+Γ£ô Mock LLM response shape
+Γ£ô Execution duration tracking
+=== ExecuteLLM Tests Complete Γ£ô ===
+Γ£ô Mock dispatcher composition
+Γ£ô Mock LLM client
+[Γ£ô] Test 1: Parse GitHub webhook payload
+[Γ£ô] Test 2: Verify webhook signature
+[Γ£ô] Test 3: Create sync event from GitHub issue
+[Γ£ô] Test 4: Handle webhook events
+[Γ£ô] Test 5: Task data model
+[Γ£ô] Test 6: GitHub to task conversion
+[Γ£ô] Test 7: Sync log tracking
+[Γ£ô] Test 8: Full sync operation
+
+=== GitHub Sync Tests Summary ===
+Passed: 8
+Failed: 0
+Total: 8
+Γ£ô All tests passed!
+GitHub sync tests completed
+[Γ£ô] Test 1: Create execution result
+[Γ£ô] Test 2: Result with error
+[Γ£ô] Test 3: Mock history array
+[Γ£ô] Test 4: History rotation (limit to 50)
+[Γ£ô] Test 5: Duration formatting
+[Γ£ô] Test 6: Timestamp parsing
+[Γ£ô] Test 7: HTML escaping for security
+[Γ£ô] Test 8: Result status classification
+
+=== LLM Response Panel Tests Summary ===
+Passed: 8
+Failed: 0
+Total: 8
+Γ£ô All tests passed!
+LLM Response Panel tests completed
+=== Transport Layer Integration Tests ===
+
+Test: Message Format Compatibility
+Γ£ô Message format is compatible with OpenAI API
+
+Test: TaskId Correlation Preservation
+Γ£ô TaskId correlation preserved through transport
+
+Test: Context File Handling in Messages
+Γ£ô Context files properly handled in messages
+
+Test: Metadata Preservation
+Γ£ô Metadata preserved through transport pipeline
+
+Test: Memory Preservation in Transport
+Γ£ô Memory entries preserved for multi-turn transport
+
+Test: Agent Profile Transmission
+Γ£ô Agent profile fully transmitted for transport
+
+Test: Error Handling in Transport
+Γ£ô Transport layer can detect and report missing messages
+
+=== Transport Tests Complete ===
+
+[Γ£ô] Test 1: Token counter estimation
+[Γ£ô] Test 2: Token counter for messages
+[Γ£ô] Test 3: Rate limiter check limit
+[Γ£ô] Test 4: Rate limiter token limit
+[Γ£ô] Test 5: Provider factory OpenAI
+[Γ£ô] Test 6: Provider factory Azure
+[Γ£ô] Test 7: Provider factory LM Studio
+[Γ£ô] Test 8: Transport manager with fallback
+[Γ£ô] Test 9: Provider factory error handling
+[Γ£ô] Test 10: Chat message structure
+[Γ£ô] Test 11: Rate limiter time window
+[Γ£ô] Test 12: Multiple provider types
+
+=== Transport Layer Tests Summary ===
+Passed: 12
+Failed: 0
+Total: 12
+Γ£ô All tests passed!
+Transport layer tests completed
+
+
+  AgentLoopService
+    API Communication
+      Γ£ö should start loop with default cycles (54ms)
+      Γ£ö should get current status
+      Γ£ö should execute single cycle
+      Γ£ö should stop loop gracefully
+    Status Callbacks
+      - should register and notify status change listeners (requires backend events)
+      Γ£ö should unsubscribe from status changes
+    Error Handling
+      - should handle connection errors gracefully (network-dependent)
+      Γ£ö should handle malformed responses
+    Polling
+      Γ£ö should poll status with configurable interval (1007ms)
+
+  AutoAgentLoopCommand Integration
+    Γ£ö should register all necessary commands
+    Γ£ö should create status bar item
+    Γ£ö should handle command execution errors
+
+  Phase 7 Integration Scenarios
+    Γ£ö should demonstrate planning ΓåÆ execution ΓåÆ next task flow
+    Γ£ö should handle loop stop signal gracefully
+    Γ£ö should provide loop statistics and metrics
+
+  Auto Agent Loop Test Scenarios
+    Γ£ö Test Scenario 1: Basic Loop Startup and Status Monitoring
+    Γ£ö Test Scenario 2: Single Cycle Execution
+    - Test Scenario 3: Loop Status Change Notifications (requires backend events)
+    - Test Scenario 4: Error Handling and Recovery (network-dependent)
+    Γ£ö Test Scenario 5: Continuous Execution Until Queue Empty
+
+
+  16 passing (1s)
+  4 pending
+

@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "watch",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": "$ts-webpack-watch",
+      "label": "npm: watch"
+    },
+    {
+      "type": "cmake",
+      "label": "CMake: clean rebuild",
+      "command": "cleanRebuild",
+      "targets": [
+        "[N/A - Select Kit]"
+      ],
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "CMake template clean rebuild task"
+    }
+  ]
+}

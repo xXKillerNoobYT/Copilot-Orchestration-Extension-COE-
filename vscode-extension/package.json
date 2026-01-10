@@ -1,0 +1,276 @@
+{
+  "name": "copilot-orchestrator",
+  "displayName": "Copilot Orchestrator",
+  "description": "Foundational VS Code extension scaffold for Copilot Orchestration.",
+  "version": "0.0.1",
+  "publisher": "your-publisher-id",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "task-markdown",
+        "aliases": [
+          "Task Markdown",
+          "task"
+        ],
+        "extensions": [
+          ".task.md"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./media/task-icon-light.svg",
+          "dark": "./media/task-icon-dark.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "task-markdown",
+        "scopeName": "text.task.markdown",
+        "path": "./syntaxes/task-markdown.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "copilotOrchestrator",
+          "title": "Copilot Orchestrator",
+          "icon": "./media/copilot.svg"
+        }
+      ]
+    },
+    "views": {
+      "copilotOrchestrator": [
+        {
+          "id": "copilotOrchestrator.status",
+          "name": "Status",
+          "icon": "./media/copilot.svg"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Copilot Orchestrator",
+      "properties": {
+        "copilot-orchestrator.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "markdownDescription": "Base URL for the orchestrator backend (Laravel) providing agent loop and task APIs.",
+          "scope": "window",
+          "pattern": "^https?://.+",
+          "patternErrorMessage": "Enter a valid http(s) URL (e.g., http://localhost:8000)."
+        },
+        "copilot-orchestrator.llm.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:1234/v1",
+          "markdownDescription": "Base URL for an OpenAI-compatible endpoint (LM Studio default: http://localhost:1234/v1). Must start with http or https.",
+          "scope": "window",
+          "pattern": "^https?://.+",
+          "patternErrorMessage": "Enter a valid http(s) URL (e.g., http://localhost:1234/v1)."
+        },
+        "copilot-orchestrator.llm.apiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "API key/secret for the endpoint. Leave empty for LM Studio (no key required).",
+          "scope": "application",
+          "secret": true
+        },
+        "copilot-orchestrator.llm.defaultModel": {
+          "type": "string",
+          "default": "gpt-4.1",
+          "markdownDescription": "Default model name passed to /v1/chat/completions (e.g., gpt-4.1, gpt-4o-mini, or LM Studio-provided model).",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.temperature": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
+          "markdownDescription": "Sampling temperature for chat completions (0–2).",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "maximum": 120000,
+          "markdownDescription": "Request timeout in milliseconds for LLM calls.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.taskRoots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "_ZENTASKS"
+          ],
+          "markdownDescription": "Folders (relative to the workspace) to search for *.task.md files. First existing folder is used.",
+          "scope": "resource"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "copilot-orchestrator.start",
+        "title": "Copilot Orchestrator: Start",
+        "category": "Copilot Orchestrator"
+      },
+      {
+        "command": "copilot-orchestrator.refreshTasks",
+        "title": "Copilot Orchestrator: Refresh Tasks",
+        "category": "Copilot Orchestrator"
+      },
+      {
+        "command": "copilot-orchestrator.showGraph",
+        "title": "Copilot Orchestrator: Show Task Graph",
+        "category": "Copilot Orchestrator",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "copilot-orchestrator.showDependencies",
+        "title": "Copilot Orchestrator: Show Task Dependencies",
+        "category": "Copilot Orchestrator",
+        "icon": "$(references)"
+      },
+      {
+        "command": "copilot-orchestrator.showPanel",
+        "title": "Copilot Orchestrator: Show Orchestrator Panel",
+        "category": "Copilot Orchestrator",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "copilot-orchestrator.executeTask",
+        "title": "Execute Task Now",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.changeTaskStatus",
+        "title": "Change Task Status",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.openContextBundle",
+        "title": "Open Context Bundle",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.createContextBundle",
+        "title": "Create Context Bundle",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.linkGitHubIssue",
+        "title": "Link GitHub Issue",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.openGitHubIssue",
+        "title": "Open GitHub Issue",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.showTaskMetadata",
+        "title": "Show Task Metadata",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.manageDependencies",
+        "title": "Manage Task Dependencies",
+        "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.configureLLM",
+        "title": "Copilot Orchestrator: Configure LLM",
+        "category": "Copilot Orchestrator",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "copilot-orchestrator.testConnection",
+        "title": "Copilot Orchestrator: Test LLM Connection",
+        "category": "Copilot Orchestrator",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "copilot-orchestrator.executeLLM",
+        "title": "Copilot Orchestrator: Execute LLM Task",
+        "category": "Copilot Orchestrator",
+        "icon": "$(play)"
+      },
+      {
+        "command": "copilot-orchestrator.showVisualVerification",
+        "title": "Copilot Orchestrator: Show Visual Verification",
+        "category": "Copilot Orchestrator",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "copilot-orchestrator.startAutoLoop",
+        "title": "Copilot Orchestrator: Start Auto Loop",
+        "category": "Copilot Orchestrator",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "copilot-orchestrator.stopAutoLoop",
+        "title": "Copilot Orchestrator: Stop Auto Loop",
+        "category": "Copilot Orchestrator",
+        "icon": "$(primitive-square)"
+      },
+      {
+        "command": "copilot-orchestrator.autoLoopStatus",
+        "title": "Copilot Orchestrator: Auto Loop Status",
+        "category": "Copilot Orchestrator",
+        "icon": "$(info)"
+      },
+      {
+        "command": "copilot-orchestrator.executeSingleCycle",
+        "title": "Copilot Orchestrator: Execute Single Cycle",
+        "category": "Copilot Orchestrator",
+        "icon": "$(run)"
+      },
+      {
+        "command": "copilot-orchestrator.showAuditDashboard",
+        "title": "Copilot Orchestrator: Show Audit Dashboard",
+        "category": "Copilot Orchestrator",
+        "icon": "$(report)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack --mode production --stats=errors-only && npm run build:vue",
+    "build:vue": "vite build",
+    "watch": "webpack --watch --mode development --stats=errors-warnings",
+    "lint": "echo 'no lint configured'",
+    "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js && node dist/workspace/tasksSourceTest.js && node dist/commands/executeLLMTest.js && node dist/github/githubSyncTest.js && node dist/panels/llmResponsePanelTest.js && node dist/llm/transportTest.js && node dist/transport/transportTest.js && npx mocha dist/extension.agentLoop.test.js",
+    "test:integration": "npm run compile && node scripts/runIntegrationTests.js",
+    "test:integration:ci": "xvfb-run -a node scripts/runIntegrationTests.js",
+    "demo": "npm run compile && node dist/taskGraphDemo.js"
+  },
+  "dependencies": {
+    "graphlib": "^2.1.8",
+    "laravel-echo": "^1.14.0",
+    "pusher-js": "^8.4.0",
+    "socket.io-client": "^4.7.0",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/graphlib": "^2.1.12",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.19.3",
+    "@types/vscode": "^1.90.0",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "@vscode/test-electron": "^2.3.9",
+    "mocha": "^11.7.5",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.0",
+    "vite": "^7.3.1",
+    "vue": "^3.5.26",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
+  }
+}

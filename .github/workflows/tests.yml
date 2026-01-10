@@ -1,0 +1,110 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - master
+      - '*.x'
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [8.1, 8.2, 8.3]
+
+    name: PHP ${{ matrix.php }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Execute tests
+        run: vendor/bin/phpunit
+
+  extension-tests:
+    runs-on: ubuntu-latest
+    name: Extension Tests (Node.js)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: vscode-extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: vscode-extension
+        run: npm ci
+
+      - name: Run tests
+        working-directory: vscode-extension
+        run: npm test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-test-results
+          path: vscode-extension/dist/
+
+  extension-integration-tests:
+    runs-on: ubuntu-latest
+    name: Extension Integration Tests (VS Code Electron)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: vscode-extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: vscode-extension
+        run: npm ci
+
+      - name: Run integration tests (headless)
+        working-directory: vscode-extension
+        run: xvfb-run -a npm run test:integration
+
+      - name: Upload VS Code test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-integration-artifacts
+          path: |
+            vscode-extension/.vscode-test/**/*
+            vscode-extension/dist/integration/**/*
+            vscode-extension/test-output.log

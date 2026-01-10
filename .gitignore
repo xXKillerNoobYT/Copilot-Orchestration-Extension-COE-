@@ -1,33 +1,22 @@
-# Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-yarn.lock
-
-# Build outputs
-dist/
-build/
-*.log
-.DS_Store
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Environment variables
+/.phpunit.cache
+/bootstrap/ssr
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
 .env
-.env.local
-.env.*.local
+.env.backup
+.env.production
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.vscode
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# OS
-Thumbs.db
+_ZENTASKS

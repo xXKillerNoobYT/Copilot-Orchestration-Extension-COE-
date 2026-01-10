@@ -1,0 +1,102 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+const path = require('path');
+
+/** @type {import('webpack').Configuration} */
+module.exports = [
+  // Main extension bundle
+  {
+    name: 'extension',
+    target: 'node',
+    mode: 'production',
+    entry: './src/extension.ts',
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: '[name].js',
+        filename: 'extension.js',
+      libraryTarget: 'commonjs2',
+    },
+    devtool: 'source-map',
+    externals: {
+      vscode: 'commonjs vscode',
+    },
+    stats: {
+      warnings: false,
+    },
+    ignoreWarnings: [
+      /punycode/,
+      /sqlite/,
+    ],
+    resolve: {
+      extensions: ['.ts', '.js'],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.ts$/,
+          exclude: /node_modules/,
+          use: [{ loader: 'ts-loader' }],
+        },
+      ],
+    },
+  },
+  // Test and demo bundles
+  {
+    name: 'tools',
+    target: 'node',
+    mode: 'production',
+    entry: {
+      taskGraphTest: './src/taskGraphTest.ts',
+      taskGraphDemo: './src/taskGraphDemo.ts',
+      llmConfigTest: './src/llmConfigTest.ts',
+      llmClientTest: './src/llmClientTest.ts',
+      'llm/clientTest': './src/llm/clientTest.ts',
+      'llm/transportTest': './src/llm/transportTest.ts',
+      'copilotDispatcher.test': './src/copilotDispatcher.test.ts',
+      'workspace/tasksSourceTest': './src/workspace/tasksSourceTest.ts',
+      'commands/executeLLMTest': './src/commands/executeLLMTest.ts',
+      'github/githubSyncTest': './src/github/githubSyncTest.ts',
+      'panels/llmResponsePanelTest': './src/panels/llmResponsePanelTest.ts',
+      'transport/transportTest': './src/transport/transportTest.ts',
+      'extension.agentLoop.test': './src/extension.agentLoop.test.ts',
+      // Integration test files
+      // Note: index.ts initializes Mocha programmatically and loads *.test.js
+      // from dist/integration via INTEGRATION_TEST_DIR env. We keep tests compiled
+      // as separate files to avoid global suite/test reliance.
+      'integration/index': './src/integration/index.ts',
+      'integration/runTest': './src/integration/runTest.ts',
+      'integration/extension.integration.test': './src/integration/extension.integration.test.ts',
+      'integration/statusBarLifecycle.integration.test': './src/integration/statusBarLifecycle.integration.test.ts',
+      'integration/activationFlows.integration.test': './src/integration/activationFlows.integration.test.ts',
+      'integration/panelLiveStatus.integration.test': './src/integration/panelLiveStatus.integration.test.ts',
+    },
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: '[name].js',
+      libraryTarget: 'commonjs2',
+    },
+    devtool: 'source-map',
+    externals: {
+      vscode: 'commonjs vscode',
+      mocha: 'commonjs mocha'
+    },
+    stats: {
+      warnings: false,
+    },
+    ignoreWarnings: [
+      /punycode/,
+      /sqlite/,
+    ],
+    resolve: {
+      extensions: ['.ts', '.js'],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.ts$/,
+          exclude: /node_modules/,
+          use: [{ loader: 'ts-loader' }],
+        },
+      ],
+    },
+  },
+];
