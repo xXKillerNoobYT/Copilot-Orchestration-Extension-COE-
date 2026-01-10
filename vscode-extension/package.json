@@ -175,6 +175,13 @@
         "category": "Task File"
       },
       {
+        "command": "copilot-orchestrator.openTaskList",
+        "title": "Open Task List",
+        "category": "Copilot Orchestrator",
+        "icon": "$(checklist)",
+        "keybinding": "ctrl+shift+t"
+      },
+      {
         "command": "copilot-orchestrator.showTaskMetadata",
         "title": "Show Task Metadata",
         "category": "Task File"

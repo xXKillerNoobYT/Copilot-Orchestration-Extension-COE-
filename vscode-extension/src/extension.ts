@@ -199,6 +199,13 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.openTaskList', async () => {
+      const { openTaskList } = await import('./commands/openTaskList');
+      await openTaskList();
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
       const { AuditDashboardPanel } = await import('./panels/auditDashboardPanel');
       AuditDashboardPanel.createOrShow(context.extensionUri);
