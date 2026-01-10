@@ -11,27 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Idempotent migration - only create table if it doesn't exist
-        // This handles cases where newer migration (2026_01_02_100002) may have already created it
-        if (!Schema::hasTable('architecture_decisions')) {
-            Schema::create('architecture_decisions', function (Blueprint $table) {
-                $table->uuid('id')->primary();
-                $table->foreignUuid('architecture_design_id')->constrained()->cascadeOnDelete();
-                
-                $table->string('title');
-                $table->enum('status', ['proposed', 'accepted', 'rejected', 'deprecated', 'superseded'])->default('proposed');
-                $table->text('context')->comment('Context and problem statement');
-                $table->text('decision')->comment('The decision that was made');
-                $table->json('consequences')->comment('Positive and negative consequences');
-                $table->json('alternatives_considered')->nullable()->comment('Other options that were considered');
-                $table->string('superseded_by_id')->nullable()->comment('ADR ID that supersedes this one');
-                
-                $table->timestamps();
-                
-                $table->index('architecture_design_id');
-                $table->index('status');
-            });
-        }
+        // Intentionally left blank (no-op migration).
+        //
+        // This migration file was originally created as a duplicate of the
+        // architecture_decisions table creation, but it cannot be used because:
+        // 1. It runs before the parent table 'architecture_designs' is created
+        //    (this migration: 071358, parent table: 100001), causing FK errors
+        // 2. The actual table creation is handled by migration 100002
+        //
+        // This file is retained to preserve migration history consistency for
+        // environments where this migration may have already been recorded.
+        // The table is created and managed by 2026_01_02_100002_create_architecture_decisions_table.php
     }
 
     /**
@@ -39,6 +29,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('architecture_decisions');
+        // Intentionally left blank.
+        // The architecture_decisions table is managed and dropped by the newer
+        // migration (2026_01_02_100002) to avoid duplicate dropIfExists calls
+        // and ensure consistent rollback behavior.
     }
 };
