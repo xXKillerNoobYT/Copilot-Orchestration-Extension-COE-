@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Task;
+use App\Models\Plan;
+use App\Http\Requests\SavePlanRequest;
 use App\Services\TaskQueueService;
 use App\Services\VerificationService;
 use App\Services\ObservationService;
@@ -27,6 +29,8 @@ use Illuminate\Support\Facades\Log;
  * - reportTestFailure: Report test failures and block task
  * - reportVerificationResult: Report verification pass/fail
  * - askQuestion: Answer questions with plan/code context
+ * - savePlan: Save wizard state and project plan
+ * - loadPlan: Load saved plan by ID
  * 
  * Reference: Code Master notebook, Section 11.7-11.8
  */
@@ -513,5 +517,158 @@ class McpController extends Controller
             'references' => [],
             'planReferences' => [$planContext['section'] ?? null],
         ];
+    }
+
+    /**
+     * POST /mcp/savePlan
+     * 
+     * Save wizard state and project plan for persistence
+     * 
+     * Request body:
+     * {
+     *   "name": "My Project Plan",
+     *   "description": "Optional description",
+     *   "wizard_state": { ... },
+     *   "metadata": { ... },
+     *   "status": "draft|active|archived"
+     * }
+     * 
+     * Response: { success, plan: { id, name, ... } }
+     */
+    public function savePlan(SavePlanRequest $request): JsonResponse
+    {
+        try {
+            $plan = Plan::create($request->validated());
+
+            Log::info('[MCP] Plan saved', [
+                'plan_id' => $plan->id,
+                'name' => $plan->name,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'plan' => [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'description' => $plan->description,
+                    'status' => $plan->status,
+                    'created_at' => $plan->created_at->toISOString(),
+                    'updated_at' => $plan->updated_at->toISOString(),
+                ],
+                'message' => 'Plan saved successfully'
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('[MCP] Failed to save plan', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save plan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /mcp/loadPlan/{id}
+     * 
+     * Load saved plan by ID
+     * 
+     * Response: { success, plan: { id, name, wizard_state, ... } }
+     */
+    public function loadPlan(int $id): JsonResponse
+    {
+        try {
+            $plan = Plan::findOrFail($id);
+
+            Log::info('[MCP] Plan loaded', [
+                'plan_id' => $plan->id,
+                'name' => $plan->name,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'plan' => [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'description' => $plan->description,
+                    'wizard_state' => $plan->wizard_state,
+                    'metadata' => $plan->metadata,
+                    'status' => $plan->status,
+                    'created_at' => $plan->created_at->toISOString(),
+                    'updated_at' => $plan->updated_at->toISOString(),
+                ],
+                'message' => 'Plan loaded successfully'
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Plan not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('[MCP] Failed to load plan', [
+                'plan_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load plan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /mcp/listPlans
+     * 
+     * List all saved plans (optionally filtered by status)
+     * 
+     * Query params:
+     * - status: optional filter (draft|active|archived)
+     * - limit: optional limit (default 50)
+     * 
+     * Response: { success, plans: [...] }
+     */
+    public function listPlans(Request $request): JsonResponse
+    {
+        try {
+            $query = Plan::query();
+
+            if ($status = $request->query('status')) {
+                $query->where('status', $status);
+            }
+
+            $limit = min((int) $request->query('limit', 50), 100);
+            $plans = $query->orderBy('updated_at', 'desc')
+                          ->limit($limit)
+                          ->get(['id', 'name', 'description', 'status', 'created_at', 'updated_at']);
+
+            return response()->json([
+                'success' => true,
+                'plans' => $plans->map(fn($plan) => [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'description' => $plan->description,
+                    'status' => $plan->status,
+                    'created_at' => $plan->created_at->toISOString(),
+                    'updated_at' => $plan->updated_at->toISOString(),
+                ]),
+                'count' => $plans->count(),
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('[MCP] Failed to list plans', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to list plans: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

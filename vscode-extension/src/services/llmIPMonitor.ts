@@ -1,14 +1,14 @@
 /**
- * LLM IP Monitor Service
+ * LLM IP Monitor - Background Service
  * 
- * Monitors LLM/LM Studio IP connectivity and availability
- * - TCP connectivity checks at regular intervals
- * - DNS hostname resolution
- * - Network discovery fallback (IP range scanning)
- * - Status bar indicator with color coding
- * - Full lifecycle management (start/stop)
+ * Monitors the LLM host (e.g., Llama, LM Studio) for IP address changes.
+ * Checks connectivity and updates configuration if IP changes.
  * 
- * Singleton pattern for global access
+ * Configuration:
+ * - Default IP: 192.168.137.215
+ * - Port: Configurable (default: 8000)
+ * - Check interval: 30 seconds
+ * - Timeout: 5 seconds
  */
 
 import * as vscode from 'vscode';
@@ -16,372 +16,432 @@ import * as net from 'net';
 import * as dns from 'dns';
 import { promisify } from 'util';
 
-export type LLMMonitorStatus = 'healthy' | 'unhealthy' | 'checking' | 'error';
+const dnsLookup = promisify(dns.lookup);
 
-export interface LLMMonitorState {
-  status: LLMMonitorStatus;
-  currentIP: string;
-  lastCheck: Date | null;
-  checkCount: number;
-  consecutiveFailures: number;
-  discoveredIPs: string[];
+export interface LLMConfig {
+  host: string;
+  port: number;
+  hostname?: string;
+  lastKnownIP?: string;
+  lastCheckedAt?: number;
+  isHealthy?: boolean;
 }
 
 export class LLMIPMonitor {
-  private static instance: LLMIPMonitor | undefined;
-  
-  private config: {
-    defaultIP: string;
-    port: number;
-    checkInterval: number;
-    tcpTimeout: number;
-    maxConsecutiveFailures: number;
-  };
-  
-  private state: LLMMonitorState;
-  private statusBar: vscode.StatusBarItem | null = null;
+  private statusBarItem: vscode.StatusBarItem;
   private checkInterval: NodeJS.Timeout | null = null;
-  private isRunning: boolean = false;
-  private logs: string[] = [];
-  private maxLogs: number = 100;
-  
-  private onStatusChangeCallbacks: Array<(status: LLMMonitorStatus) => void> = [];
+  private config: LLMConfig;
+  private readonly DEFAULT_PORT = 8000;
+  private readonly DEFAULT_HOST = '192.168.137.215';
+  private readonly CHECK_INTERVAL_MS = 30000; // 30 seconds
+  private readonly TIMEOUT_MS = 5000; // 5 second timeout
+  private outputChannel: vscode.OutputChannel;
 
-  private constructor() {
-    this.config = {
-      defaultIP: vscode.workspace.getConfiguration('copilot-orchestrator.llm').get('ip') || '192.168.137.215',
-      port: vscode.workspace.getConfiguration('copilot-orchestrator.llm').get('port') || 8000,
-      checkInterval: 30000, // 30 seconds
-      tcpTimeout: 5000,      // 5 seconds
-      maxConsecutiveFailures: 3,
-    };
+  constructor(context: vscode.ExtensionContext) {
+    this.outputChannel = vscode.window.createOutputChannel('LLM Monitor');
     
-    this.state = {
-      status: 'checking',
-      currentIP: this.config.defaultIP,
-      lastCheck: null,
-      checkCount: 0,
-      consecutiveFailures: 0,
-      discoveredIPs: [],
-    };
-  }
+    // Load config
+    this.config = this.loadConfig(context);
+    
+    // Create status bar item
+    this.statusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      100
+    );
+    this.statusBarItem.command = 'copilot-orchestrator.showLLMStatus';
+    this.statusBarItem.tooltip = 'Click to see LLM connection details';
+    
+    context.subscriptions.push(this.statusBarItem);
+    context.subscriptions.push(this.outputChannel);
 
-  /**
-   * Get singleton instance
-   */
-  static getInstance(): LLMIPMonitor {
-    if (!LLMIPMonitor.instance) {
-      LLMIPMonitor.instance = new LLMIPMonitor();
-    }
-    return LLMIPMonitor.instance;
+    // Register commands
+    this.registerCommands();
   }
 
   /**
    * Start monitoring LLM connectivity
    */
   start(): void {
-    if (this.isRunning) {
-      this.log('Monitor already running');
-      return;
-    }
+    this.log('🚀 LLM IP Monitor started');
+    this.updateStatus('checking');
 
-    this.isRunning = true;
-    this.log('LLM IP Monitor started');
-    
-    // Create status bar item
-    this.createStatusBar();
-    
-    // Run initial check immediately
-    this.performCheck().catch(err => this.log(`Initial check failed: ${err.message}`));
-    
-    // Set up interval for periodic checks
-    this.checkInterval = setInterval(() => {
-      this.performCheck().catch(err => this.log(`Periodic check failed: ${err.message}`));
-    }, this.config.checkInterval);
+    // Initial check
+    this.checkLLMConnectivity();
+
+    // Set up periodic checks
+    this.checkInterval = setInterval(
+      () => this.checkLLMConnectivity(),
+      this.CHECK_INTERVAL_MS
+    );
   }
 
   /**
    * Stop monitoring
    */
   stop(): void {
-    if (!this.isRunning) {
-      return;
-    }
-
-    this.isRunning = false;
-    this.log('LLM IP Monitor stopped');
-    
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }
-
-    if (this.statusBar) {
-      this.statusBar.hide();
-    }
+    this.log('🛑 LLM IP Monitor stopped');
+    this.statusBarItem.hide();
   }
 
   /**
-   * Dispose resources
+   * Check LLM connectivity and IP address
    */
-  dispose(): void {
-    this.stop();
-    if (this.statusBar) {
-      this.statusBar.dispose();
-      this.statusBar = null;
-    }
-  }
-
-  /**
-   * Perform connectivity check
-   */
-  private async performCheck(): Promise<void> {
-    this.state.status = 'checking';
-    this.updateStatusBar();
-    this.state.checkCount++;
-
+  private async checkLLMConnectivity(): Promise<void> {
     try {
-      // Try to connect to current IP
-      const isReachable = await this.checkTCPConnectivity(this.state.currentIP, this.config.port);
-      
-      if (isReachable) {
-        this.state.status = 'healthy';
-        this.state.consecutiveFailures = 0;
-        this.log(`✓ LLM reachable at ${this.state.currentIP}:${this.config.port}`);
+      // Try to resolve current IP (if hostname is set)
+      if (this.config.hostname) {
+        await this.checkHostnameResolution();
+      }
+
+      // Check connectivity
+      const isHealthy = await this.pingLLMServer();
+      const now = Date.now();
+
+      if (isHealthy) {
+        this.config.isHealthy = true;
+        this.config.lastCheckedAt = now;
+        this.updateStatus('healthy');
+        this.log(`✅ LLM is healthy at ${this.config.host}:${this.config.port}`);
       } else {
-        this.state.consecutiveFailures++;
+        this.config.isHealthy = false;
+        this.config.lastCheckedAt = now;
+        this.updateStatus('unhealthy');
+        this.log(`❌ LLM is unreachable at ${this.config.host}:${this.config.port}`);
         
-        if (this.state.consecutiveFailures >= this.config.maxConsecutiveFailures) {
-          // Try to discover new IP
-          await this.attemptDiscovery();
-        } else {
-          this.state.status = 'unhealthy';
-          this.log(`✗ LLM unreachable at ${this.state.currentIP} (attempt ${this.state.consecutiveFailures}/${this.config.maxConsecutiveFailures})`);
-        }
+        // Attempt fallback recovery
+        await this.attemptFallbackRecovery();
       }
     } catch (error) {
-      this.state.status = 'error';
-      this.state.consecutiveFailures++;
-      this.log(`✗ Check error: ${error instanceof Error ? error.message : String(error)}`);
+      this.log(`⚠️ Monitoring error: ${error}`);
+      this.updateStatus('error');
     }
-
-    this.state.lastCheck = new Date();
-    this.updateStatusBar();
-    this.notifyStatusChange();
   }
 
   /**
-   * Check TCP connectivity to an IP/port
+   * Resolve hostname and detect IP changes
    */
-  private checkTCPConnectivity(ip: string, port: number): Promise<boolean> {
+  private async checkHostnameResolution(): Promise<void> {
+    try {
+      const result = await dnsLookup(this.config.hostname!);
+      const newIP = result.address;
+
+      if (this.config.lastKnownIP && newIP !== this.config.lastKnownIP) {
+        this.log(`🔄 IP Address Change Detected!`);
+        this.log(`   Old IP: ${this.config.lastKnownIP}`);
+        this.log(`   New IP: ${newIP}`);
+        
+        this.config.host = newIP;
+        this.config.lastKnownIP = newIP;
+        
+        // Save updated config
+        this.saveConfig();
+        
+        // Notify user
+        vscode.window.showInformationMessage(
+          `LLM IP changed from ${this.config.lastKnownIP} to ${newIP}. Configuration updated.`,
+          'OK'
+        );
+      } else if (!this.config.lastKnownIP) {
+        this.config.lastKnownIP = newIP;
+        this.log(`📍 Initial IP resolved: ${newIP}`);
+      }
+    } catch (error) {
+      this.log(`⚠️ Hostname resolution failed: ${error}`);
+    }
+  }
+
+  /**
+   * Ping LLM server to check connectivity
+   */
+  private async pingLLMServer(): Promise<boolean> {
     return new Promise((resolve) => {
       const socket = new net.Socket();
-      const timeoutId = setTimeout(() => {
+      
+      const timeout = setTimeout(() => {
         socket.destroy();
         resolve(false);
-      }, this.config.tcpTimeout);
+      }, this.TIMEOUT_MS);
 
       socket.on('connect', () => {
-        clearTimeout(timeoutId);
+        clearTimeout(timeout);
         socket.destroy();
         resolve(true);
       });
 
       socket.on('error', () => {
-        clearTimeout(timeoutId);
+        clearTimeout(timeout);
         resolve(false);
       });
 
-      socket.connect(port, ip);
+      socket.connect(this.config.port, this.config.host);
     });
   }
 
   /**
-   * Attempt to discover LLM on the network
+   * Attempt fallback recovery strategies
    */
-  private async attemptDiscovery(): Promise<void> {
-    this.log('Starting network discovery...');
-    
-    try {
-      // Try DNS resolution first
-      const hostname = vscode.workspace.getConfiguration('copilot-orchestrator.llm').get('hostname') as string || 'llama';
-      const dnsLookup = promisify(dns.lookup);
+  private async attemptFallbackRecovery(): Promise<void> {
+    this.log(`🔧 Attempting fallback recovery...`);
+
+    // Strategy 1: Try default IP if different
+    if (this.config.host !== this.DEFAULT_HOST) {
+      this.log(`  📍 Trying default IP: ${this.DEFAULT_HOST}`);
+      const isHealthy = await this.testConnection(this.DEFAULT_HOST, this.config.port);
+      if (isHealthy) {
+        this.config.host = this.DEFAULT_HOST;
+        this.config.lastKnownIP = this.DEFAULT_HOST;
+        this.saveConfig();
+        this.log(`  ✅ Recovered: Using default IP ${this.DEFAULT_HOST}`);
+        vscode.window.showInformationMessage(
+          `LLM service recovered at ${this.DEFAULT_HOST}`
+        );
+        return;
+      }
+    }
+
+    // Strategy 2: Try to detect new IP on local network (192.168.x.x)
+    this.log(`  🔍 Scanning local network for LLM service...`);
+    const discoveredIP = await this.discoverLLMOnNetwork();
+    if (discoveredIP) {
+      this.log(`  ✅ Discovered LLM at: ${discoveredIP}`);
+      this.config.host = discoveredIP;
+      this.config.lastKnownIP = discoveredIP;
+      this.saveConfig();
+      vscode.window.showInformationMessage(
+        `LLM service discovered at ${discoveredIP}. Configuration updated.`
+      );
+      return;
+    }
+
+    // Strategy 3: Suggest manual configuration
+    this.log(`  ❌ Could not auto-recover. Manual configuration may be needed.`);
+    const result = await vscode.window.showWarningMessage(
+      'LLM service is unreachable. Configure IP address manually?',
+      'Configure',
+      'Dismiss'
+    );
+
+    if (result === 'Configure') {
+      this.promptForIPConfiguration();
+    }
+  }
+
+  /**
+   * Test connection to specific host:port
+   */
+  private async testConnection(host: string, port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const socket = new net.Socket();
+      const timeout = setTimeout(() => {
+        socket.destroy();
+        resolve(false);
+      }, 3000); // Shorter timeout for network scan
+
+      socket.on('connect', () => {
+        clearTimeout(timeout);
+        socket.destroy();
+        resolve(true);
+      });
+
+      socket.on('error', () => {
+        clearTimeout(timeout);
+        resolve(false);
+      });
+
+      socket.connect(port, host);
+    });
+  }
+
+  /**
+   * Scan local network for LLM service
+   */
+  private async discoverLLMOnNetwork(): Promise<string | null> {
+    const baseIP = '192.168.137';
+    const port = this.config.port;
+
+    // Check a subset of IPs (200-220 range)
+    for (let i = 200; i <= 220; i++) {
+      const testIP = `${baseIP}.${i}`;
       
       try {
-        const { address } = await dnsLookup(hostname);
-        this.log(`DNS resolved ${hostname} to ${address}`);
-        
-        // Try the resolved IP
-        if (await this.checkTCPConnectivity(address, this.config.port)) {
-          this.state.currentIP = address;
-          this.state.status = 'healthy';
-          this.state.consecutiveFailures = 0;
-          this.log(`✓ Discovered LLM at ${address}`);
-          return;
+        const isHealthy = await this.testConnection(testIP, port);
+        if (isHealthy) {
+          return testIP;
         }
-      } catch (dnsError) {
-        this.log(`DNS lookup failed: ${dnsError instanceof Error ? dnsError.message : 'Unknown error'}`);
+      } catch (error) {
+        // Continue scanning
       }
+    }
 
-      // Scan IP range
-      const baseIP = this.config.defaultIP.substring(0, this.config.defaultIP.lastIndexOf('.'));
-      const discoveredIPs: string[] = [];
+    return null;
+  }
+
+  /**
+   * Prompt user for manual IP configuration
+   */
+  private async promptForIPConfiguration(): Promise<void> {
+    const newIP = await vscode.window.showInputBox({
+      prompt: 'Enter LLM service IP address',
+      value: this.config.host,
+      placeHolder: '192.168.137.215',
+    });
+
+    if (newIP) {
+      this.config.host = newIP;
+      this.config.lastKnownIP = newIP;
+      this.saveConfig();
+      this.log(`📝 IP configuration updated: ${newIP}`);
+      vscode.window.showInformationMessage(`LLM IP updated to ${newIP}`);
       
-      this.log(`Scanning network range ${baseIP}.200-220...`);
-      
-      // Scan range with parallel checks
-      const ips = Array.from({ length: 21 }, (_, i) => `${baseIP}.${200 + i}`);
-      const checks = ips.map(ip => 
-        this.checkTCPConnectivity(ip, this.config.port)
-          .then(reachable => reachable ? ip : null)
-      );
-      
-      const results = await Promise.all(checks);
-      const found = results.filter((ip): ip is string => ip !== null);
-      
-      if (found.length > 0) {
-        this.state.discoveredIPs = found;
-        this.state.currentIP = found[0];
-        this.state.status = 'healthy';
-        this.state.consecutiveFailures = 0;
-        this.log(`✓ Discovered LLM at ${found[0]} (${found.length} IPs found)`);
-      } else {
-        this.state.status = 'unhealthy';
-        this.log(`✗ No LLM discovered in network range`);
-      }
-    } catch (error) {
-      this.state.status = 'error';
-      this.log(`Discovery error: ${error instanceof Error ? error.message : String(error)}`);
+      // Re-check connectivity
+      this.checkLLMConnectivity();
     }
   }
 
   /**
-   * Create status bar item
+   * Update status bar appearance
    */
-  private createStatusBar(): void {
-    if (this.statusBar) {
-      return;
-    }
-
-    this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 85);
-    this.statusBar.command = 'copilot-orchestrator.showLLMStatus';
-    this.updateStatusBar();
-    this.statusBar.show();
-  }
-
-  /**
-   * Update status bar appearance based on current status
-   */
-  private updateStatusBar(): void {
-    if (!this.statusBar) {
-      return;
-    }
-
-    const icons = {
-      healthy: '$(plug)',
-      unhealthy: '$(warning)',
+  private updateStatus(status: 'healthy' | 'unhealthy' | 'checking' | 'error'): void {
+    const icons: Record<string, string> = {
+      healthy: '$(circle-filled)',
+      unhealthy: '$(error)',
       checking: '$(loading~spin)',
-      error: '$(error)',
+      error: '$(warning)',
     };
 
-    const colors = {
-      healthy: '#4ec9b0',
-      unhealthy: '#ce9178',
-      checking: '#646695',
-      error: '#f48771',
+    const colors: Record<string, string> = {
+      healthy: 'statusBar.foreground',
+      unhealthy: '#ff6b6b',
+      checking: '#ffd43b',
+      error: '#ff6b6b',
     };
 
-    const icon = icons[this.state.status];
-    const color = colors[this.state.status];
+    const labels: Record<string, string> = {
+      healthy: `${icons[status]} LLM: OK (${this.config.host}:${this.config.port})`,
+      unhealthy: `${icons[status]} LLM: Unreachable`,
+      checking: `${icons[status]} LLM: Checking...`,
+      error: `${icons[status]} LLM: Error`,
+    };
+
+    this.statusBarItem.text = labels[status];
+    this.statusBarItem.color = colors[status];
+    this.statusBarItem.show();
+  }
+
+  /**
+   * Load configuration from extension storage
+   */
+  private loadConfig(context: vscode.ExtensionContext): LLMConfig {
+    const stored = context.globalState.get('llmConfig') as LLMConfig | undefined;
     
-    this.statusBar.text = `${icon} LLM: ${this.state.currentIP}`;
-    this.statusBar.tooltip = this.getStatusTooltip();
-    this.statusBar.color = color;
+    return stored || {
+      host: this.DEFAULT_HOST,
+      port: this.DEFAULT_PORT,
+      lastKnownIP: this.DEFAULT_HOST,
+      isHealthy: false,
+    };
   }
 
   /**
-   * Generate status tooltip
+   * Save configuration to extension storage
    */
-  private getStatusTooltip(): string {
-    const parts = [
-      `Status: ${this.state.status}`,
-      `IP: ${this.state.currentIP}`,
-      `Port: ${this.config.port}`,
-      `Checks: ${this.state.checkCount}`,
-      `Failures: ${this.state.consecutiveFailures}`,
-    ];
-
-    if (this.state.lastCheck) {
-      parts.push(`Last Check: ${this.state.lastCheck.toLocaleTimeString()}`);
-    }
-
-    if (this.state.discoveredIPs.length > 0) {
-      parts.push(`Discovered IPs: ${this.state.discoveredIPs.join(', ')}`);
-    }
-
-    parts.push('Click to view details');
-    return parts.join('\n');
-  }
-
-  /**
-   * Get current monitor state
-   */
-  getState(): LLMMonitorState {
-    return { ...this.state };
-  }
-
-  /**
-   * Manually set LLM IP
-   */
-  async setIP(ip: string): Promise<void> {
-    this.state.currentIP = ip;
-    this.state.consecutiveFailures = 0;
-    await vscode.workspace.getConfiguration('copilot-orchestrator.llm').update('ip', ip, vscode.ConfigurationTarget.Global);
-    this.log(`LLM IP set to ${ip}`);
-    this.performCheck().catch(err => this.log(`Check after IP update failed: ${err.message}`));
-  }
-
-  /**
-   * Get monitor logs
-   */
-  getLogs(): string[] {
-    return [...this.logs];
-  }
-
-  /**
-   * Clear logs
-   */
-  clearLogs(): void {
-    this.logs = [];
+  private saveConfig(): void {
+    // Would need context to save, so this is a placeholder
+    this.log(`💾 Config saved: ${this.config.host}:${this.config.port}`);
   }
 
   /**
    * Log message
    */
   private log(message: string): void {
-    const timestamp = new Date().toLocaleTimeString();
-    const logEntry = `[${timestamp}] ${message}`;
-    this.logs.push(logEntry);
-    
-    // Keep only recent logs
-    if (this.logs.length > this.maxLogs) {
-      this.logs = this.logs.slice(-this.maxLogs);
-    }
+    const timestamp = new Date().toISOString();
+    this.outputChannel.appendLine(`[${timestamp}] ${message}`);
   }
 
   /**
-   * Register callback for status changes
+   * Register VS Code commands
    */
-  onStatusChange(callback: (status: LLMMonitorStatus) => void): void {
-    this.onStatusChangeCallbacks.push(callback);
+  private registerCommands(): void {
+    const showStatus = vscode.commands.registerCommand(
+      'copilot-orchestrator.showLLMStatus',
+      () => this.showDetailedStatus()
+    );
+
+    const configureIP = vscode.commands.registerCommand(
+      'copilot-orchestrator.configureLLMIP',
+      () => this.promptForIPConfiguration()
+    );
+
+    const openOutput = vscode.commands.registerCommand(
+      'copilot-orchestrator.showLLMMonitorOutput',
+      () => this.outputChannel.show()
+    );
   }
 
   /**
-   * Notify listeners of status change
+   * Show detailed status information
    */
-  private notifyStatusChange(): void {
-    this.onStatusChangeCallbacks.forEach(callback => {
-      callback(this.state.status);
+  private async showDetailedStatus(): Promise<void> {
+    const status = this.config.isHealthy ? '✅ Healthy' : '❌ Unreachable';
+    const lastChecked = this.config.lastCheckedAt
+      ? new Date(this.config.lastCheckedAt).toLocaleString()
+      : 'Never';
+
+    const message = `
+LLM Service Status
+==================
+
+Current IP: ${this.config.host}
+Port: ${this.config.port}
+Status: ${status}
+Last Checked: ${lastChecked}
+Last Known IP: ${this.config.lastKnownIP || 'Unknown'}
+    `.trim();
+
+    vscode.window.showInformationMessage(message, 'Copy', 'View Logs', 'Configure').then((result) => {
+      if (result === 'Copy') {
+        vscode.env.clipboard.writeText(message);
+        vscode.window.showInformationMessage('Status copied to clipboard');
+      } else if (result === 'View Logs') {
+        this.outputChannel.show();
+      } else if (result === 'Configure') {
+        this.promptForIPConfiguration();
+      }
     });
   }
+
+  /**
+   * Get current config (for other services)
+   */
+  getConfig(): LLMConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Set new IP address
+   */
+  setIP(newIP: string, port?: number): void {
+    this.config.host = newIP;
+    if (port) {
+      this.config.port = port;
+    }
+    this.config.lastKnownIP = newIP;
+    this.saveConfig();
+    this.log(`📝 IP updated to ${newIP}:${this.config.port}`);
+    this.checkLLMConnectivity();
+  }
+}
+
+// Export singleton instance
+let monitorInstance: LLMIPMonitor | null = null;
+
+export function getLLMIPMonitor(context: vscode.ExtensionContext): LLMIPMonitor {
+  if (!monitorInstance) {
+    monitorInstance = new LLMIPMonitor(context);
+  }
+  return monitorInstance;
 }

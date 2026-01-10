@@ -12,6 +12,7 @@ import { generateArchitectureSuggestions } from './architectureSuggestions';
 import { decomposeProjectPlan, generateTaskYAML } from './taskDecomposition';
 import { generateDependencySummary } from './dependencyAnalysis';
 import { extractDesignDataFromWizard, validateDesignPayload, convertToDesignTokens } from './designHandoff';
+import { computePlanDiff, formatDiffSummary, type Plan } from './planDiff';
 import type { SuggestionResponse, ArchitectureContext } from './architectureSuggestions';
 import type { DecompositionResult, GeneratedTask } from './taskDecomposition';
 import type { DesignHandoffPayload } from './designHandoff';
@@ -24,7 +25,53 @@ export interface PlanCompletionResult {
   decompositionResult: DecompositionResult;
   dependencySummary: string;
   designHandoff?: DesignHandoffPayload;
+  planDiff?: string;
   errorMessage?: string;
+}
+
+/**
+ * Trigger task regeneration after plan changes
+ */
+export async function triggerTaskRegeneration(
+  wizardState: Record<string, unknown>,
+  workspaceRoot: string | undefined,
+  showSummary: boolean = true
+): Promise<PlanCompletionResult> {
+  const result = await processPlanCompletion(wizardState, workspaceRoot);
+  
+  if (result.success && showSummary) {
+    const action = await vscode.window.showInformationMessage(
+      `✓ Generated ${result.taskCount} tasks successfully`,
+      'Open Tasks',
+      'View Summary'
+    );
+    
+    if (action === 'Open Tasks') {
+      await openTasksFolder(workspaceRoot);
+    } else if (action === 'View Summary') {
+      await openDecompositionSummary(result);
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Open _ZENTASKS folder in explorer
+ */
+async function openTasksFolder(workspaceRoot: string | undefined): Promise<void> {
+  if (!workspaceRoot) {
+    return;
+  }
+  
+  const tasksPath = path.join(workspaceRoot, '_ZENTASKS');
+  const uri = vscode.Uri.file(tasksPath);
+  
+  try {
+    await vscode.commands.executeCommand('revealInExplorer', uri);
+  } catch (error) {
+    console.warn('[PlanIntegration] Could not reveal tasks folder:', error);
+  }
 }
 
 /**

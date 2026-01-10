@@ -218,6 +218,10 @@ class AgentInvocationService
      */
     protected function buildPlannerPrompt(Task $task, array $contextBundle): string
     {
+        $projectVision = $contextBundle['project_vision'] ?? 'N/A';
+        $taskQueueSummary = $contextBundle['task_queue_summary'] ?? 'N/A';
+        $architectureDocs = $contextBundle['architecture_docs'] ?? 'N/A';
+        
         return <<<PROMPT
 You are Zen Planner, an expert task decomposition agent.
 
@@ -226,9 +230,9 @@ You are Zen Planner, an expert task decomposition agent.
 **Description:** {$task->description}
 
 **Context:**
-- Project Vision: {$contextBundle['project_vision'] ?? 'N/A'}
-- Current Task Queue: {$contextBundle['task_queue_summary'] ?? 'N/A'}
-- Architecture Docs: {$contextBundle['architecture_docs'] ?? 'N/A'}
+- Project Vision: {$projectVision}
+- Current Task Queue: {$taskQueueSummary}
+- Architecture Docs: {$architectureDocs}
 
 **Your Job:**
 1. Decompose the task into atomic subtasks (15-45 minutes each).
@@ -267,6 +271,9 @@ PROMPT;
      */
     protected function buildExecutionPrompt(Task $task, array $contextBundle): string
     {
+        $acceptanceCriteria = $contextBundle['acceptance_criteria'] ?? 'N/A';
+        $filesList = $contextBundle['files_list'] ?? 'N/A';
+        
         return <<<PROMPT
 You are Auto Zen, an expert code implementation and execution agent.
 
@@ -275,10 +282,10 @@ You are Auto Zen, an expert code implementation and execution agent.
 **Description:** {$task->description}
 
 **Acceptance Criteria:**
-{$contextBundle['acceptance_criteria'] ?? 'N/A'}
+{$acceptanceCriteria}
 
 **Files to Modify:**
-{$contextBundle['files_list'] ?? 'N/A'}
+{$filesList}
 
 **Constraints:**
 - Follow SOLID principles (Single Responsibility, Open/Closed, etc.)

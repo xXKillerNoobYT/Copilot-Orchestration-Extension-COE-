@@ -17,7 +17,13 @@ class AgentFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->unique()->word(),
+            'type' => $this->faker->randomElement(['planner', 'architect', 'coder', 'tester', 'reviewer', 'documentation', 'deployment', 'maintenance']),
+            'description' => $this->faker->paragraph(),
+            'capabilities' => json_encode([$this->faker->word(), $this->faker->word()]),
+            'configuration' => json_encode(['timeout' => 300]),
+            'llm_provider' => 'copilot',
+            'is_active' => true,
         ];
     }
 }

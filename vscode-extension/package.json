@@ -175,6 +175,13 @@
         "category": "Task File"
       },
       {
+        "command": "copilot-orchestrator.openTaskList",
+        "title": "Open Task List",
+        "category": "Copilot Orchestrator",
+        "icon": "$(checklist)",
+        "keybinding": "ctrl+shift+t"
+      },
+      {
         "command": "copilot-orchestrator.showTaskMetadata",
         "title": "Show Task Metadata",
         "category": "Task File"
@@ -237,6 +244,30 @@
         "title": "Copilot Orchestrator: Show Audit Dashboard",
         "category": "Copilot Orchestrator",
         "icon": "$(report)"
+      },
+      {
+        "command": "copilot-orchestrator.openPlanBuilder",
+        "title": "Copilot Orchestrator: Open Plan Builder",
+        "category": "Plan Builder",
+        "icon": "$(pencil)"
+      },
+      {
+        "command": "copilot-orchestrator.savePlan",
+        "title": "Copilot Orchestrator: Save Plan",
+        "category": "Plan Builder",
+        "icon": "$(save)"
+      },
+      {
+        "command": "copilot-orchestrator.loadPlan",
+        "title": "Copilot Orchestrator: Load Plan",
+        "category": "Plan Builder",
+        "icon": "$(folder-open)"
+      },
+      {
+        "command": "copilot-orchestrator.listPlans",
+        "title": "Copilot Orchestrator: List Plans",
+        "category": "Plan Builder",
+        "icon": "$(list-unordered)"
       }
     ]
   },

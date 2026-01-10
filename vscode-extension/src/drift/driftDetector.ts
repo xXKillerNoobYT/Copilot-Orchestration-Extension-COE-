@@ -14,6 +14,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Task } from '../workspace/tasksSource';
+import { detectDesignTokenDrift, showDriftNotification } from './designTokenDrift';
 
 export interface DriftMetric {
   type: 'task_coverage' | 'architecture' | 'dependencies' | 'test_coverage' | 'documentation';
@@ -62,6 +63,9 @@ export class DriftDetector {
 
     // Check test coverage
     await this.checkTestCoverage();
+
+    // Check for design token drift
+    await this.checkDesignTokenDrift();
 
     // Calculate overall drift score
     const overallScore = this.calculateDriftScore();
@@ -336,6 +340,37 @@ export class DriftDetector {
     recommendations.push(...specificRecs);
 
     return recommendations;
+  }
+
+  /**
+   * Check for design token drift
+   */
+  private async checkDesignTokenDrift(): Promise<void> {
+    try {
+      const drifts = await detectDesignTokenDrift(this.projectRoot);
+
+      if (drifts.length === 0) {
+        return; // No drift detected
+      }
+
+      for (const drift of drifts) {
+        this.driftMetrics.push({
+          type: 'task_coverage', // Reusing as a catch-all for now
+          severity: drift.severity === 'high' ? 'high' : drift.severity === 'medium' ? 'medium' : 'low',
+          title: `Design Token Drift in ${drift.file}`,
+          description: `${drift.changes.length} token changes detected (${drift.severity} severity).`,
+          evidence: drift.changes.map(c => `${c.changeType}: ${c.path}`),
+          suggestedAction: 'Review design token changes or re-export from Design Editor.',
+          timestamp: drift.timestamp,
+        });
+
+        // Show notification to user
+        await showDriftNotification(drift);
+      }
+    } catch (error) {
+      console.warn('[DriftDetector] Design token drift check failed:', error);
+      // Non-fatal; continue with other checks
+    }
   }
 }
 

@@ -10,9 +10,13 @@
  * - POST /mcp/reportTestFailure
  * - POST /mcp/reportVerificationResult
  * - POST /mcp/askQuestion
+ * - POST /mcp/savePlan
+ * - GET /mcp/loadPlan/:id
+ * - GET /mcp/listPlans
  */
 
 import * as vscode from 'vscode';
+import { retryWithBackoff, withTimeout, CircuitBreaker, showErrorMessage, logError, createRetryHandler } from '../utils/errorHandler';
 
 export interface MCPConfig {
   baseUrl: string;
@@ -23,10 +27,15 @@ export class MCPClient {
   private baseUrl: string;
   private timeout: number = 10000;
   private static instance: MCPClient;
+  private circuitBreaker: CircuitBreaker;
 
   private constructor(config: MCPConfig) {
     this.baseUrl = config.baseUrl;
     this.timeout = config.timeout ?? 10000;
+    this.circuitBreaker = new CircuitBreaker({ 
+      failureThreshold: 5, 
+      resetTimeout: 60000 
+    });
   }
 
   static initialize(config: MCPConfig): MCPClient {
@@ -53,7 +62,7 @@ export class MCPClient {
     if (priority) params.append('priority', priority);
 
     const url = `${this.baseUrl}/mcp/nextTask${params.size ? '?' + params : ''}`;
-    return this.fetch(url, 'GET');
+    return this.fetchWithRetry(url, 'GET');
   }
 
   /**
@@ -71,7 +80,7 @@ export class MCPClient {
     observations?: string[];
     followUpTasks?: any[];
   }): Promise<any> {
-    return this.fetch(`${this.baseUrl}/mcp/reportTaskStatus`, 'POST', data);
+    return this.fetchWithRetry(`${this.baseUrl}/mcp/reportTaskStatus`, 'POST', data);
   }
 
   /**
@@ -129,7 +138,42 @@ export class MCPClient {
     planSection?: string;
     context?: any;
   }): Promise<any> {
-    return this.fetch(`${this.baseUrl}/mcp/askQuestion`, 'POST', data);
+    return this.fetchWithRetry(`${this.baseUrl}/mcp/askQuestion`, 'POST', data);
+  }
+
+  /**
+   * POST /mcp/savePlan
+   * Save wizard state and project plan
+   */
+  async savePlan(data: {
+    name: string;
+    description?: string;
+    wizard_state: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+    status?: 'draft' | 'active' | 'archived';
+  }): Promise<any> {
+    return this.fetchWithRetry(`${this.baseUrl}/api/v1/mcp/savePlan`, 'POST', data);
+  }
+
+  /**
+   * GET /mcp/loadPlan/:id
+   * Load saved plan by ID
+   */
+  async loadPlan(id: number): Promise<any> {
+    return this.fetchWithRetry(`${this.baseUrl}/api/v1/mcp/loadPlan/${id}`, 'GET');
+  }
+
+  /**
+   * GET /mcp/listPlans
+   * List all saved plans
+   */
+  async listPlans(status?: string, limit?: number): Promise<any> {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (limit) params.append('limit', limit.toString());
+
+    const url = `${this.baseUrl}/api/v1/mcp/listPlans${params.size ? '?' + params : ''}`;
+    return this.fetchWithRetry(url, 'GET');
   }
 
   /**
@@ -161,8 +205,28 @@ export class MCPClient {
 
       return response.json();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      vscode.window.showErrorMessage(`MCP API Error: ${errorMessage}`);
+      logError(error, 'MCPClient.fetch', { url, method });
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch with retry, timeout, and circuit breaker
+   */
+  private async fetchWithRetry(url: string, method: string = 'GET', body?: any): Promise<any> {
+    try {
+      return await this.circuitBreaker.execute(() =>
+        retryWithBackoff(
+          () => withTimeout(
+            this.fetch(url, method, body),
+            this.timeout,
+            `Request to ${method} ${url} timed out after ${this.timeout}ms`
+          ),
+          createRetryHandler('MCPClient')
+        )
+      );
+    } catch (error) {
+      showErrorMessage(error, 'MCP Request Failed');
       throw error;
     }
   }
