@@ -11,8 +11,10 @@ import { createOpenAIClient } from '../llm/openaiClient';
 import { generateArchitectureSuggestions } from './architectureSuggestions';
 import { decomposeProjectPlan, generateTaskYAML } from './taskDecomposition';
 import { generateDependencySummary } from './dependencyAnalysis';
+import { extractDesignDataFromWizard, validateDesignPayload, convertToDesignTokens } from './designHandoff';
 import type { SuggestionResponse, ArchitectureContext } from './architectureSuggestions';
 import type { DecompositionResult, GeneratedTask } from './taskDecomposition';
+import type { DesignHandoffPayload } from './designHandoff';
 
 export interface PlanCompletionResult {
   success: boolean;
@@ -21,6 +23,7 @@ export interface PlanCompletionResult {
   architectureSuggestions: SuggestionResponse;
   decompositionResult: DecompositionResult;
   dependencySummary: string;
+  designHandoff?: DesignHandoffPayload;
   errorMessage?: string;
 }
 
@@ -121,6 +124,19 @@ export async function processPlanCompletion(
     // Step 4: Generate dependency summary
     console.log('[PlanIntegration] Generating dependency analysis...');
     result.dependencySummary = generateDependencySummary(decomposition.tasks);
+
+    // Step 5: Extract design data for handoff to design editor
+    console.log('[PlanIntegration] Extracting design data for handoff...');
+    const designData = extractDesignDataFromWizard(wizardState);
+    const validation = validateDesignPayload(designData);
+    
+    if (validation.valid) {
+      result.designHandoff = designData;
+      console.log('[PlanIntegration] Design data extracted successfully');
+    } else {
+      console.warn('[PlanIntegration] Design data validation failed:', validation.errors);
+      // Still continue - design handoff is optional
+    }
 
     result.taskCount = result.tasksCreated.length;
     result.success = true;

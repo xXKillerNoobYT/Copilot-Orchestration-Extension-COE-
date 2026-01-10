@@ -18,7 +18,7 @@ class ResetPassword extends ResetPasswordNotification
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
         return (new MailMessage)
             ->subject('Reset Password Notification')
