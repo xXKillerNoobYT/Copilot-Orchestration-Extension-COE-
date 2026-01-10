@@ -11,8 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Duplicate/obsolete migration retained for history; no-op to avoid table conflicts.
-        // See 2026_01_02_100002_create_architecture_decisions_table.php for the current schema.
+        // Intentionally left blank (no-op migration).
+        //
+        // This migration file was originally created as a duplicate of the
+        // architecture_decisions table creation, but it cannot be used because:
+        // 1. It runs before the parent table 'architecture_designs' is created
+        //    (this migration: 071358, parent table: 100001), causing FK errors
+        // 2. The actual table creation is handled by migration 100002
+        //
+        // This file is retained to preserve migration history consistency for
+        // environments where this migration may have already been recorded.
+        // The table is created and managed by 2026_01_02_100002_create_architecture_decisions_table.php
     }
 
     /**
@@ -20,6 +29,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // No-op; table managed by newer migration.
+        // Intentionally left blank.
+        // The architecture_decisions table is managed and dropped by the newer
+        // migration (2026_01_02_100002) to avoid duplicate dropIfExists calls
+        // and ensure consistent rollback behavior.
     }
 };
