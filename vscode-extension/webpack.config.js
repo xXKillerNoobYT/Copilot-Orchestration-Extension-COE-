@@ -51,23 +51,13 @@ module.exports = [
       llmClientTest: './src/llmClientTest.ts',
       'llm/clientTest': './src/llm/clientTest.ts',
       'llm/transportTest': './src/llm/transportTest.ts',
-      'copilotDispatcher.test': './src/copilotDispatcher.test.ts',
       'workspace/tasksSourceTest': './src/workspace/tasksSourceTest.ts',
       'commands/executeLLMTest': './src/commands/executeLLMTest.ts',
       'github/githubSyncTest': './src/github/githubSyncTest.ts',
       'panels/llmResponsePanelTest': './src/panels/llmResponsePanelTest.ts',
       'transport/transportTest': './src/transport/transportTest.ts',
-      'extension.agentLoop.test': './src/extension.agentLoop.test.ts',
-      // Integration test files
-      // Note: index.ts initializes Mocha programmatically and loads *.test.js
-      // from dist/integration via INTEGRATION_TEST_DIR env. We keep tests compiled
-      // as separate files to avoid global suite/test reliance.
-      'integration/index': './src/integration/index.ts',
+      // Integration test runner
       'integration/runTest': './src/integration/runTest.ts',
-      'integration/extension.integration.test': './src/integration/extension.integration.test.ts',
-      'integration/statusBarLifecycle.integration.test': './src/integration/statusBarLifecycle.integration.test.ts',
-      'integration/activationFlows.integration.test': './src/integration/activationFlows.integration.test.ts',
-      'integration/panelLiveStatus.integration.test': './src/integration/panelLiveStatus.integration.test.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
