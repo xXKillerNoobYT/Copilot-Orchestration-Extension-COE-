@@ -29,7 +29,7 @@ export interface LLMConfig {
 
 export class LLMIPMonitor {
   private statusBarItem: vscode.StatusBarItem;
-  private checkInterval: NodeJS.Timer | null = null;
+  private checkInterval: NodeJS.Timeout | null = null;
   private config: LLMConfig;
   private readonly DEFAULT_PORT = 8000;
   private readonly DEFAULT_HOST = '192.168.137.215';
