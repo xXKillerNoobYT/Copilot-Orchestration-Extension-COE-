@@ -3,12 +3,10 @@
 namespace App\Models\Design;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
 
 class DesignComponent extends Model
 {
-    use HasFactory;
     protected $table = 'design_components';
 
     public $incrementing = false;

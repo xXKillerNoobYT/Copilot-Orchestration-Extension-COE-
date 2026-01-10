@@ -467,41 +467,6 @@ Route::prefix('v1')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('design')->group(function () {
-        // Components
-        Route::get('/components', [\App\Http\Controllers\Api\DesignComponentController::class, 'index'])
-            ->name('api.design.components.index');
-        Route::post('/components', [\App\Http\Controllers\Api\DesignComponentController::class, 'store'])
-            ->name('api.design.components.store');
-        Route::get('/components/{id}', [\App\Http\Controllers\Api\DesignComponentController::class, 'show'])
-            ->name('api.design.components.show');
-        Route::patch('/components/{id}', [\App\Http\Controllers\Api\DesignComponentController::class, 'update'])
-            ->name('api.design.components.update');
-        Route::delete('/components/{id}', [\App\Http\Controllers\Api\DesignComponentController::class, 'destroy'])
-            ->name('api.design.components.destroy');
-
-        // Component Props (scoped)
-        Route::get('/components/{componentId}/props', [\App\Http\Controllers\Api\DesignComponentPropController::class, 'index'])
-            ->name('api.design.component-props.index');
-        Route::post('/components/{componentId}/props', [\App\Http\Controllers\Api\DesignComponentPropController::class, 'store'])
-            ->name('api.design.component-props.store');
-        Route::get('/components/{componentId}/props/{id}', [\App\Http\Controllers\Api\DesignComponentPropController::class, 'show'])
-            ->name('api.design.component-props.show');
-        Route::patch('/components/{componentId}/props/{id}', [\App\Http\Controllers\Api\DesignComponentPropController::class, 'update'])
-            ->name('api.design.component-props.update');
-        Route::delete('/components/{componentId}/props/{id}', [\App\Http\Controllers\Api\DesignComponentPropController::class, 'destroy'])
-            ->name('api.design.component-props.destroy');
-
-        // Component Variants (scoped)
-        Route::get('/components/{componentId}/variants', [\App\Http\Controllers\Api\DesignComponentVariantController::class, 'index'])
-            ->name('api.design.component-variants.index');
-        Route::post('/components/{componentId}/variants', [\App\Http\Controllers\Api\DesignComponentVariantController::class, 'store'])
-            ->name('api.design.component-variants.store');
-        Route::get('/components/{componentId}/variants/{id}', [\App\Http\Controllers\Api\DesignComponentVariantController::class, 'show'])
-            ->name('api.design.component-variants.show');
-        Route::patch('/components/{componentId}/variants/{id}', [\App\Http\Controllers\Api\DesignComponentVariantController::class, 'update'])
-            ->name('api.design.component-variants.update');
-        Route::delete('/components/{componentId}/variants/{id}', [\App\Http\Controllers\Api\DesignComponentVariantController::class, 'destroy'])
-            ->name('api.design.component-variants.destroy');
         // Colors
         Route::get('/colors', [DesignColorController::class, 'index'])
             ->name('api.design.colors.index');
