@@ -3,8 +3,9 @@
  * Generates granular tasks from completed project plan
  */
 
-import { openaiClient } from '../llm/openaiClient';
-import type { Message } from '../transport/transport';
+import type { LlmClient } from '../llm/openaiClient';
+import { createOpenAIClient } from '../llm/openaiClient';
+import type { ChatMessage } from '../transport/llmTransport';
 
 export interface TaskEstimate {
   value: number;
@@ -39,6 +40,7 @@ export interface DecompositionResult {
  */
 export async function decomposeProjectPlan(
   wizardState: Record<string, unknown>,
+  openaiClient: LlmClient,
   architectureSuggestions?: any
 ): Promise<DecompositionResult> {
   try {
@@ -46,7 +48,7 @@ export async function decomposeProjectPlan(
     const prompt = buildDecompositionPrompt(wizardState, architectureSuggestions);
 
     // Call LLM
-    const messages: Message[] = [
+    const messages: ChatMessage[] = [
       {
         role: 'system',
         content: `You are an expert project manager. Decompose project plans into detailed, actionable tasks with dependencies, estimates, and priorities.
@@ -58,15 +60,13 @@ Output ONLY valid JSON in the exact format specified. No additional text or mark
       }
     ];
 
-    const response = await Promise.race([
-      openaiClient.chat(messages),
-      new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error('LLM request timeout')), 60000)
-      )
-    ]);
+    const response = await openaiClient.sendChat(messages);
+
+    // Extract content from response
+    const content = response.choices[0]?.message?.content || '';
 
     // Parse the response
-    const result = parseDecompositionResult(response);
+    const result = parseDecompositionResult(content);
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

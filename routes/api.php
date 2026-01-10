@@ -10,6 +10,9 @@ use App\Http\Controllers\AgentLoopController;
 use App\Http\Controllers\Api\RepositoryController;
 use App\Http\Controllers\Api\RepositoryHealthController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Api\DesignColorController;
+use App\Http\Controllers\Api\DesignTypographyController;
+use App\Http\Controllers\Api\DesignSpacingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -457,6 +460,47 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/projects/{projectId}/health-metrics', [RepositoryHealthController::class, 'getProjectMetrics'])
         ->name('api.health.project-metrics');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Design System API Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('design')->group(function () {
+        // Colors
+        Route::get('/colors', [DesignColorController::class, 'index'])
+            ->name('api.design.colors.index');
+        Route::post('/colors', [DesignColorController::class, 'store'])
+            ->name('api.design.colors.store');
+        Route::get('/colors/{id}', [DesignColorController::class, 'show'])
+            ->name('api.design.colors.show');
+        Route::patch('/colors/{id}', [DesignColorController::class, 'update'])
+            ->name('api.design.colors.update');
+        Route::delete('/colors/{id}', [DesignColorController::class, 'destroy'])
+            ->name('api.design.colors.destroy');
+
+        // Typography
+        Route::get('/typography', [DesignTypographyController::class, 'index'])
+            ->name('api.design.typography.index');
+        Route::post('/typography', [DesignTypographyController::class, 'store'])
+            ->name('api.design.typography.store');
+        Route::get('/typography/{id}', [DesignTypographyController::class, 'show'])
+            ->name('api.design.typography.show');
+        Route::patch('/typography/{id}', [DesignTypographyController::class, 'update'])
+            ->name('api.design.typography.update');
+        Route::delete('/typography/{id}', [DesignTypographyController::class, 'destroy'])
+            ->name('api.design.typography.destroy');
+
+        // Spacing
+        Route::get('/spacing', [DesignSpacingController::class, 'index'])
+            ->name('api.design.spacing.index');
+        Route::post('/spacing', [DesignSpacingController::class, 'store'])
+            ->name('api.design.spacing.store');
+        Route::patch('/spacing/{id}', [DesignSpacingController::class, 'update'])
+            ->name('api.design.spacing.update');
+        Route::delete('/spacing/{id}', [DesignSpacingController::class, 'destroy'])
+            ->name('api.design.spacing.destroy');
+    });
 });
 /*
 |--------------------------------------------------------------------------

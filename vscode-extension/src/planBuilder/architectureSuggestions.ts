@@ -2,8 +2,9 @@
  * LLM-powered architecture suggestions for Plan Builder
  */
 
-import { openaiClient } from '../llm/openaiClient';
-import type { Message } from '../transport/transport';
+import type { LlmClient } from '../llm/openaiClient';
+import { createOpenAIClient } from '../llm/openaiClient';
+import type { ChatMessage } from '../transport/llmTransport';
 
 export interface ArchitectureContext {
   projectName: string;
@@ -39,14 +40,21 @@ export interface SuggestionResponse {
  * Generate architecture suggestions based on user's plan
  */
 export async function generateArchitectureSuggestions(
-  context: ArchitectureContext
+  context: ArchitectureContext,
+  llmClient: LlmClient
 ): Promise<SuggestionResponse> {
   try {
     // Compose the prompt
     const prompt = composeArchitecturePrompt(context);
 
     // Call LLM
-    const messages: Message[] = [
+    const messages: ChatMessage[] = [
+      {
+        role: 'system',
+        content: `You are an expert software architect with deep knowledge of system design patterns, frameworks, and best practices.
+Your goal is to provide tailored architecture recommendations based on project requirements.
+Always provide practical, actionable suggestions that balance simplicity with scalability.`
+      },
       {
         role: 'user',
         content: prompt
@@ -55,14 +63,17 @@ export async function generateArchitectureSuggestions(
 
     // Get LLM response with timeout
     const response = await Promise.race([
-      openaiClient.chat(messages),
-      new Promise<string>((_, reject) =>
+      llmClient.sendChat(messages),
+      new Promise<any>((_, reject) =>
         setTimeout(() => reject(new Error('LLM request timeout')), 30000)
       )
     ]);
 
+    // Extract content from response
+    const content = response.choices[0]?.message?.content || '';
+
     // Parse the response
-    const suggestions = parseArchitectureSuggestions(response);
+    const suggestions = parseArchitectureSuggestions(content);
     return suggestions;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

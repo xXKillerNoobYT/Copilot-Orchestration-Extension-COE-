@@ -1,5 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import {
+  processPlanCompletion,
+  displayCompletionResults,
+  openDecompositionSummary,
+  type PlanCompletionResult
+} from '../planBuilder/planIntegration';
 
 export class PlanBuilderPanel {
   public static currentPanel: PlanBuilderPanel | undefined;
@@ -90,19 +96,43 @@ export class PlanBuilderPanel {
 
   private async _handleWizardCompletion(wizardState: any): Promise<void> {
     try {
-      // Show success message
+      // Show initial success message
       vscode.window.showInformationMessage('Plan created successfully! Generating tasks...');
 
-      // TODO: Call backend API to save plan
-      // TODO: Decompose plan into tasks
-      // TODO: Create task files in _ZENTASKS folder
-      // TODO: Show task decomposition results
-      // TODO: Offer export options
+      // Get workspace root
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!workspaceRoot) {
+        throw new Error('No workspace folder open');
+      }
 
-      console.log('[PlanBuilder] Wizard completed with state:', wizardState);
+      // Process the plan: generate suggestions, decompose tasks, create files
+      const result = await processPlanCompletion(wizardState, workspaceRoot);
+
+      // Display results to user
+      displayCompletionResults(result);
+
+      if (result.success) {
+        // Show decomposition summary in new editor
+        await openDecompositionSummary(result);
+
+        // Optional: Offer to explore created tasks
+        const explore = await vscode.window.showInformationMessage(
+          `Created ${result.taskCount} tasks. Open the _ZENTASKS folder?`,
+          'Yes',
+          'No'
+        );
+
+        if (explore === 'Yes') {
+          const zenTasksUri = vscode.Uri.file(path.join(workspaceRoot, '_ZENTASKS'));
+          await vscode.commands.executeCommand('revealFileInOS', zenTasksUri);
+        }
+      }
+
+      console.log('[PlanBuilder] Wizard completed with result:', result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       vscode.window.showErrorMessage(`Failed to process plan: ${message}`);
+      console.error('[PlanBuilder] Error:', error);
     }
   }
 

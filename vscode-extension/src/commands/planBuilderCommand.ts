@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { PlanBuilderPanel } from './planBuilderPanel';
+import { PlanBuilderPanel } from '../panels/planBuilderPanel';
 
 /**
  * Register the Plan Builder command

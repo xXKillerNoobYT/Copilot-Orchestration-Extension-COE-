@@ -50,10 +50,10 @@ Format as JSON with a "tasks" array.`
   FEATURE: {
     SYSTEM: `You are a product manager and software architect. Your goal is to break down features into implementable components and modules.`,
 
-    USER_TEMPLATE: (feature: string, context: Record<string, string>): string => `
+    USER_TEMPLATE: (context: Record<string, string>): string => `
 Break down the following feature into components and modules:
 
-FEATURE: ${feature}
+FEATURE: ${context.feature}
 
 PROJECT CONTEXT:
 - Tech Stack: ${context.techStack}
@@ -74,8 +74,8 @@ Format as JSON.`
   API: {
     SYSTEM: `You are an API design expert. Your goal is to design RESTful APIs that are intuitive, scalable, and follow best practices.`,
 
-    USER_TEMPLATE: (feature: string): string => `
-Design a RESTful API for: ${feature}
+    USER_TEMPLATE: (context: Record<string, string>): string => `
+Design a RESTful API for: ${context.feature}
 
 Provide:
 1. Endpoints (GET, POST, PUT, DELETE)
@@ -91,8 +91,8 @@ Format as JSON with OpenAPI/Swagger compatible schema.`
   TESTING: {
     SYSTEM: `You are a QA engineer and testing expert. Your goal is to create comprehensive testing strategies that maximize coverage and catch bugs early.`,
 
-    USER_TEMPLATE: (feature: string, context: Record<string, string>): string => `
-Create a testing strategy for: ${feature}
+    USER_TEMPLATE: (context: Record<string, string>): string => `
+Create a testing strategy for: ${context.feature}
 
 PROJECT CONTEXT:
 - Tech Stack: ${context.techStack}

@@ -14,6 +14,7 @@
 The Copilot Orchestration Extension has strong foundational infrastructure (task orchestration, agent management, MCP server) but the **Planner Mode** interactive planning interface specified in the Code Master is **largely unimplemented**.
 
 **Critical Findings**:
+
 - ✅ **Backend Infrastructure**: 85% complete (task orchestration, agents, MCP endpoints, GitHub sync)
 - ⚠️ **Planner Mode UI**: 5% complete (specification exists, no Vue components)
 - ⚠️ **Interactive Design Phase**: 0% implemented (10-page guided wizard not built)
@@ -21,6 +22,7 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 - ✅ **MCP Server**: 100% complete (6 endpoints + WebSocket events)
 
 **Top 5 Critical Gaps**:
+
 1. **Interactive Plan Builder** - 10-page guided wizard with real-time preview (0% done)
 2. **Visual Design System Editor** - WYSIWYG color/font/component builder (0% done)
 3. **Plan-Driven Task Decomposition** - Automatic task generation from plans (30% done)
@@ -34,6 +36,7 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 ### Section 1: Project Objectives ✓ Aligned (80%)
 
 **Specification**: 8 core objectives for Planner Mode
+
 1. Requirements capture via interactive interface
 2. Task decomposition with AI assistance
 3. Dependency mapping and validation
@@ -44,18 +47,20 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 8. Visual review and collaboration
 
 **Implementation Status**:
-| Objective | Status | Evidence | Gap |
-|-----------|--------|----------|-----|
-| Requirements Capture | ⚠️ 20% | Backend models exist; no UI | No interactive wizard (Section 9) |
-| Task Decomposition | ✅ 80% | TaskOrchestrationService, DependencyGraphService | Missing plan-driven auto-generation |
-| Dependency Mapping | ✅ 95% | Full DAG validation, circular detection | Working as specified |
-| Validation | ✅ 70% | Graph validation, acceptance criteria | Missing simulation feature |
-| Export | ⚠️ 30% | JSON export exists; missing PDF/Figma | No export UI in extension |
-| Templates | ❌ 0% | No template system | Completely missing |
-| AI Assistance | ⚠️ 40% | MCP askQuestion tool | No contextual AI questions in UI |
-| Visual Review | ⚠️ 15% | Panel scaffold exists | Missing annotation system (Section 8) |
+
+| Objective             | Status    | Evidence                                            | Gap |
+|--------------|--------|-----------|-----------------------------------------------------|
+| Requirements Capture  | ⚠️ 20%    | Backend models exist; no UI                        | No interactive wizard (Section 9) |
+| Task Decomposition     | ✅ 80%   | TaskOrchestrationService, DependencyGraphService   | Missing plan-driven auto-generation |
+| Dependency Mapping     | ✅ 95%    | Full DAG validation, circular detection           | Working as specified |
+| Validation            | ✅ 70%     | Graph validation, acceptance criteria              | Missing simulation feature |
+| Export                 | ⚠️ 30%    | JSON export exists; missing PDF/Figma              | No export UI in extension |
+| Templates              | ❌ 0%     | No template system                                 | Completely missing |
+| AI Assistance          | ⚠️ 40%    | MCP askQuestion tool                               | No contextual AI questions in UI |
+| Visual Review          | ⚠️ 15%    | Panel scaffold exists                              | Missing annotation system (Section 8) |
 
 **Critical Gaps**:
+
 - No interactive plan builder UI (Vue components from Section 9 spec)
 - No template library or template creation workflow
 - Export limited to JSON (spec requires PDF, Markdown, Figma, CSV)
@@ -75,6 +80,7 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 **Specification**: 7 phases over 39 days
 
 **Current Progress**:
+
 | Phase | Spec Duration | Actual Status | Notes |
 |-------|--------------|---------------|-------|
 | 1. Architecture & Design | 5 days | ✅ Complete | Database schema, services implemented |
@@ -102,6 +108,7 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 **Specification**: 10 identified risks with mitigation strategies
 
 **Status of Identified Risks**:
+
 | Risk | Mitigation Plan | Current Status |
 |------|----------------|----------------|
 | Scope creep | Clear requirements doc | ✅ Managed - Code Master defines scope |
@@ -116,6 +123,7 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 | Deployment complexity | Docker, automation | ⚠️ Partial - Docker files exist, no CI/CD |
 
 **Critical Active Risks**:
+
 - **UI Complexity**: No component library built; 10-page wizard unimplemented
 - **User Adoption**: No onboarding flow, tutorials, or user documentation
 
@@ -126,6 +134,7 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 **Specification**: 15 KPIs across 5 categories
 
 **Measurement Status**:
+
 | Category | KPIs Defined | Measured | Tracking System |
 |----------|--------------|----------|-----------------|
 | Quality | 3 (test coverage, bug escape, code review) | ❌ None | No metrics collection |
@@ -151,6 +160,7 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 ### Section 8: Decision Log + Visual Review Tool ⚠️ Partially Aligned (20%)
 
 **Specification**:
+
 - Part A: 10 documented architectural decisions
 - Part B: Visual Review Tool with annotation system
 
@@ -159,6 +169,7 @@ The Copilot Orchestration Extension has strong foundational infrastructure (task
 **Part B - Visual Review Tool**: ❌ **NOT IMPLEMENTED**
 
 Spec Requirements:
+
 - Side-by-side plan display with annotations
 - 6 annotation types (Comment, Suggestion, Issue, Question, Action Item, Approval)
 - Smart task selector with hover/click/compare
@@ -167,6 +178,7 @@ Spec Requirements:
 - Export annotations
 
 Current Implementation:
+
 - [visualVerificationPanel.ts](vscode-extension/src/panels/visualVerificationPanel.ts) exists (507 lines)
 - Basic checklist UI scaffold
 - **Missing**: Annotation system, threading, reactions, notifications, export
@@ -181,9 +193,10 @@ Current Implementation:
 
 **Specification**: 10-page guided wizard with real-time visual feedback
 
-#### Required Components (0% Implemented):
+#### Required Components (0% Implemented)
 
 **1. 10 Core Design Questions** ❌
+
 - Q1: Page Layout Organization
 - Q2: Color Theme Selection
 - Q3: Task Display Format
@@ -198,6 +211,7 @@ Current Implementation:
 **Current Status**: No question UI, no Vue components, no plan builder interface
 
 **2. Live Preview System** ❌
+
 - Three-panel interface (Question | Preview | Context)
 - Real-time updates (200-500ms)
 - 8 designable page sections
@@ -206,6 +220,7 @@ Current Implementation:
 **Current Status**: No preview system exists
 
 **3. Smart Side Panel** ❌
+
 - Auto-scrolls to affected sections
 - Shows question context
 - Displays design impacts
@@ -214,6 +229,7 @@ Current Implementation:
 **Current Status**: No side panel navigation
 
 **4. Flexible User Journeys** ❌
+
 - Visual Designer path (15-20 min)
 - Business Analyst path (25-35 min)
 - Technical Architect path (45-60 min)
@@ -221,6 +237,7 @@ Current Implementation:
 **Current Status**: No journey paths implemented
 
 **5. Real-Time Feedback** ❌
+
 - Live preview updates
 - Compatibility indicators
 - Progress tracking
@@ -229,26 +246,30 @@ Current Implementation:
 **Current Status**: No feedback mechanisms
 
 **6. Continuous Refinement Loop** ❌
+
 - Answer questions → Review → AI follow-ups → Refine → Export
 
 **Current Status**: No refinement workflow
 
 **7. AI-Powered Assistance** ⚠️ 30%
+
 - MCP `askQuestion` tool exists
 - **Missing**: Contextual follow-up questions based on user role
 - **Missing**: Compatibility checking UI
 - **Missing**: Best practice recommendations UI
 
 **8. Export-Ready Specifications** ⚠️ 10%
+
 - JSON export exists in backend
 - **Missing**: PDF, Markdown, Figma export
 - **Missing**: Export UI in extension
 
 ---
 
-#### File Structure Comparison:
+#### File Structure Comparison
 
 **Specified** (Section 9.2):
+
 ```
 vscode-extension/src/
 ├── components/InteractiveDesign/
@@ -288,6 +309,7 @@ vscode-extension/src/
 ```
 
 **Actually Implemented**:
+
 ```
 vscode-extension/src/
 ├── panels/
@@ -307,6 +329,7 @@ vscode-extension/src/
 ---
 
 **Critical Impact**:
+
 - Interactive Design Phase is the **unique selling point** of Planner Mode
 - Spec states: "This is the differentiator that makes Planner Mode unique"
 - **100% of this feature is missing**
@@ -318,39 +341,46 @@ vscode-extension/src/
 
 **Specification**: Plan discovery, loading, versioning, updates, code sync, orchestration integration
 
-#### Implemented Features:
+#### Implemented Features
 
 **1. Plan Discovery** ⚠️ 30%
+
 - Spec: Scan `Docs/Plans/**`, `.plans/**`, `Plans/**`, `**/*.plan.json`
 - Current: Basic file watchers exist
 - **Missing**: Multi-location scan, validation, indexing
 
 **2. Plan Loading & Parsing** ⚠️ 40%
+
 - Spec: 8-step loading process (read JSON, validate schema, parse design choices, etc.)
 - Current: [taskParser.ts](vscode-extension/src/taskParser.ts) exists for tasks; no plan parser
 - **Missing**: PlanLoader service, schema validation, metadata parsing
 
 **3. Plan Versioning** ⚠️ 20%
+
 - Spec: Semantic versioning, change history, impact analysis
 - Current: Version fields in plan.json schema
 - **Missing**: Versioning service, diff calculation, changelog generation
 
 **4. Plan Updates & Code Sync** ⚠️ 30%
+
 - Spec: Detect plan changes → analyze impact → generate tasks → notify user
 - Current: File watchers exist
 - **Missing**: Impact analysis, automatic task generation, notification system
 
 **5. Task Decomposition from Plan** ⚠️ 40%
+
 - Spec: Read plan.json → generate complete task tree → map dependencies
 - Current: TaskOrchestrationService exists
 - **Missing**: Plan-driven task generator (currently manual task creation)
 
 **6. Orchestration Integration** ✅ 70%
+
 - Spec: Plan drives task queue, Auto Zen execution, testing, progress tracking
 - Current: MCP server, task queue, agent management functional
 - **Gaps**: Visual progress dashboard, AI direction system
 
 **7. Code ↔ Plan Synchronization** ❌ 0%
+
 - Spec: Detect code changes → map to plan sections → suggest plan updates
 - Current: Not implemented
 - **Missing**: Reverse mapping (code → plan), drift detection, adjustment wizard
@@ -361,9 +391,10 @@ vscode-extension/src/
 
 **Specification**: Enhanced MCP server with 6 reporting tools + WebSocket events
 
-#### Implementation Status:
+#### Implementation Status
 
 **Core MCP Tools** ✅ 100%
+
 | Tool | Spec | Implemented | Evidence |
 |------|------|-------------|----------|
 | getNextTask | Detailed prompt + acceptance criteria | ✅ | [McpController.php](app/Http/Controllers/Api/McpController.php):65 |
@@ -374,14 +405,17 @@ vscode-extension/src/
 | askQuestion | Q&A with plan/code context | ✅ | [McpController.php](app/Http/Controllers/Api/McpController.php):485 |
 
 **WebSocket Events** ✅ 100%
+
 - task-status, observation, verification, test-failure, server-status, audit events
 - Implemented in [WebSocketEventsService.php](app/Services/WebSocketEventsService.php)
 
 **MCP Client** ✅ 100%
+
 - [mcpClient.ts](vscode-extension/src/services/mcpClient.ts) (224 lines)
 - 6 endpoint methods + WebSocket listener
 
 **Tests** ✅ 100%
+
 - [McpServerTest.php](tests/Feature/McpServerTest.php) (470 lines, 25 test cases)
 
 **Section 11 Alignment**: ✅ **EXCELLENT** - This is the most well-implemented section
@@ -391,12 +425,14 @@ vscode-extension/src/
 **Agent Team Structure** ⚠️ 40%
 
 Spec requires 4 specialized teams:
+
 1. **Planning Team** - Plan → tasks decomposition
 2. **Answer Team** - Context-aware Q&A
 3. **Task Decomposition Agent** - Break large tasks
 4. **Verification Team** - Auto + visual verification
 
 **Current Implementation**:
+
 - Agent profiles: [agentProfiles.ts](vscode-extension/src/agentProfiles.ts) exists
 - `.github/agents/` contains agent definitions (Auto Zen, Zen Planner)
 - **Missing**: YAML profiles for 4 teams (spec in Section 11.5)
@@ -404,6 +440,7 @@ Spec requires 4 specialized teams:
 - **Missing**: Programming Orchestrator UI tab (Settings Panel)
 
 **Visual Verification Panel** ⚠️ 40%
+
 - Panel exists: [visualVerificationPanel.ts](vscode-extension/src/panels/visualVerificationPanel.ts)
 - **Missing**: Server start/stop automation
 - **Missing**: Real checklist data from backend
@@ -417,9 +454,10 @@ Spec requires 4 specialized teams:
 
 **Specification**: Comprehensive COE feature set (35 features across 7 categories)
 
-#### Feature Audit by Category:
+#### Feature Audit by Category
 
 **Category 1: Planning & Design (7 features)** - 10% Complete
+
 1. ❌ Interactive Plan Builder - NOT IMPLEMENTED (Section 9 gap)
 2. ❌ Visual Design System Editor - NOT IMPLEMENTED
 3. ❌ Feature Breakdown System - NOT IMPLEMENTED
@@ -499,12 +537,14 @@ Spec requires 4 specialized teams:
 
 **Current State**: 0% implemented - NO Vue components exist
 
-**Impact**: 
+**Impact**:
+
 - Core differentiator of Planner Mode is missing
 - Users have no guided planning interface
 - Cannot create plans through UI (must manually edit JSON)
 
 **Remediation Tasks**:
+
 1. Create Vue component structure (DesignPhaseContainer, LeftPanel, CenterPanel, RightPanel)
 2. Implement 10 core design questions with A/B/C/D/E options
 3. Build live preview system with 200-500ms updates
@@ -525,12 +565,14 @@ Spec requires 4 specialized teams:
 **Current State**: 0% implemented
 
 **Impact**:
+
 - Users cannot visually design their planning tool
 - Must manually edit design-system.json
 - No color palette builder with theme preview
 - No font pair selector
 
 **Remediation Tasks**:
+
 1. Build color palette editor with WCAG contrast checking
 2. Create font pair selector with live preview
 3. Implement component library builder
@@ -548,11 +590,13 @@ Spec requires 4 specialized teams:
 **Current State**: 30% implemented (manual task creation only)
 
 **Impact**:
+
 - Plans don't automatically generate tasks
 - User must manually create every task
 - No guarantee tasks match plan
 
 **Remediation Tasks**:
+
 1. Create PlanTaskGenerator service
 2. Parse plan.json design choices → generate tasks
 3. Map dependencies from plan structure
@@ -570,12 +614,14 @@ Spec requires 4 specialized teams:
 **Current State**: 40% implemented (panel exists, no automation)
 
 **Impact**:
+
 - Manual verification process (no server start/stop)
 - Checklist not populated from backend
 - Plan references not highlighted
 - No issue reporting workflow
 
 **Remediation Tasks**:
+
 1. Implement server start/stop commands in panel
 2. Fetch checklist from backend (acceptance criteria)
 3. Highlight affected plan sections
@@ -593,11 +639,13 @@ Spec requires 4 specialized teams:
 **Current State**: 10% implemented (scaffold only)
 
 **Impact**:
+
 - No visibility into agent team coordination
 - Cannot monitor Planning Team, Answer Team, Decomposition Agent, Verification Team
 - No team metrics or status
 
 **Remediation Tasks**:
+
 1. Add "Programming Orchestrator" tab to [settingsPanel.ts](vscode-extension/src/panels/settingsPanel.ts)
 2. Create team status cards (4 teams)
 3. Display real-time metrics via WebSocket
@@ -615,11 +663,13 @@ Spec requires 4 specialized teams:
 **Current State**: 0% implemented
 
 **Impact**:
+
 - Plan and code can drift out of sync
 - No automatic detection of plan violations
 - Manual effort to keep plan current
 
 **Remediation Tasks**:
+
 1. Build file watcher for code changes
 2. Map code files to plan sections (reverse lookup)
 3. Detect when code changes affect plan
@@ -637,12 +687,14 @@ Spec requires 4 specialized teams:
 **Current State**: 0% measured
 
 **Impact**:
+
 - Cannot measure success
 - No velocity tracking
 - No quality metrics
 - No adoption metrics
 
 **Remediation Tasks**:
+
 1. Implement telemetry service (task completion, execution time, errors)
 2. Create metrics dashboard UI
 3. Track: velocity (tasks/day), cycle time, test pass rate, blocked count
@@ -660,11 +712,13 @@ Spec requires 4 specialized teams:
 **Current State**: 0% implemented
 
 **Impact**:
+
 - Users start from blank slate
 - No guidance for common project types
 - Slow onboarding
 
 **Remediation Tasks**:
+
 1. Create template schema (plan.json + design-system.json)
 2. Build 5 core templates (SPA, REST API, Mobile, Library, Monorepo)
 3. Implement template selector UI
@@ -682,11 +736,13 @@ Spec requires 4 specialized teams:
 **Current State**: 0% implemented
 
 **Impact**:
+
 - No collaborative plan review
 - Cannot annotate plans for feedback
 - No threading or reactions
 
 **Remediation Tasks**:
+
 1. Build annotation UI (6 types: Comment, Suggestion, Issue, Question, Action Item, Approval)
 2. Implement task selector with hover/click
 3. Add threading and reactions
@@ -704,11 +760,13 @@ Spec requires 4 specialized teams:
 **Current State**: 30% (JSON only)
 
 **Impact**:
+
 - Limited sharing options
 - Cannot generate stakeholder reports
 - No Figma integration
 
 **Remediation Tasks**:
+
 1. Implement PDF export (plan + design system)
 2. Add Markdown export
 3. Create CSV export for tasks
@@ -722,6 +780,7 @@ Spec requires 4 specialized teams:
 ## Recommended Remediation Roadmap
 
 ### Phase 1: Critical Foundations (4 weeks)
+
 **Priority**: Close largest gaps to make Planner Mode usable
 
 1. **Week 1-3**: Build Interactive Plan Builder (Gap 1)
@@ -729,7 +788,7 @@ Spec requires 4 specialized teams:
    - Vue components (Question, Preview, Side Panel)
    - Real-time feedback
    - User journeys
-   
+
 2. **Week 4**: Implement Visual Design System Editor (Gap 2)
    - Color palette builder
    - Font selector
@@ -740,12 +799,13 @@ Spec requires 4 specialized teams:
 ---
 
 ### Phase 2: Automation & Verification (3 weeks)
+
 **Priority**: Connect plans to execution
 
 1. **Week 5**: Plan-Driven Task Decomposition (Gap 3)
    - Automatic task generation
    - Dependency mapping
-   
+
 2. **Week 6**: Visual Verification Automation (Gap 4)
    - Server control
    - Checklist automation
@@ -760,12 +820,13 @@ Spec requires 4 specialized teams:
 ---
 
 ### Phase 3: Synchronization & Metrics (2 weeks)
+
 **Priority**: Keep plan and code aligned
 
 1. **Week 8**: Code ↔ Plan Synchronization (Gap 6)
    - Reverse mapping
    - Drift detection
-   
+
 2. **Week 9**: Metrics & Analytics (Gap 7)
    - Telemetry service
    - Dashboard UI
@@ -776,6 +837,7 @@ Spec requires 4 specialized teams:
 ---
 
 ### Phase 4: Polish & Collaboration (3 weeks)
+
 **Priority**: Improve UX and enable collaboration
 
 1. **Week 10**: Plan Templates (Gap 8)
@@ -792,6 +854,7 @@ Spec requires 4 specialized teams:
 ---
 
 ### Phase 5: Export & Finalization (1 week)
+
 **Priority**: Complete export features
 
 1. **Week 13**: Export Formats (Gap 10)
@@ -878,7 +941,7 @@ Spec requires 4 specialized teams:
 
 ### Medium Priority (Next Wave)
 
-9. **TASK-PLAN-009**: Create 5 Core Plan Templates
+1. **TASK-PLAN-009**: Create 5 Core Plan Templates
    - Description: Build template schema + 5 templates (SPA, REST API, Mobile, Library, Monorepo)
    - Files: Create `Docs/Plans/templates/` directory + 5 plan.json + design-system.json files
    - Acceptance Criteria: Each template has complete plan.json + design-system.json; valid schema; can be loaded
@@ -886,7 +949,7 @@ Spec requires 4 specialized teams:
    - Priority: MEDIUM
    - Dependencies: None
 
-10. **TASK-PLAN-010**: Implement Visual Review Tool Annotation System
+2. **TASK-PLAN-010**: Implement Visual Review Tool Annotation System
     - Description: Build side-by-side plan display with 6 annotation types (Comment, Suggestion, Issue, Question, Action Item, Approval)
     - Files: Create `vscode-extension/src/panels/visualReviewPanel.ts`
     - Acceptance Criteria: Can annotate plan sections; 6 annotation types work; threading supported; export annotations
@@ -894,7 +957,7 @@ Spec requires 4 specialized teams:
     - Priority: MEDIUM
     - Dependencies: None
 
-11. **TASK-PLAN-011**: Add PDF, Markdown, CSV Export
+3. **TASK-PLAN-011**: Add PDF, Markdown, CSV Export
     - Description: Implement export to PDF (plan + design system), Markdown (spec), CSV (tasks)
     - Files: Create `app/Services/ExportService.php`, add export endpoints
     - Acceptance Criteria: Can export to 3 formats; PDF includes visual system; Markdown is human-readable; CSV has all tasks
@@ -902,7 +965,7 @@ Spec requires 4 specialized teams:
     - Priority: MEDIUM
     - Dependencies: None
 
-12. **TASK-PLAN-012**: Build Metrics Dashboard UI
+4. **TASK-PLAN-012**: Build Metrics Dashboard UI
     - Description: Create dashboard panel showing 15 KPIs: velocity, cycle time, test pass rate, etc.
     - Files: Create `vscode-extension/src/panels/metricsPanel.ts`
     - Acceptance Criteria: Shows 15 KPIs from Section 6; updates via WebSocket; export to CSV
@@ -912,7 +975,7 @@ Spec requires 4 specialized teams:
 
 ### Low Priority (Future)
 
-13. **TASK-PLAN-013**: Implement Figma Export Integration
+1. **TASK-PLAN-013**: Implement Figma Export Integration
     - Description: Export design-system.json to Figma format via Figma API
     - Files: Create `app/Services/FigmaExportService.php`
     - Acceptance Criteria: Can export to Figma; color palette transfers; typography maps correctly
@@ -920,7 +983,7 @@ Spec requires 4 specialized teams:
     - Priority: LOW
     - Dependencies: TASK-PLAN-011
 
-14. **TASK-PLAN-014**: Build Template Selector UI
+2. **TASK-PLAN-014**: Build Template Selector UI
     - Description: UI to browse templates, preview, and instantiate new plans from templates
     - Files: Create `vscode-extension/src/panels/templateSelectorPanel.ts`
     - Acceptance Criteria: Shows 5+ templates; preview shows summary; clicking creates new plan from template
@@ -928,7 +991,7 @@ Spec requires 4 specialized teams:
     - Priority: LOW
     - Dependencies: TASK-PLAN-009
 
-15. **TASK-PLAN-015**: Implement Smart Side Panel Auto-Scrolling
+3. **TASK-PLAN-015**: Implement Smart Side Panel Auto-Scrolling
     - Description: Side panel auto-scrolls to relevant section when question answered; highlights affected elements
     - Files: Update RightPanel components with scroll behavior
     - Acceptance Criteria: Selecting option A scrolls side panel to affected section; smooth animation; highlights elements
@@ -940,14 +1003,16 @@ Spec requires 4 specialized teams:
 
 ## Validation Report
 
-### Errors Found:
+### Errors Found
+
 1. ❌ **CRITICAL**: No Vue components exist for Interactive Design Phase (Section 9)
 2. ❌ **CRITICAL**: Plan-driven task generation not implemented (Section 10)
 3. ⚠️ **WARNING**: MCP server exists but visual verification automation incomplete
 4. ⚠️ **WARNING**: Metrics collection not implemented (Section 6)
 5. ⚠️ **WARNING**: Export limited to JSON (spec requires PDF, Markdown, Figma, CSV)
 
-### Warnings Found:
+### Warnings Found
+
 1. ⚠️ Risk "UI Complexity" is ACTIVE - no component library
 2. ⚠️ Risk "User Adoption" is ACTIVE - no user documentation
 3. ⚠️ Many features marked "done" in tasks.json but are actually partial implementations
@@ -958,19 +1023,22 @@ Spec requires 4 specialized teams:
 
 ## Conclusion
 
-### Strengths:
+### Strengths
+
 - ✅ **Excellent backend infrastructure**: Task orchestration, agent management, MCP server, GitHub sync
 - ✅ **Strong dependency management**: DAG validation, circular detection, critical path analysis
 - ✅ **MCP implementation**: 6 tools + WebSocket events fully functional
 - ✅ **Test coverage**: Comprehensive backend tests (470 lines MCP tests alone)
 
-### Weaknesses:
+### Weaknesses
+
 - ❌ **Missing core differentiator**: Interactive Plan Builder (Section 9) is 0% implemented
 - ❌ **No UI components**: 0 Vue files found; all UI is scaffolds/TypeScript panels
 - ❌ **Plan-code disconnect**: Plans don't auto-generate tasks; no reverse mapping
 - ❌ **No metrics**: Cannot measure success against 15 defined KPIs
 
-### Path Forward:
+### Path Forward
+
 1. **Immediate**: Start Phase 1 of remediation roadmap (build Interactive Plan Builder)
 2. **Short-term**: Complete automation gaps (task generation, verification, metrics)
 3. **Medium-term**: Implement collaboration features (templates, visual review, export)
