@@ -91,7 +91,7 @@ npm test  # ✓ taskGraphTest, llmConfigTest, llmClientTest
 **Example Settings**:
 ```json
 {
-  "copilot-orchestrator.llm.baseUrl": "http://localhost:1234/v1",
+  "copilot-orchestrator.llm.baseUrl": "http://192.168.137.7:1234/v1",
   "copilot-orchestrator.llm.apiKey": "lm-studio",
   "copilot-orchestrator.llm.defaultModel": "neural-chat",
   "copilot-orchestrator.llm.taskRoots": "_ZENTASKS,docs/plans"
@@ -108,7 +108,7 @@ From `vscode-extension/package.json`:
 {
   "llm.baseUrl": {
     "type": "string",
-    "default": "http://localhost:1234/v1",
+    "default": "http://192.168.137.7:1234/v1",
     "description": "Base URL for OpenAI-compatible LLM endpoint"
   },
   "llm.taskRoots": {
@@ -148,7 +148,7 @@ npm test         # ✓ All tests pass
 
 **LLM Configuration**:
 1. Run `Configure LLM Settings` command
-2. Enter LM Studio URL: `http://localhost:1234/v1`
+2. Enter LM Studio URL: `http://192.168.137.7:1234/v1`
 3. Run `Test LLM Connection` command
 4. Status bar shows "LLM: Configured" ✓
 

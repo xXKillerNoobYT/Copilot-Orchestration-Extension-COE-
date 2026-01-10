@@ -10,7 +10,7 @@ export class LMStudioProvider extends OpenAIProvider {
   constructor(config: ProviderConfig) {
     super({
       ...config,
-      baseUrl: config.baseUrl || 'http://localhost:1234/v1',
+      baseUrl: config.baseUrl || 'http://192.168.137.7:1234/v1',
       defaultModel: config.defaultModel || 'local-model',
       // LM Studio typically doesn't need rate limiting
       rateLimit: {

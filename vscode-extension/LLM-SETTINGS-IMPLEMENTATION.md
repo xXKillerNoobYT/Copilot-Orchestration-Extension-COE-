@@ -78,7 +78,7 @@ export async function configureLlmCommand(context: vscode.ExtensionContext): Pro
 ### 1. Tabbed Interface (4 Tabs)
 
 #### Connection Tab
-- **Base URL input**: Default `http://localhost:1234/v1` (LM Studio default)
+- **Base URL input**: Default `http://192.168.137.7:1234/v1` (LM Studio default)
 - **API Key input**: Optional, password-masked for security
 - **Model selection input**: Manual model ID entry with current selection display
 - **Real-time validation**: URL format validation on blur
@@ -159,7 +159,7 @@ private async _testConnection(baseUrl: string, apiKey?: string, model?: string):
 ### 4. LM Studio-First Design
 
 **Default Configuration**:
-- Base URL: `http://localhost:1234/v1` (LM Studio's default port)
+- Base URL: `http://192.168.137.7:1234/v1` (LM Studio's default port)
 - API Key: Empty (not required for local servers)
 - Timeout: 30000 ms (30 seconds for local inference)
 

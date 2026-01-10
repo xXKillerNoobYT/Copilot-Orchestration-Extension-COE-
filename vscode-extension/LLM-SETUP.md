@@ -6,7 +6,7 @@ This extension speaks to OpenAI-compatible chat endpoints (OpenAI, Azure OpenAI 
 
 1. Open the Command Palette and run **“Copilot Orchestrator: Configure LLM”**.
 2. Fill the fields (defaults shown in parentheses):
-   - **Base URL** (`http://localhost:1234/v1` for LM Studio; `https://api.openai.com/v1` for OpenAI).
+   - **Base URL** (`http://192.168.137.7:1234/v1` for LM Studio; `https://api.openai.com/v1` for OpenAI).
    - **API Key** (required for OpenAI/Azure; leave empty for LM Studio).
    - **Default Model** (e.g., `gpt-4.1`, `gpt-4o`, or your LM Studio model name).
    - **Temperature** (0–2; defaults to `0.7`).
@@ -21,7 +21,7 @@ This extension speaks to OpenAI-compatible chat endpoints (OpenAI, Azure OpenAI 
 ## LM Studio (local) recipe
 
 - Start LM Studio’s server (default port **1234**).
-- Use **Base URL**: `http://localhost:1234/v1`.
+- Use **Base URL**: `http://192.168.137.7:1234/v1`.
 - **API Key**: leave blank.
 - **Default Model**: the exact LM Studio model ID you loaded (see LM Studio UI).
 - Run **Test Connection**; if it fails, ensure LM Studio server is running and port 1234 is open.
@@ -39,7 +39,7 @@ This extension speaks to OpenAI-compatible chat endpoints (OpenAI, Azure OpenAI 
 
 | Setting | Key | Default | Notes |
 | --- | --- | --- | --- |
-| Base URL | `copilot-orchestrator.llm.baseUrl` | `http://localhost:1234/v1` | Must start with `http` or `https`. |
+| Base URL | `copilot-orchestrator.llm.baseUrl` | `http://192.168.137.7:1234/v1` | Must start with `http` or `https`. |
 | API Key | `copilot-orchestrator.llm.apiKey` | empty | Stored in global scope; redacted in logs. |
 | Default Model | `copilot-orchestrator.llm.defaultModel` | `gpt-4.1` | Required; non-empty string. |
 | Temperature | `copilot-orchestrator.llm.temperature` | `0.7` | 0–2 inclusive. |
