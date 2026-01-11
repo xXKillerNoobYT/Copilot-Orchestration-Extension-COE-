@@ -316,14 +316,14 @@
       "description": "Create planGenerator.ts that transforms wizard answers (Q1-Q5) into Code Master plan.json schema format with full type safety.",
       "details": "Maps: Q1→project metadata, Q2→architecture, Q3→features array, Q4→timeline/milestones, Q5→team structure. Uses Zod schemas for validation.\n\nFile: vscode-extension/src/planBuilder/planGenerator.ts\n\nDefine interfaces: WizardAnswers, PlanJSON, Feature, Milestone, TeamRole\n\nEstimate: 3-4 hours",
       "testStrategy": "Unit tests: valid wizard→valid JSON; missing fields→error; verify all sections map; validate against schema; test edge cases (empty arrays, nulls).",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-003",
         "TASK-002E"
       ],
       "createdAt": "2026-01-11T01:59:39.162Z",
-      "updatedAt": "2026-01-11T05:50:20.443Z"
+      "updatedAt": "2026-01-11T05:52:42.887Z"
     },
     {
       "id": "TASK-mk93669p-4j8sk",
@@ -331,14 +331,14 @@
       "description": "Create planPersistence.ts with methods to save/load/version plans using VS Code workspace APIs. Handles Docs/Plans/ directory operations with error handling.",
       "details": "Methods: savePlan, loadPlan, listPlans, versionPlan (semver), backupPlan (timestamped), deletePlan (soft delete to .deleted/).\n\nUses vscode.workspace.fs for file operations. Handles errors: disk full, permissions, invalid JSON.\n\nFile: vscode-extension/src/services/planPersistence.ts\n\nEstimate: 3-4 hours",
       "testStrategy": "Test save/load cycle; verify correct location; test versioning increments; verify backups with timestamps; test error handling (disk full, permissions).",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "EPIC-003",
         "TASK-003A"
       ],
       "createdAt": "2026-01-11T01:59:39.325Z",
-      "updatedAt": "2026-01-11T01:59:39.325Z"
+      "updatedAt": "2026-01-11T05:52:56.364Z"
     },
     {
       "id": "TASK-mk9366e3-mjtxw",
@@ -851,6 +851,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T05:50:20.443Z"
+    "updatedAt": "2026-01-11T05:52:56.364Z"
   }
 }
