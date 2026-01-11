@@ -244,12 +244,11 @@ class GitHubZenTasksSyncService
     {
         Log::info('Starting two-way sync');
 
-        // First sync issues to tasks (import new issues)
-        $issuesResult = $this->syncIssuesToTasks($owner, $repo);
-
-        // Then sync tasks to GitHub (export task updates)
+        // First sync tasks to GitHub (export local task updates)
         $tasksResult = $this->syncTasksToGitHub($owner, $repo);
 
+        // Then sync issues to tasks (import new/updated issues from GitHub)
+        $issuesResult = $this->syncIssuesToTasks($owner, $repo);
         return [
             'issues_to_tasks' => $issuesResult,
             'tasks_to_issues' => $tasksResult,
