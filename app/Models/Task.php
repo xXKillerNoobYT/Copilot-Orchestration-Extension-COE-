@@ -46,6 +46,20 @@ class Task extends Model
     ];
 
     /**
+     * Boot the model and register event listeners.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::updated(function ($task) {
+            if ($task->isDirty('status')) {
+                event(new \App\Events\TaskStatusUpdated($task));
+            }
+        });
+    }
+
+    /**
      * Get the project that owns the task.
      */
     public function project(): BelongsTo

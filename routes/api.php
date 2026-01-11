@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\GitHubController;
 use App\Http\Controllers\Api\McpController;
+use App\Http\Controllers\Api\MetricsController;
 use App\Http\Controllers\Api\MonitoringController;
 use App\Http\Controllers\Api\PlanningController;
 use App\Http\Controllers\Api\TaskController;
@@ -113,6 +114,20 @@ Route::prefix('v1')->group(function () {
     
     Route::get('/agents/workload/balance/{agentType}', [AgentController::class, 'balanceWorkload'])
         ->name('api.agents.balanceWorkload');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Metrics & Observability API Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/metrics/tasks', [MetricsController::class, 'tasks'])
+        ->name('api.metrics.tasks');
+
+    Route::get('/metrics/agents', [MetricsController::class, 'agents'])
+        ->name('api.metrics.agents');
+
+    Route::get('/metrics/errors', [MetricsController::class, 'errors'])
+        ->name('api.metrics.errors');
     
     /*
     |--------------------------------------------------------------------------

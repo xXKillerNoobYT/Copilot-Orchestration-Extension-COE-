@@ -117,6 +117,39 @@ class LoggingService
     }
 
     /**
+     * Log general events
+     */
+    public function logEvent(
+        string $event,
+        array $data = [],
+        string $level = 'info'
+    ): void {
+        $context = $this->buildContext([
+            'event_type' => 'general',
+            'event' => $event,
+            'data' => $data,
+        ]);
+
+        $this->log($level, "Event: {$event}", $context);
+    }
+
+    /**
+     * Log info level message (PSR-3 compatible)
+     */
+    public function info(string $message, array $context = []): void
+    {
+        $this->log('info', $message, $this->buildContext($context));
+    }
+
+    /**
+     * Log warning level message (PSR-3 compatible)
+     */
+    public function warning(string $message, array $context = []): void
+    {
+        $this->log('warning', $message, $this->buildContext($context));
+    }
+
+    /**
      * Log errors with full context
      */
     public function logError(

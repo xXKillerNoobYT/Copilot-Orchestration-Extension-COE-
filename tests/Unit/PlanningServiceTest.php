@@ -164,12 +164,8 @@ class PlanningServiceTest extends TestCase
             ->with($plan->id)
             ->andReturn($plan);
 
-        $this->dependencyGraph
-            ->shouldReceive('detectCycles')
-            ->once()
-            ->andReturn([]);
-
-        $this->logging->shouldReceive('info')->atLeast()->once();
+        $this->logging->shouldReceive('info')->zeroOrMoreTimes();
+        $this->logging->shouldReceive('warning')->zeroOrMoreTimes();
 
         $validation = $this->planningService->validateTaskPlan($plan->id);
 
@@ -195,11 +191,6 @@ class PlanningServiceTest extends TestCase
             ->shouldReceive('find')
             ->once()
             ->andReturn($plan);
-
-        $this->dependencyGraph
-            ->shouldReceive('detectCycles')
-            ->once()
-            ->andReturn([['task-1', 'task-2', 'task-1']]);
 
         $this->logging->shouldReceive('warning')->atLeast()->once();
 

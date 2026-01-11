@@ -15,9 +15,11 @@ class PlanReaderService
         // TODO: Read from Docs/Plan/code master.ipynb
         // Return plan section context for enriching task prompts
         return [
-            'section' => $section ?? 'general',
-            'summary' => 'Plan section context - TODO: implement',
-            'references' => [],
+            'version' => '1.0',
+            'relevantSections' => [$section ?? 'general'],
+            'designReferences' => [
+                ['source' => 'Code Master', 'section' => $section ?? 'general', 'summary' => 'Plan section context - TODO: implement'],
+            ],
         ];
     }
 }

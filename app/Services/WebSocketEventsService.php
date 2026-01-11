@@ -36,7 +36,7 @@ class WebSocketEventsService
         $event = [
             'type' => 'task-status',
             'taskId' => $task->id,
-            'title' => $task->title,
+            'title' => $task->name,
             'status' => $task->status,
             'progress' => $progress,
             'message' => $message,
