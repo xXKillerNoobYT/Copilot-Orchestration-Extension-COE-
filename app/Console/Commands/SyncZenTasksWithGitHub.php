@@ -30,8 +30,24 @@ class SyncZenTasksWithGitHub extends Command
     public function handle(GitHubZenTasksSyncService $syncService): int
     {
         $direction = $this->option('direction');
-        $owner = $this->option('owner') ?? config('services.github.owner', env('GITHUB_OWNER', 'xXKillerNoobYT'));
-        $repo = $this->option('repo') ?? config('services.github.repo', env('GITHUB_REPO', 'Copilot-Orchestration-Extension-COE-'));
+        
+        // Validate and resolve configuration
+        $owner = trim($this->option('owner') ?? config('services.github.owner') ?? env('GITHUB_OWNER') ?? '');
+        $repo = trim($this->option('repo') ?? config('services.github.repo') ?? env('GITHUB_REPO') ?? '');
+        $token = config('services.github.token') ?? env('GITHUB_TOKEN');
+
+        // Validate required configuration
+        if (empty($owner) || empty($repo)) {
+            $this->error('GitHub repository configuration is missing.');
+            $this->error('Please provide --owner and --repo options, or set GITHUB_OWNER and GITHUB_REPO environment variables.');
+            return Command::FAILURE;
+        }
+
+        if (empty($token)) {
+            $this->error('GitHub token is not configured.');
+            $this->error('Please set GITHUB_TOKEN environment variable in your .env file.');
+            return Command::FAILURE;
+        }
 
         $this->info("═══════════════════════════════════════════════════════════");
         $this->info("  Zen Tasks ↔ GitHub Issues Sync");

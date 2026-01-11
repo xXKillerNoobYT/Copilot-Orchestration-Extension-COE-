@@ -30,6 +30,12 @@ class ZenTasksFileService
 
         $content = File::get($this->tasksFile);
         $data = json_decode($content, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \RuntimeException(
+                'Failed to decode tasks.json: ' . json_last_error_msg()
+            );
+        }
 
         return $data['tasks'] ?? [];
     }

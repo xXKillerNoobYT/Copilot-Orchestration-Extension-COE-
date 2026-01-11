@@ -37,7 +37,6 @@ class GitHubZenTasksSyncService
 
     public function __construct(
         private GitHubApiClient $githubClient,
-        private GitHubSyncService $githubSyncService,
         private ZenTasksFileService $fileService
     ) {}
 
