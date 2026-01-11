@@ -39,6 +39,9 @@ export class VisualVerificationPanel {
 
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 
+    // Setup real-time checklist sync
+    this.setupChecklistSync();
+
     // Setup WebSocket listeners
     this.disposables.push(
       this.wsListener.onEvent('verification', (data: any) => {
@@ -57,6 +60,13 @@ export class VisualVerificationPanel {
         }
       })
     );
+
+    // Fetch initial checklist from backend
+    if (this.state.taskId) {
+      this.fetchChecklist(this.state.taskId).catch(error => {
+        console.error('Failed to fetch initial checklist:', error);
+      });
+    }
 
     this.panel.webview.onDidReceiveMessage(async (message) => {
       switch (message.command) {
@@ -236,6 +246,11 @@ export class VisualVerificationPanel {
       item.id === id ? { ...item, status } : item
     );
     this.updatePanel();
+    
+    // Sync to backend in background
+    this.syncChecklistItemToBackend(id, status).catch(error => {
+      console.error('Background sync failed:', error);
+    });
   }
 
   private updateState(patch: Partial<VerificationState>) {
@@ -243,11 +258,130 @@ export class VisualVerificationPanel {
     this.updatePanel();
   }
 
+  /**
+   * Fetch checklist from backend API
+   */
+  async fetchChecklist(taskId: string): Promise<void> {
+    try {
+      const response = await fetch(`${this.state.serverUrl}/api/v1/verification/checklist?taskId=${taskId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch checklist: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.checklist && Array.isArray(data.checklist)) {
+        this.updateState({
+          checklist: data.checklist.map((item: any) => ({
+            id: item.id || `check-${Date.now()}`,
+            title: item.title || 'Untitled',
+            description: item.description,
+            status: item.status || 'pending',
+          })),
+        });
+        
+        vscode.window.showInformationMessage(`Loaded ${data.checklist.length} checklist items`);
+      }
+    } catch (error) {
+      console.error('Failed to fetch checklist:', error);
+      vscode.window.showWarningMessage(
+        'Could not fetch checklist from backend. Using default checklist.'
+      );
+    }
+  }
+
+  /**
+   * Setup WebSocket listener for real-time checklist updates
+   */
+  setupChecklistSync(): void {
+    // Listen for checklist-updated events
+    this.disposables.push(
+      this.wsListener.onEvent('checklist-updated', (data: any) => {
+        if (data.taskId === this.state.taskId) {
+          if (data.checklist && Array.isArray(data.checklist)) {
+            this.updateState({
+              checklist: data.checklist.map((item: any) => ({
+                id: item.id || `check-${Date.now()}`,
+                title: item.title || 'Untitled',
+                description: item.description,
+                status: item.status || 'pending',
+              })),
+            });
+            
+            vscode.window.showInformationMessage('Checklist updated from server');
+          }
+        }
+      })
+    );
+
+    // Listen for checklist-item-status events (individual item updates)
+    this.disposables.push(
+      this.wsListener.onEvent('checklist-item-status', (data: any) => {
+        if (data.taskId === this.state.taskId && data.itemId) {
+          this.state.checklist = this.state.checklist.map((item) =>
+            item.id === data.itemId ? { ...item, status: data.status } : item
+          );
+          this.updatePanel();
+        }
+      })
+    );
+  }
+
+  /**
+   * Sync checklist item status to backend
+   */
+  async syncChecklistItemToBackend(itemId: string, status: ChecklistItem['status']): Promise<void> {
+    try {
+      const response = await fetch(`${this.state.serverUrl}/api/v1/verification/checklist/item`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          taskId: this.state.taskId,
+          itemId,
+          status,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to sync checklist item: ${response.statusText}`);
+      }
+
+      // Calculate progress
+      const passedItems = this.state.checklist.filter(item => item.status === 'passed');
+      const totalItems = this.state.checklist.length;
+      const progressPercent = Math.round((passedItems.length / totalItems) * 100);
+
+      console.log(`Checklist progress: ${passedItems.length}/${totalItems} (${progressPercent}%)`);
+    } catch (error) {
+      console.error('Failed to sync checklist item to backend:', error);
+      vscode.window.showWarningMessage('Could not sync checklist to backend');
+    }
+  }
+
+  /**
+   * Get checklist completion statistics
+   */
+  getChecklistStats(): { total: number; passed: number; failed: number; pending: number; progress: number } {
+    const total = this.state.checklist.length;
+    const passed = this.state.checklist.filter(item => item.status === 'passed').length;
+    const failed = this.state.checklist.filter(item => item.status === 'failed').length;
+    const pending = this.state.checklist.filter(item => item.status === 'pending' || item.status === 'in-progress').length;
+    const progress = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+    return { total, passed, failed, pending, progress };
+  }
+
   private updatePanel() {
     this.panel.webview.html = this.renderHtml(this.state);
   }
 
   private renderHtml(state: VerificationState): string {
+    // Calculate checklist statistics
+    const stats = this.getChecklistStats();
+    
     const checklistHtml = state.checklist
       .map((item) => {
         return `<div class="checklist-item">
@@ -403,6 +537,17 @@ export class VisualVerificationPanel {
 
   <div class="card" style="margin-bottom:12px;">
     <h3>Checklist</h3>
+    <div style="margin-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; color: var(--vscode-descriptionForeground);">
+          ${stats.passed}/${stats.total} passed · ${stats.failed} failed · ${stats.pending} pending
+        </span>
+        <span style="font-size: 14px; font-weight: 600;">${stats.progress}%</span>
+      </div>
+      <div style="background: var(--vscode-editor-background); border: 1px solid var(--vscode-panel-border); border-radius: 4px; overflow: hidden; height: 8px;">
+        <div style="background: var(--vscode-progressBar-background); height: 100%; width: ${stats.progress}%; transition: width 0.3s ease;"></div>
+      </div>
+    </div>
     ${checklistHtml}
   </div>
 
