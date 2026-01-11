@@ -95,6 +95,11 @@ Or explicitly:
 python sync_github.py --sync-both
 ```
 
+Or use the quick sync script:
+```bash
+./quick_sync.sh
+```
+
 ### Sync Tasks to GitHub Only
 
 Creates/updates GitHub issues from tasks:
@@ -237,9 +242,23 @@ This prevents duplicate issues/tasks and enables efficient updates.
 
 ## Automation
 
-### GitHub Actions Example
+### GitHub Actions (Recommended)
 
-Create `.github/workflows/sync-tasks.yml`:
+The repository includes a GitHub Actions workflow (`.github/workflows/sync-zen-tasks.yml`) that automatically:
+- Runs every 6 hours
+- Syncs when tasks are updated
+- Can be triggered manually
+
+The workflow is already configured and will work out of the box using the repository's `GITHUB_TOKEN`.
+
+To trigger manually:
+1. Go to Actions tab in GitHub
+2. Select "Sync Zen Tasks with GitHub Issues"
+3. Click "Run workflow"
+
+### GitHub Actions Example (Custom)
+
+Create `.github/workflows/sync-tasks.yml` for custom scheduling:
 
 ```yaml
 name: Sync Zen Tasks with GitHub Issues

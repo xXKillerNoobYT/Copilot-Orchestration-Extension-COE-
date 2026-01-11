@@ -1,0 +1,69 @@
+name: Sync Zen Tasks with GitHub Issues
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+  
+  # Run when tasks.json is updated
+  push:
+    paths:
+      - '_ZENTASKS/tasks.json'
+      - '_ZENTASKS/TASK-*.md'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          cd _ZENTASKS
+          pip install -r requirements.txt
+      
+      - name: Sync tasks with GitHub issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+        run: |
+          cd _ZENTASKS
+          python sync_github.py --sync-both
+      
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code _ZENTASKS/ || echo "changes=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _ZENTASKS/
+          git commit -m "chore: auto-sync tasks and issues [skip ci]"
+          git push
+      
+      - name: Summary
+        run: |
+          echo "### Sync Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.git-check.outputs.changes }}" == "true" ]; then
+            echo "✅ Sync completed with changes" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Sync completed - no changes" >> $GITHUB_STEP_SUMMARY
+          fi
