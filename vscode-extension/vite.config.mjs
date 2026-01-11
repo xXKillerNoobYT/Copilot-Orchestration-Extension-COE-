@@ -14,7 +14,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'resources/planBuilder/index.html')
-      }
+      },
+      external: ['vscode']
     }
   },
   resolve: {
