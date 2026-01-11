@@ -270,7 +270,7 @@
       "description": "Build TimelineQuestion.vue with milestone creation, date picker, phase assignment (Planning/Design/Development/Testing/Deployment), and Gantt preview. Min 2 milestones.",
       "details": "Add/remove milestones with name, date (no past), phase dropdown, dependencies. Mermaid Gantt chart preview, date validation (logical order).\n\nFile: vscode-extension/src/planBuilder/questions/TimelineQuestion.vue\n\nEstimate: 1.5-2 hours",
       "testStrategy": "Add milestones; assign phases; verify Gantt updates; test date validation (no past, logical order); test dependencies; verify min 2 validation.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-002",
@@ -278,7 +278,7 @@
         "TASK-001C"
       ],
       "createdAt": "2026-01-11T01:58:49.249Z",
-      "updatedAt": "2026-01-11T05:47:39.480Z"
+      "updatedAt": "2026-01-11T05:49:20.776Z"
     },
     {
       "id": "TASK-mk9353th-awbqs",
@@ -286,7 +286,7 @@
       "description": "Build TeamStructureQuestion.vue with role assignment, skill tags, agent mapping (Auto Zen, Zen Planner, etc.), and org chart preview. Min 1 role.",
       "details": "Add/remove roles (Frontend/Backend/Designer/QA/DevOps/Tech Lead), skill multi-select, agent dropdown, D3/Mermaid org chart, skill coverage indicator.\n\nFile: vscode-extension/src/planBuilder/questions/TeamStructureQuestion.vue\n\nEstimate: 1.5-2 hours",
       "testStrategy": "Add roles; assign skills; map agents; verify org chart; test role validation; verify skill coverage; test custom roles.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "EPIC-002",
@@ -294,7 +294,7 @@
         "TASK-001C"
       ],
       "createdAt": "2026-01-11T01:58:49.493Z",
-      "updatedAt": "2026-01-11T01:58:49.493Z"
+      "updatedAt": "2026-01-11T05:49:21.165Z"
     },
     {
       "id": "TASK-mk93660o-vidtg",
@@ -851,6 +851,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T05:47:39.480Z"
+    "updatedAt": "2026-01-11T05:49:21.166Z"
   }
 }
