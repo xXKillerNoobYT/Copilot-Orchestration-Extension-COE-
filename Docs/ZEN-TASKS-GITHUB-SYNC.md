@@ -461,17 +461,64 @@ Set up monitoring for:
 
 ## Future Enhancements
 
-Planned features:
-- [ ] Comment synchronization
-- [ ] Attachment handling
-- [ ] Sub-task/sub-issue support
-- [ ] Milestone synchronization
-- [ ] Assignee mapping
-- [ ] Custom field mapping
-- [ ] Webhook-based real-time sync
-- [ ] Conflict resolution strategies
-- [ ] Bulk operations optimization
-- [ ] Rollback capabilities
+Planned features based on requirements:
+
+### 1. Webhook Support for Real-Time Sync
+- [ ] Create webhook endpoint in Laravel (`app/Http/Controllers/Api/GitHubWebhookController.php`)
+- [ ] Handle GitHub webhook events (issue created/updated/closed)
+- [ ] Trigger immediate sync on webhook receipt
+- [ ] Validate webhook signatures for security
+- [ ] Queue webhook processing for reliability
+- [ ] Log webhook events for debugging
+
+### 2. Comment Synchronization
+- [ ] Sync GitHub issue comments to task metadata
+- [ ] Post task updates as GitHub comments
+- [ ] Bidirectional comment threading
+- [ ] Support @mentions and references
+- [ ] Track comment authors and timestamps
+- [ ] Filter bot comments to avoid loops
+
+### 3. Conflict Resolution for Simultaneous Updates
+- [ ] Detect concurrent modifications (timestamp-based)
+- [ ] Implement conflict resolution strategies:
+  - **Last-write-wins**: Use most recent update
+  - **Manual resolution**: Flag for human review
+  - **Field-level merge**: Combine non-conflicting changes
+- [ ] Store conflict history for audit trail
+- [ ] Notify users of conflicts via GitHub comments
+- [ ] Provide conflict resolution UI/CLI
+
+### 4. Metrics Dashboard for Sync Statistics
+- [ ] Track sync metrics:
+  - Sync frequency and duration
+  - Tasks/issues created/updated/errors
+  - API rate limit usage
+  - Sync health score
+- [ ] Create dashboard views:
+  - Real-time sync status
+  - Historical trends and charts
+  - Error logs and alerts
+  - Performance metrics
+- [ ] Add API endpoints for metrics export
+- [ ] Integrate with monitoring tools (Prometheus, Grafana)
+- [ ] Email/Slack notifications for sync failures
+
+### Implementation Priority
+
+1. **Webhook Support** (High) - Enables real-time sync
+2. **Metrics Dashboard** (High) - Critical for monitoring production use
+3. **Comment Synchronization** (Medium) - Enhances collaboration
+4. **Conflict Resolution** (Medium) - Important for team workflows
+
+### Technical Considerations
+
+- Use Laravel queues for async processing
+- Implement rate limiting to respect GitHub API limits
+- Add comprehensive logging for debugging
+- Create database migrations for new tables (metrics, conflicts, etc.)
+- Write unit and integration tests for new features
+- Update documentation as features are added
 
 ## Related Documentation
 
