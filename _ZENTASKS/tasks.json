@@ -729,35 +729,35 @@
       "description": "Clean up uncommitted changes from recent merge: disable/enable test files (.disabled extension) and finalize planIntegration.ts design system stubs. Ensure git repository is in clean state before proceeding with next phase.",
       "details": "**Issue**: Git repository has 3 modified files and 2 untracked .disabled test files from recent merge of feature/design-components-phase3. These changes were not committed and are blocking the repository from being clean.\n\n**Files Affected**:\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts (deleted in staging)\n- vscode-extension/src/planBuilder/designSystem/validator.test.ts (deleted in staging)\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts.disabled (untracked)\n- vscode-extension/src/planBuilder/designSystem/validator.test.ts.disabled (untracked)\n- vscode-extension/src/planBuilder/planIntegration.ts (modified)\n\n**Why This Matters**: Cannot release, deploy, or continue development until git state is clean. These files represent incomplete merge resolution.\n\n**What to Do**:\n1. Review all 3 modified files\n2. Stage: `git add vscode-extension/src/planBuilder/designSystem/*.disabled`\n3. Stage: `git add vscode-extension/src/planBuilder/planIntegration.ts`\n4. Create commit: 'fix: Finalize test file disabling and design system stubs from Phase 3 merge'\n5. Verify: `git status` shows clean working directory\n\n**Verification**: After completion, `git status` should show 'On branch main' with 'nothing to commit, working tree clean'",
       "testStrategy": "Verify git is clean: `git status` returns no modified files, no untracked files. All tests that should be disabled are in .disabled state. planIntegration.ts has consistent stub comments.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-11T02:54:06.852Z",
-      "updatedAt": "2026-01-11T02:54:17.887Z"
+      "updatedAt": "2026-01-11T02:54:34.627Z"
     },
     {
       "id": "TASK-mk9547k3-phty3",
       "title": "Restore and Test Design System Integration in planIntegration.ts",
       "description": "Uncomment and restore design system imports and logic in planIntegration.ts that were stubbed during merge. Verify design handoff payload extraction, validation, and token conversion functions work correctly with wizard completion flow.",
-      "details": "**Problem**: During merge of feature/design-components-phase3, design system integration in planIntegration.ts was incomplete. Design handoff logic is commented out with TEMPORARY markers:\n\n```typescript\n// TEMPORARY: Design system removed during merge - restore in TASK-mk9380vc-br0n9\n// import { extractDesignDataFromWizard, validateDesignPayload, convertToDesignTokens } from './designHandoff';\n\n// TEMPORARY: Stub types until design system restored\ntype DesignHandoffPayload = Record<string, unknown>;\n```\n\n**Impact**: \n- Plan → Design handoff broken\n- Wizard state cannot flow to design system\n- Interactive Design Phase only 60% complete instead of 100%\n\n**What to Do**:\n1. Restore imports from designHandoff module\n2. Uncomment and fix design data extraction logic (lines ~180-195)\n3. Remove temporary stub type\n4. Verify all imports resolve correctly\n5. Run test suite to ensure no new errors\n6. Test end-to-end: complete wizard → verify design data handoff\n\n**Files to Modify**:\n- vscode-extension/src/planBuilder/planIntegration.ts (remove comments, restore imports)\n- vscode-extension/src/planBuilder/designHandoff.ts (verify exports are correct)\n\n**Related Task**: TASK-mk9380vc-br0n9 (Visual Design System Editor) - this is prerequisite",
+      "details": "BLOCKED: Design system files (designHandoff.ts, tokenGenerator.ts, validator.ts) were deleted during pr-6-revert merge. These files must be recreated before this task can proceed.\n\nBlocker: Depends on EPIC-009 (Visual Design System Editor) completion to restore:\n- vscode-extension/src/planBuilder/designHandoff.ts\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.ts  \n- vscode-extension/src/planBuilder/designSystem/validator.ts\n\nOnce files are restored, this task will:\n1. Uncomment imports in planIntegration.ts (lines 15, 19)\n2. Remove stub type definition (line 22)\n3. Uncomment design data extraction logic (lines 180-194)\n4. Test wizard completion → design handoff flow\n5. Verify design payload validation works correctly",
       "testStrategy": "Test design handoff in planIntegration: Complete wizard flow and verify processPlanCompletion() properly extracts and validates design data. Check console logs for successful design payload extraction. Run: npm test -- planBuilder for integration tests.",
-      "status": "pending",
+      "status": "blocked",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-11T02:54:06.915Z",
-      "updatedAt": "2026-01-11T02:54:06.915Z"
+      "updatedAt": "2026-01-11T02:54:53.289Z"
     },
     {
       "id": "TASK-mk9547lf-p97t8",
       "title": "Re-enable and Fix Design System Test Files",
       "description": "Move tokenGenerator.test.ts and validator.test.ts from .disabled state back to executable .ts files. Fix any test failures that arise and ensure full design system test coverage is restored. Tests should validate token generation (JSON, Tailwind, CSS formats) and token validation (colors, palette, typography, spacing).",
-      "details": "**Current State**: Two test files are disabled with .disabled extension:\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts.disabled (354 LOC, 47 test cases)\n- vscode-extension/src/planBuilder/designSystem/validator.test.ts.disabled (430 LOC, 50+ test cases)\n\n**Why Disabled**: Appears to be a temporary workaround during merge, not a permanent solution.\n\n**Impact**:\n- Design token generation has no automated tests\n- Design token validation has no automated tests  \n- CI/CD cannot run design system tests\n- Cannot verify design system integrity\n\n**What to Do**:\n1. Rename files back to .ts: `mv *.disabled *.ts`\n2. Run test suite: `npm test -- designSystem`\n3. Fix any failing tests (likely minor import/type issues)\n4. Verify all 47 + 50 = 97 test cases pass\n5. Commit: 'fix: Re-enable design system test suite'\n6. Update CI/CD to include these tests\n\n**Test Coverage**:\n- DesignTokenGenerator: 23 tests (JSON, Tailwind, CSS formats, edge cases)\n- DesignTokenValidator: 24 tests (color validation, palette, typography, spacing, components)\n- Total: 47 tests covering ~95% of design system functionality\n\n**Success**: All tests pass, test coverage restored to pre-merge state",
+      "details": "BLOCKED: Cannot re-enable test files because the source modules (tokenGenerator.ts, validator.ts) were deleted during pr-6-revert merge.\n\nBlocker: Depends on EPIC-009 (Visual Design System Editor) completion to restore source files first.\n\nTest files currently disabled:\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts.disabled (355 lines)\n- vscode-extension/src/planBuilder/designSystem/validator.test.ts.disabled (424 lines)\n\nOnce EPIC-009 restores the source modules, this task will:\n1. Rename .disabled files back to .ts\n2. Run tests and fix any failures\n3. Verify coverage for token generation (JSON, Tailwind, CSS)\n4. Verify coverage for validation (colors, palette, typography, spacing)\n5. Ensure all 30+ test cases pass",
       "testStrategy": "Run npm test and verify all design system tests pass. Check test output for coverage report (should be 95%+). Verify no console errors or warnings. Run tests in CI/CD pipeline.",
-      "status": "pending",
+      "status": "blocked",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-11T02:54:06.963Z",
-      "updatedAt": "2026-01-11T02:54:06.963Z"
+      "updatedAt": "2026-01-11T02:55:06.668Z"
     },
     {
       "id": "TASK-mk9547oe-xj9fd",
@@ -777,11 +777,11 @@
       "description": "Create automated task generation from plan.json output. Analyze plan structure (features, timeline, requirements) and auto-generate decomposed task tree with proper dependencies, priorities, and subtask relationships. Wire to wizard completion flow to automatically populate task queue.",
       "details": "**Current State**: Plans are created by wizard but don't drive task generation. Tasks must be created manually. This breaks the automation loop.\n\n**What Should Happen**:\n```\nWizard completes\n    ↓\nPlan.json generated and saved\n    ↓ \nPlanDecompositionService analyzes plan\n    ↓\nAutomatic task tree generated\n    ↓\nDependencies inferred from plan structure\n    ↓\nTask priorities assigned\n    ↓\nTask queue updated\n    ↓\nAuto Zen execution starts\n```\n\n**What Actually Happens**:\n```\nWizard completes\n    ↓\nPlan.json saved\n    ↓\n✗ Nothing happens\n    ↓\nUser must manually create tasks\n```\n\n**Implementation**:\n\n1. **Create Laravel Service**: `app/Services/PlanDecompositionService.php` (400-500 LOC)\n   - Parse plan.json structure\n   - Identify features, components, modules\n   - Generate task tree\n   - Infer dependencies from feature relationships\n   - Calculate critical path\n   - Assign priorities and estimates\n\n2. **Create Laravel Controller**: `app/Http/Controllers/Api/PlanDecompositionController.php` (200 LOC)\n   - Endpoint: POST /api/plans/{id}/decompose\n   - Accept plan parameters\n   - Call decomposition service\n   - Return generated tasks\n   - Create tasks in database\n\n3. **Integrate with Wizard**: `vscode-extension/src/planBuilder/planIntegration.ts`\n   - After plan completion, call decomposition endpoint\n   - Create tasks from response\n   - Update task queue\n   - Show progress to user\n\n4. **Update Frontend**: Create task display for generated tasks\n   - Show task tree visualization\n   - Allow user to edit/approve before execution\n   - Enable manual refinement\n\n**Decomposition Algorithm**:\n```\nInput: Plan.json {features[], timeline, scope, constraints}\n  ↓\n1. Extract feature list\n2. For each feature:\n   - Create feature task\n   - Break into components\n   - Create subtasks per component\n   - Identify dependencies between features\n   - Calculate effort estimates\n   - Assign priority based on critical path\n3. Detect cross-feature dependencies\n4. Create milestones at critical points\n5. Validate no circular dependencies\n6. Generate execution plan\n  ↓\nOutput: Task tree with dependencies and priorities\n```\n\n**Test Cases**:\n- Decompose simple 2-feature plan\n- Decompose complex 10-feature plan\n- Handle cross-feature dependencies\n- Verify critical path calculation\n- Validate no circular dependencies\n- Check task estimate accuracy\n- Test all wizard paths (designer, analyst, architect)\n\n**Related Tasks**:\n- TASK-mk7jzlhj-kozt7: Wizard Flow Integration Tests (depends on this)\n- Section 10 Completion (unlocks full plan lifecycle)",
       "testStrategy": "Unit test: feed plan.json to decomposition service, verify correct task tree generated. Integration test: complete wizard, verify automatic task generation. Test with multiple wizard paths (designer, analyst, architect). Verify dependencies, priorities, and estimates are correct.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-11T02:54:07.149Z",
-      "updatedAt": "2026-01-11T02:54:07.149Z"
+      "updatedAt": "2026-01-11T02:55:10.153Z"
     },
     {
       "id": "TASK-mk9547s7-j6oi0",
@@ -794,9 +794,23 @@
       "dependencies": [],
       "createdAt": "2026-01-11T02:54:07.207Z",
       "updatedAt": "2026-01-11T02:54:07.207Z"
+    },
+    {
+      "id": "TASK-mk956f0x-fcr6x",
+      "title": "Create plan.json parser for wizard output",
+      "description": "Build parser to read wizard-generated plan.json and extract features, timeline, team structure, and architecture decisions for task decomposition.",
+      "details": "Create app/Services/WizardPlanParserService.php\n\nMethods needed:\n- parsePlanFile(string $planPath): array - Read and parse plan.json\n- extractFeatures(array $plan): Collection - Extract feature list with descriptions\n- extractTimeline(array $plan): array - Extract milestones and deadlines\n- extractArchitecture(array $plan): array - Extract architecture pattern and constraints\n- extractTeam(array $plan): array - Extract roles and skill requirements\n\nInput format (from wizard):\n{\n  \"projectName\": \"...\",\n  \"description\": \"...\",\n  \"architecture\": \"microservices|mvc|serverless...\",\n  \"features\": [{id, name, description, priority, dependencies}],\n  \"timeline\": [{milestone, date, phase}],\n  \"team\": [{role, skills, agent}]\n}\n\nOutput: Normalized data structure ready for task generation\n\nEstimate: 30-45 min",
+      "testStrategy": "Unit test: parse sample plan.json, verify all sections extracted correctly. Test error handling for malformed JSON, missing fields.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        "TASK-mk9547ql-mdpp0"
+      ],
+      "createdAt": "2026-01-11T02:55:49.905Z",
+      "updatedAt": "2026-01-11T02:55:49.905Z"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T02:54:17.888Z"
+    "updatedAt": "2026-01-11T02:55:49.906Z"
   }
 }
