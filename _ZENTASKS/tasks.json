@@ -448,13 +448,13 @@
       "description": "Create Markdown template engine that converts plan JSON to professionally formatted Markdown with proper headings, tables, lists, and sections.",
       "details": "Template sections: TOC (auto-generated), Project Overview, Architecture (SVG embeds), Features (tables with priorities), Timeline (Gantt), Team Structure. Uses Handlebars or similar for templating.\n\nFile: vscode-extension/src/exporters/markdownExporter.ts\n\nEstimate: 3 hours",
       "testStrategy": "Export sample plan; verify Markdown renders in VS Code/GitHub; test all sections present; validate formatting; test TOC links work.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "EPIC-005"
       ],
       "createdAt": "2026-01-11T02:00:32.967Z",
-      "updatedAt": "2026-01-11T06:22:29.935Z"
+      "updatedAt": "2026-01-11T06:24:26.274Z"
     },
     {
       "id": "TASK-mk937bun-ebmdx",
@@ -865,6 +865,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T06:22:29.935Z"
+    "updatedAt": "2026-01-11T06:24:26.274Z"
   }
 }
