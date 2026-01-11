@@ -238,7 +238,7 @@
       "description": "Build ArchitectureQuestion.vue with visual icon grid for selecting architecture pattern (MVC, Microservices, Serverless, Monolithic, Modular Monolith) with diagram previews.",
       "details": "Visual grid with hover tooltips, SVG/Mermaid diagram preview, optional context textarea. Include 5 architecture diagram assets.\n\nFile: vscode-extension/src/planBuilder/questions/ArchitectureQuestion.vue\n\nEstimate: 2-3 hours",
       "testStrategy": "Test each selection; verify diagram displays; test hover tooltips; validate persistence; test custom notes.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-002",
@@ -246,7 +246,7 @@
         "TASK-001C"
       ],
       "createdAt": "2026-01-11T01:58:48.910Z",
-      "updatedAt": "2026-01-11T05:46:17.209Z"
+      "updatedAt": "2026-01-11T05:46:56.349Z"
     },
     {
       "id": "TASK-mk9353gw-hen63",
@@ -254,7 +254,7 @@
       "description": "Build FeatureBreakdownQuestion.vue with dynamic feature list, priority assignment, dependency mapping, and circular dependency detection. Min 3 features required.",
       "details": "Add/remove features, each with name, description, priority dropdown, dependency selector. Drag-to-reorder, Mermaid dependency graph, circular detection.\n\nFile: vscode-extension/src/planBuilder/questions/FeatureBreakdownQuestion.vue\n\nEstimate: 2-3 hours",
       "testStrategy": "Add/remove features; assign priorities; map deps; verify circular detection; test drag-reorder; verify graph updates; test min 3 validation.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "EPIC-002",
@@ -262,7 +262,7 @@
         "TASK-001C"
       ],
       "createdAt": "2026-01-11T01:58:49.040Z",
-      "updatedAt": "2026-01-11T01:58:49.040Z"
+      "updatedAt": "2026-01-11T05:46:58.582Z"
     },
     {
       "id": "TASK-mk9353mp-9jtjz",
@@ -851,6 +851,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T05:46:17.209Z"
+    "updatedAt": "2026-01-11T05:46:58.583Z"
   }
 }
