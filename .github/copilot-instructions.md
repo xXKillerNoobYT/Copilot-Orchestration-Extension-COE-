@@ -310,3 +310,8 @@ Operate autonomously: no oversight required—just get the job done right.
 - Keep controllers thin, push logic into services, and write/extend tests alongside new endpoints.
 - Match enum values and column names to migrations and parser types to avoid hidden desyncs.
 - Prefer existing logging/metrics/audit paths over bespoke logging.
+
+## Remember. 
+- All documentation, notes, projects, all that must be properly updated in the proper location inside the docs folder. No MD files in. [./] root or other folders.
+- Always follow the task format specification when creating or updating tasks.
+- Always Use the tools to. Update tasks. Never edit the MD or JSON files directly in the _ZENTASKS folder. The changes will not be remembered if you do not use the tool.

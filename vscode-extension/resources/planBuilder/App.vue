@@ -1,165 +1,72 @@
 <template>
   <div class="plan-builder-app">
-    <ProgressBar
-      :pages="allPages"
-      :currentPageIndex="currentPageIndex"
-      :completedPages="completedPages"
+    <WizardContainer
+      wizard-title="Interactive Plan Builder"
+      wizard-description="Create a comprehensive project plan in 10 guided steps"
+      :user-role="userRole"
+      :show-sidebar="true"
+      :show-preview-panel="false"
+      :show-time-estimate="true"
     />
-
-    <div class="main-content">
-      <WizardPage
-        v-if="currentPage"
-        :page="currentPage"
-        :answers="answers"
-        :isFirstPage="currentPageIndex === 0"
-        :isLastPage="currentPageIndex === allPages.length - 1"
-        @update="handleAnswerUpdate"
-        @next="handleNext"
-        @previous="handlePrevious"
-        @submit="handleSubmit"
-      />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import WizardPage from './WizardPage.vue';
-import QuestionCard from './QuestionCard.vue';
-import ProgressBar from './ProgressBar.vue';
-import { QuestionFramework } from '../../src/planBuilder/questionFramework';
-import { WizardStateManager } from '../../src/planBuilder/wizardState';
+import { ref, onMounted } from 'vue';
+import WizardContainer from './WizardContainer.vue';
 
-// Initialize framework and state manager
-const framework = new QuestionFramework();
-const stateManager = new WizardStateManager();
-
-// Reactive state
-const answers = ref<Record<string, unknown>>(stateManager.getState().answers);
-const currentPageIndex = ref(0);
-const completedPages = ref<string[]>(stateManager.getState().completedPages);
-
-// Get all pages based on current answers
-const allPages = computed(() => framework.getPages(answers.value));
-
-// Get current page
-const currentPage = computed(() => allPages.value[currentPageIndex.value]);
+// User role for time estimate calculations
+const userRole = ref<'designer' | 'analyst' | 'architect' | undefined>();
 
 // Lifecycle hooks
 onMounted(() => {
-  // Load saved state
-  const savedState = stateManager.getState();
-  answers.value = savedState.answers;
-  completedPages.value = savedState.completedPages;
-
-  // Find current page index from saved state
-  const savedPageIndex = allPages.value.findIndex(p => p.id === savedState.currentPage);
-  if (savedPageIndex !== -1) {
-    currentPageIndex.value = savedPageIndex;
-  }
+  // Listen for messages from VS Code extension
+  window.addEventListener('message', handleVSCodeMessage);
 
   // Send ready message to VS Code extension
   if (window.vscode) {
-    window.vscode.postMessage({ type: 'ready' });
+    window.vscode.postMessage({ type: 'wizardReady' });
   }
-
-  // Listen for messages from VS Code extension
-  window.addEventListener('message', handleVSCodeMessage);
 });
-
-onBeforeUnmount(() => {
-  stateManager.dispose();
-  window.removeEventListener('message', handleVSCodeMessage);
-});
-
-// Handle answer updates
-function handleAnswerUpdate(questionId: string, value: unknown) {
-  answers.value = { ...answers.value, [questionId]: value };
-  stateManager.setAnswer(questionId, value);
-}
-
-// Handle page navigation
-function handleNext() {
-  if (currentPage.value) {
-    // Mark current page as completed
-    stateManager.markPageCompleted(currentPage.value.id);
-    completedPages.value = [...completedPages.value, currentPage.value.id];
-  }
-
-  // Navigate to next page
-  if (currentPageIndex.value < allPages.value.length - 1) {
-    currentPageIndex.value++;
-    const nextPage = allPages.value[currentPageIndex.value];
-    if (nextPage) {
-      stateManager.navigateToPage(nextPage.id);
-    }
-  }
-}
-
-function handlePrevious() {
-  if (currentPageIndex.value > 0) {
-    currentPageIndex.value--;
-    const prevPage = allPages.value[currentPageIndex.value];
-    if (prevPage) {
-      stateManager.navigateToPage(prevPage.id);
-    }
-  }
-}
-
-// Handle wizard completion
-function handleSubmit() {
-  // Mark final page as completed
-  if (currentPage.value) {
-    stateManager.markPageCompleted(currentPage.value.id);
-  }
-
-  // Export final state
-  const finalState = stateManager.exportState();
-
-  // Send completion message to VS Code extension
-  if (window.vscode) {
-    window.vscode.postMessage({
-      type: 'wizardComplete',
-      data: finalState
-    });
-  }
-}
 
 // Handle messages from VS Code extension
 function handleVSCodeMessage(event: MessageEvent) {
   const message = event.data;
 
   switch (message.type) {
-    case 'reset':
-      stateManager.reset();
-      answers.value = {};
-      currentPageIndex.value = 0;
-      completedPages.value = [];
+    case 'setUserRole':
+      userRole.value = message.data as 'designer' | 'analyst' | 'architect';
       break;
 
-    case 'loadState':
-      if (message.data) {
-        stateManager.importState(message.data);
-        answers.value = stateManager.getState().answers;
-        completedPages.value = stateManager.getState().completedPages;
-        
-        // Find page index from loaded state
-        const loadedPageIndex = allPages.value.findIndex(p => p.id === message.data.currentPage);
-        if (loadedPageIndex !== -1) {
-          currentPageIndex.value = loadedPageIndex;
-        }
-      }
+    case 'planComplete':
+      // Plan completion is handled by WizardContainer
+      // This is where we can intercept and handle plan export to backend
+      handlePlanCompletion(message.data);
       break;
+  }
+}
 
-    case 'exportState':
-      const state = stateManager.exportState();
-      if (window.vscode) {
-        window.vscode.postMessage({
-          type: 'stateExported',
-          data: state
-        });
-      }
-      break;
+// Handle plan completion - send to backend via MCP
+async function handlePlanCompletion(plan: Record<string, unknown>) {
+  try {
+    // Send plan to VS Code extension for backend processing
+    if (window.vscode) {
+      window.vscode.postMessage({
+        type: 'planGenerated',
+        data: plan,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    console.log('[App.vue] Plan generated and sent to extension');
+  } catch (error) {
+    console.error('[App.vue] Failed to handle plan completion:', error);
+    if (window.vscode) {
+      window.vscode.postMessage({
+        type: 'planError',
+        error: String(error)
+      });
+    }
   }
 }
 
@@ -189,18 +96,12 @@ body,
 }
 
 .plan-builder-app {
-  display: flex;
-  flex-direction: column;
+  width: 100%;
   height: 100%;
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
   background-color: var(--vscode-editor-background);
   color: var(--vscode-foreground);
-}
-
-.main-content {
-  flex: 1;
-  overflow-y: auto;
 }
 
 /* Scrollbar styling for VS Code theme */

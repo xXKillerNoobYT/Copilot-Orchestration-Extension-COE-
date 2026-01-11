@@ -1,4 +1,0 @@
-
-> copilot-orchestrator@0.0.1 compile
-> webpack --mode production --stats=errors-only
-

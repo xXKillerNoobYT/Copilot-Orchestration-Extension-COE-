@@ -11,8 +11,11 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": ["node", "mocha"],
-    "typeRoots": ["./node_modules/@types"]
+    "types": ["node", "mocha", "vitest"],
+    "typeRoots": [
+      "c:/Users/weird/.github/Copilot-Orchestration-Extension-COE-/vscode-extension/node_modules/@types",
+      "c:/Users/weird/.github/Copilot-Orchestration-Extension-COE-/vscode-extension/node_modules"
+    ]
   },
   "include": ["src"],
   "exclude": ["node_modules", ".vscode-test"]

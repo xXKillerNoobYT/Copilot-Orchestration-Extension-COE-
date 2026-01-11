@@ -12,10 +12,33 @@ use App\Models\Task;
  */
 class TaskQueueService
 {
+    /**
+     * Get next ready task from queue
+     * Alias for getNextReady for API compatibility
+     */
+    public function getNextTask(?string $filter = null, ?string $priority = null): ?Task
+    {
+        return $this->getNextReady($filter, $priority);
+    }
+
     public function getNextReady(?string $filter = null, ?string $priority = null): ?Task
     {
         // TODO: Implement task queue retrieval with filtering
         return Task::where('status', 'pending')->first();
+    }
+
+    /**
+     * Get queue statistics
+     */
+    public function getQueueStats(): array
+    {
+        return [
+            'totalTasks' => Task::count(),
+            'readyTasks' => Task::where('status', 'pending')->count(),
+            'inProgressTasks' => Task::where('status', 'in_progress')->count(),
+            'blockedTasks' => Task::where('status', 'blocked')->count(),
+            'completedTasks' => Task::where('status', 'completed')->count(),
+        ];
     }
 
     public function countReady(): int

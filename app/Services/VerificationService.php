@@ -14,24 +14,38 @@ class VerificationService
 {
     public function createVerificationTask(Task $task): Task
     {
-        // TODO: Create verification task linked to original task
+        // Create verification task linked to original task (testing type)
         return Task::create([
-            'title' => "Verify: {$task->title}",
-            'description' => "Verification task for {$task->title}",
-            'task_type' => 'verification',
+            'project_id' => $task->project_id,
+            'name' => "VERIFY: {$task->name}",
+            'description' => "Verification task for {$task->name}",
+            'task_type' => 'testing',
             'priority' => $task->priority,
             'parent_task_id' => $task->id,
-            'status' => 'pending',
+            'status' => 'in_progress',
         ]);
     }
 
     public function applyResult(array $result): array
     {
-        // TODO: Apply verification result and close or reopen task
+        // Apply verification result and close or reopen task
+        $originalId = $result['originalTaskId'] ?? null;
+        if ($originalId) {
+            $task = Task::find($originalId);
+            if ($task) {
+                if (($result['status'] ?? '') === 'passed') {
+                    $task->update(['status' => 'completed']);
+                    event(new \App\Events\VerificationCompleted($result));
+                } elseif (($result['status'] ?? '') === 'failed') {
+                    $task->update(['status' => 'in_progress']);
+                }
+            }
+        }
+
         return [
             'success' => true,
-            'originalTaskId' => $result['originalTaskId'] ?? null,
-            'status' => $result['status'] ?? 'pending',
+            'originalTaskId' => $originalId,
+            'originalTaskStatus' => ($result['status'] ?? 'partial') === 'passed' ? 'completed' : 'in_progress',
         ];
     }
 }

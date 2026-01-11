@@ -32,7 +32,7 @@ class PlanningService
         $startTime = microtime(true);
         
         try {
-            $this->logging->logTaskEvent('plan_generation_started', [
+            $this->logging->logEvent('plan_generation_started', [
                 'project_id' => $projectId,
                 'requirement_length' => strlen($requirement),
                 'options' => $options,
@@ -104,7 +104,8 @@ class PlanningService
             return $plan->fresh();
 
         } catch (\Exception $e) {
-            $this->logging->logError('plan_generation_failed', $e, [
+            $this->logging->logError($e, [
+                'event' => 'plan_generation_failed',
                 'project_id' => $projectId,
                 'requirement' => substr($requirement, 0, 200),
             ]);
@@ -132,8 +133,7 @@ class PlanningService
                 throw new PlanningException("Cannot refine plan with status: {$plan->status}");
             }
 
-            $this->logging->logTaskEvent('plan_refinement_started', [
-                'plan_id' => $planId,
+            $this->logging->logTaskEvent('plan_refinement_started', $planId, [
                 'refinements_count' => count($refinements),
             ]);
 
@@ -202,7 +202,8 @@ class PlanningService
             return $plan->fresh();
 
         } catch (\Exception $e) {
-            $this->logging->logError('plan_refinement_failed', $e, [
+            $this->logging->logError($e, [
+                'event' => 'plan_refinement_failed',
                 'plan_id' => $planId,
             ]);
 
@@ -371,7 +372,8 @@ class PlanningService
             }
 
         } catch (\Exception $e) {
-            $this->logging->logError('plan_approval_failed', $e, [
+            $this->logging->logError($e, [
+                'event' => 'plan_approval_failed',
                 'plan_id' => $planId,
             ]);
 
@@ -412,7 +414,8 @@ class PlanningService
             $this->metrics->incrementCounter('plans.rejected');
 
         } catch (\Exception $e) {
-            $this->logging->logError('plan_rejection_failed', $e, [
+            $this->logging->logError($e, [
+                'event' => 'plan_rejection_failed',
                 'plan_id' => $planId,
             ]);
 

@@ -78,12 +78,22 @@ export class PlanBuilderPanel {
 
   private _handleMessage(message: any): void {
     switch (message.type) {
-      case 'ready':
-        console.log('[PlanBuilder] Webview ready');
+      case 'wizardReady':
+        console.log('[PlanBuilder] Wizard ready');
+        break;
+
+      case 'planGenerated':
+        this._handlePlanGenerated(message.data, message.timestamp);
         break;
 
       case 'wizardComplete':
+        // Legacy support
         this._handleWizardCompletion(message.data);
+        break;
+
+      case 'planError':
+        vscode.window.showErrorMessage(`[PlanBuilder] Plan generation error: ${message.error}`);
+        console.error('[PlanBuilder] Plan error:', message.error);
         break;
 
       case 'savePlan':
@@ -109,6 +119,50 @@ export class PlanBuilderPanel {
       case 'log':
         console.log('[PlanBuilder]', message.data);
         break;
+    }
+  }
+
+  private async _handlePlanGenerated(plan: any, timestamp: string): Promise<void> {
+    try {
+      console.log('[PlanBuilder] Plan generated at', timestamp);
+
+      // Show initial success message
+      vscode.window.showInformationMessage('✓ Plan created successfully! Generating tasks...');
+
+      // Get workspace root
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!workspaceRoot) {
+        throw new Error('No workspace folder open');
+      }
+
+      // Process the plan: generate suggestions, decompose tasks, create files
+      const result = await processPlanCompletion(plan, workspaceRoot);
+
+      // Display results to user
+      displayCompletionResults(result);
+
+      if (result.success) {
+        // Show decomposition summary in new editor
+        await openDecompositionSummary(result);
+
+        // Optional: Offer to explore created tasks
+        const explore = await vscode.window.showInformationMessage(
+          `✓ Created ${result.taskCount} tasks. Open the _ZENTASKS folder?`,
+          'Yes',
+          'No'
+        );
+
+        if (explore === 'Yes') {
+          const zenTasksUri = vscode.Uri.file(path.join(workspaceRoot, '_ZENTASKS'));
+          await vscode.commands.executeCommand('revealFileInOS', zenTasksUri);
+        }
+      }
+
+      console.log('[PlanBuilder] Plan processing completed with result:', result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      vscode.window.showErrorMessage(`Failed to process plan: ${message}`);
+      console.error('[PlanBuilder] Error:', error);
     }
   }
 
