@@ -24,25 +24,21 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, json, bcmath
       
-      - name: Install dependencies
-        run: |
-          cd _ZENTASKS
-          pip install -r requirements.txt
+      - name: Install Composer dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
       
       - name: Sync tasks with GitHub issues
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO: ${{ github.event.repository.name }}
-        run: |
-          cd _ZENTASKS
-          python sync_github.py --sync-both
+        run: php artisan zentasks:sync-github --direction=both
       
       - name: Check for changes
         id: git-check
