@@ -19,4 +19,8 @@ yarn-error.log
 /.idea
 /.vscode
 
-_ZENTASKS
+# Ignore ZENTASKS dynamic files but allow scripts and task files
+_ZENTASKS/tasks.json
+_ZENTASKS/sync_metadata.json
+_ZENTASKS/.env
+_ZENTASKS/__pycache__/
