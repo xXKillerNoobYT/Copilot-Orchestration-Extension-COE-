@@ -222,7 +222,7 @@
       "description": "Build ProjectOverviewQuestion.vue collecting project name (max 50 chars), description (max 500 chars), and type (web/api/cli/library).",
       "details": "Text input with character counter, textarea with counter, radio buttons for type, all fields required with unique name validation.\n\nFile: vscode-extension/src/planBuilder/questions/ProjectOverviewQuestion.vue\n\nEstimate: 1.5-2 hours",
       "testStrategy": "Test inputs; verify validation (empty, length, unique); test type selection; verify store integration; test character counters; verify error messages.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-002",
@@ -230,7 +230,7 @@
         "TASK-001C"
       ],
       "createdAt": "2026-01-11T01:58:48.740Z",
-      "updatedAt": "2026-01-11T05:35:21.396Z"
+      "updatedAt": "2026-01-11T05:36:25.852Z"
     },
     {
       "id": "TASK-mk9353da-hqu7c",
@@ -238,7 +238,7 @@
       "description": "Build ArchitectureQuestion.vue with visual icon grid for selecting architecture pattern (MVC, Microservices, Serverless, Monolithic, Modular Monolith) with diagram previews.",
       "details": "Visual grid with hover tooltips, SVG/Mermaid diagram preview, optional context textarea. Include 5 architecture diagram assets.\n\nFile: vscode-extension/src/planBuilder/questions/ArchitectureQuestion.vue\n\nEstimate: 2-3 hours",
       "testStrategy": "Test each selection; verify diagram displays; test hover tooltips; validate persistence; test custom notes.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "EPIC-002",
@@ -246,7 +246,7 @@
         "TASK-001C"
       ],
       "createdAt": "2026-01-11T01:58:48.910Z",
-      "updatedAt": "2026-01-11T01:58:48.910Z"
+      "updatedAt": "2026-01-11T05:46:17.209Z"
     },
     {
       "id": "TASK-mk9353gw-hen63",
@@ -851,6 +851,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T05:35:21.396Z"
+    "updatedAt": "2026-01-11T05:46:17.209Z"
   }
 }
