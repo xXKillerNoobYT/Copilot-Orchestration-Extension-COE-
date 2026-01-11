@@ -11,15 +11,10 @@ import { createOpenAIClient } from '../llm/openaiClient';
 import { generateArchitectureSuggestions } from './architectureSuggestions';
 import { decomposeProjectPlan, generateTaskYAML } from './taskDecomposition';
 import { generateDependencySummary } from './dependencyAnalysis';
-// TEMPORARY: Design system removed during merge - restore in TASK-mk9380vc-br0n9
-// import { extractDesignDataFromWizard, validateDesignPayload, convertToDesignTokens } from './designHandoff';
+import { extractDesignDataFromWizard, validateDesignPayload, type DesignHandoffPayload } from './designHandoff';
 import { computePlanDiff, formatDiffSummary, type Plan } from './planDiff';
 import type { SuggestionResponse, ArchitectureContext } from './architectureSuggestions';
 import type { DecompositionResult, GeneratedTask } from './taskDecomposition';
-// import type { DesignHandoffPayload } from './designHandoff';
-
-// TEMPORARY: Stub types until design system restored
-type DesignHandoffPayload = Record<string, unknown>;
 
 export interface PlanCompletionResult {
   success: boolean;
@@ -177,8 +172,6 @@ export async function processPlanCompletion(
     result.dependencySummary = generateDependencySummary(decomposition.tasks);
 
     // Step 5: Extract design data for handoff to design editor
-    // TEMPORARY: Design system removed during merge - restore in TASK-mk9380vc-br0n9
-    /*
     console.log('[PlanIntegration] Extracting design data for handoff...');
     const designData = extractDesignDataFromWizard(wizardState);
     const validation = validateDesignPayload(designData);
@@ -188,9 +181,8 @@ export async function processPlanCompletion(
       console.log('[PlanIntegration] Design data extracted successfully');
     } else {
       console.warn('[PlanIntegration] Design data validation failed:', validation.errors);
-      // Still continue - design handoff is optional
+      // Continue without blocking task creation; design handoff is optional
     }
-    */
 
     result.taskCount = result.tasksCreated.length;
     result.success = true;

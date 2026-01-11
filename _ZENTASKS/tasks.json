@@ -741,11 +741,11 @@
       "description": "Uncomment and restore design system imports and logic in planIntegration.ts that were stubbed during merge. Verify design handoff payload extraction, validation, and token conversion functions work correctly with wizard completion flow.",
       "details": "BLOCKED: Design system files (designHandoff.ts, tokenGenerator.ts, validator.ts) were deleted during pr-6-revert merge. These files must be recreated before this task can proceed.\n\nBlocker: Depends on EPIC-009 (Visual Design System Editor) completion to restore:\n- vscode-extension/src/planBuilder/designHandoff.ts\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.ts  \n- vscode-extension/src/planBuilder/designSystem/validator.ts\n\nOnce files are restored, this task will:\n1. Uncomment imports in planIntegration.ts (lines 15, 19)\n2. Remove stub type definition (line 22)\n3. Uncomment design data extraction logic (lines 180-194)\n4. Test wizard completion → design handoff flow\n5. Verify design payload validation works correctly",
       "testStrategy": "Test design handoff in planIntegration: Complete wizard flow and verify processPlanCompletion() properly extracts and validates design data. Check console logs for successful design payload extraction. Run: npm test -- planBuilder for integration tests.",
-      "status": "blocked",
+      "status": "done",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-11T02:54:06.915Z",
-      "updatedAt": "2026-01-11T02:54:53.289Z"
+      "updatedAt": "2026-01-11T06:32:29.316Z"
     },
     {
       "id": "TASK-mk9547lf-p97t8",
@@ -865,6 +865,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T06:24:26.274Z"
+    "updatedAt": "2026-01-11T06:32:29.316Z"
   }
 }
