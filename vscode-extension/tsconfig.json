@@ -13,9 +13,6 @@
     "skipLibCheck": true,
     "types": ["node", "mocha", "vitest"],
     "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules",
-      "../node_modules/@types",
       "c:/Users/weird/.github/Copilot-Orchestration-Extension-COE-/vscode-extension/node_modules/@types",
       "c:/Users/weird/.github/Copilot-Orchestration-Extension-COE-/vscode-extension/node_modules"
     ]
