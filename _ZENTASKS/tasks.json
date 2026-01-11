@@ -707,7 +707,7 @@
         "TASK-mk9352eu-xm9qr"
       ],
       "createdAt": "2026-01-11T02:10:59.712Z",
-      "updatedAt": "2026-01-11T02:55:00.000Z"
+      "updatedAt": "2026-01-11T02:54:11.016Z"
     },
     {
       "id": "TASK-mk93kujh-l3z3r",
@@ -722,9 +722,81 @@
       ],
       "createdAt": "2026-01-11T02:11:03.965Z",
       "updatedAt": "2026-01-11T02:21:11.037Z"
+    },
+    {
+      "id": "TASK-mk9547ic-jgu4a",
+      "title": "Fix Git State: Commit Test File Changes and Design System Stubs",
+      "description": "Clean up uncommitted changes from recent merge: disable/enable test files (.disabled extension) and finalize planIntegration.ts design system stubs. Ensure git repository is in clean state before proceeding with next phase.",
+      "details": "**Issue**: Git repository has 3 modified files and 2 untracked .disabled test files from recent merge of feature/design-components-phase3. These changes were not committed and are blocking the repository from being clean.\n\n**Files Affected**:\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts (deleted in staging)\n- vscode-extension/src/planBuilder/designSystem/validator.test.ts (deleted in staging)\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts.disabled (untracked)\n- vscode-extension/src/planBuilder/designSystem/validator.test.ts.disabled (untracked)\n- vscode-extension/src/planBuilder/planIntegration.ts (modified)\n\n**Why This Matters**: Cannot release, deploy, or continue development until git state is clean. These files represent incomplete merge resolution.\n\n**What to Do**:\n1. Review all 3 modified files\n2. Stage: `git add vscode-extension/src/planBuilder/designSystem/*.disabled`\n3. Stage: `git add vscode-extension/src/planBuilder/planIntegration.ts`\n4. Create commit: 'fix: Finalize test file disabling and design system stubs from Phase 3 merge'\n5. Verify: `git status` shows clean working directory\n\n**Verification**: After completion, `git status` should show 'On branch main' with 'nothing to commit, working tree clean'",
+      "testStrategy": "Verify git is clean: `git status` returns no modified files, no untracked files. All tests that should be disabled are in .disabled state. planIntegration.ts has consistent stub comments.",
+      "status": "in-progress",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-11T02:54:06.852Z",
+      "updatedAt": "2026-01-11T02:54:17.887Z"
+    },
+    {
+      "id": "TASK-mk9547k3-phty3",
+      "title": "Restore and Test Design System Integration in planIntegration.ts",
+      "description": "Uncomment and restore design system imports and logic in planIntegration.ts that were stubbed during merge. Verify design handoff payload extraction, validation, and token conversion functions work correctly with wizard completion flow.",
+      "details": "**Problem**: During merge of feature/design-components-phase3, design system integration in planIntegration.ts was incomplete. Design handoff logic is commented out with TEMPORARY markers:\n\n```typescript\n// TEMPORARY: Design system removed during merge - restore in TASK-mk9380vc-br0n9\n// import { extractDesignDataFromWizard, validateDesignPayload, convertToDesignTokens } from './designHandoff';\n\n// TEMPORARY: Stub types until design system restored\ntype DesignHandoffPayload = Record<string, unknown>;\n```\n\n**Impact**: \n- Plan → Design handoff broken\n- Wizard state cannot flow to design system\n- Interactive Design Phase only 60% complete instead of 100%\n\n**What to Do**:\n1. Restore imports from designHandoff module\n2. Uncomment and fix design data extraction logic (lines ~180-195)\n3. Remove temporary stub type\n4. Verify all imports resolve correctly\n5. Run test suite to ensure no new errors\n6. Test end-to-end: complete wizard → verify design data handoff\n\n**Files to Modify**:\n- vscode-extension/src/planBuilder/planIntegration.ts (remove comments, restore imports)\n- vscode-extension/src/planBuilder/designHandoff.ts (verify exports are correct)\n\n**Related Task**: TASK-mk9380vc-br0n9 (Visual Design System Editor) - this is prerequisite",
+      "testStrategy": "Test design handoff in planIntegration: Complete wizard flow and verify processPlanCompletion() properly extracts and validates design data. Check console logs for successful design payload extraction. Run: npm test -- planBuilder for integration tests.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-11T02:54:06.915Z",
+      "updatedAt": "2026-01-11T02:54:06.915Z"
+    },
+    {
+      "id": "TASK-mk9547lf-p97t8",
+      "title": "Re-enable and Fix Design System Test Files",
+      "description": "Move tokenGenerator.test.ts and validator.test.ts from .disabled state back to executable .ts files. Fix any test failures that arise and ensure full design system test coverage is restored. Tests should validate token generation (JSON, Tailwind, CSS formats) and token validation (colors, palette, typography, spacing).",
+      "details": "**Current State**: Two test files are disabled with .disabled extension:\n- vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts.disabled (354 LOC, 47 test cases)\n- vscode-extension/src/planBuilder/designSystem/validator.test.ts.disabled (430 LOC, 50+ test cases)\n\n**Why Disabled**: Appears to be a temporary workaround during merge, not a permanent solution.\n\n**Impact**:\n- Design token generation has no automated tests\n- Design token validation has no automated tests  \n- CI/CD cannot run design system tests\n- Cannot verify design system integrity\n\n**What to Do**:\n1. Rename files back to .ts: `mv *.disabled *.ts`\n2. Run test suite: `npm test -- designSystem`\n3. Fix any failing tests (likely minor import/type issues)\n4. Verify all 47 + 50 = 97 test cases pass\n5. Commit: 'fix: Re-enable design system test suite'\n6. Update CI/CD to include these tests\n\n**Test Coverage**:\n- DesignTokenGenerator: 23 tests (JSON, Tailwind, CSS formats, edge cases)\n- DesignTokenValidator: 24 tests (color validation, palette, typography, spacing, components)\n- Total: 47 tests covering ~95% of design system functionality\n\n**Success**: All tests pass, test coverage restored to pre-merge state",
+      "testStrategy": "Run npm test and verify all design system tests pass. Check test output for coverage report (should be 95%+). Verify no console errors or warnings. Run tests in CI/CD pipeline.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-11T02:54:06.963Z",
+      "updatedAt": "2026-01-11T02:54:06.963Z"
+    },
+    {
+      "id": "TASK-mk9547oe-xj9fd",
+      "title": "Implement Live Preview System for Interactive Design Phase",
+      "description": "Complete Section 9 of Code Master by implementing real-time live preview in wizard. Connect wizard answers to preview panel with <200ms latency. Show live design updates as user answers questions. Add design impact indicators and visual feedback for user selections.",
+      "details": "**Status**: Wizard container and Vue components complete (60%), but live preview not connected (0%).\n\n**Current State**:\n- Wizard container built (360 LOC)\n- Vue components created (450 + 280 LOC)  \n- Preview panel scaffold exists\n- State management ready\n\n**What's Missing**:\n- Real-time answer → preview data binding\n- Page section rendering from answers\n- Design preview refresh on state changes\n- Live feedback indicators (compatibility, impact)\n- Visual element selection/highlighting\n\n**Specification** (from Code Master Section 9):\n- Preview updates within 200-500ms of answer change\n- Show mockup of final design based on answers\n- Indicate compatibility issues\n- Show design impact of answers\n- Page section highlighting when relevant questions answered\n\n**Files to Create/Modify**:\n1. Create: vscode-extension/src/planBuilder/livePreview.ts (200-300 LOC)\n   - Real-time preview update engine\n   - Answer → design mapping\n   - Component rendering logic\n\n2. Modify: vscode-extension/src/planBuilder/wizardContainer.ts\n   - Wire preview updates to state changes\n   - Add answer change listeners\n   - Throttle updates for performance\n\n3. Modify: resources/planBuilder/WizardContainer.vue\n   - Connect preview panel to live data\n   - Add design render component\n   - Show feedback indicators\n\n4. Add: resources/planBuilder/DesignPreview.vue (150-200 LOC)\n   - Preview rendering component\n   - Responsive design display\n   - Real-time update handling\n\n**Performance Requirements**:\n- State change latency: <50ms\n- Preview render: <200ms  \n- Overall latency: <300ms (target)\n\n**Testing**:\n- Unit tests for preview update logic\n- Integration tests for wizard → preview flow\n- Performance tests (measure latency)\n- Visual regression tests (preview accuracy)",
+      "testStrategy": "Create integration test that: answers questions, captures preview state, verifies updates within 300ms, checks design accuracy. Measure performance with high-resolution timer. Manually test designer, analyst, architect paths.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-11T02:54:07.070Z",
+      "updatedAt": "2026-01-11T02:54:07.070Z"
+    },
+    {
+      "id": "TASK-mk9547ql-mdpp0",
+      "title": "Implement Plan-Driven Task Decomposition Engine",
+      "description": "Create automated task generation from plan.json output. Analyze plan structure (features, timeline, requirements) and auto-generate decomposed task tree with proper dependencies, priorities, and subtask relationships. Wire to wizard completion flow to automatically populate task queue.",
+      "details": "**Current State**: Plans are created by wizard but don't drive task generation. Tasks must be created manually. This breaks the automation loop.\n\n**What Should Happen**:\n```\nWizard completes\n    ↓\nPlan.json generated and saved\n    ↓ \nPlanDecompositionService analyzes plan\n    ↓\nAutomatic task tree generated\n    ↓\nDependencies inferred from plan structure\n    ↓\nTask priorities assigned\n    ↓\nTask queue updated\n    ↓\nAuto Zen execution starts\n```\n\n**What Actually Happens**:\n```\nWizard completes\n    ↓\nPlan.json saved\n    ↓\n✗ Nothing happens\n    ↓\nUser must manually create tasks\n```\n\n**Implementation**:\n\n1. **Create Laravel Service**: `app/Services/PlanDecompositionService.php` (400-500 LOC)\n   - Parse plan.json structure\n   - Identify features, components, modules\n   - Generate task tree\n   - Infer dependencies from feature relationships\n   - Calculate critical path\n   - Assign priorities and estimates\n\n2. **Create Laravel Controller**: `app/Http/Controllers/Api/PlanDecompositionController.php` (200 LOC)\n   - Endpoint: POST /api/plans/{id}/decompose\n   - Accept plan parameters\n   - Call decomposition service\n   - Return generated tasks\n   - Create tasks in database\n\n3. **Integrate with Wizard**: `vscode-extension/src/planBuilder/planIntegration.ts`\n   - After plan completion, call decomposition endpoint\n   - Create tasks from response\n   - Update task queue\n   - Show progress to user\n\n4. **Update Frontend**: Create task display for generated tasks\n   - Show task tree visualization\n   - Allow user to edit/approve before execution\n   - Enable manual refinement\n\n**Decomposition Algorithm**:\n```\nInput: Plan.json {features[], timeline, scope, constraints}\n  ↓\n1. Extract feature list\n2. For each feature:\n   - Create feature task\n   - Break into components\n   - Create subtasks per component\n   - Identify dependencies between features\n   - Calculate effort estimates\n   - Assign priority based on critical path\n3. Detect cross-feature dependencies\n4. Create milestones at critical points\n5. Validate no circular dependencies\n6. Generate execution plan\n  ↓\nOutput: Task tree with dependencies and priorities\n```\n\n**Test Cases**:\n- Decompose simple 2-feature plan\n- Decompose complex 10-feature plan\n- Handle cross-feature dependencies\n- Verify critical path calculation\n- Validate no circular dependencies\n- Check task estimate accuracy\n- Test all wizard paths (designer, analyst, architect)\n\n**Related Tasks**:\n- TASK-mk7jzlhj-kozt7: Wizard Flow Integration Tests (depends on this)\n- Section 10 Completion (unlocks full plan lifecycle)",
+      "testStrategy": "Unit test: feed plan.json to decomposition service, verify correct task tree generated. Integration test: complete wizard, verify automatic task generation. Test with multiple wizard paths (designer, analyst, architect). Verify dependencies, priorities, and estimates are correct.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-11T02:54:07.149Z",
+      "updatedAt": "2026-01-11T02:54:07.149Z"
+    },
+    {
+      "id": "TASK-mk9547s7-j6oi0",
+      "title": "Establish Basic Observability and Metrics System",
+      "description": "Implement telemetry collection for task completion, execution times, error rates, and user actions. Create metrics dashboard showing KPIs: task success rate, average task duration, error frequency, and project velocity. Enable data-driven decision making about performance and quality.",
+      "details": "**Current Gap**: Section 6 (Success Metrics) defines 15 KPIs but zero are measured. Cannot verify project success or identify bottlenecks.\n\n**Required Metrics** (Code Master Section 6):\n\nQuality Metrics:\n- Test coverage % (by component, by layer)\n- Bug escape rate (bugs found in production vs QA)\n- Code review completion rate\n\nAdoption Metrics:\n- Daily active users (DAU)\n- Feature activation rate\n- User retention rate\n- Net Promoter Score (NPS)\n\nFunctionality Metrics:\n- Features complete %\n- System uptime %\n- API response time (p50, p95, p99)\n\nSatisfaction Metrics:\n- NPS (Net Promoter Score)\n- Customer satisfaction (CSAT)\n- Support ticket volume\n\nBusiness Metrics:\n- Task execution velocity (tasks/day)\n- Cost per task\n- Time-to-completion\n\n**Implementation Plan**:\n\n1. **Create Metrics Service** (300-400 LOC)\n   - `app/Services/MetricsService.php`\n   - Methods: recordTaskCompletion, recordErrorEvent, recordExecutionTime\n   - Persist to database (new metrics_events table)\n\n2. **Create Database Schema** \n   - Table: `metrics_events` (id, event_type, value, timestamp)\n   - Columns: event_type, metric_name, value, user_id, project_id, timestamp\n   - Indexes on timestamp and event_type for queries\n\n3. **Wire Event Recording**\n   - Task completion: record in TaskCompletedEvent\n   - Errors: record in error handlers\n   - Execution time: measure in task executor\n   - API calls: measure in middleware\n\n4. **Create Aggregation Jobs** (200 LOC)\n   - `app/Jobs/AggregateMetrics.php`\n   - Daily aggregation: count events, calculate averages, derive KPIs\n   - Store aggregations in `metrics_summary` table\n   - Run via scheduler (daily at 1 AM UTC)\n\n5. **Create Dashboard** (300 LOC)\n   - API endpoint: GET /api/metrics/dashboard\n   - Returns: KPI summary, trend data, anomalies\n   - Vue component: MetricsDashboard.vue\n   - Show: charts, KPI cards, trend indicators\n\n6. **Integration Points**:\n   - Task model: emit completion events\n   - Error handlers: record errors\n   - Task executor: measure execution time\n   - API middleware: measure response times\n   - Agent execution: track progress\n\n**Success Criteria**:\n- ✅ All 15 KPIs can be calculated from recorded data\n- ✅ Dashboard shows real-time metrics\n- ✅ Historical trending available (30+ days)\n- ✅ Zero performance impact on main system\n- ✅ Easy to add new metrics\n\n**Baseline Metrics** (first month):\n- Record: task completions, execution times, errors, user actions\n- Publish: daily summary dashboard\n- Track: velocity, quality, user engagement\n\n**Timeline**: 8-12 hours (medium complexity)\n\n**Related**: Section 6, Success Metrics tracking",
+      "testStrategy": "Test MetricsService records events correctly. Test aggregation job calculates metrics accurately. Test dashboard API returns correct data. Manually verify dashboard shows expected KPI values. Load test to ensure zero performance impact.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-11T02:54:07.207Z",
+      "updatedAt": "2026-01-11T02:54:07.207Z"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T02:30:36.407Z"
+    "updatedAt": "2026-01-11T02:54:17.888Z"
   }
 }
