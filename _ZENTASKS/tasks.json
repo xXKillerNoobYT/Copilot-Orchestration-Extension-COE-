@@ -462,13 +462,13 @@
       "description": "Add Mermaid dependency graph visualization to Markdown export showing feature relationships with arrows and labels.",
       "details": "Generate Mermaid flowchart syntax from feature dependencies. Nodes colored by priority (red=high, yellow=medium, green=low). Include in Markdown fenced code block with ```mermaid syntax.\n\nEstimate: 2 hours",
       "testStrategy": "Export plan with dependencies; verify Mermaid syntax valid; test rendering in VS Code Markdown preview; verify colors match priorities.",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "EPIC-005"
       ],
       "createdAt": "2026-01-11T02:00:33.215Z",
-      "updatedAt": "2026-01-11T02:00:33.215Z"
+      "updatedAt": "2026-01-11T07:29:30.704Z"
     },
     {
       "id": "TASK-mk937c14-yecd1",
@@ -865,6 +865,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T06:32:29.316Z"
+    "updatedAt": "2026-01-11T07:29:30.704Z"
   }
 }

@@ -224,6 +224,38 @@ export function generateMarkdown(plan: PlanJSON): string {
       sections.push(`| ${milestone.name} | ${milestone.target_date} | ${milestone.phase} | ${milestone.completion_status} | ${deps} |`);
     });
     sections.push('');
+
+    // Timeline Gantt chart visualization
+    sections.push('### Timeline Gantt Chart');
+    sections.push('');
+    sections.push('```mermaid');
+    sections.push('gantt');
+    sections.push('    title Project Timeline');
+    sections.push('    dateFormat YYYY-MM-DD');
+    sections.push('');
+
+    // Add phases as sections
+    if (plan.timeline.phases && plan.timeline.phases.length > 0) {
+      plan.timeline.phases.forEach(phase => {
+        const phaseId = phase.name.replace(/\s+/g, '_').toLowerCase();
+        sections.push(`    section ${phase.name}`);
+        sections.push(`    ${phase.name} :${phaseId}, ${phase.start_date}, ${phase.end_date}`);
+      });
+    }
+
+    sections.push('');
+
+    // Add milestones
+    plan.timeline.milestones.forEach(milestone => {
+      const milestoneId = milestone.name.replace(/\s+/g, '_').toLowerCase();
+      const phaseId = milestone.phase ? milestone.phase.replace(/\s+/g, '_').toLowerCase() : 'general';
+      
+      // Calculate milestone duration (show as single day milestone)
+      sections.push(`    ${milestone.name} :crit, ${milestoneId}, ${milestone.target_date}, 1d`);
+    });
+
+    sections.push('```');
+    sections.push('');
   }
 
   sections.push('---');
