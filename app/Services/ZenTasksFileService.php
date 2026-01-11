@@ -118,11 +118,27 @@ class ZenTasksFileService
         $labels = array_filter($labels, fn($l) => !str_starts_with($l, 'priority:'));
         $labelsStr = implode(', ', $labels);
 
-        // Build frontmatter
+        // Escape YAML values to prevent injection
+        $escapeYaml = function($value) {
+            if (is_null($value)) {
+                return '""';
+            }
+            $value = (string)$value;
+            // If value contains special YAML characters, quote it
+            if (preg_match('/[:\'"\\\\#\[\]{}&*!|>@`]/', $value) || 
+                preg_match('/^\s|\s$/', $value) ||
+                in_array(strtolower($value), ['true', 'false', 'null', 'yes', 'no', 'on', 'off'])) {
+                // Escape double quotes and wrap in double quotes
+                return '"' . str_replace(['"', '\\'], ['\"', '\\\\'], $value) . '"';
+            }
+            return $value;
+        };
+
+        // Build frontmatter with escaped values
         $frontmatter = <<<YAML
 ---
 id: {$taskId}
-title: {$issueData['title']}
+title: {$escapeYaml($issueData['title'])}
 type: {$taskType}
 priority: {$priority}
 status: {$status}
@@ -133,7 +149,7 @@ estimate: ""
 due: ""
 format_version: "1.0"
 github_issue: {$issueData['number']}
-github_url: {$issueData['html_url']}
+github_url: {$escapeYaml($issueData['html_url'])}
 ---
 
 YAML;

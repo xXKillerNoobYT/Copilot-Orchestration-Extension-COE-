@@ -7,21 +7,10 @@ on:
   
   # Allow manual triggering
   workflow_dispatch:
-  
-  # Run when tasks.json is updated (only on main/master branch)
-  push:
-    branches:
-      - main
-      - master
-    paths:
-      - '_ZENTASKS/tasks.json'
-      - '_ZENTASKS/TASK-*.md'
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    # Only run on main/master branch or manual trigger
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     
     steps:
       - name: Checkout repository
@@ -45,18 +34,19 @@ jobs:
           GITHUB_REPO: ${{ github.event.repository.name }}
         run: php artisan zentasks:sync-github --direction=both
       
-      - name: Check for changes
+      - name: Check for changes to markdown files
         id: git-check
         run: |
-          git diff --exit-code _ZENTASKS/ || echo "changes=true" >> $GITHUB_OUTPUT
+          git add -N _ZENTASKS/TASK-*.md 2>/dev/null || true
+          git diff --exit-code _ZENTASKS/TASK-*.md 2>/dev/null || echo "changes=true" >> $GITHUB_OUTPUT
       
-      - name: Commit and push changes
+      - name: Commit and push markdown file changes
         if: steps.git-check.outputs.changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _ZENTASKS/
-          git commit -m "chore: auto-sync tasks and issues [skip ci]"
+          git add _ZENTASKS/TASK-*.md
+          git commit -m "chore: auto-sync task markdown files [skip ci]"
           git push
       
       - name: Summary

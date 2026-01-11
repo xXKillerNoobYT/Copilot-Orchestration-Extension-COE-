@@ -110,13 +110,43 @@ class GitHubZenTasksSyncService
     }
 
     /**
+     * Retrieve all GitHub issues for a repository, handling pagination
+     */
+    private function getAllIssues(string $owner, string $repo): array
+    {
+        $allIssues = [];
+        $page = 1;
+        $perPage = 100;
+
+        do {
+            $issues = $this->githubClient->listIssues($owner, $repo, [
+                'state' => 'all',
+                'page' => $page,
+                'per_page' => $perPage,
+            ]);
+
+            if (!is_array($issues) || count($issues) === 0) {
+                break;
+            }
+
+            // Filter out pull requests
+            $issues = array_filter($issues, fn($issue) => !isset($issue['pull_request']));
+            $allIssues = array_merge($allIssues, $issues);
+            
+            $page++;
+        } while (count($issues) === $perPage);
+
+        return $allIssues;
+    }
+
+    /**
      * Sync all GitHub issues to tasks
      */
     public function syncIssuesToTasks(string $owner, string $repo): array
     {
         Log::info('Starting sync: GitHub Issues -> Tasks');
 
-        $issues = $this->githubClient->listIssues($owner, $repo, ['state' => 'all']);
+        $issues = $this->getAllIssues($owner, $repo);
         $metadata = $this->fileService->loadSyncMetadata();
         $tasks = $this->fileService->loadTasksFromFile();
         
@@ -147,10 +177,19 @@ class GitHubZenTasksSyncService
                 }
 
                 if ($existingTaskIndex !== null) {
-                    // Update existing task
+                    // Update existing task - only update fields that are provided
                     Log::info("Updating task {$taskId} from issue #{$issue['number']}");
-                    $tasks[$existingTaskIndex] = array_merge($tasks[$existingTaskIndex], $taskData);
+                    foreach ($taskData as $key => $value) {
+                        // Only update non-null values to preserve task-specific fields
+                        if ($value !== null) {
+                            $tasks[$existingTaskIndex][$key] = $value;
+                        }
+                    }
                     $tasks[$existingTaskIndex]['updatedAt'] = now()->toIso8601String();
+                    
+                    // Update markdown file for existing tasks
+                    $mdContent = $this->fileService->createTaskMarkdownFromIssue($taskId, $issue, $tasks[$existingTaskIndex]);
+                    $this->fileService->saveTaskMarkdown($taskId, $mdContent);
                 } else {
                     // Create new task
                     Log::info("Creating new task from issue #{$issue['number']}");

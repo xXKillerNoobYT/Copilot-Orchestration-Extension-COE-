@@ -8,7 +8,7 @@ The Zen Tasks to GitHub Issues sync system provides bidirectional synchronizatio
 
 ### Components
 
-1. **sync_github.py**: Python script that handles all synchronization logic
+1. **sync_trigger.py**: Lightweight Python trigger that calls Laravel artisan command
 2. **tasks.json**: Source of truth for internal task metadata
 3. **TASK-{id}.md files**: Detailed task files with YAML frontmatter and full descriptions
 4. **sync_metadata.json**: Maintains mappings between tasks and issues
@@ -18,7 +18,7 @@ The Zen Tasks to GitHub Issues sync system provides bidirectional synchronizatio
 
 ```
 ┌─────────────────┐         ┌──────────────────┐         ┌────────────────┐
-│  tasks.json     │◄────────│  sync_github.py  │────────►│ GitHub Issues  │
+│  tasks.json     │◄────────│  sync_trigger.py  │────────►│ GitHub Issues  │
 │  (Zen Tasks)    │         │   (Sync Engine)  │         │                │
 └─────────────────┘         └──────────────────┘         └────────────────┘
         ▲                            │                            │
@@ -96,18 +96,18 @@ This prevents duplicate issues/tasks and enables efficient updates.
 
 ### Prerequisites
 
-1. **Python 3.8+** installed
-2. **requests library**: Install with `pip install -r _ZENTASKS/requirements.txt`
+1. **PHP 8.2+** and Laravel installed
+2. **Python 3.8+** (for trigger script, no additional dependencies needed)
 3. **GitHub Personal Access Token** with `repo` scope
 
 ### Configuration
 
-Set environment variables:
+Configure in your Laravel `.env` file (root of project):
 
-```bash
-export GITHUB_TOKEN="your_github_token_here"
-export GITHUB_OWNER="xXKillerNoobYT"  # Optional, defaults to this
-export GITHUB_REPO="Copilot-Orchestration-Extension-COE-"  # Optional
+```env
+GITHUB_TOKEN=your_github_token_here
+GITHUB_OWNER=xXKillerNoobYT
+GITHUB_REPO=Copilot-Orchestration-Extension-COE-
 ```
 
 Or create `_ZENTASKS/.env` file:
@@ -124,7 +124,7 @@ GITHUB_REPO=Copilot-Orchestration-Extension-COE-
 
 ```bash
 cd _ZENTASKS
-python sync_github.py
+python sync_trigger.py
 ```
 
 This performs:
@@ -135,12 +135,12 @@ This performs:
 
 **Export tasks to GitHub only:**
 ```bash
-python sync_github.py --sync-to-github
+python sync_trigger.py --to-github
 ```
 
 **Import issues from GitHub only:**
 ```bash
-python sync_github.py --sync-from-github
+python sync_trigger.py --from-github
 ```
 
 ### Example Output
@@ -176,7 +176,7 @@ Sync completed successfully!
 Run the script manually when needed:
 
 ```bash
-cd _ZENTASKS && python sync_github.py
+cd _ZENTASKS && python sync_trigger.py
 ```
 
 ### 2. Automated Sync with GitHub Actions
@@ -212,7 +212,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd _ZENTASKS
-          python sync_github.py --sync-both
+          python sync_trigger.py 
       
       - name: Commit updated tasks
         run: |
@@ -229,7 +229,7 @@ For server-side automation:
 
 ```bash
 # Add to crontab (crontab -e)
-0 */6 * * * cd /path/to/repo/_ZENTASKS && GITHUB_TOKEN=xxx python sync_github.py --sync-both
+0 */6 * * * cd /path/to/repo/_ZENTASKS && GITHUB_TOKEN=xxx python sync_trigger.py 
 ```
 
 ### 4. Pre-commit Hook
@@ -241,7 +241,7 @@ Create `.git/hooks/pre-commit`:
 ```bash
 #!/bin/bash
 cd _ZENTASKS
-python sync_github.py --sync-both
+python sync_trigger.py 
 git add tasks.json sync_metadata.json
 ```
 
@@ -343,7 +343,7 @@ The sync script:
 
 **Cause**: Custom statuses not in mapping table
 
-**Solution**: Update `STATUS_TO_GITHUB` and `GITHUB_TO_STATUS` in `sync_github.py`
+**Solution**: Update `STATUS_TO_GITHUB` and `GITHUB_TO_STATUS` in `sync_trigger.py`
 
 ### Issue: Labels not applied correctly
 
@@ -358,7 +358,7 @@ The sync script:
 **Cause**: Large number of tasks/issues
 
 **Solution**:
-1. Use `--sync-to-github` or `--sync-from-github` for one-way sync
+1. Use `--to-github` or `--from-github` for one-way sync
 2. Filter tasks/issues before syncing
 3. Increase pagination size in script
 
@@ -366,36 +366,38 @@ The sync script:
 
 ### Adding Custom Mappings
 
-Edit `sync_github.py` and modify:
+Edit `app/Services/GitHubZenTasksSyncService.php` and modify:
 
-```python
-# Add custom status
-STATUS_TO_GITHUB = {
-    # ... existing mappings ...
-    'custom_status': 'open',
-}
+```php
+// Add custom status
+private const STATUS_TO_GITHUB = [
+    // ... existing mappings ...
+    'custom_status' => 'open',
+];
 
-# Add custom type
-TYPE_TO_LABEL = {
-    # ... existing mappings ...
-    'custom_type': 'custom-label',
-}
+// Add custom type
+private const TYPE_TO_LABEL = [
+    // ... existing mappings ...
+    'custom_type' => 'custom-label',
+];
 ```
 
 ### Filtering Tasks/Issues
 
-Modify the sync methods to add filters:
+Modify the sync methods in `app/Services/GitHubZenTasksSyncService.php` to add filters:
 
-```python
-def sync_all_tasks_to_github(self):
-    tasks_data = self._load_tasks()
-    tasks = tasks_data.get('tasks', [])
+```php
+public function syncTasksToGitHub(string $owner, string $repo): array
+{
+    $tasks = $this->fileService->loadTasksFromFile();
     
-    # Filter: only sync high priority tasks
-    tasks = [t for t in tasks if t.get('priority') == 'high']
+    // Filter: only sync high priority tasks
+    $tasks = array_filter($tasks, fn($t) => ($t['priority'] ?? '') === 'high');
     
-    for task in tasks:
-        # ... sync logic ...
+    foreach ($tasks as $task) {
+        // ... sync logic ...
+    }
+}
 ```
 
 ### Custom Issue Body Format
