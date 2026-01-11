@@ -302,13 +302,13 @@
       "description": "Convert wizard answers to Code Master plan.json format with validation, persistence, versioning, and metadata. Outputs valid plan.json files to Docs/Plans/ directory conforming to Section 10 schema.",
       "details": "Components:\n- planGenerator.ts: wizard→JSON transformation\n- planPersistence.ts: save to Docs/Plans/, versioning, backups\n- planValidator.ts: JSON schema validation, dependency checks\n- planMetadata.ts: timestamps, author, version (semver), status\n\nUses Zod for schema validation, VS Code workspace APIs for file ops.\n\nEstimate: 10-14 hours total",
       "testStrategy": "Generate plan from wizard; validate schema; save to filesystem; verify versioning; test metadata; verify backups; test error handling.",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-002"
       ],
       "createdAt": "2026-01-11T01:59:39.000Z",
-      "updatedAt": "2026-01-11T01:59:39.000Z"
+      "updatedAt": "2026-01-11T05:56:46.899Z"
     },
     {
       "id": "TASK-mk936656-exgae",
@@ -346,14 +346,14 @@
       "description": "Build planValidator.ts with JSON schema validation (Ajv), dependency checks (circular refs, orphans), completeness checks, and timeline validation.",
       "details": "Methods: validateSchema, validateDependencies (no circular refs/orphans), validateCompleteness (all required sections), validateTimeline (logical dates), validateTeam (min 1 role).\n\nReturns detailed ValidationResult with error messages, line numbers, field paths.\n\nFile: vscode-extension/src/planBuilder/planValidator.ts\n\nEstimate: 2-3 hours",
       "testStrategy": "Valid plan passes all checks; invalid plans fail with specific errors; verify circular ref detection; test timeline validation; test helpful error messages.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-003",
         "TASK-003A"
       ],
       "createdAt": "2026-01-11T01:59:39.483Z",
-      "updatedAt": "2026-01-11T05:54:55.310Z"
+      "updatedAt": "2026-01-11T05:56:28.174Z"
     },
     {
       "id": "TASK-mk9366jf-6b1y7",
@@ -361,13 +361,13 @@
       "description": "Auto-generate tasks from plan features with dependency mapping, priority assignment via critical path analysis, and circular dependency detection. Outputs to _ZENTASKS/tasks.json.",
       "details": "Components:\n- taskDecomposition.ts: plan features→tasks with acceptance criteria\n- dependencyInference.ts: smart dependency detection, circular checks\n- priorityAssignment.ts: critical path analysis, priority propagation\n- taskGenerator.ts: generate valid tasks.json\n\nIntegrates with existing DependencyGraphService from backend.\n\nEstimate: 12-16 hours total",
       "testStrategy": "Generate tasks from plan; verify dependencies correct; check circular refs prevented; validate priorities assigned; test tasks.json validity.",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-003"
       ],
       "createdAt": "2026-01-11T01:59:39.675Z",
-      "updatedAt": "2026-01-11T01:59:39.675Z"
+      "updatedAt": "2026-01-11T06:08:32.409Z"
     },
     {
       "id": "TASK-mk9366oj-84coz",
@@ -375,13 +375,13 @@
       "description": "Create task decomposition engine that converts plan features into executable tasks with descriptions, details, test strategies, and acceptance criteria.",
       "details": "Algorithm: For each feature→create implementation task, testing task, documentation task. Auto-generate descriptions from feature name/description. Apply task templates based on feature type.\n\nFile: vscode-extension/src/services/taskDecomposition.ts\n\nUses templates for common patterns (API endpoint, UI component, database migration).\n\nEstimate: 4-5 hours",
       "testStrategy": "Generate tasks from sample plan; verify task count matches features; validate task descriptions; verify acceptance criteria present; test task templates applied.",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-004"
       ],
       "createdAt": "2026-01-11T01:59:39.859Z",
-      "updatedAt": "2026-01-11T01:59:39.859Z"
+      "updatedAt": "2026-01-11T06:05:10.721Z"
     },
     {
       "id": "TASK-mk9366vf-is60r",
@@ -389,13 +389,13 @@
       "description": "Implement dependency inference that automatically detects task dependencies based on feature relationships, technical constraints, and logical sequencing.",
       "details": "Rules: testing tasks depend on implementation tasks, documentation depends on both. Feature dependencies map to task dependencies. Detect implicit deps (database before API, API before UI). Circular dependency detection with helpful error messages.\n\nFile: vscode-extension/src/services/dependencyInference.ts\n\nUses graph algorithms (topological sort, cycle detection).\n\nEstimate: 3-4 hours",
       "testStrategy": "Test implicit dependency detection; verify circular ref detection; test feature dependency mapping; validate topological sort order.",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-004"
       ],
       "createdAt": "2026-01-11T01:59:40.107Z",
-      "updatedAt": "2026-01-11T01:59:40.108Z"
+      "updatedAt": "2026-01-11T06:06:24.773Z"
     },
     {
       "id": "TASK-mk936720-1uajo",
@@ -403,13 +403,13 @@
       "description": "Add priority assignment logic using critical path analysis. Tasks on critical path get high priority, parallel tasks get medium, polish tasks get low.",
       "details": "Algorithm: Build dependency graph, find critical path (longest path through DAG), assign priorities: critical path=high, blockers of critical path=high, parallel work=medium, polish/docs=low. Priority propagation through dependency chains.\n\nFile: vscode-extension/src/services/priorityAssignment.ts\n\nUses existing DependencyGraphService for graph operations.\n\nEstimate: 2-3 hours",
       "testStrategy": "Test critical path identification; verify priorities assigned correctly; test priority propagation; validate no orphan tasks.",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "EPIC-004"
       ],
       "createdAt": "2026-01-11T01:59:40.344Z",
-      "updatedAt": "2026-01-11T01:59:40.344Z"
+      "updatedAt": "2026-01-11T06:07:24.993Z"
     },
     {
       "id": "TASK-mk93676p-wwbug",
@@ -417,7 +417,7 @@
       "description": "Build task JSON generator that outputs valid _ZENTASKS/tasks.json with all tasks, dependencies, priorities, and metadata from the plan.",
       "details": "Combines outputs from taskDecomposition, dependencyInference, priorityAssignment. Generates task IDs, timestamps, status (all pending). Validates output against tasks.json schema. Option to merge with existing tasks or replace.\n\nFile: vscode-extension/src/services/taskGenerator.ts\n\nEstimate: 3-4 hours",
       "testStrategy": "Generate tasks.json from plan; validate JSON structure; verify all task fields present; test merge vs replace modes; verify no ID collisions.",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-004",
@@ -426,7 +426,7 @@
         "TASK-004C"
       ],
       "createdAt": "2026-01-11T01:59:40.513Z",
-      "updatedAt": "2026-01-11T01:59:40.513Z"
+      "updatedAt": "2026-01-11T06:08:21.931Z"
     },
     {
       "id": "TASK-mk9367c1-v290i",
@@ -848,9 +848,23 @@
       "dependencies": [],
       "createdAt": "2026-01-11T05:13:56.384Z",
       "updatedAt": "2026-01-11T05:16:33.059Z"
+    },
+    {
+      "id": "TASK-mk9by33n-4ip41",
+      "title": "Create comprehensive test suite for task decomposition engine",
+      "description": "Add unit tests for taskDecomposition.ts covering template selection, feature decomposition, large feature breaking, dependency mapping, effort estimation, and agent assignment logic",
+      "details": "Create taskDecomposition.test.ts with test coverage for:\n- Template selection (API, UI, database patterns)\n- Feature decomposition into impl + test + doc tasks\n- Large feature breaking (>16h → subtasks)\n- Dependency mapping (FEAT → TASK)\n- Effort estimation (30% test, 20% doc)\n- Agent assignment (Auto Zen, Testing Agent)\n- Edge cases (zero features, very large estimates, complex dependencies)\n\nTarget: 80%+ code coverage",
+      "testStrategy": "Run tests with npm test, verify coverage with npm run test:coverage, ensure all edge cases pass",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        "TASK-004A"
+      ],
+      "createdAt": "2026-01-11T06:05:18.515Z",
+      "updatedAt": "2026-01-11T06:05:18.515Z"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T05:54:55.310Z"
+    "updatedAt": "2026-01-11T06:08:32.410Z"
   }
 }
