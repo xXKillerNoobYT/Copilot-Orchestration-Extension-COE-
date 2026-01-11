@@ -6,17 +6,9 @@ on:
       - master
       - '*.x'
   pull_request:
-    paths:
-      - 'app/**'
-      - 'tests/**'
-      - 'config/**'
-      - 'database/**'
-      - 'routes/**'
-      - 'composer.json'
-      - 'composer.lock'
-      - 'phpunit.xml'
-      - 'vscode-extension/**'
-      - '.github/workflows/tests.yml'
+    paths-ignore:
+      - 'Docs/**'
+      - '**.md'
   schedule:
     - cron: '0 0 * * *'
 
@@ -28,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         php: [8.2, 8.3]
 
@@ -55,7 +47,7 @@ jobs:
         run: php artisan key:generate
 
       - name: Execute tests
-        run: vendor/bin/phpunit --stop-on-failure
+        run: vendor/bin/phpunit
 
   extension-tests:
     runs-on: ubuntu-latest

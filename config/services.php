@@ -35,8 +35,8 @@ return [
         'token' => env('GITHUB_TOKEN'),
         'webhook_secret' => env('GITHUB_WEBHOOK_SECRET'),
         'api_version' => env('GITHUB_API_VERSION', '2022-11-28'),
-        'owner' => env('GITHUB_OWNER', 'xXKillerNoobYT'),
-        'repo' => env('GITHUB_REPO', 'Copilot-Orchestration-Extension-COE-'),
+        'owner' => env('GITHUB_OWNER'),
+        'repo' => env('GITHUB_REPO'),
     ],
 
 ];

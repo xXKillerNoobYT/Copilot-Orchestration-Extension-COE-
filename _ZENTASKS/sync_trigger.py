@@ -21,8 +21,7 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(
         description='Trigger Zen tasks and GitHub issues sync',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
     parser.add_argument('--to-github', action='store_true',

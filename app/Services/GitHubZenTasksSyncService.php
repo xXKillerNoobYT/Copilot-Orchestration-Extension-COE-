@@ -111,7 +111,7 @@ class GitHubZenTasksSyncService
     /**
      * Retrieve all GitHub issues for a repository, handling pagination
      */
-    private function getAllIssues(string $owner, string $repo): array
+    protected function getAllIssues(string $owner, string $repo): array
     {
         $allIssues = [];
         $page = 1;
@@ -124,7 +124,7 @@ class GitHubZenTasksSyncService
                 'per_page' => $perPage,
             ]);
 
-            if (!is_array($issues) || count($issues) === 0) {
+            if (!is_array($issues) || empty($issues)) {
                 break;
             }
 
@@ -133,7 +133,7 @@ class GitHubZenTasksSyncService
             $allIssues = array_merge($allIssues, $issues);
             
             $page++;
-        } while (count($issues) === $perPage);
+        } while (!empty($issues));
 
         return $allIssues;
     }
@@ -155,11 +155,6 @@ class GitHubZenTasksSyncService
 
         foreach ($issues as $issue) {
             try {
-                // Skip pull requests
-                if (isset($issue['pull_request'])) {
-                    continue;
-                }
-
                 $taskId = $this->extractTaskIdFromIssue($issue) 
                     ?? $metadata['issue_to_task'][(string)$issue['number']] ?? null;
 

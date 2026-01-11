@@ -110,13 +110,8 @@ GITHUB_OWNER=xXKillerNoobYT
 GITHUB_REPO=Copilot-Orchestration-Extension-COE-
 ```
 
-Or create `_ZENTASKS/.env` file:
-
-```env
-GITHUB_TOKEN=your_token_here
-GITHUB_OWNER=xXKillerNoobYT
-GITHUB_REPO=Copilot-Orchestration-Extension-COE-
-```
+> **Note**: All GitHub sync configuration **must** be defined in the main Laravel `.env` file at the project root.  
+> The `_ZENTASKS` folder is not used for environment loading.
 
 ### Running the Sync
 
@@ -201,11 +196,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
-      
-      - name: Install dependencies
-        run: |
-          cd _ZENTASKS
-          pip install -r requirements.txt
       
       - name: Sync tasks and issues
         env:
@@ -343,7 +333,7 @@ The sync script:
 
 **Cause**: Custom statuses not in mapping table
 
-**Solution**: Update `STATUS_TO_GITHUB` and `GITHUB_TO_STATUS` in `sync_trigger.py`
+**Solution**: Update `STATUS_TO_GITHUB` in `app/Services/GitHubZenTasksSyncService.php`
 
 ### Issue: Labels not applied correctly
 
@@ -402,18 +392,21 @@ public function syncTasksToGitHub(string $owner, string $repo): array
 
 ### Custom Issue Body Format
 
-Override `_format_task_as_issue_body()`:
+Customize by modifying the sync service in `app/Services/GitHubZenTasksSyncService.php`:
 
-```python
-def _format_task_as_issue_body(self, task: Dict) -> str:
-    # Custom formatting
-    return f"""
-    ## {task['title']}
-    
-    {task['description']}
-    
-    **Priority**: {task['priority']}
-    """
+```php
+// Add a custom method to format issue body
+protected function formatTaskAsIssueBody(array $task): string
+{
+    return implode("\n", [
+        "## " . ($task['title'] ?? ''),
+        "",
+        $task['description'] ?? '',
+        "",
+        "**Priority**: " . ($task['priority'] ?? ''),
+        "**Status**: " . ($task['status'] ?? ''),
+    ]);
+}
 ```
 
 ## Monitoring & Observability

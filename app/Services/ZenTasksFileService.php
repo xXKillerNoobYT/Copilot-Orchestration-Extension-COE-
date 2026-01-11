@@ -110,14 +110,6 @@ class ZenTasksFileService
         $priority = $taskData['priority'] ?? 'medium';
         $status = $taskData['status'] ?? 'pending';
         
-        // Extract labels
-        $labels = array_map(
-            fn($label) => is_array($label) ? ($label['name'] ?? '') : $label,
-            $issueData['labels'] ?? []
-        );
-        $labels = array_filter($labels, fn($l) => !str_starts_with($l, 'priority:'));
-        $labelsStr = implode(', ', $labels);
-
         // Escape YAML values to prevent injection
         $escapeYaml = function($value) {
             if (is_null($value)) {
@@ -125,14 +117,23 @@ class ZenTasksFileService
             }
             $value = (string)$value;
             // If value contains special YAML characters, quote it
-            if (preg_match('/[:\'"\\\\#\[\]{}&*!|>@`]/', $value) || 
+            if (preg_match('/[:\'"\\\\#\[\]{}&*!|>@`\n\r\t]/', $value) || 
                 preg_match('/^\s|\s$/', $value) ||
                 in_array(strtolower($value), ['true', 'false', 'null', 'yes', 'no', 'on', 'off'])) {
-                // Escape double quotes and wrap in double quotes
-                return '"' . str_replace(['"', '\\'], ['\"', '\\\\'], $value) . '"';
+                // Escape special characters and wrap in double quotes (backslashes first to avoid double-escaping)
+                return '"' . str_replace(['\\', '"', "\n", "\r", "\t"], ['\\\\', '\"', '\\n', '\\r', '\\t'], $value) . '"';
             }
             return $value;
         };
+
+        // Extract and escape labels
+        $labels = array_map(
+            fn($label) => is_array($label) ? ($label['name'] ?? '') : $label,
+            $issueData['labels'] ?? []
+        );
+        $labels = array_filter($labels, fn($l) => !str_starts_with($l, 'priority:'));
+        $escapedLabels = array_map($escapeYaml, $labels);
+        $labelsStr = implode(', ', $escapedLabels);
 
         // Build frontmatter with escaped values
         $frontmatter = <<<YAML

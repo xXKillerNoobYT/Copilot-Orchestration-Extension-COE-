@@ -27,20 +27,25 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
       
+      - name: Configure environment
+        run: |
+          cp .env.example .env || touch .env
+          php artisan key:generate
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> .env
+          echo "GITHUB_OWNER=${{ github.repository_owner }}" >> .env
+          echo "GITHUB_REPO=${{ github.event.repository.name }}" >> .env
+      
       - name: Sync tasks with GitHub issues
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_OWNER: ${{ github.repository_owner }}
-          GITHUB_REPO: ${{ github.event.repository.name }}
         run: php artisan zentasks:sync-github --direction=both
       
-      - name: Check for changes to markdown files
+      - name: Check for changes to task files
         id: git-check
         run: |
-          git add -N _ZENTASKS/TASK-*.md 2>/dev/null || true
-          git diff --exit-code _ZENTASKS/TASK-*.md 2>/dev/null || echo "changes=true" >> $GITHUB_OUTPUT
+          if [ -n "$(git status --porcelain -- _ZENTASKS/TASK-*.md 2>/dev/null)" ]; then
+            echo "changes=true" >> "$GITHUB_OUTPUT"
+          fi
       
-      - name: Commit and push markdown file changes
+      - name: Commit and push task file changes
         if: steps.git-check.outputs.changes == 'true'
         run: |
           git config user.name "github-actions[bot]"

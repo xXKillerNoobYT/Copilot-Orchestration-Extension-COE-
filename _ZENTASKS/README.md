@@ -51,4 +51,4 @@ The sync logic is in the Laravel application:
 - `app/Services/ZenTasksFileService.php` - File I/O operations
 - `app/Console/Commands/SyncZenTasksWithGitHub.php` - Artisan command
 
-See `Docs/ZEN-TASKS-GITHUB-SYNC.md` for full documentation.
+See [full documentation](../Docs/ZEN-TASKS-GITHUB-SYNC.md) for details.
