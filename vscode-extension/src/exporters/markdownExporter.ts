@@ -13,6 +13,24 @@
 import type { PlanJSON } from '../planBuilder/planGenerator';
 
 /**
+ * Maps priority level to Mermaid CSS class for styling
+ */
+function getPriorityColor(priority: string): string {
+  switch (priority) {
+    case 'critical':
+      return ':::critical';
+    case 'high':
+      return ':::high';
+    case 'medium':
+      return ':::medium';
+    case 'low':
+      return ':::low';
+    default:
+      return ':::medium';
+  }
+}
+
+/**
  * Generates a Markdown document from a plan JSON object
  * @param plan The plan JSON to convert
  * @returns Formatted Markdown string
@@ -106,6 +124,49 @@ export function generateMarkdown(plan: PlanJSON): string {
       sections.push(`| ${feature.name} | ${priority} | ${feature.status || 'pending'} | ${deps} | ${effort} |`);
     });
     sections.push('');
+
+    // Dependency graph visualization
+    sections.push('### Feature Dependency Graph');
+    sections.push('');
+    const hasDependencies = plan.features.some(f => f.dependencies && f.dependencies.length > 0);
+    if (hasDependencies) {
+      sections.push('```mermaid');
+      sections.push('graph TD');
+      sections.push('');
+      
+      // Create nodes with styling based on priority
+      plan.features.forEach(feature => {
+        const nodeId = feature.id.replace(/[^a-zA-Z0-9]/g, '_');
+        const priorityColor = getPriorityColor(feature.priority);
+        sections.push(`    ${nodeId}["${feature.name}<br/>(${feature.priority})<br/>${feature.effort_estimate}h"]${priorityColor}`);
+      });
+      sections.push('');
+      
+      // Create edges for dependencies
+      plan.features.forEach(feature => {
+        if (feature.dependencies && feature.dependencies.length > 0) {
+          const fromId = feature.id.replace(/[^a-zA-Z0-9]/g, '_');
+          feature.dependencies.forEach(depId => {
+            const depFeature = plan.features?.find(f => f.id === depId);
+            if (depFeature) {
+              const toId = depId.replace(/[^a-zA-Z0-9]/g, '_');
+              sections.push(`    ${toId} --> ${fromId}`);
+            }
+          });
+        }
+      });
+      
+      sections.push('');
+      sections.push('    classDef critical fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px,color:#fff');
+      sections.push('    classDef high fill:#ffd43b,stroke:#f59f00,stroke-width:2px,color:#000');
+      sections.push('    classDef medium fill:#74c0fc,stroke:#1971c2,stroke-width:2px,color:#000');
+      sections.push('    classDef low fill:#69db7c,stroke:#2b8a3e,stroke-width:2px,color:#000');
+      sections.push('```');
+      sections.push('');
+    } else {
+      sections.push('_No dependencies defined between features._');
+      sections.push('');
+    }
 
     // Detailed feature descriptions
     sections.push('### Feature Details');
