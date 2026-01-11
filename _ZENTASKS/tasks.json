@@ -286,7 +286,7 @@
       "description": "Build TeamStructureQuestion.vue with role assignment, skill tags, agent mapping (Auto Zen, Zen Planner, etc.), and org chart preview. Min 1 role.",
       "details": "Add/remove roles (Frontend/Backend/Designer/QA/DevOps/Tech Lead), skill multi-select, agent dropdown, D3/Mermaid org chart, skill coverage indicator.\n\nFile: vscode-extension/src/planBuilder/questions/TeamStructureQuestion.vue\n\nEstimate: 1.5-2 hours",
       "testStrategy": "Add roles; assign skills; map agents; verify org chart; test role validation; verify skill coverage; test custom roles.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-002",
@@ -294,7 +294,7 @@
         "TASK-001C"
       ],
       "createdAt": "2026-01-11T01:58:49.493Z",
-      "updatedAt": "2026-01-11T05:49:21.165Z"
+      "updatedAt": "2026-01-11T05:50:08.455Z"
     },
     {
       "id": "TASK-mk93660o-vidtg",
@@ -316,14 +316,14 @@
       "description": "Create planGenerator.ts that transforms wizard answers (Q1-Q5) into Code Master plan.json schema format with full type safety.",
       "details": "Maps: Q1→project metadata, Q2→architecture, Q3→features array, Q4→timeline/milestones, Q5→team structure. Uses Zod schemas for validation.\n\nFile: vscode-extension/src/planBuilder/planGenerator.ts\n\nDefine interfaces: WizardAnswers, PlanJSON, Feature, Milestone, TeamRole\n\nEstimate: 3-4 hours",
       "testStrategy": "Unit tests: valid wizard→valid JSON; missing fields→error; verify all sections map; validate against schema; test edge cases (empty arrays, nulls).",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "EPIC-003",
         "TASK-002E"
       ],
       "createdAt": "2026-01-11T01:59:39.162Z",
-      "updatedAt": "2026-01-11T01:59:39.162Z"
+      "updatedAt": "2026-01-11T05:50:20.443Z"
     },
     {
       "id": "TASK-mk93669p-4j8sk",
@@ -851,6 +851,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T05:49:21.166Z"
+    "updatedAt": "2026-01-11T05:50:20.443Z"
   }
 }
