@@ -60,7 +60,7 @@
           <div class="radio-group">
             <label
               v-for="option in questionData.options"
-              :key="option.value"
+              :key="String(option.value)"
               class="radio-label"
             >
               <input
@@ -90,7 +90,7 @@
           <div class="checkbox-group">
             <label
               v-for="option in questionData.options"
-              :key="option.value"
+              :key="String(option.value)"
               class="checkbox-label"
             >
               <input
@@ -125,7 +125,7 @@
           <option v-if="!questionData.required" value="">-- Select --</option>
           <option
             v-for="option in questionData.options"
-            :key="option.value"
+            :key="String(option.value)"
             :value="option.value"
           >
             {{ option.label }}
@@ -144,7 +144,7 @@
           <div class="visual-grid">
             <div
               v-for="option in questionData.options"
-              :key="option.value"
+              :key="String(option.value)"
               class="visual-item"
               :class="{ selected: answer === option.value }"
               @click="selectVisualOption(option.value)"
@@ -163,10 +163,10 @@
       </div>
 
       <!-- Validation errors -->
-      <div v-if="validationErrors[currentQuestionId]" class="error-messages">
+      <div v-if="validationErrors?.[currentQuestionId]?.length" class="error-messages">
         <div
-          v-for="(error, index) in validationErrors[currentQuestionId]"
-          :key="index"
+          v-for="(error, index) in validationErrors?.[currentQuestionId]"
+          :key="String(index)"
           class="error-message"
         >
           ⚠️ {{ error }}
@@ -185,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, withDefaults } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 interface QuestionOption {
   value: string | number | boolean;
@@ -217,9 +217,10 @@ interface Props {
   validationErrors?: Record<string, string[]>;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  validationErrors: () => ({}),
-});
+const props = defineProps<Props>();
+
+// Set default for validationErrors if not provided
+const validationErrors = computed(() => props.validationErrors || {});
 
 const emit = defineEmits<{
   'answer-changed': [answer: any];

@@ -127,8 +127,9 @@ const questions = ref([
 const totalSteps = computed(() => questions.value.length);
 
 const progressPercentage = computed(() => {
-  const completedSteps = wizardStore.answers.length;
-  return Math.round((completedSteps / totalSteps.value) * 100);
+  const totalPages = wizardStore.allPages.length;
+  const currentIndex = wizardStore.currentPageIndex;
+  return Math.round(((currentIndex + 1) / totalPages) * 100);
 });
 
 const canProceedToNext = computed(() => {
@@ -152,28 +153,26 @@ const getCurrentQuestionComponent = () => {
   return 'QuestionRenderer';
 };
 
-const goToNextStep = async () => {
-  if (currentStep.value < totalSteps.value - 1) {
-    const isValid = await wizardStore.validateCurrentStep(currentStep.value);
-    if (isValid) {
-      currentStep.value++;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+const goToNextStep = () => {
+  if (wizardStore.navigateNext()) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 };
 
 const goToPreviousStep = () => {
-  if (currentStep.value > 0) {
-    currentStep.value--;
+  if (wizardStore.navigatePrevious()) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 };
 
 const handleAnswerChanged = (answer: any) => {
-  wizardStore.setAnswer(currentStep.value, answer);
-  // Clear validation error for this step
-  if (validationErrors.value[currentStep.value]) {
-    validationErrors.value[currentStep.value] = [];
+  const question = getCurrentQuestion();
+  if (question) {
+    wizardStore.setAnswer(question.id, answer);
+    // Clear validation error for this step
+    if (validationErrors.value[question.id]) {
+      validationErrors.value[question.id] = [];
+    }
   }
 };
 
@@ -184,14 +183,11 @@ const handleValidationError = (errors: string[]) => {
 const submitWizard = async () => {
   isSubmitting.value = true;
   try {
-    // Generate plan from answers
-    const plan = await wizardStore.generatePlan();
+    // Complete the wizard and get the plan
+    const plan = await wizardStore.completeWizard();
     
     // Add metadata
     const planWithMetadata = PlanMetadataManager.addMetadata(plan);
-    
-    // Save to backend/storage
-    await wizardStore.savePlan(planWithMetadata);
     
     // Emit event or redirect
     window.dispatchEvent(new CustomEvent('wizard-complete', { 
@@ -206,10 +202,11 @@ const submitWizard = async () => {
   }
 };
 
-const autoSave = async () => {
+const autoSave = () => {
+  // Store the current state automatically
   autoSaveStatus.value = 'saving';
   try {
-    await wizardStore.saveDraft();
+    // Answers are automatically synced to the store via watch
     autoSaveStatus.value = 'saved';
     // Reset status after 2 seconds
     setTimeout(() => {
@@ -230,10 +227,10 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
     autoSave();
   }
   
-  // Ctrl+Z or Cmd+Z - undo
+  // Ctrl+Z or Cmd+Z - undo (not yet implemented)
   if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
     event.preventDefault();
-    wizardStore.undo();
+    // TODO: Implement undo functionality
   }
   
   // Tab - navigate between steps (with modifier)
@@ -245,9 +242,6 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
 
 // Lifecycle hooks
 onMounted(() => {
-  // Load draft if exists
-  wizardStore.loadDraft();
-  
   // Set up auto-save (every 30 seconds)
   autoSaveTimer.value = setInterval(() => {
     autoSave();
@@ -258,7 +252,8 @@ onMounted(() => {
   
   // Route guard - warn before leaving if unsaved
   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-    if (wizardStore.isDrafted && !wizardStore.isSaved) {
+    // Check if there are unsaved answers
+    if (Object.keys(wizardStore.answers).length > 0) {
       event.preventDefault();
       event.returnValue = '';
     }
@@ -276,14 +271,9 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', () => {});
 });
 
-// Watch for route changes - guard against data loss
-watch(() => currentStep.value, async () => {
-  // Validate current step before moving
-  const isValid = await wizardStore.validateCurrentStep(currentStep.value);
-  if (!isValid) {
-    // Revert to previous step
-    currentStep.value--;
-  }
+// Sync currentStep with store
+watch(() => wizardStore.currentPageIndex, () => {
+  currentStep.value = wizardStore.currentPageIndex;
 });
 </script>
 
