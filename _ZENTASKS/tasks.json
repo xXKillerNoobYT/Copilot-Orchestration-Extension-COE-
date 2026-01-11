@@ -331,14 +331,14 @@
       "description": "Create planPersistence.ts with methods to save/load/version plans using VS Code workspace APIs. Handles Docs/Plans/ directory operations with error handling.",
       "details": "Methods: savePlan, loadPlan, listPlans, versionPlan (semver), backupPlan (timestamped), deletePlan (soft delete to .deleted/).\n\nUses vscode.workspace.fs for file operations. Handles errors: disk full, permissions, invalid JSON.\n\nFile: vscode-extension/src/services/planPersistence.ts\n\nEstimate: 3-4 hours",
       "testStrategy": "Test save/load cycle; verify correct location; test versioning increments; verify backups with timestamps; test error handling (disk full, permissions).",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-003",
         "TASK-003A"
       ],
       "createdAt": "2026-01-11T01:59:39.325Z",
-      "updatedAt": "2026-01-11T05:52:56.364Z"
+      "updatedAt": "2026-01-11T05:54:06.142Z"
     },
     {
       "id": "TASK-mk9366e3-mjtxw",
@@ -346,14 +346,14 @@
       "description": "Build planValidator.ts with JSON schema validation (Ajv), dependency checks (circular refs, orphans), completeness checks, and timeline validation.",
       "details": "Methods: validateSchema, validateDependencies (no circular refs/orphans), validateCompleteness (all required sections), validateTimeline (logical dates), validateTeam (min 1 role).\n\nReturns detailed ValidationResult with error messages, line numbers, field paths.\n\nFile: vscode-extension/src/planBuilder/planValidator.ts\n\nEstimate: 2-3 hours",
       "testStrategy": "Valid plan passes all checks; invalid plans fail with specific errors; verify circular ref detection; test timeline validation; test helpful error messages.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "EPIC-003",
         "TASK-003A"
       ],
       "createdAt": "2026-01-11T01:59:39.483Z",
-      "updatedAt": "2026-01-11T01:59:39.483Z"
+      "updatedAt": "2026-01-11T05:54:55.310Z"
     },
     {
       "id": "TASK-mk9366jf-6b1y7",
@@ -851,6 +851,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T05:52:56.364Z"
+    "updatedAt": "2026-01-11T05:54:55.310Z"
   }
 }
