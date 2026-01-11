@@ -1,20 +1,47 @@
 /**
- * Wizard Store - Vue 3 Composable
+ * Wizard Store - Vue 3 Composable with Undo/Redo & localStorage
  * 
- * Reactive state management for wizard using Vue 3 Composition API.
- * Integrates with WizardContainer for orchestration logic.
+ * Comprehensive state management for wizard using Vue 3 Composition API.
+ * Features:
+ * - Real-time reactive state
+ * - Full undo/redo history (max 20 actions)
+ * - localStorage persistence (auto-save every 30s)
+ * - Validation tracking
+ * - Answer sync
  * 
  * Usage:
  *   const wizard = useWizardStore();
  *   wizard.currentPage;
  *   wizard.navigateNext();
+ *   wizard.undo();  // Revert last action
+ *   wizard.loadDraft();  // Restore from localStorage
  * 
  * Reference: Code Master Section 9.2
  */
 
-import { ref, computed, reactive, readonly, watch } from 'vue';
+import { ref, computed, reactive, readonly, watch, onMounted, onUnmounted } from 'vue';
 import { WizardContainer, type WizardProgress, NavigationDirection } from './wizardContainer';
 import type { WizardPage, Question } from './questionFramework';
+
+// Constants
+const STORAGE_KEY = 'wizard-draft';
+const HISTORY_MAX_SIZE = 20;
+const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+
+// Types
+interface HistoryState {
+  pageIndex: number;
+  answers: Record<string, unknown>;
+  timestamp: number;
+}
+
+interface DraftState {
+  version: number;
+  pageIndex: number;
+  answers: Record<string, unknown>;
+  savedAt: number;
+  histories: HistoryState[];
+}
 
 export interface WizardStore {
   // State
@@ -28,6 +55,11 @@ export interface WizardStore {
   validationErrors: string[];
   isLoading: boolean;
   isCompleting: boolean;
+  isDrafted: boolean;
+  isSaved: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  historyLength: number;
   
   // Computed
   isFirstPage: boolean;
@@ -42,12 +74,54 @@ export interface WizardStore {
   getAnswer<T>(questionId: string): T | undefined;
   validateCurrentPage(): boolean;
   completeWizard(): Promise<Record<string, unknown>>;
+  
+  // Draft & History
+  clearDraft(): void;
+  loadDraft(): boolean;
+  saveDraft(): void;
+  undo(): boolean;
+  redo(): boolean;
+  
   reset(): void;
   dispose(): void;
 }
 
 // Global store instance
 let storeInstance: WizardStore | null = null;
+
+// Helper functions
+function saveToLocalStorage(state: Partial<DraftState>): void {
+  try {
+    const existing = loadFromLocalStorage() || {};
+    const draft: DraftState = {
+      version: 1,
+      ...existing,
+      ...state,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+  } catch (error) {
+    console.error('[WizardStore] Failed to save draft:', error);
+  }
+}
+
+function loadFromLocalStorage(): DraftState | null {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('[WizardStore] Failed to load draft:', error);
+    return null;
+  }
+}
+
+function deleteFromLocalStorage(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.error('[WizardStore] Failed to clear draft:', error);
+  }
+}
 
 /**
  * Create or get wizard store instance
@@ -69,6 +143,11 @@ export function useWizardStore(userRole?: string): WizardStore {
   // Reactive answers
   const answers = reactive<Record<string, unknown>>(container.getAllAnswers());
 
+  // History management
+  const history = ref<HistoryState[]>([]);
+  const historyIndex = ref(-1);
+  let autoSaveTimer: NodeJS.Timeout | null = null;
+
   // Computed values
   const allPages = computed(() => container.getAllPages());
   
@@ -85,6 +164,48 @@ export function useWizardStore(userRole?: string): WizardStore {
   );
   
   const hasValidationErrors = computed(() => validationErrors.value.length > 0);
+  
+  const isDrafted = computed(() => Object.keys(answers).length > 0);
+  
+  const isSaved = computed(() => isDrafted.value);
+  
+  const canUndo = computed(() => historyIndex.value > 0);
+  
+  const canRedo = computed(() => historyIndex.value < history.value.length - 1);
+  
+  const historyLength = computed(() => history.value.length);
+
+  // Helper: Add to history
+  function addToHistory(): void {
+    // Remove any history after current index (for redo cleanup)
+    history.value.splice(historyIndex.value + 1);
+    
+    // Add new state
+    const state: HistoryState = {
+      pageIndex: currentPageIndex.value,
+      answers: JSON.parse(JSON.stringify(answers)),
+      timestamp: Date.now(),
+    };
+    history.value.push(state);
+    historyIndex.value = history.value.length - 1;
+    
+    // Limit history size
+    if (history.value.length > HISTORY_MAX_SIZE) {
+      history.value.shift();
+      historyIndex.value = Math.max(0, historyIndex.value - 1);
+    }
+  }
+
+  // Helper: Restore from history state
+  function restoreFromHistory(state: HistoryState): void {
+    currentPageIndex.value = state.pageIndex;
+    Object.keys(answers).forEach(key => delete answers[key]);
+    Object.assign(answers, JSON.parse(JSON.stringify(state.answers)));
+    Object.entries(state.answers).forEach(([questionId, value]) => {
+      container.setAnswer(questionId, value);
+    });
+    validationErrors.value = [];
+  }
 
   // Register container callbacks
   container.onPageChangeEvent((page: WizardPage, index: number) => {
@@ -113,9 +234,32 @@ export function useWizardStore(userRole?: string): WizardStore {
           container.setAnswer(questionId, value);
         }
       });
+      // History is now handled explicitly in setAnswer, navigateNext, etc.
     },
     { deep: true }
   );
+
+  // Add initial empty state snapshot
+  addToHistory();
+
+  // Auto-save setup
+  function startAutoSave(): void {
+    if (autoSaveTimer) clearInterval(autoSaveTimer);
+    autoSaveTimer = setInterval(() => {
+      saveToLocalStorage({
+        pageIndex: currentPageIndex.value,
+        answers: JSON.parse(JSON.stringify(answers)),
+        histories: history.value,
+      });
+    }, AUTO_SAVE_INTERVAL);
+  }
+
+  function stopAutoSave(): void {
+    if (autoSaveTimer) {
+      clearInterval(autoSaveTimer);
+      autoSaveTimer = null;
+    }
+  }
 
   // Store implementation
   const store: WizardStore = {
@@ -148,6 +292,21 @@ export function useWizardStore(userRole?: string): WizardStore {
     get isCompleting() {
       return isCompleting.value;
     },
+    get isDrafted() {
+      return isDrafted.value;
+    },
+    get isSaved() {
+      return isSaved.value;
+    },
+    get canUndo() {
+      return canUndo.value;
+    },
+    get canRedo() {
+      return canRedo.value;
+    },
+    get historyLength() {
+      return historyLength.value;
+    },
 
     // Computed
     get isFirstPage() {
@@ -162,20 +321,34 @@ export function useWizardStore(userRole?: string): WizardStore {
 
     // Actions
     navigateNext(): boolean {
-      return container.navigateNext();
+      const result = container.navigateNext();
+      if (result) {
+        addToHistory();
+      }
+      return result;
     },
 
     navigatePrevious(): boolean {
-      return container.navigatePrevious();
+      const result = container.navigatePrevious();
+      if (result) {
+        addToHistory();
+      }
+      return result;
     },
 
     jumpToPage(pageId: string): boolean {
-      return container.jumpToPage(pageId);
+      const result = container.jumpToPage(pageId);
+      if (result) {
+        addToHistory();
+      }
+      return result;
     },
 
     setAnswer(questionId: string, value: unknown): void {
       answers[questionId] = value;
       container.setAnswer(questionId, value);
+      // Immediately add to history (don't wait for watch)
+      addToHistory();
     },
 
     getAnswer<T = unknown>(questionId: string): T | undefined {
@@ -198,6 +371,8 @@ export function useWizardStore(userRole?: string): WizardStore {
       isCompleting.value = true;
       try {
         const plan = await container.completeWizard();
+        // Clear draft after successful completion
+        deleteFromLocalStorage();
         return plan;
       } catch (error) {
         console.error('[WizardStore] Failed to complete wizard:', error);
@@ -207,18 +382,92 @@ export function useWizardStore(userRole?: string): WizardStore {
       }
     },
 
+    // Draft & History
+    clearDraft(): void {
+      deleteFromLocalStorage();
+      history.value = [];
+      historyIndex.value = -1;
+    },
+
+    loadDraft(): boolean {
+      const draft = loadFromLocalStorage();
+      if (!draft || !draft.answers || Object.keys(draft.answers).length === 0) {
+        return false;
+      }
+
+      try {
+        // Restore state
+        currentPageIndex.value = draft.pageIndex || 0;
+        Object.keys(answers).forEach(key => delete answers[key]);
+        Object.assign(answers, draft.answers);
+        Object.entries(draft.answers).forEach(([questionId, value]) => {
+          container.setAnswer(questionId, value);
+        });
+
+        // Restore history
+        if (draft.histories && Array.isArray(draft.histories)) {
+          history.value = draft.histories;
+          historyIndex.value = draft.histories.length - 1;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('[WizardStore] Failed to load draft:', error);
+        return false;
+      }
+    },
+
+    saveDraft(): void {
+      saveToLocalStorage({
+        pageIndex: currentPageIndex.value,
+        answers: JSON.parse(JSON.stringify(answers)),
+        histories: history.value,
+      });
+    },
+
+    undo(): boolean {
+      if (!canUndo.value) return false;
+
+      historyIndex.value--;
+      const state = history.value[historyIndex.value];
+      if (state) {
+        restoreFromHistory(state);
+        return true;
+      }
+      return false;
+    },
+
+    redo(): boolean {
+      if (!canRedo.value) return false;
+
+      historyIndex.value++;
+      const state = history.value[historyIndex.value];
+      if (state) {
+        restoreFromHistory(state);
+        return true;
+      }
+      return false;
+    },
+
     reset(): void {
       container.reset();
       currentPageIndex.value = 0;
       validationErrors.value = [];
+      history.value = [];
+      historyIndex.value = -1;
       Object.keys(answers).forEach(key => delete answers[key]);
+      stopAutoSave();
     },
 
     dispose(): void {
+      stopAutoSave();
       container.dispose();
       storeInstance = null;
     },
   };
+
+  // Initialize auto-save on store creation
+  startAutoSave();
 
   storeInstance = store;
   return store;
