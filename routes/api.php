@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Api\DesignColorController;
 use App\Http\Controllers\Api\DesignTypographyController;
 use App\Http\Controllers\Api\DesignSpacingController;
+use App\Http\Controllers\Api\PlanDecompositionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -128,6 +129,19 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/metrics/errors', [MetricsController::class, 'errors'])
         ->name('api.metrics.errors');
+
+    Route::get('/metrics/dashboard', [MetricsController::class, 'dashboard'])
+        ->name('api.metrics.dashboard');
+
+    Route::get('/metrics/history', [MetricsController::class, 'history'])
+        ->name('api.metrics.history');
+
+    Route::get('/metrics/health', [MetricsController::class, 'health'])
+        ->name('api.metrics.health');
+
+    Route::post('/metrics/aggregate', [MetricsController::class, 'aggregate'])
+        ->name('api.metrics.aggregate')
+        ->middleware('auth:sanctum');
     
     /*
     |--------------------------------------------------------------------------
@@ -456,6 +470,8 @@ Route::prefix('v1')->group(function () {
             ->name('api.mcp.loadPlan');
         Route::get('/listPlans', [McpController::class, 'listPlans'])
             ->name('api.mcp.listPlans');
+            Route::post('/plans/{id}/decompose', [PlanDecompositionController::class, 'decompose'])
+                ->name('api.plans.decompose');
     });
 
     /*

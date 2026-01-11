@@ -9,6 +9,7 @@
 
 import { QuestionFramework, type Question, type WizardPage } from './questionFramework';
 import { WizardStateManager, type WizardState } from './wizardState';
+import { livePreviewEngine } from './livePreview';
 
 export enum NavigationDirection {
   NEXT = 'next',
@@ -53,6 +54,7 @@ export class WizardContainer {
   private onProgressUpdate?: (progress: WizardProgress) => void;
   private onValidationError?: (errors: string[]) => void;
   private onCompletion?: (plan: Record<string, unknown>) => void;
+  private onPreviewUpdate?: (preview: any) => void;
 
   constructor(initialRole?: string) {
     this.framework = new QuestionFramework();
@@ -195,6 +197,10 @@ export class WizardContainer {
    */
   setAnswer(questionId: string, value: unknown): void {
     this.stateManager.setAnswer(questionId, value);
+
+    // Update live preview with the new answers
+    const allAnswers = this.getAllAnswers();
+    livePreviewEngine.updatePreview(allAnswers, [questionId]);
 
     // Update live preview in UI
     this.onProgressUpdate?.(this.getProgress());
@@ -399,6 +405,10 @@ export class WizardContainer {
 
   onCompletionEvent(callback: (plan: Record<string, unknown>) => void): void {
     this.onCompletion = callback;
+  }
+
+  onPreviewUpdateEvent(callback: (preview: any) => void): void {
+    this.onPreviewUpdate = callback;
   }
 
   /**

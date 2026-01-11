@@ -82,14 +82,12 @@
           @retry="generateAssistantSuggestions"
         />
 
-        <!-- Live preview (fallback if no assistant) -->
-        <div v-else class="preview-header">
-          <div class="preview-content">
-            <div class="preview-item">
-              <p class="preview-label">Design changes will appear here</p>
-            </div>
-          </div>
-        </div>
+        <!-- Live design preview -->
+        <DesignPreview
+          v-else
+          :wizard-answers="answers"
+          :visible="showPreviewPanel"
+        />
       </aside>
     </div>
 
@@ -156,6 +154,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import WizardPage from './WizardPage.vue';
 import ProgressBar from './ProgressBar.vue';
+import DesignPreview from './DesignPreview.vue';
 import ContextualAssistant from '../../src/planBuilder/ContextualAssistant.vue';
 import { useWizardStore } from '../../src/planBuilder/wizardStore';
 import { AiAssistanceService, type AiSuggestion } from '../../src/planBuilder/aiAssistanceService';

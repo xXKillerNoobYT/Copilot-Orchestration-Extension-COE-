@@ -54,7 +54,12 @@ class Task extends Model
 
         static::updated(function ($task) {
             if ($task->isDirty('status')) {
-                event(new \App\Events\TaskStatusUpdated($task));
+                $context = [
+                    'old_status' => $task->getOriginal('status'),
+                    'new_status' => $task->status,
+                    'timestamp' => now(),
+                ];
+                event(new \App\Events\TaskStatusUpdated($task, $context));
             }
         });
     }

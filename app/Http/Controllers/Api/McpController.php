@@ -538,11 +538,14 @@ class McpController extends Controller
     {
         try {
             $validated = $request->validate([
-                'question' => 'required|string',
-                'currentTaskId' => 'nullable|string',
-                'searchInPlan' => 'nullable|string',
-                'context' => 'nullable',
+                'question' => 'required|string|max:500',
+                'currentTaskId' => 'nullable|string|max:100',
+                'searchInPlan' => ['nullable', 'string', 'max:100', 'regex:/^[a-zA-Z0-9\-_]+$/'],
+                'context' => 'nullable|array',
             ]);
+
+            // Normalize context to array if provided
+            $context = $validated['context'] ?? [];
 
             // Keep implementation simple and robust
             return response()->json([

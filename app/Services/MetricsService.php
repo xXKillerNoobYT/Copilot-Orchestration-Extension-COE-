@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Agent;
+use App\Models\MetricsEvent;
 use App\Models\Task;
 use App\Models\TaskExecution;
 use Carbon\CarbonInterval;
@@ -145,5 +146,319 @@ class MetricsService
             'name' => $agent?->name,
             'executions' => $top->executions,
         ];
+    }
+
+    /**
+     * Record a task completion event.
+     * 
+     * @param int $taskId
+     * @param float $durationSeconds Duration in seconds
+     * @param int|null $userId
+     * @param int|null $projectId
+     * @return MetricsEvent
+     */
+    public function recordTaskCompletion(
+        int $taskId,
+        float $durationSeconds,
+        ?int $userId = null,
+        ?int $projectId = null
+    ): MetricsEvent {
+        return MetricsEvent::create([
+            'event_type' => 'task_completed',
+            'metric_name' => 'task_duration_seconds',
+            'value' => $durationSeconds,
+            'task_id' => $taskId,
+            'user_id' => $userId,
+            'project_id' => $projectId,
+            'recorded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Record a task execution start event.
+     * 
+     * @param int $taskId
+     * @param int|null $agentId
+     * @param int|null $userId
+     * @param int|null $projectId
+     * @return MetricsEvent
+     */
+    public function recordTaskStart(
+        int $taskId,
+        ?int $agentId = null,
+        ?int $userId = null,
+        ?int $projectId = null
+    ): MetricsEvent {
+        return MetricsEvent::create([
+            'event_type' => 'task_started',
+            'metric_name' => 'task_start',
+            'value' => 1,
+            'task_id' => $taskId,
+            'agent_id' => $agentId,
+            'user_id' => $userId,
+            'project_id' => $projectId,
+            'recorded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Record an error event.
+     * 
+     * @param string $errorMessage
+     * @param int|null $taskId
+     * @param int|null $agentId
+     * @param int|null $userId
+     * @param int|null $projectId
+     * @param array|null $metadata Additional context (stack_trace, error_code, etc.)
+     * @return MetricsEvent
+     */
+    public function recordErrorEvent(
+        string $errorMessage,
+        ?int $taskId = null,
+        ?int $agentId = null,
+        ?int $userId = null,
+        ?int $projectId = null,
+        ?array $metadata = null
+    ): MetricsEvent {
+        return MetricsEvent::create([
+            'event_type' => 'error_occurred',
+            'metric_name' => 'error_count',
+            'value' => 1,
+            'task_id' => $taskId,
+            'agent_id' => $agentId,
+            'user_id' => $userId,
+            'project_id' => $projectId,
+            'context_key' => 'error_message',
+            'context_value' => $errorMessage,
+            'metadata' => $metadata,
+            'recorded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Record an execution time measurement.
+     * 
+     * @param int $taskId
+     * @param float $milliseconds Duration in milliseconds
+     * @param int|null $agentId
+     * @param int|null $userId
+     * @param int|null $projectId
+     * @return MetricsEvent
+     */
+    public function recordExecutionTime(
+        int $taskId,
+        float $milliseconds,
+        ?int $agentId = null,
+        ?int $userId = null,
+        ?int $projectId = null
+    ): MetricsEvent {
+        return MetricsEvent::create([
+            'event_type' => 'execution_time',
+            'metric_name' => 'execution_time_ms',
+            'value' => $milliseconds,
+            'task_id' => $taskId,
+            'agent_id' => $agentId,
+            'user_id' => $userId,
+            'project_id' => $projectId,
+            'recorded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Record an API call event.
+     * 
+     * @param string $endpoint API endpoint path
+     * @param float $responseTimeMs Response time in milliseconds
+     * @param int $statusCode HTTP status code
+     * @param int|null $userId
+     * @param int|null $projectId
+     * @return MetricsEvent
+     */
+    public function recordApiCall(
+        string $endpoint,
+        float $responseTimeMs,
+        int $statusCode,
+        ?int $userId = null,
+        ?int $projectId = null
+    ): MetricsEvent {
+        return MetricsEvent::create([
+            'event_type' => 'api_call',
+            'metric_name' => 'api_response_time_ms',
+            'value' => $responseTimeMs,
+            'user_id' => $userId,
+            'project_id' => $projectId,
+            'context_key' => 'endpoint',
+            'context_value' => $endpoint,
+            'metadata' => ['status_code' => $statusCode],
+            'recorded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Record a test execution event.
+     * 
+     * @param int $totalTests
+     * @param int $passedTests
+     * @param int $failedTests
+     * @param int|null $projectId
+     * @param int|null $userId
+     * @return MetricsEvent
+     */
+    public function recordTestExecution(
+        int $totalTests,
+        int $passedTests,
+        int $failedTests,
+        ?int $projectId = null,
+        ?int $userId = null
+    ): MetricsEvent {
+        $coverage = $totalTests > 0 ? round(($passedTests / $totalTests) * 100, 2) : 0;
+
+        return MetricsEvent::create([
+            'event_type' => 'test_run',
+            'metric_name' => 'test_coverage_percent',
+            'value' => $coverage,
+            'user_id' => $userId,
+            'project_id' => $projectId,
+            'metadata' => [
+                'total_tests' => $totalTests,
+                'passed_tests' => $passedTests,
+                'failed_tests' => $failedTests,
+            ],
+            'recorded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Record an agent execution event.
+     * 
+     * @param int $agentId
+     * @param int $taskId
+     * @param string $status success|failure
+     * @param float|null $durationSeconds
+     * @param int|null $projectId
+     * @param int|null $userId
+     * @return MetricsEvent
+     */
+    public function recordAgentExecution(
+        int $agentId,
+        int $taskId,
+        string $status = 'success',
+        ?float $durationSeconds = null,
+        ?int $projectId = null,
+        ?int $userId = null
+    ): MetricsEvent {
+        return MetricsEvent::create([
+            'event_type' => 'agent_execution',
+            'metric_name' => 'agent_execution_count',
+            'value' => 1,
+            'agent_id' => $agentId,
+            'task_id' => $taskId,
+            'user_id' => $userId,
+            'project_id' => $projectId,
+            'metadata' => [
+                'status' => $status,
+                'duration_seconds' => $durationSeconds,
+            ],
+            'recorded_at' => now(),
+        ]);
+    }
+
+    /**
+     * Get metrics for a specific time range.
+     * 
+     * @param string $metricName
+     * @param int $days Number of past days to include (default 30)
+     * @return array
+     */
+    public function getMetricsHistory(string $metricName, int $days = 30): array
+    {
+        $events = MetricsEvent::byMetricName($metricName)
+            ->lastNDays($days)
+            ->orderBy('recorded_at')
+            ->get();
+
+        return [
+            'metric_name' => $metricName,
+            'period_days' => $days,
+            'event_count' => $events->count(),
+            'average_value' => $events->count() > 0 ? round($events->avg('value'), 2) : 0,
+            'max_value' => $events->count() > 0 ? $events->max('value') : 0,
+            'min_value' => $events->count() > 0 ? $events->min('value') : 0,
+            'latest_value' => $events->last()?->value,
+            'last_recorded' => $events->last()?->recorded_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Get KPIs dashboard data (15 key performance indicators).
+     * 
+     * @param int $days
+     * @return array
+     */
+    public function getKpiDashboard(int $days = 30): array
+    {
+        // Quality KPIs
+        $testCoverage = $this->getMetricsHistory('test_coverage_percent', $days);
+        $errorRate = MetricsEvent::byEventType('error_occurred')
+            ->lastNDays($days)
+            ->count();
+
+        // Functionality KPIs
+        $taskMetrics = $this->getTaskMetrics();
+        $completionRate = $taskMetrics['completionRate'] ?? 0;
+        $avgCycleTime = $taskMetrics['averageCycleSeconds'] ?? 0;
+
+        // Agent KPIs
+        $agentMetrics = $this->getAgentMetrics();
+        $activeAgents = $agentMetrics['counts']['active_agents'] ?? 0;
+        $agentUtilization = $agentMetrics['utilization'] ?? 0;
+
+        // Execution KPIs
+        $executionTimes = $this->getMetricsHistory('execution_time_ms', $days);
+        $apiResponseTimes = $this->getMetricsHistory('api_response_time_ms', $days);
+
+        return [
+            'generated_at' => now()->toIso8601String(),
+            'period_days' => $days,
+            'quality_metrics' => [
+                'test_coverage_percent' => $testCoverage['latest_value'] ?? 0,
+                'error_count_total' => $errorRate,
+                'error_rate' => MetricsEvent::count() > 0
+                    ? round(($errorRate / MetricsEvent::lastNDays($days)->count()) * 100, 2)
+                    : 0,
+            ],
+            'functionality_metrics' => [
+                'task_completion_rate' => $completionRate,
+                'average_task_duration_seconds' => $avgCycleTime,
+                'total_tasks_completed' => $taskMetrics['counts']['completed'] ?? 0,
+            ],
+            'adoption_metrics' => [
+                'active_agents' => $activeAgents,
+                'total_agents' => $agentMetrics['counts']['total_agents'] ?? 0,
+                'agent_utilization' => $agentUtilization,
+            ],
+            'performance_metrics' => [
+                'average_execution_time_ms' => $executionTimes['average_value'] ?? 0,
+                'average_api_response_time_ms' => $apiResponseTimes['average_value'] ?? 0,
+                'max_execution_time_ms' => $executionTimes['max_value'] ?? 0,
+            ],
+            'business_metrics' => [
+                'task_execution_velocity' => $taskMetrics['counts']['completed'] ?? 0, // tasks/period
+                'failed_task_count' => $taskMetrics['counts']['failed'] ?? 0,
+                'blocked_task_count' => $taskMetrics['counts']['blocked'] ?? 0,
+            ],
+        ];
+    }
+
+    /**
+     * Clean up old metrics events (retention policy).
+     * 
+     * @param int $retentionDays Keep events newer than this many days
+     * @return int Number of records deleted
+     */
+    public function cleanupOldMetrics(int $retentionDays = 90): int
+    {
+        return MetricsEvent::where('recorded_at', '<', now()->subDays($retentionDays))
+            ->delete();
     }
 }
