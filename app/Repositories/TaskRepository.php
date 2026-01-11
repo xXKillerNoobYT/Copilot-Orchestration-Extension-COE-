@@ -315,4 +315,47 @@ class TaskRepository
         
         return round(($completed / $total) * 100, 2);
     }
+
+    /**
+     * Find the next task requiring planning decomposition.
+     * Prioritizes: pending → in_progress planning
+     *
+     * @return Task|null
+     */
+    public function findNextPlanningTask(): ?Task
+    {
+        return Task::where('status', 'pending')
+            ->where('task_type', 'feature')
+            ->orderByRaw("CASE WHEN priority = 'critical' THEN 1 WHEN priority = 'high' THEN 2 WHEN priority = 'medium' THEN 3 ELSE 4 END")
+            ->orderBy('created_at', 'asc')
+            ->first();
+    }
+
+    /**
+     * Find the next task ready for code execution.
+     * Looks for tasks in_progress but waiting for agent assignment.
+     *
+     * @return Task|null
+     */
+    public function findNextExecutionTask(): ?Task
+    {
+        return Task::where('status', 'in_progress')
+            ->whereNotNull('assigned_agent')
+            ->orderByRaw("CASE WHEN priority = 'critical' THEN 1 WHEN priority = 'high' THEN 2 WHEN priority = 'medium' THEN 3 ELSE 4 END")
+            ->orderBy('created_at', 'asc')
+            ->first();
+    }
+
+    /**
+     * Find the next task ready to start (pending or in_progress).
+     *
+     * @return Task|null
+     */
+    public function findNextReadyTask(): ?Task
+    {
+        return Task::whereIn('status', ['pending', 'in_progress'])
+            ->orderByRaw("CASE WHEN priority = 'critical' THEN 1 WHEN priority = 'high' THEN 2 WHEN priority = 'medium' THEN 3 ELSE 4 END")
+            ->orderBy('created_at', 'asc')
+            ->first();
+    }
 }

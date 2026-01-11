@@ -21,7 +21,7 @@ interface ConfigLike {
 }
 
 const DEFAULTS: LlmConfig = {
-  baseUrl: 'http://localhost:1234/v1',
+  baseUrl: 'http://192.168.137.7:1234/v1',
   apiKey: '',
   defaultModel: 'gpt-4o',
   customModel: 'llama2',

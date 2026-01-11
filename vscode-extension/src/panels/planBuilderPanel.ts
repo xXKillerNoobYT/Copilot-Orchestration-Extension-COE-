@@ -6,6 +6,12 @@ import {
   openDecompositionSummary,
   type PlanCompletionResult
 } from '../planBuilder/planIntegration';
+import {
+  savePlan,
+  loadPlan,
+  listPlans,
+  selectPlanFromList
+} from '../planBuilder/planPersistence';
 
 export class PlanBuilderPanel {
   public static currentPanel: PlanBuilderPanel | undefined;
@@ -80,6 +86,18 @@ export class PlanBuilderPanel {
         this._handleWizardCompletion(message.data);
         break;
 
+      case 'savePlan':
+        this._handleSavePlan(message.data);
+        break;
+
+      case 'loadPlan':
+        this._handleLoadPlan();
+        break;
+
+      case 'listPlans':
+        this._handleListPlans();
+        break;
+
       case 'stateExported':
         console.log('[PlanBuilder] State exported:', message.data);
         break;
@@ -133,6 +151,100 @@ export class PlanBuilderPanel {
       const message = error instanceof Error ? error.message : 'Unknown error';
       vscode.window.showErrorMessage(`Failed to process plan: ${message}`);
       console.error('[PlanBuilder] Error:', error);
+    }
+  }
+
+  private async _handleSavePlan(wizardState: any): Promise<void> {
+    try {
+      const name = await vscode.window.showInputBox({
+        prompt: 'Enter a name for this plan',
+        placeHolder: 'My Project Plan',
+        validateInput: (value) => {
+          if (!value.trim()) {
+            return 'Plan name is required';
+          }
+          if (value.length > 100) {
+            return 'Plan name must be 100 characters or less';
+          }
+          return null;
+        }
+      });
+
+      if (!name) {
+        return; // User cancelled
+      }
+
+      const result = await savePlan(wizardState, name);
+
+      if (result) {
+        await vscode.window.showInformationMessage(
+          `✓ Plan "${name}" saved successfully (ID: ${result.id})`
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      vscode.window.showErrorMessage(`Error saving plan: ${message}`);
+      console.error('[PlanBuilder] Save error:', error);
+    }
+  }
+
+  private async _handleLoadPlan(): Promise<void> {
+    try {
+      const selected = await selectPlanFromList();
+      if (!selected) {
+        return; // User cancelled
+      }
+
+      // Send loaded state back to webview
+      this._panel.webview.postMessage({
+        type: 'planLoaded',
+        data: {
+          plan: selected,
+          wizardState: selected.wizard_state
+        }
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      vscode.window.showErrorMessage(`Error loading plan: ${message}`);
+      console.error('[PlanBuilder] Load error:', error);
+    }
+  }
+
+  private async _handleListPlans(): Promise<void> {
+    try {
+      const plans = await listPlans();
+
+      if (!plans || plans.length === 0) {
+        vscode.window.showInformationMessage('No saved plans found.');
+        return;
+      }
+
+      // Display plans as a quick pick
+      const selected = await vscode.window.showQuickPick(
+        plans.map(p => ({
+          label: p.name,
+          description: p.description || 'No description',
+          detail: `Status: ${p.status} | Created: ${new Date(p.created_at).toLocaleDateString()}`,
+          id: p.id
+        })),
+        {
+          placeHolder: 'Select a plan to view details',
+          matchOnDescription: true
+        }
+      );
+
+      if (selected) {
+        const plan = plans.find(p => p.id === selected.id);
+        if (plan) {
+          vscode.window.showInformationMessage(
+            `Plan: ${plan.name}\nStatus: ${plan.status}\nCreated: ${new Date(plan.created_at).toLocaleString()}`
+          );
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      vscode.window.showErrorMessage(`Error listing plans: ${message}`);
+      console.error('[PlanBuilder] List error:', error);
     }
   }
 

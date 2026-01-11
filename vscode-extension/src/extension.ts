@@ -15,12 +15,30 @@ import { AutoAgentLoopCommand } from './commands/autoAgentLoop';
 import { SettingsPanel } from './webviews/settingsPanel';
 import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
+import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
+import { getLLMIPMonitor } from './services/llmIPMonitor';
+import { ConnectionMonitor, createConnectionStatusBarItem } from './services/connectionMonitor';
 
 export function activate(context: vscode.ExtensionContext) {
+    // Initialize LLM IP Monitor (Background service for LLM connectivity)
+    const llmIPMonitor = getLLMIPMonitor(context);
+    llmIPMonitor.start();
+    context.subscriptions.push({
+      dispose: () => llmIPMonitor.stop(),
+    });
+
     // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
     new AutoAgentLoopCommand(context);
+
+  // Start connection monitoring (Phase 3: MCP/WebSocket status badges)
+  const connectionMonitor = ConnectionMonitor.getInstance();
+  connectionMonitor.start();
+  context.subscriptions.push({
+    dispose: () => connectionMonitor.dispose(),
+  });
+
   const llmStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 90);
   // Create a status bar item on activation
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);

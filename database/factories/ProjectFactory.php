@@ -17,7 +17,11 @@ class ProjectFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->word() . ' Project',
+            'description' => $this->faker->paragraph(),
+            'repository_type' => 'monorepo',
+            'status' => 'active',
+            'skill_level' => 'intermediate',
         ];
     }
 }

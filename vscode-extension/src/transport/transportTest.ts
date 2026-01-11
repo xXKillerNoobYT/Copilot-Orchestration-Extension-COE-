@@ -139,7 +139,7 @@ async function runTransportTests(): Promise<void> {
   try {
     const provider = ProviderFactory.createProvider('lmstudio', {
       name: 'lmstudio-test',
-      baseUrl: 'http://localhost:1234/v1',
+      baseUrl: 'http://192.168.137.7:1234/v1',
     });
 
     console.assert(!!provider, 'LM Studio provider should be created');
@@ -166,7 +166,7 @@ async function runTransportTests(): Promise<void> {
           providerType: 'lmstudio',
           config: {
             name: 'fallback-lmstudio',
-            baseUrl: 'http://localhost:1234/v1',
+            baseUrl: 'http://192.168.137.7:1234/v1',
           },
         },
       ],
@@ -261,7 +261,7 @@ async function runTransportTests(): Promise<void> {
       }),
       ProviderFactory.createProvider('lmstudio', {
         name: 'lmstudio-1',
-        baseUrl: 'http://localhost:1234/v1',
+        baseUrl: 'http://192.168.137.7:1234/v1',
       }),
       ProviderFactory.createProvider('azure', {
         name: 'azure-1',

@@ -10,7 +10,7 @@ class VerifyEmail extends VerifyEmailNotification
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
         $verificationUrl = $this->verificationUrl($notifiable);
 
