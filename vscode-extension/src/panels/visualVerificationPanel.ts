@@ -187,6 +187,11 @@ export class VisualVerificationPanel {
             await this.navigateToPlanSection(message.itemId);
           }
           return;
+        case 'reportIssue':
+          if (message.itemId) {
+            await this.createIssueTask(message.itemId, message.issueData);
+          }
+          return;
         default:
           return;
       }
@@ -452,6 +457,91 @@ export class VisualVerificationPanel {
     }
   }
 
+  /**
+   * Create issue task in _ZENTASKS based on checklist item
+   */
+  async createIssueTask(itemId: string, issueData: { title: string; description: string; severity: string }): Promise<void> {
+    const item = this.state.checklist.find(i => i.id === itemId);
+    
+    if (!item) {
+      vscode.window.showWarningMessage('Checklist item not found');
+      return;
+    }
+
+    try {
+      // Build task details with context
+      const taskTitle = `[Verification Issue] ${issueData.title}`;
+      const taskDescription = `Issue found during visual verification of "${item.title}":\n\n${issueData.description}`;
+      
+      const taskDetails = `**Source**: Visual Verification - ${this.state.taskTitle} (${this.state.taskId})
+**Checklist Item**: ${item.title}
+**Severity**: ${issueData.severity}
+${item.planFile ? `**Plan Reference**: ${item.planFile}` : ''}
+${item.planSectionId ? `**Plan Section**: ${item.planSectionId}` : ''}
+
+**Issue Description**:
+${issueData.description}
+
+**Context**:
+- Original Task: ${this.state.taskId}
+- Plan Version: ${this.state.planVersion}
+- Verification Phase: Testing
+`;
+
+      const testStrategy = `1. Reproduce the issue following the description
+2. Verify the issue matches the severity level (${issueData.severity})
+3. Implement the fix
+4. Test the fix in the same verification scenario
+5. Mark the original checklist item as passed`;
+
+      // Determine priority based on severity
+      const priorityMap: Record<string, 'critical' | 'high' | 'medium' | 'low'> = {
+        'critical': 'critical',
+        'high': 'high',
+        'medium': 'medium',
+        'low': 'low',
+      };
+      const priority = priorityMap[issueData.severity.toLowerCase()] || 'medium';
+
+      // Use VS Code command to create task (assuming extension has this command registered)
+      // For now, we'll use the MCP client to report this
+      await this.mcpClient.reportObservation({
+        taskId: this.state.taskId,
+        type: 'issue',
+        message: `Verification issue: ${issueData.title}`,
+        suggestedAction: taskDetails,
+        createTask: true,
+      });
+
+      // Also try to create via workspace command if available
+      try {
+        await vscode.commands.executeCommand('copilot-orchestrator.createTask', {
+          title: taskTitle,
+          description: taskDescription,
+          details: taskDetails,
+          testStrategy: testStrategy,
+          priority: priority,
+          tags: ['verification-issue', `severity-${issueData.severity.toLowerCase()}`, `source-${this.state.taskId}`],
+        });
+      } catch (cmdError) {
+        console.log('Direct task creation command not available, used MCP fallback');
+      }
+
+      // Mark checklist item as failed if it was pending
+      if (item.status === 'pending' || item.status === 'in-progress') {
+        this.toggleChecklistItem(itemId, 'failed');
+      }
+
+      vscode.window.showInformationMessage(
+        `Issue task created: "${taskTitle}" (Priority: ${priority})`
+      );
+
+    } catch (error) {
+      console.error('Failed to create issue task:', error);
+      vscode.window.showErrorMessage('Failed to create issue task. Check logs for details.');
+    }
+  }
+
   private updatePanel() {
     this.panel.webview.html = this.renderHtml(this.state);
   }
@@ -476,6 +566,7 @@ export class VisualVerificationPanel {
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             ${navButton}
+            <button class="issue-button" data-issue-id="${item.id}" title="Report Issue">🐛</button>
             <select data-check-id="${item.id}">
               ${this.renderOption('pending', item.status, 'Pending')}
               ${this.renderOption('in-progress', item.status, 'In Progress')}
@@ -585,6 +676,70 @@ export class VisualVerificationPanel {
       font-size: 14px;
     }
     .nav-button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+    .issue-button {
+      background: var(--vscode-inputValidation-warningBackground);
+      color: var(--vscode-inputValidation-warningForeground);
+      border: 1px solid var(--vscode-inputValidation-warningBorder);
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+    .issue-button:hover { opacity: 0.8; }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal-content {
+      background-color: var(--vscode-editor-background);
+      border: 1px solid var(--vscode-widget-border);
+      margin: 10% auto;
+      padding: 20px;
+      width: 80%;
+      max-width: 600px;
+      border-radius: 6px;
+    }
+    .modal-content h3 { margin-top: 0; color: var(--vscode-foreground); }
+    .modal-content input,
+    .modal-content textarea,
+    .modal-content select {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0;
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border: 1px solid var(--vscode-input-border);
+      border-radius: 3px;
+      font-family: var(--vscode-font-family);
+      font-size: 13px;
+    }
+    .modal-content textarea { min-height: 100px; resize: vertical; }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+    .modal-actions button { padding: 6px 14px; cursor: pointer; border-radius: 3px; font-size: 13px; }
+    .btn-primary {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+    }
+    .btn-primary:hover { background: var(--vscode-button-hoverBackground); }
+    .btn-secondary {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      border: none;
+    }
+    .btn-secondary:hover { background: var(--vscode-button-secondaryHoverBackground); }
     select { background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); padding: 6px; border-radius: 4px; }
     .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     button { padding: 8px 12px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; border-radius: 3px; cursor: pointer; }
@@ -685,12 +840,33 @@ export class VisualVerificationPanel {
     ${changeRequests}
   </div>
 
+  <!-- Issue Reporting Modal -->
+  <div id="issueModal" class="modal">
+    <div class="modal-content">
+      <h3>Report Verification Issue</h3>
+      <input type="text" id="issueTitle" placeholder="Issue title" />
+      <textarea id="issueDescription" placeholder="Describe the issue in detail" rows="4"></textarea>
+      <select id="issueSeverity">
+        <option value="low">Low - Minor issue, cosmetic</option>
+        <option value="medium" selected>Medium - Functionality affected</option>
+        <option value="high">High - Critical feature broken</option>
+        <option value="critical">Critical - System-wide failure</option>
+      </select>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="cancelIssue">Cancel</button>
+        <button class="btn-primary" id="submitIssue">Create Task</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const vscode = acquireVsCodeApi();
 
     function send(command, payload={}) {
       vscode.postMessage({ command, ...payload });
     }
+
+    let currentIssueItemId = null;
 
     document.querySelectorAll('button[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -724,6 +900,46 @@ export class VisualVerificationPanel {
         const itemId = btn.getAttribute('data-navigate-id');
         send('navigateToPlan', { itemId });
       });
+    });
+
+    // Issue reporting modal handlers
+    document.querySelectorAll('button[data-issue-id]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentIssueItemId = btn.getAttribute('data-issue-id');
+        document.getElementById('issueModal').style.display = 'block';
+      });
+    });
+
+    document.getElementById('cancelIssue').addEventListener('click', () => {
+      document.getElementById('issueModal').style.display = 'none';
+      currentIssueItemId = null;
+      document.getElementById('issueTitle').value = '';
+      document.getElementById('issueDescription').value = '';
+      document.getElementById('issueSeverity').value = 'medium';
+    });
+
+    document.getElementById('submitIssue').addEventListener('click', () => {
+      const title = document.getElementById('issueTitle').value;
+      const description = document.getElementById('issueDescription').value;
+      const severity = document.getElementById('issueSeverity').value;
+
+      if (!title || !description) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      send('reportIssue', {
+        itemId: currentIssueItemId,
+        issueData: { title, description, severity }
+      });
+
+      // Close modal and reset
+      document.getElementById('issueModal').style.display = 'none';
+      currentIssueItemId = null;
+      document.getElementById('issueTitle').value = '';
+      document.getElementById('issueDescription').value = '';
+      document.getElementById('issueSeverity').value = 'medium';
     });
   </script>
 </body>

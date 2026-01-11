@@ -546,13 +546,13 @@
       "description": "Create issue reporting workflow: click \"Report Issue\"→modal form→create task in _ZENTASKS with plan/checklist context→link to plan section.",
       "details": "UI: \"Report Issue\" button per checklist item. Modal: issue title, description, severity. Creates task via zen-tasks_add_task with details linking to plan section and checklist item. Auto-tags with \"verification-issue\" label.\n\nEstimate: 3 hours",
       "testStrategy": "Click \"Report Issue\"; fill form; submit; verify task created in _ZENTASKS; verify task has correct metadata and plan links.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "medium",
       "dependencies": [
         "EPIC-006"
       ],
       "createdAt": "2026-01-11T02:00:34.865Z",
-      "updatedAt": "2026-01-11T02:00:34.865Z"
+      "updatedAt": "2026-01-11T06:15:17.741Z"
     },
     {
       "id": "TASK-mk937de8-fm421",
@@ -865,6 +865,6 @@
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T06:14:15.594Z"
+    "updatedAt": "2026-01-11T06:15:17.741Z"
   }
 }
