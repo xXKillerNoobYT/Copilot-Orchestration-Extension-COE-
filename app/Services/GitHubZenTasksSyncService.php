@@ -9,11 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 class GitHubZenTasksSyncService
 {
-    // Status mapping: Zen Task -> GitHub Issue State
+    // Status mapping: Zen Task (snake_case canonical) -> GitHub Issue State
     private const STATUS_TO_GITHUB = [
         'pending' => 'open',
         'approved' => 'open',
-        'in-progress' => 'open',
         'in_progress' => 'open',
         'testing' => 'open',
         'review' => 'open',
