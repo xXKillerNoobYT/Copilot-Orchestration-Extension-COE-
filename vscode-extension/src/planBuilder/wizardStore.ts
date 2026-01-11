@@ -95,6 +95,9 @@ function saveToLocalStorage(state: Partial<DraftState>): void {
     const existing = loadFromLocalStorage() || {};
     const draft: DraftState = {
       version: 1,
+      pageIndex: 0,
+      answers: {},
+      histories: [],
       ...existing,
       ...state,
       savedAt: Date.now(),

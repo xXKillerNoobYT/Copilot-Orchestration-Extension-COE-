@@ -283,7 +283,7 @@ export class VisualVerificationPanel {
         throw new Error(`Failed to fetch checklist: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { checklist?: any[] };
       
       if (data.checklist && Array.isArray(data.checklist)) {
         this.updateState({
