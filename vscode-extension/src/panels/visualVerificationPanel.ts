@@ -6,6 +6,10 @@ interface ChecklistItem {
   title: string;
   description?: string;
   status: 'pending' | 'in-progress' | 'passed' | 'failed';
+  planSectionId?: string;
+  planFile?: string;
+  planLineStart?: number;
+  planLineEnd?: number;
 }
 
 interface VerificationState {
@@ -177,6 +181,11 @@ export class VisualVerificationPanel {
           }
           this.updatePanel();
           vscode.window.showInformationMessage('Change request captured. Plan adjustment wizard will follow.');
+          return;
+        case 'navigateToPlan':
+          if (message.itemId) {
+            await this.navigateToPlanSection(message.itemId);
+          }
           return;
         default:
           return;
@@ -374,6 +383,75 @@ export class VisualVerificationPanel {
     return { total, passed, failed, pending, progress };
   }
 
+  /**
+   * Navigate to plan section based on checklist item
+   */
+  async navigateToPlanSection(itemId: string): Promise<void> {
+    const item = this.state.checklist.find(i => i.id === itemId);
+    
+    if (!item) {
+      vscode.window.showWarningMessage('Checklist item not found');
+      return;
+    }
+
+    if (!item.planFile) {
+      vscode.window.showInformationMessage(`No plan reference for "${item.title}"`);
+      return;
+    }
+
+    try {
+      // Find plan file in workspace
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (!workspaceFolders || workspaceFolders.length === 0) {
+        throw new Error('No workspace folder open');
+      }
+
+      const planFilePath = vscode.Uri.joinPath(workspaceFolders[0].uri, item.planFile);
+      
+      // Open the document
+      const document = await vscode.workspace.openTextDocument(planFilePath);
+      
+      // Show the document in editor
+      const editor = await vscode.window.showTextDocument(document, {
+        viewColumn: vscode.ViewColumn.One,
+        preserveFocus: false,
+      });
+
+      // Highlight the section if line numbers are provided
+      if (item.planLineStart !== undefined && item.planLineEnd !== undefined) {
+        const startLine = item.planLineStart - 1; // Convert to 0-based
+        const endLine = item.planLineEnd - 1;
+        
+        const range = new vscode.Range(
+          new vscode.Position(startLine, 0),
+          new vscode.Position(endLine, Number.MAX_VALUE)
+        );
+
+        // Reveal and select the range
+        editor.selection = new vscode.Selection(range.start, range.end);
+        editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+
+        // Flash highlight (using decoration)
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          backgroundColor: 'rgba(255, 255, 0, 0.3)',
+          isWholeLine: true,
+        });
+
+        editor.setDecorations(decorationType, [range]);
+
+        // Remove highlight after 2 seconds
+        setTimeout(() => {
+          decorationType.dispose();
+        }, 2000);
+      }
+
+      vscode.window.showInformationMessage(`Navigated to: ${item.title}`);
+    } catch (error) {
+      console.error('Failed to navigate to plan section:', error);
+      vscode.window.showErrorMessage(`Could not open plan file: ${item.planFile}`);
+    }
+  }
+
   private updatePanel() {
     this.panel.webview.html = this.renderHtml(this.state);
   }
@@ -384,17 +462,27 @@ export class VisualVerificationPanel {
     
     const checklistHtml = state.checklist
       .map((item) => {
-        return `<div class="checklist-item">
-          <div>
+        const hasNavigation = item.planFile && item.planFile.length > 0;
+        const clickableClass = hasNavigation ? 'clickable-item' : '';
+        const navButton = hasNavigation 
+          ? `<button class="nav-button" data-navigate-id="${item.id}" title="Jump to plan section">📍</button>`
+          : '';
+        
+        return `<div class="checklist-item ${clickableClass}">
+          <div style="flex: 1;">
             <div class="item-title">${this.escapeHtml(item.title)}</div>
             <div class="item-desc">${this.escapeHtml(item.description ?? '')}</div>
+            ${item.planSectionId ? `<div class="item-ref">Ref: ${this.escapeHtml(item.planSectionId)}</div>` : ''}
           </div>
-          <select data-check-id="${item.id}">
-            ${this.renderOption('pending', item.status, 'Pending')}
-            ${this.renderOption('in-progress', item.status, 'In Progress')}
-            ${this.renderOption('passed', item.status, 'Passed')}
-            ${this.renderOption('failed', item.status, 'Failed')}
-          </select>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            ${navButton}
+            <select data-check-id="${item.id}">
+              ${this.renderOption('pending', item.status, 'Pending')}
+              ${this.renderOption('in-progress', item.status, 'In Progress')}
+              ${this.renderOption('passed', item.status, 'Passed')}
+              ${this.renderOption('failed', item.status, 'Failed')}
+            </select>
+          </div>
         </div>`;
       })
       .join('');
@@ -483,8 +571,20 @@ export class VisualVerificationPanel {
     .pill-muted { display: inline-block; padding: 4px 8px; border-radius: 10px; border: 1px dashed var(--vscode-panel-border); margin: 4px 4px 0 0; font-size: 12px; color: var(--vscode-descriptionForeground); }
     .checklist-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--vscode-panel-border); padding: 8px 0; gap: 12px; }
     .checklist-item:last-child { border-bottom: none; }
+    .clickable-item:hover { background-color: var(--vscode-list-hoverBackground); cursor: pointer; }
     .item-title { font-weight: 600; }
     .item-desc { color: var(--vscode-descriptionForeground); font-size: 12px; }
+    .item-ref { color: var(--vscode-descriptionForeground); font-size: 11px; font-family: monospace; margin-top: 4px; }
+    .nav-button { 
+      background: var(--vscode-button-secondaryBackground); 
+      color: var(--vscode-button-secondaryForeground); 
+      border: none; 
+      border-radius: 3px; 
+      padding: 4px 8px; 
+      cursor: pointer; 
+      font-size: 14px;
+    }
+    .nav-button:hover { background: var(--vscode-button-secondaryHoverBackground); }
     select { background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); padding: 6px; border-radius: 4px; }
     .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     button { padding: 8px 12px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; border-radius: 3px; cursor: pointer; }
@@ -615,6 +715,14 @@ export class VisualVerificationPanel {
         const id = sel.getAttribute('data-check-id');
         const status = (sel as HTMLSelectElement).value;
         send('toggleChecklist', { id, status });
+      });
+    });
+
+    document.querySelectorAll('button[data-navigate-id]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent bubbling
+        const itemId = btn.getAttribute('data-navigate-id');
+        send('navigateToPlan', { itemId });
       });
     });
   </script>
