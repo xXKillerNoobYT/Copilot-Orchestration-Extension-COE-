@@ -237,9 +237,17 @@ const generateAiSuggestions = () => {
   aiLoading.value = true;
   aiError.value = null;
   
+  // Convert currentQuestion to WizardPage format
+  const wizardPage = {
+    id: currentQuestion.id,
+    title: currentQuestion.title,
+    description: currentQuestion.description,
+    questions: [] // Empty array since we're working with simplified question structure
+  };
+  
   // Use debounced generation
   aiService.debouncedGenerateSuggestions(
-    currentQuestion,
+    wizardPage,
     currentAnswers,
     userRole,
     (suggestions) => {
