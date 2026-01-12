@@ -1057,11 +1057,11 @@
       "description": "Wire TemplateSelector into wizard flow, add 'Start from Template' option on wizard start screen, handle template application and pre-filling wizard state.",
       "details": "Integration points:\n- Add 'Start from Template' button to wizard start screen\n- Show TemplateSelector when button clicked\n- When template applied, pre-fill wizard state with template data\n- Update wizard to show 'Template Applied' indicator\n- Allow users to modify template values before completion\n\nFiles to modify:\n- vscode-extension/src/planBuilder/components/WizardContainer.vue\n- vscode-extension/src/planBuilder/wizardState.ts (add template tracking)\n\nEstimate: 1-2 hours",
       "testStrategy": "E2E test: start wizard, select template, verify wizard pre-filled, modify values, complete wizard, verify final plan includes customizations",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["TASK-mk9c0004-template-selector-ui"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T22:10:00.000Z"
+      "updatedAt": "2026-01-12T23:00:00.000Z"
     },
     {
       "id": "TASK-mk9c0007-template-tests",

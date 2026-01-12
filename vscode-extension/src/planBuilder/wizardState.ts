@@ -14,6 +14,8 @@ export interface WizardState {
   lastUpdated: Date;
   planId?: string;
   userId?: string;
+  templateId?: string; // ID of applied template (if any)
+  templateAppliedAt?: Date; // When template was applied
 }
 
 export class WizardStateManager {
@@ -70,6 +72,49 @@ export class WizardStateManager {
    */
   getAllAnswers(): Readonly<Record<string, unknown>> {
     return { ...this.state.answers };
+  }
+
+  /**
+   * Apply a template to wizard state
+   * @param templateId Template identifier
+   * @param templateAnswers Pre-filled answers from template
+   */
+  applyTemplate(templateId: string, templateAnswers: Record<string, unknown>): void {
+    this.state.templateId = templateId;
+    this.state.templateAppliedAt = new Date();
+    
+    // Merge template answers with existing answers (template answers take precedence)
+    this.state.answers = {
+      ...this.state.answers,
+      ...templateAnswers
+    };
+    
+    this.state.lastUpdated = new Date();
+    this.saveToStorage();
+  }
+
+  /**
+   * Check if wizard is using a template
+   */
+  hasTemplate(): boolean {
+    return !!this.state.templateId;
+  }
+
+  /**
+   * Get applied template ID
+   */
+  getTemplateId(): string | undefined {
+    return this.state.templateId;
+  }
+
+  /**
+   * Clear template association
+   */
+  clearTemplate(): void {
+    this.state.templateId = undefined;
+    this.state.templateAppliedAt = undefined;
+    this.state.lastUpdated = new Date();
+    this.saveToStorage();
   }
 
   /**

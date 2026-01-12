@@ -1,12 +1,33 @@
 <template>
   <div class="wizard-container" :class="{ 'with-assistant': showAssistant }">
+    <!-- Template Selector Modal -->
+    <TemplateSelector
+      v-if="showTemplateSelector"
+      :extension-path="extensionPath"
+      @template-selected="handleTemplateSelected"
+      @cancel="showTemplateSelector = false"
+    />
+
     <!-- Header with progress -->
     <div class="wizard-header">
       <div class="wizard-title">
         <h1>Interactive Plan Builder</h1>
-        <p class="subtitle">Step {{ currentStep + 1 }} of {{ totalSteps }}</p>
+        <p class="subtitle">
+          Step {{ currentStep + 1 }} of {{ totalSteps }}
+          <span v-if="appliedTemplateId" class="template-badge">
+            ✨ Template Applied
+          </span>
+        </p>
       </div>
       <div class="header-actions">
+        <button 
+          v-if="currentStep === 0 && !appliedTemplateId"
+          class="template-btn"
+          @click="showTemplateSelector = true"
+          title="Start from a template"
+        >
+          📋 Use Template
+        </button>
         <button 
           class="toggle-assistant-btn"
           @click="toggleAssistant"
@@ -101,6 +122,17 @@ import { useWizardStore } from './wizardStore';
 import { PlanMetadataManager } from './planMetadata';
 import { AiAssistanceService, type AiSuggestion } from './aiAssistanceService';
 import ContextualAssistant from './ContextualAssistant.vue';
+import TemplateSelector from './components/TemplateSelector.vue';
+import { getTemplateService } from './services/TemplateService';
+
+// Props
+interface Props {
+  extensionPath: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  extensionPath: ''
+});
 
 // Component imports (lazy loaded for performance)
 const QuestionRenderer = defineAsyncComponent(() =>
@@ -114,6 +146,10 @@ const validationErrors = ref<Record<string, string[]>>({});
 const autoSaveStatus = ref<'idle' | 'saving' | 'saved'>('idle');
 const isSubmitting = ref(false);
 const autoSaveTimer = ref<ReturnType<typeof setInterval> | null>(null);
+
+// Template state
+const showTemplateSelector = ref(false);
+const appliedTemplateId = ref<string | undefined>(undefined);
 
 // AI Assistant state
 const showAssistant = ref(false);
@@ -275,6 +311,94 @@ const handleSuggestionRejected = (id: string) => {
   console.log('[Wizard] Suggestion rejected:', id);
 };
 
+// Template handling
+const handleTemplateSelected = async (templateId: string) => {
+  try {
+    const templateService = getTemplateService(props.extensionPath);
+    
+    // Load and apply template
+    const template = await templateService.loadTemplate(templateId);
+    const plan = await templateService.applyTemplate(templateId, {
+      preserveMetadata: true
+    });
+    
+    // Convert plan to wizard answers format
+    const templateAnswers: Record<string, unknown> = {};
+    
+    // Map plan.project to Q1 (project-overview)
+    if (plan.project) {
+      templateAnswers['project-overview'] = {
+        name: plan.project.name,
+        description: plan.project.description,
+        type: plan.project.type
+      };
+    }
+    
+    // Map plan.architecture to Q2
+    if (plan.architecture) {
+      templateAnswers['architecture'] = {
+        pattern: plan.architecture.pattern,
+        notes: plan.architecture.description || plan.architecture.rationale
+      };
+    }
+    
+    // Map plan.features to Q3
+    if (plan.features && plan.features.length > 0) {
+      templateAnswers['features'] = {
+        features: plan.features.map((f: any) => ({
+          name: f.name,
+          description: f.description,
+          priority: f.priority,
+          dependsOn: null // TODO: Map dependencies
+        }))
+      };
+    }
+    
+    // Map plan.timeline to Q4
+    if (plan.timeline && plan.timeline.milestones) {
+      templateAnswers['timeline'] = {
+        milestones: plan.timeline.milestones.map((m: any) => ({
+          name: m.name,
+          date: m.target_date,
+          phase: m.phase,
+          dependsOn: null
+        }))
+      };
+    }
+    
+    // Map plan.team to Q5
+    if (plan.team && plan.team.roles) {
+      templateAnswers['team'] = {
+        teamMembers: plan.team.roles.map((r: any) => ({
+          role: r.role_name,
+          skills: r.skills || [],
+          agentMapping: r.agent_mapping || null,
+          availability: r.availability || 'full-time'
+        }))
+      };
+    }
+    
+    // Apply to wizard state if wizardStore has state manager
+    if (wizardStore.state && typeof wizardStore.state.applyTemplate === 'function') {
+      wizardStore.state.applyTemplate(templateId, templateAnswers);
+    }
+    
+    // Set answers in store
+    Object.entries(templateAnswers).forEach(([key, value]) => {
+      wizardStore.setAnswer(key, value);
+    });
+    
+    // Update UI
+    appliedTemplateId.value = templateId;
+    showTemplateSelector.value = false;
+    
+    console.log('[Wizard] Template applied:', templateId, templateAnswers);
+  } catch (error) {
+    console.error('[Wizard] Failed to apply template:', error);
+    // TODO: Show error to user
+  }
+};
+
 const handleValidationError = (errors: string[]) => {
   validationErrors.value[currentStep.value] = errors;
 };
@@ -433,6 +557,42 @@ watch(() => wizardStore.currentPageIndex, () => {
   font-size: 20px;
   font-weight: 600;
   color: var(--vscode-editor-foreground);
+}
+
+.wizard-title .subtitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.template-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.template-btn {
+  padding: 6px 12px;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.template-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
 }
 
 .subtitle {
