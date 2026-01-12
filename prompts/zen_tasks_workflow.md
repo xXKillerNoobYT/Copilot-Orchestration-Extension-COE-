@@ -1,18 +1,46 @@
 # Zen Tasks Workflow Context
 
+> **⚠️ MIGRATION NOTICE**: The Zen Tasks system (_ZENTASKS) has been migrated to GitHub Issues.  
+> All new task management should use GitHub Issues as the primary system.  
+> See `Docs/GitHub-Migration-Tool-Mapping.md` for the complete migration guide.  
+> This file is maintained for backward compatibility and historical reference.
+
 ## Overview
 
-This document provides essential guidelines for structured, dependency-driven development using the Zen Tasks system.
+This document provides essential guidelines for structured, dependency-driven development. 
 
-## Loading the workflow context (must-do)
+**Current System**: GitHub Issues (primary)  
+**Legacy System**: Zen Tasks (_ZENTASKS) - read-only, deprecated
 
-1. **Primary**: Invoke the automation entrypoint (`zen-tasks_000_workflow_context`) to hydrate the workflow context.
-2. **File-system fallback** (when the tool reports missing files or cannot run):
-	- Read this file directly from `prompts/zen_tasks_workflow.md` and `prompts/base.md`.
-	- Load project planning context from `Docs/Plan/` (e.g., `Docs/Plan/detailed project description`, `Docs/Plan/feature list`).
-	- Keep both prompt files and plan docs in sync so the automation can pick them up when it recovers.
+## GitHub Issues Workflow (Current)
 
-Always ensure the workflow context is loaded **before** performing any zen-tasks operations.
+### Loading workflow context
+1. Read project plan: `Docs/Plan/detailed project description` and `Docs/Plan/feature list`
+2. Query GitHub Issues: Use `github-mcp-server-list_issues` or `github-mcp-server-search_issues`
+3. Review migration guide: `Docs/GitHub-Migration-Tool-Mapping.md`
+
+### GitHub Issue Operations
+- **List issues**: `github-mcp-server-list_issues`
+- **Search issues**: `github-mcp-server-search_issues` with query filters
+- **Read issue**: `github-mcp-server-issue_read` (method: get)
+- **Create issue**: GitHub API with proper labels and structure
+- **Update issue**: Modify labels, assignees, body via GitHub API
+
+---
+
+## Legacy: Zen Tasks System (Deprecated)
+
+**Status**: Read-only, no new tasks should be created in _ZENTASKS
+
+### Historical Context
+Previously, the system used _ZENTASKS/tasks.json for task management with these tools:
+- ~~`zen-tasks_000_workflow_context`~~ (removed)
+- ~~`zen-tasks_list_tasks`~~ → Use `github-mcp-server-list_issues`
+- ~~`zen-tasks_get_task`~~ → Use `github-mcp-server-issue_read`
+- ~~`zen-tasks_next_task`~~ → Use `github-mcp-server-search_issues` with filters
+- ~~`zen-tasks_add_task`~~ → Create GitHub Issues
+- ~~`zen-tasks_update_task`~~ → Update GitHub Issues
+- ~~`zen-tasks_set_status`~~ → Update GitHub Issue labels
 
 ## Core Principles
 
