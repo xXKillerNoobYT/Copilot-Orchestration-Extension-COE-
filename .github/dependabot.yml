@@ -1,0 +1,67 @@
+version: 2
+updates:
+  # Laravel/PHP dependencies (Composer)
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Group Laravel framework updates together
+    groups:
+      laravel:
+        patterns:
+          - "laravel/*"
+          - "illuminate/*"
+    # Keep dependencies up to date for security
+    open-pull-requests-limit: 10
+
+  # Frontend dependencies (root package.json - Vite + Vue)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Group Vue ecosystem updates
+    groups:
+      vue:
+        patterns:
+          - "vue*"
+          - "@vue/*"
+      vite:
+        patterns:
+          - "vite*"
+          - "@vitejs/*"
+    open-pull-requests-limit: 10
+
+  # VS Code extension dependencies
+  - package-ecosystem: "npm"
+    directory: "/vscode-extension"
+    schedule:
+      interval: "daily"
+    # Group VS Code API updates
+    groups:
+      vscode:
+        patterns:
+          - "@types/vscode"
+          - "@vscode/*"
+      webpack:
+        patterns:
+          - "webpack*"
+          - "*-loader"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Group action updates by provider
+    groups:
+      actions:
+        patterns:
+          - "actions/*"
+    open-pull-requests-limit: 5
+
+  # Docker (if you add Dockerfile later)
+  # - package-ecosystem: "docker"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
