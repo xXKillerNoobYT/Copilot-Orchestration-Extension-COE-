@@ -1033,11 +1033,11 @@
       "description": "Build Vue component for template selection UI with grid view, search/filter, template preview, and apply button.",
       "details": "Component: vscode-extension/src/planBuilder/components/TemplateSelector.vue\n\nFeatures:\n- Grid layout showing template cards (name, description, tags)\n- Search bar for filtering by name/tags\n- Category filter (All, Web App, API Service, CLI Tool, Library)\n- Template preview modal showing full details\n- Apply button to load template into wizard\n- VS Code theming integration\n\nProps:\n- onTemplateSelected: (template: PlanTemplate) => void\n\nEmits:\n- template-applied: { templateId: string, plan: PlanJSON }\n\nEstimate: 2-3 hours",
       "testStrategy": "Component tests: render templates, test search filter, test category filter, test template selection, verify apply event emitted, test VS Code theme styling",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["TASK-mk9c0003-template-loader"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T21:30:00.000Z"
     },
     {
       "id": "TASK-mk9c0005-custom-template-creator",
