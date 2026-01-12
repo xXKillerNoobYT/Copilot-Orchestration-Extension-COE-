@@ -13,6 +13,8 @@ import { decomposeProjectPlan, generateTaskYAML } from './taskDecomposition';
 import { generateDependencySummary } from './dependencyAnalysis';
 import { extractDesignDataFromWizard, validateDesignPayload, type DesignHandoffPayload } from './designHandoff';
 import { computePlanDiff, formatDiffSummary, type Plan } from './planDiff';
+import { savePlan } from './planPersistence';
+import { getPlanPersistenceService } from '../services/planPersistence';
 import type { SuggestionResponse, ArchitectureContext } from './architectureSuggestions';
 import type { DecompositionResult, GeneratedTask } from './taskDecomposition';
 
@@ -128,20 +130,62 @@ export async function processPlanCompletion(
     // Get LLM client
     const llmClient = getOrCreateLlmClient();
 
-    // Step 1: Generate architecture suggestions
+    // Step 1: Save plan to backend to get plan ID
+    console.log('[PlanIntegration] Saving plan to backend...');
+    const projectName = (wizardState['project_name'] as string) || 'New Project';
+    const savedPlan = await savePlan(wizardState, projectName);
+    
+    if (!savedPlan) {
+      throw new Error('Failed to save plan to backend');
+    }
+    
+    console.log(`[PlanIntegration] Plan saved with ID: ${savedPlan.id}`);
+
+    // Step 2: Generate architecture suggestions
     console.log('[PlanIntegration] Generating architecture suggestions...');
     const archContext = convertWizardStateToArchitectureContext(wizardState);
     const suggestions = await generateArchitectureSuggestions(archContext, llmClient);
     result.architectureSuggestions = suggestions;
     console.log('[PlanIntegration] Architecture suggestions generated');
 
-    // Step 2: Decompose into tasks
-    console.log('[PlanIntegration] Decomposing plan into tasks...');
-    const decomposition = await decomposeProjectPlan(wizardState, llmClient, suggestions);
-    result.decompositionResult = decomposition;
-    console.log(`[PlanIntegration] Generated ${decomposition.tasks.length} tasks`);
+    // Step 3: Call backend decomposition API
+    console.log('[PlanIntegration] Calling backend decomposition API...');
+    const persistence = getPlanPersistenceService();
+    const decompositionResponse = await persistence.decomposePlan(savedPlan.id, {
+      autoCreate: true, // Create tasks in database
+      microtaskSize: 45, // Target 45-minute subtasks
+    });
 
-    // Step 3: Create task files in _ZENTASKS folder
+    if (!decompositionResponse.success) {
+      throw new Error('Backend decomposition failed');
+    }
+
+    console.log(`[PlanIntegration] Backend generated ${decompositionResponse.tasks.length} tasks`);
+
+    // Convert backend task format to local GeneratedTask format for compatibility
+    const decomposition: DecompositionResult = {
+      tasks: decompositionResponse.tasks.map((task: any) => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        taskType: (task.type || 'feature') as 'feature' | 'bug' | 'refactor' | 'maintenance' | 'architecture' | 'testing' | 'documentation',
+        priority: (task.priority || 'medium') as 'critical' | 'high' | 'medium' | 'low',
+        estimate: {
+          value: task.estimate_hours || 4,
+          unit: 'hours' as const,
+        },
+        dependencies: task.dependencies || [],
+        status: 'pending' as const,
+      })),
+      criticalPath: decompositionResponse.metadata?.critical_path || [],
+      milestones: [],
+      riskFactors: [],
+      recommendations: [],
+    };
+
+    result.decompositionResult = decomposition;
+
+    // Step 4: Create task files in _ZENTASKS folder
     console.log('[PlanIntegration] Creating task files...');
     const zenTasksDir = path.join(workspaceRoot, '_ZENTASKS');
     
@@ -167,11 +211,11 @@ export async function processPlanCompletion(
       }
     }
 
-    // Step 4: Generate dependency summary
+    // Step 5: Generate dependency summary
     console.log('[PlanIntegration] Generating dependency analysis...');
     result.dependencySummary = generateDependencySummary(decomposition.tasks);
 
-    // Step 5: Extract design data for handoff to design editor
+    // Step 6: Extract design data for handoff to design editor
     console.log('[PlanIntegration] Extracting design data for handoff...');
     const designData = extractDesignDataFromWizard(wizardState);
     const validation = validateDesignPayload(designData);
@@ -188,11 +232,16 @@ export async function processPlanCompletion(
     result.success = true;
 
     console.log('[PlanIntegration] Plan processing completed successfully');
+    vscode.window.showInformationMessage(
+      `✓ Plan "${projectName}" saved and ${result.taskCount} tasks created!`
+    );
+
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     result.errorMessage = message;
-    console.error('[PlanIntegration] Error processing plan:', message);
+    console.error('[PlanIntegration] Error processing plan:', message, error);
+    vscode.window.showErrorMessage(`Failed to process plan: ${message}`);
     return result;
   }
 }
