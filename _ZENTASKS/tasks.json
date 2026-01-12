@@ -206,15 +206,15 @@
       "id": "TASK-mk935327-9r7k4",
       "title": "EPIC-002: Five Core Questions (MVP)",
       "description": "Implement 5 essential questions: Project Overview, Architecture Pattern, Feature Breakdown, Timeline Planning, Team Structure. MVP simplified from Code Master's 10-page spec.",
-      "details": "Each question is a Vue component:\nQ1 - Project Overview: name, description, type\nQ2 - Architecture: pattern selection with diagrams\nQ3 - Features: add/remove, priorities, dependencies\nQ4 - Timeline: milestones, dates, Gantt preview\nQ5 - Team: roles, skills, agent mapping\n\nFiles: vscode-extension/src/planBuilder/questions/*.vue\n\nEstimate: 8-12 hours total",
+      "details": "✅ COMPLETE (2026-01-12):\nAll 5 question components implemented and tested:\n- Q1 (TASK-002A): ProjectOverviewQuestion.vue ✓\n- Q2 (TASK-002B): ArchitectureQuestion.vue ✓\n- Q3 (TASK-002C): FeatureBreakdownQuestion.vue ✓\n- Q4 (TASK-002D): TimelineQuestion.vue ✓\n- Q5 (TASK-002E): TeamStructureQuestion.vue ✓\n\nAll components integrated with wizardStore, validation working, previews updating correctly.",
       "testStrategy": "Complete wizard flow; validate all fields; verify previews update; test data collection; verify wizardStore integration.",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "EPIC-001"
       ],
       "createdAt": "2026-01-11T01:58:48.511Z",
-      "updatedAt": "2026-01-11T01:58:48.511Z"
+      "updatedAt": "2026-01-12T02:50:00.000Z"
     },
     {
       "id": "TASK-mk93538k-g5evv",
@@ -432,15 +432,15 @@
       "id": "TASK-mk9367c1-v290i",
       "title": "EPIC-005: Markdown Export System",
       "description": "Generate human-readable Markdown plan documents with dependency graphs (Mermaid), timeline visualizations (Gantt), and formatted sections for easy reading and sharing.",
-      "details": "markdownExporter.ts with template engine. Sections: project overview, architecture (with diagram), features (with dependency graph), timeline (Gantt chart), team structure (org chart). Professional formatting with TOC.\n\nFile: vscode-extension/src/exporters/markdownExporter.ts\n\nEstimate: 6-8 hours total",
+      "details": "✅ COMPLETE (2026-01-12):\nFull markdown export system implemented:\n- TASK-005A: Markdown template engine ✓\n- TASK-005B: Dependency graph visualization (Mermaid) ✓\n- TASK-005C: Timeline visualization (Gantt) ✓\n\nExporter generates professional Markdown with TOC, all sections formatted correctly, Mermaid diagrams rendering in VS Code/GitHub.",
       "testStrategy": "Export plan to Markdown; verify readability; test Mermaid diagrams render correctly in VS Code/GitHub; validate timeline accuracy; test TOC links.",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": [
         "EPIC-003"
       ],
       "createdAt": "2026-01-11T01:59:40.706Z",
-      "updatedAt": "2026-01-11T01:59:40.706Z"
+      "updatedAt": "2026-01-12T02:50:00.000Z"
     },
     {
       "id": "TASK-mk937bnr-fywb8",
@@ -919,11 +919,11 @@
       "description": "ISSUE #2: HIGH - Implement real-time preview system allowing users to see design changes as they modify wizard answers. Core feature of Interactive Design Phase with performance requirement: preview updates <500ms after wizard state change.",
       "details": "\n\n## Requirements\n1. PreviewEngine.ts - Real-time renderer converting wizard state to visual preview\n2. WizardStateObserver.ts - Watches for answer changes and triggers updates\n3. PreviewFeedback.ts - Shows compatibility indicators and impact warnings\n4. WizardContainer integration - Wire preview into existing wizard interface\n\n## Performance Critical\n- Preview updates within 200-500ms of wizard change (MANDATORY)\n- Handle 10+ wizard pages rendering efficiently\n- No memory leaks during extended usage\n\n## Implementation Steps\n1. Create PreviewEngine.ts (handles rendering logic)\n2. Create WizardStateObserver.ts (detects state changes via Pinia)\n3. Create PreviewFeedback.ts (computes and displays feedback)\n4. Create PreviewContainer.vue (UI component)\n5. Integrate with wizardContainer.ts and wizardContainer.vue\n6. Create comprehensive test suite (>75% coverage)\n7. Verify <500ms latency with performance tests\n8. Update documentation\n\n## New Files to Create\n- vscode-extension/src/components/preview/PreviewEngine.ts\n- vscode-extension/src/components/preview/WizardStateObserver.ts\n- vscode-extension/src/components/preview/PreviewFeedback.ts\n- vscode-extension/src/components/preview/PreviewContainer.vue\n- vscode-extension/src/components/preview/PreviewEngine.test.ts\n- vscode-extension/src/components/preview/WizardStateObserver.test.ts\n\n## Test Strategy\n- Unit tests: PreviewEngine, WizardStateObserver, PreviewFeedback\n- Integration tests: Wizard → Preview flow\n- Performance tests: Verify <500ms latency\n- Edge cases: Empty values, invalid data, page transitions\n- Coverage target: >75% of new code\n\n## Success Criteria\n✅ Preview engine operational\n✅ All 10 wizard pages render correctly\n✅ Updates <500ms (verified with performance test)\n✅ Feedback indicators display correctly\n✅ >75% code coverage\n✅ 100% test pass rate (all unit and integration tests)\n✅ 0 TypeScript errors\n✅ 0 new lint/type errors\n✅ Ready for ISSUE #3\n",
       "testStrategy": "1. Run unit tests (npm test -- preview → 100% pass)\\n2. Run integration tests (npm test -- integration/preview → 100% pass)\\n3. Performance test (<500ms latency → must pass)\\n4. Coverage analysis (>75% for new code)\\n5. TypeScript check (npm run compile → 0 errors)\\n6. Manual verification (preview renders in VS Code Markdown preview)\\n7. Edge case tests (invalid wizard data, empty values)",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [],
       "createdAt": "2026-01-11T07:47:30.345Z",
-      "updatedAt": "2026-01-11T07:47:30.345Z"
+      "updatedAt": "2026-01-12T02:49:00.000Z"
     },
     {
       "id": "TASK-mk9flire-o6vp4",
