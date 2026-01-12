@@ -1,0 +1,114 @@
+{
+  "metadata": {
+    "id": "core-api-service",
+    "name": "RESTful API Service",
+    "description": "Production-ready REST API with authentication, database, rate limiting, and comprehensive documentation. Perfect for microservices and backend systems.",
+    "category": "api-service",
+    "tags": ["api", "rest", "microservice", "backend", "authentication", "database"],
+    "author": "Copilot Orchestration Extension",
+    "version": "1.0.0",
+    "createdAt": "2026-01-12T00:00:00.000Z",
+    "updatedAt": "2026-01-12T00:00:00.000Z",
+    "isCore": true,
+    "icon": "server",
+    "estimatedDuration": "2-4 months",
+    "recommendedTeamSize": 3
+  },
+  "plan": {
+    "metadata": {
+      "version": "1.0.0",
+      "created_at": "2026-01-12T00:00:00.000Z",
+      "updated_at": "2026-01-12T00:00:00.000Z",
+      "author": "Template",
+      "status": "draft",
+      "name": "API Service Project"
+    },
+    "project": {
+      "name": "My API Service",
+      "description": "A scalable RESTful API service with authentication, data validation, and comprehensive documentation",
+      "type": "api",
+      "status": "planning"
+    },
+    "architecture": {
+      "pattern": "Layered Architecture",
+      "description": "Multi-layer architecture with clear separation between API routes, business logic, data access, and infrastructure",
+      "components": ["API Layer (Routes)", "Service Layer (Business Logic)", "Data Layer (Repository)", "Database (PostgreSQL)", "Cache (Redis)", "Message Queue"],
+      "rationale": "Layered architecture ensures maintainability, testability, and allows independent scaling of different components"
+    },
+    "features": [
+      {
+        "id": "FEAT-001",
+        "name": "API Authentication & Authorization",
+        "description": "JWT-based authentication with role-based access control",
+        "priority": "critical",
+        "status": "pending",
+        "acceptance_criteria": ["JWT token generation/validation", "Role-based permissions", "API key support", "Rate limiting per user"],
+        "dependencies": [],
+        "effort_estimate": 10
+      },
+      {
+        "id": "FEAT-002",
+        "name": "Core CRUD Endpoints",
+        "description": "RESTful endpoints for primary resources with validation",
+        "priority": "critical",
+        "status": "pending",
+        "acceptance_criteria": ["GET, POST, PUT, DELETE operations", "Request validation", "Response formatting", "Error handling"],
+        "dependencies": ["FEAT-001"],
+        "effort_estimate": 16
+      },
+      {
+        "id": "FEAT-003",
+        "name": "API Documentation",
+        "description": "OpenAPI/Swagger documentation with interactive testing",
+        "priority": "high",
+        "status": "pending",
+        "acceptance_criteria": ["OpenAPI 3.0 spec", "Swagger UI", "Example requests/responses", "Authentication documentation"],
+        "dependencies": ["FEAT-002"],
+        "effort_estimate": 6
+      },
+      {
+        "id": "FEAT-004",
+        "name": "Data Validation & Sanitization",
+        "description": "Comprehensive input validation and security",
+        "priority": "critical",
+        "status": "pending",
+        "acceptance_criteria": ["Schema-based validation", "SQL injection prevention", "XSS protection", "Request size limits"],
+        "dependencies": [],
+        "effort_estimate": 8
+      }
+    ],
+    "timeline": {
+      "start_date": "2026-02-01T00:00:00.000Z",
+      "end_date": "2026-04-01T00:00:00.000Z",
+      "milestones": [
+        {"id": "M1", "name": "Alpha Release", "target_date": "2026-03-01T00:00:00.000Z", "phase": "development", "completion_status": "pending", "dependencies": []},
+        {"id": "M2", "name": "Production Ready", "target_date": "2026-04-01T00:00:00.000Z", "phase": "deployment", "completion_status": "pending", "dependencies": ["M1"]}
+      ],
+      "phases": [
+        {"name": "Development", "start_date": "2026-02-01T00:00:00.000Z", "end_date": "2026-03-15T00:00:00.000Z"},
+        {"name": "Testing", "start_date": "2026-03-16T00:00:00.000Z", "end_date": "2026-03-31T00:00:00.000Z"}
+      ]
+    },
+    "team": {
+      "members": [
+        {"id": "ROLE-001", "role_name": "Backend Developer", "responsibilities": ["API development", "Database design"], "skills": ["Node.js", "Express", "PostgreSQL"], "agent_mapping": "Auto Zen", "availability": "full-time"},
+        {"id": "ROLE-002", "role_name": "QA Engineer", "responsibilities": ["API testing", "Performance testing"], "skills": ["Postman", "Jest", "Load testing"], "agent_mapping": "Testing Agent", "availability": "full-time"}
+      ],
+      "structure": "Agile",
+      "communication_plan": "Daily standups, GitHub PRs, Slack"
+    },
+    "success_criteria": ["<100ms response time for 95% of requests", "99.9% uptime", "100% endpoint coverage in tests", "OpenAPI spec complete"],
+    "risks": [
+      {"id": "RISK-001", "description": "API performance degradation under load", "probability": "medium", "impact": "high", "mitigation": "Load testing, caching, database optimization"}
+    ],
+    "assumptions": ["RESTful API standards followed", "JSON request/response format", "HTTPS required"],
+    "constraints": ["Must support 1000 concurrent users", "Response time <200ms", "OpenAPI 3.0 compatible"]
+  },
+  "customizationHints": {
+    "requiredCustomizations": ["project.name", "project.description"],
+    "optionalCustomizations": [
+      {"field": "architecture.components", "description": "Customize database and cache technology", "example": "Use MongoDB instead of PostgreSQL"},
+      {"field": "features", "description": "Add domain-specific endpoints", "example": "Add payment processing, file uploads, webhooks"}
+    ]
+  }
+}

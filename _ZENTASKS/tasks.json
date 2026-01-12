@@ -1009,11 +1009,11 @@
       "description": "Implement 4 core plan templates as JSON files with complete project structure, features, timeline, and best practices for each project type.",
       "details": "Templates to create:\n1. web-app-template.json - Full-stack web application with auth, database, UI\n2. api-service-template.json - RESTful API with endpoints, auth, database\n3. cli-tool-template.json - Command-line tool with commands, config, testing\n4. library-package-template.json - Reusable library with API, docs, publishing\n\nEach template includes:\n- Project metadata (name, description, type)\n- Architecture pattern appropriate for project type\n- Common features for that project type\n- Timeline with typical phases\n- Team roles and responsibilities\n\nEstimate: 2-3 hours",
       "testStrategy": "Load each template JSON; validate against PlanJSON schema; verify no validation errors; test template application generates valid plan",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": ["TASK-mk9c0001-templates-types"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T20:25:00.000Z"
     },
     {
       "id": "TASK-mk9c0003-template-loader",
@@ -1021,11 +1021,11 @@
       "description": "Create TemplateService to load templates from disk, validate structure, and provide template listing/retrieval API.",
       "details": "File: vscode-extension/src/planBuilder/services/TemplateService.ts\n\nMethods:\n- loadTemplate(templateId: string): Promise<PlanTemplate>\n- listTemplates(): Promise<PlanTemplateMetadata[]>\n- validateTemplate(template: PlanTemplate): ValidationResult\n- applyTemplate(templateId: string, customizations?: Partial<PlanJSON>): Promise<PlanJSON>\n\nHandles:\n- Template file reading from templates/plan-templates/\n- JSON parsing and validation\n- Error handling for missing/invalid templates\n- Template metadata caching\n\nEstimate: 2 hours",
       "testStrategy": "Unit tests: load each core template, validate structure, test error handling for missing templates, verify metadata listing, test template application with customizations",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": ["TASK-mk9c0002-core-templates"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T21:00:00.000Z"
     },
     {
       "id": "TASK-mk9c0004-template-selector-ui",
@@ -1033,11 +1033,11 @@
       "description": "Build Vue component for template selection UI with grid view, search/filter, template preview, and apply button.",
       "details": "Component: vscode-extension/src/planBuilder/components/TemplateSelector.vue\n\nFeatures:\n- Grid layout showing template cards (name, description, tags)\n- Search bar for filtering by name/tags\n- Category filter (All, Web App, API Service, CLI Tool, Library)\n- Template preview modal showing full details\n- Apply button to load template into wizard\n- VS Code theming integration\n\nProps:\n- onTemplateSelected: (template: PlanTemplate) => void\n\nEmits:\n- template-applied: { templateId: string, plan: PlanJSON }\n\nEstimate: 2-3 hours",
       "testStrategy": "Component tests: render templates, test search filter, test category filter, test template selection, verify apply event emitted, test VS Code theme styling",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["TASK-mk9c0003-template-loader"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T21:30:00.000Z"
     },
     {
       "id": "TASK-mk9c0005-custom-template-creator",
@@ -1045,11 +1045,11 @@
       "description": "Create UI and service logic to save current plan as a reusable template with custom metadata (name, description, tags, author).",
       "details": "Files:\n- vscode-extension/src/planBuilder/components/TemplateSaveDialog.vue\n- vscode-extension/src/planBuilder/services/TemplateService.ts (extend)\n\nTemplateSaveDialog features:\n- Modal dialog with form fields (name, description, tags, author)\n- Validation (required fields, unique template name)\n- Save button triggers template creation\n- Success/error notifications\n\nTemplateService.saveTemplate() method:\n- Accepts current PlanJSON + metadata\n- Generates unique template ID\n- Writes template to templates/plan-templates/custom/\n- Updates template index/cache\n\nEstimate: 2 hours",
       "testStrategy": "Test dialog validation, test template save to disk, verify template appears in TemplateSelector, test duplicate name handling, verify custom template loads correctly",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["TASK-mk9c0003-template-loader"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T22:00:00.000Z"
     },
     {
       "id": "TASK-mk9c0006-template-integration",
@@ -1057,11 +1057,11 @@
       "description": "Wire TemplateSelector into wizard flow, add 'Start from Template' option on wizard start screen, handle template application and pre-filling wizard state.",
       "details": "Integration points:\n- Add 'Start from Template' button to wizard start screen\n- Show TemplateSelector when button clicked\n- When template applied, pre-fill wizard state with template data\n- Update wizard to show 'Template Applied' indicator\n- Allow users to modify template values before completion\n\nFiles to modify:\n- vscode-extension/src/planBuilder/components/WizardContainer.vue\n- vscode-extension/src/planBuilder/wizardState.ts (add template tracking)\n\nEstimate: 1-2 hours",
       "testStrategy": "E2E test: start wizard, select template, verify wizard pre-filled, modify values, complete wizard, verify final plan includes customizations",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["TASK-mk9c0004-template-selector-ui"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T23:00:00.000Z"
     },
     {
       "id": "TASK-mk9c0007-template-tests",
@@ -1086,9 +1086,21 @@
       "dependencies": ["TASK-mk9c0006-template-integration"],
       "createdAt": "2026-01-12T20:00:00.000Z",
       "updatedAt": "2026-01-12T20:00:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0009-branch-management",
+      "title": "Implement feature branch management system",
+      "description": "Create automated branch management system for parallel work streams with dependency-aware merge sequencing, conflict resolution, and branch archival.",
+      "details": "BRANCHING STRATEGY:\n- Branch naming: feature/{task-id}-{description-slug}\n- Track branch-to-task mappings in task metadata (branchInfo field)\n- Automated sync with main (daily rebases)\n- Dependency-aware merge order (resolve dependencies first)\n- Auto-conflict resolution where safe, escalate complex conflicts\n- Archive merged branches after PR completion\n\nDELIVERABLES:\n- Docs/BranchingStrategy.md (✅ COMPLETE - comprehensive guide with workflows, naming, sync, archival)\n- _ZENTASKS/scripts/branch-manager.sh (branch creation, sync, cleanup automation)\n- Update tasks.json schema to add branchInfo field\n- GitHub Actions workflow for automated branch sync\n- Conflict resolution helper script\n\nFILES:\n- Docs/BranchingStrategy.md (✅ created - 600+ LOC)\n- _ZENTASKS/scripts/branch-manager.sh (pending)\n- _ZENTASKS/scripts/resolve-conflicts.sh (pending)\n- .github/workflows/sync-feature-branches.yml (pending)\n- TypeScript types for branch metadata (pending)\n\nBRANCH INFO SCHEMA:\n{\n  \"branchInfo\": {\n    \"branchName\": \"feature/TASK-xxxxx-description\",\n    \"createdAt\": \"2026-01-12T23:30:00.000Z\",\n    \"baseBranch\": \"main\",\n    \"status\": \"active\" | \"merged\" | \"abandoned\",\n    \"lastSyncedWithMain\": \"2026-01-12T23:45:00.000Z\",\n    \"prUrl\": \"https://github.com/.../pull/42\",\n    \"mergedAt\": \"2026-01-13T01:00:00.000Z\"\n  }\n}\n\nIMPLEMENTATION STEPS:\n1. ✅ Create Docs/BranchingStrategy.md with comprehensive guidelines\n2. Create branch-manager.sh for branch CRUD operations\n3. Create resolve-conflicts.sh for automated conflict resolution\n4. Create GitHub Actions workflow for daily sync\n5. Update task schema to support branchInfo field\n6. Test branch creation and tracking\n7. Test dependency-aware merge ordering\n8. Test automated sync and conflict resolution",
+      "testStrategy": "Create test branches for multiple tasks with dependencies. Verify naming convention. Test automated sync workflow. Create intentional conflicts and verify auto-resolution. Test merge sequencing respects dependencies. Verify branch archival after PR merge.",
+      "status": "in-progress",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-12T23:30:00.000Z",
+      "updatedAt": "2026-01-12T23:35:00.000Z"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-12T20:00:00.000Z"
+    "updatedAt": "2026-01-12T23:35:00.000Z"
   }
 }

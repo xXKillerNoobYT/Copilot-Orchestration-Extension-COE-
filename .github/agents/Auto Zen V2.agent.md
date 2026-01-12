@@ -9,7 +9,7 @@ handoffs:
     prompt: Load workflow context from Docs/Plan/ (detailed project description and feature list). Query current GitHub Issues using github-mcp-server-search_issues to inspect open tasks. Pick the highest-priority ready task (query with filters: is:open -label:"status: blocked" -label:"status: in-progress" sort:priority). Update issue labels to mark in-progress and assign to self. Implement the task, run tests, verify completion, and close the issue (or update labels to done). Observe for new issues during implementation and create follow-up GitHub issues as needed. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder and follow GitHub issue format. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{issue-number}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
   - label: Full Auto - Cloud Task Master
     agent: Auto Zen
-    prompt: |
+    prompt:
       Execute complete cloud deployment and management cycle with intelligent orchestration.
       
       **Phase 1: Local Validation (0-5 min)**
