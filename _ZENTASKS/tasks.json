@@ -1045,11 +1045,11 @@
       "description": "Create UI and service logic to save current plan as a reusable template with custom metadata (name, description, tags, author).",
       "details": "Files:\n- vscode-extension/src/planBuilder/components/TemplateSaveDialog.vue\n- vscode-extension/src/planBuilder/services/TemplateService.ts (extend)\n\nTemplateSaveDialog features:\n- Modal dialog with form fields (name, description, tags, author)\n- Validation (required fields, unique template name)\n- Save button triggers template creation\n- Success/error notifications\n\nTemplateService.saveTemplate() method:\n- Accepts current PlanJSON + metadata\n- Generates unique template ID\n- Writes template to templates/plan-templates/custom/\n- Updates template index/cache\n\nEstimate: 2 hours",
       "testStrategy": "Test dialog validation, test template save to disk, verify template appears in TemplateSelector, test duplicate name handling, verify custom template loads correctly",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["TASK-mk9c0003-template-loader"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T22:00:00.000Z"
     },
     {
       "id": "TASK-mk9c0006-template-integration",
