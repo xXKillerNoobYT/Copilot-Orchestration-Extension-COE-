@@ -10,7 +10,7 @@ handoffs:
   - label: Full Auto - Cloud Task Master
     agent: Auto Zen
     prompt: |
-      Execute complete cloud deployment and management cycle with intelligent orchestration:
+      Execute complete cloud deployment and management cycle with intelligent orchestration.
       
       **Phase 1: Local Validation (0-5 min)**
       - Load workflow context (zen-tasks_000_workflow_context)
@@ -24,31 +24,31 @@ handoffs:
       - Verify cloud configuration files (.env.production, docker-compose.yml)
       - Run security scans (dependencies, vulnerabilities)
       - Check deployment prerequisites (migrations, seeds, backups)
-      - Timer: Wait 120 seconds for CI/CD pipeline validation
+      - Wait 120 seconds for CI/CD pipeline validation
       
       **Phase 3: Staging Deployment (10-20 min, wait 3 min for stability)**
       - Deploy to staging environment via GitHub Actions
-      - Timer: Wait 180 seconds for deployment completion
+      - Wait 180 seconds for deployment completion
       - Run smoke tests on staging
       - Monitor health endpoints
       - Verify database migrations
       - Check API response times
-      - Timer: Wait 120 seconds for system stabilization
+      - Wait 120 seconds for system stabilization
       
       **Phase 4: Production Readiness (20-25 min, wait 5 min for final checks)**
       - Compare staging vs production configurations
       - Review deployment logs for warnings
       - Verify rollback procedures ready
       - Create production deployment PR
-      - Timer: Wait 300 seconds for manual approval gate (if required)
+      - Wait 300 seconds for manual approval gate (if required)
       
       **Phase 5: Production Deployment (25-35 min, wait 5 min post-deploy)**
       - Execute production deployment workflow
-      - Timer: Wait 300 seconds for deployment completion
+      - Wait 300 seconds for deployment completion
       - Monitor error rates and performance metrics
       - Verify all services healthy
       - Run production smoke tests
-      - Timer: Wait 180 seconds for traffic stabilization
+      - Wait 180 seconds for traffic stabilization
       
       **Phase 6: Post-Deployment Validation (35-40 min)**
       - Verify zero-downtime deployment success
@@ -60,7 +60,7 @@ handoffs:
       
       **Phase 7: Continuous Monitoring (40+ min, ongoing)**
       - Monitor for 10 minutes post-deployment
-      - Timer: Check every 60 seconds for anomalies
+      - Check every 60 seconds for anomalies
       - Auto-rollback if error rate >5% or response time >2x baseline
       - Create incident tasks if issues detected
       - Update task status and metrics
@@ -98,7 +98,7 @@ handoffs:
     agent: Auto Zen
     prompt: Create and manage feature branches for parallel work streams. Use naming convention: feature/{task-id}-{description-slug}. Track branch-to-task mappings in task details. Coordinate merges with dependency-aware sequencing. Resolve conflicts automatically where possible, escalate complex conflicts to human review. Keep branches synced with main to prevent drift. Archive completed feature branches after successful PR merge. Document branching strategy in Docs/BranchingStrategy.md.
   - label: Hand Off to Cloud Specialist
-    agent: Cloud Deployment Agent
+    agent: Auto Zen
     prompt: This task requires cloud platform expertise. Review task requirements, cloud configuration, and deployment targets. Validate infrastructure as code (Terraform/CloudFormation). Execute deployment workflows with proper staging gates. Monitor cloud resource provisioning and health checks. Roll back on deployment failures. Update task with deployment status, logs, and resource URLs. Create follow-up tasks for optimization or incident response.
   - label: Coordinate Multi-Branch Workflow
     agent: Auto Zen
