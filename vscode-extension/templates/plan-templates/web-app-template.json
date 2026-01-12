@@ -1,0 +1,306 @@
+{
+  "metadata": {
+    "id": "core-web-app",
+    "name": "Full-Stack Web Application",
+    "description": "Complete web application template with authentication, database, UI components, and API endpoints. Ideal for SaaS products, dashboards, and web platforms.",
+    "category": "web-app",
+    "tags": ["web", "full-stack", "authentication", "database", "ui", "api", "saas"],
+    "author": "Copilot Orchestration Extension",
+    "version": "1.0.0",
+    "createdAt": "2026-01-12T00:00:00.000Z",
+    "updatedAt": "2026-01-12T00:00:00.000Z",
+    "isCore": true,
+    "icon": "globe",
+    "estimatedDuration": "3-6 months",
+    "recommendedTeamSize": 4
+  },
+  "plan": {
+    "metadata": {
+      "version": "1.0.0",
+      "created_at": "2026-01-12T00:00:00.000Z",
+      "updated_at": "2026-01-12T00:00:00.000Z",
+      "author": "Template",
+      "status": "draft",
+      "name": "Web Application Project"
+    },
+    "project": {
+      "name": "My Web Application",
+      "description": "A modern full-stack web application with authentication, database, and rich UI",
+      "type": "web",
+      "status": "planning"
+    },
+    "architecture": {
+      "pattern": "Model-View-Controller (MVC)",
+      "description": "Three-tier architecture separating data (Model), presentation (View), and business logic (Controller)",
+      "components": [
+        "Frontend (React/Vue)",
+        "Backend API (Node.js/Express)",
+        "Database (PostgreSQL/MongoDB)",
+        "Authentication Service",
+        "File Storage",
+        "Cache Layer (Redis)"
+      ],
+      "rationale": "MVC provides clear separation of concerns, making the codebase maintainable and scalable. Each layer can be developed and tested independently."
+    },
+    "features": [
+      {
+        "id": "FEAT-001",
+        "name": "User Authentication",
+        "description": "Secure user registration, login, password reset, and session management",
+        "priority": "critical",
+        "status": "pending",
+        "acceptance_criteria": [
+          "Users can register with email/password",
+          "Email verification required",
+          "Secure password hashing (bcrypt)",
+          "JWT-based authentication",
+          "Password reset via email",
+          "Session timeout after 24 hours"
+        ],
+        "dependencies": [],
+        "effort_estimate": 12
+      },
+      {
+        "id": "FEAT-002",
+        "name": "User Dashboard",
+        "description": "Main dashboard showing user data, activity, and key metrics",
+        "priority": "high",
+        "status": "pending",
+        "acceptance_criteria": [
+          "Responsive dashboard layout",
+          "Real-time data updates",
+          "Customizable widgets",
+          "Charts and visualizations",
+          "Export data functionality"
+        ],
+        "dependencies": ["FEAT-001"],
+        "effort_estimate": 16
+      },
+      {
+        "id": "FEAT-003",
+        "name": "Data Management",
+        "description": "CRUD operations for main application entities with validation",
+        "priority": "high",
+        "status": "pending",
+        "acceptance_criteria": [
+          "Create, read, update, delete operations",
+          "Input validation and sanitization",
+          "Optimistic UI updates",
+          "Bulk operations support",
+          "Data export/import"
+        ],
+        "dependencies": ["FEAT-001"],
+        "effort_estimate": 20
+      },
+      {
+        "id": "FEAT-004",
+        "name": "Search and Filtering",
+        "description": "Advanced search with filters, sorting, and pagination",
+        "priority": "medium",
+        "status": "pending",
+        "acceptance_criteria": [
+          "Full-text search",
+          "Multiple filter criteria",
+          "Sort by various fields",
+          "Pagination (client and server-side)",
+          "Search result highlighting"
+        ],
+        "dependencies": ["FEAT-003"],
+        "effort_estimate": 10
+      },
+      {
+        "id": "FEAT-005",
+        "name": "User Profile Management",
+        "description": "User profile editing, avatar upload, preferences",
+        "priority": "medium",
+        "status": "pending",
+        "acceptance_criteria": [
+          "Edit profile information",
+          "Avatar/photo upload",
+          "Privacy settings",
+          "Notification preferences",
+          "Account deletion"
+        ],
+        "dependencies": ["FEAT-001"],
+        "effort_estimate": 8
+      },
+      {
+        "id": "FEAT-006",
+        "name": "Admin Panel",
+        "description": "Administrative interface for user management and system configuration",
+        "priority": "high",
+        "status": "pending",
+        "acceptance_criteria": [
+          "User management (view, edit, disable)",
+          "Role and permission management",
+          "System configuration",
+          "Activity logs and audit trail",
+          "Analytics and reporting"
+        ],
+        "dependencies": ["FEAT-001"],
+        "effort_estimate": 14
+      }
+    ],
+    "timeline": {
+      "start_date": "2026-02-01T00:00:00.000Z",
+      "end_date": "2026-05-01T00:00:00.000Z",
+      "milestones": [
+        {
+          "id": "M1",
+          "name": "MVP Launch",
+          "target_date": "2026-03-15T00:00:00.000Z",
+          "phase": "development",
+          "completion_status": "pending",
+          "dependencies": []
+        },
+        {
+          "id": "M2",
+          "name": "Beta Release",
+          "target_date": "2026-04-15T00:00:00.000Z",
+          "phase": "testing",
+          "completion_status": "pending",
+          "dependencies": ["M1"]
+        },
+        {
+          "id": "M3",
+          "name": "Production Launch",
+          "target_date": "2026-05-01T00:00:00.000Z",
+          "phase": "deployment",
+          "completion_status": "pending",
+          "dependencies": ["M2"]
+        }
+      ],
+      "phases": [
+        {
+          "name": "Planning",
+          "start_date": "2026-02-01T00:00:00.000Z",
+          "end_date": "2026-02-14T00:00:00.000Z"
+        },
+        {
+          "name": "Development",
+          "start_date": "2026-02-15T00:00:00.000Z",
+          "end_date": "2026-03-31T00:00:00.000Z"
+        },
+        {
+          "name": "Testing",
+          "start_date": "2026-04-01T00:00:00.000Z",
+          "end_date": "2026-04-20T00:00:00.000Z"
+        },
+        {
+          "name": "Deployment",
+          "start_date": "2026-04-21T00:00:00.000Z",
+          "end_date": "2026-05-01T00:00:00.000Z"
+        }
+      ]
+    },
+    "team": {
+      "members": [
+        {
+          "id": "ROLE-001",
+          "role_name": "Full-Stack Developer",
+          "responsibilities": ["Frontend development", "Backend API", "Database design"],
+          "skills": ["React/Vue", "Node.js", "PostgreSQL", "REST APIs"],
+          "agent_mapping": "Auto Zen",
+          "availability": "full-time"
+        },
+        {
+          "id": "ROLE-002",
+          "role_name": "UI/UX Designer",
+          "responsibilities": ["UI design", "User experience", "Design system"],
+          "skills": ["Figma", "UI/UX Design", "Prototyping"],
+          "agent_mapping": null,
+          "availability": "part-time"
+        },
+        {
+          "id": "ROLE-003",
+          "role_name": "QA Engineer",
+          "responsibilities": ["Test planning", "Automated testing", "Quality assurance"],
+          "skills": ["Jest", "Cypress", "Test automation"],
+          "agent_mapping": "Testing Agent",
+          "availability": "full-time"
+        },
+        {
+          "id": "ROLE-004",
+          "role_name": "DevOps Engineer",
+          "responsibilities": ["CI/CD", "Infrastructure", "Deployment"],
+          "skills": ["Docker", "Kubernetes", "AWS/Azure", "CI/CD"],
+          "agent_mapping": null,
+          "availability": "part-time"
+        }
+      ],
+      "structure": "Agile Scrum",
+      "communication_plan": "Daily standups, Sprint planning bi-weekly, Retrospectives, Slack for async communication"
+    },
+    "success_criteria": [
+      "Application loads in <2 seconds",
+      "99.9% uptime",
+      "All features meet acceptance criteria",
+      "80%+ test coverage",
+      "Zero critical security vulnerabilities",
+      "Positive user feedback (4+ stars)",
+      "Successful user onboarding (>70% completion rate)"
+    ],
+    "risks": [
+      {
+        "id": "RISK-001",
+        "description": "Database performance issues with large datasets",
+        "probability": "medium",
+        "impact": "high",
+        "mitigation": "Implement caching, optimize queries, use database indexing, consider sharding if needed"
+      },
+      {
+        "id": "RISK-002",
+        "description": "Security vulnerabilities in authentication",
+        "probability": "low",
+        "impact": "high",
+        "mitigation": "Regular security audits, use proven authentication libraries, implement rate limiting, penetration testing"
+      },
+      {
+        "id": "RISK-003",
+        "description": "Scalability challenges with growing user base",
+        "probability": "medium",
+        "impact": "medium",
+        "mitigation": "Design for horizontal scaling from day one, use load balancers, implement CDN for static assets"
+      }
+    ],
+    "assumptions": [
+      "Users have modern browsers (Chrome, Firefox, Safari, Edge)",
+      "Stable internet connection required for real-time features",
+      "Email service provider available for authentication emails",
+      "Cloud hosting environment (AWS, Azure, or GCP)",
+      "Users willing to create accounts (not anonymous)"
+    ],
+    "constraints": [
+      "Budget: $50,000 for development and first year hosting",
+      "Timeline: Must launch within 3 months",
+      "GDPR compliance required for EU users",
+      "Mobile-responsive design mandatory",
+      "Browser support: Last 2 versions of major browsers"
+    ]
+  },
+  "customizationHints": {
+    "requiredCustomizations": [
+      "project.name",
+      "project.description",
+      "timeline.start_date",
+      "timeline.end_date"
+    ],
+    "optionalCustomizations": [
+      {
+        "field": "architecture.components",
+        "description": "Customize the tech stack based on your preferences",
+        "example": "Replace PostgreSQL with MySQL, or Redis with Memcached"
+      },
+      {
+        "field": "features",
+        "description": "Add, remove, or modify features to match your requirements",
+        "example": "Add payment processing, notifications, or social login"
+      },
+      {
+        "field": "team.members",
+        "description": "Adjust team roles and size based on available resources",
+        "example": "Combine roles, add specialists, adjust availability"
+      }
+    ]
+  }
+}

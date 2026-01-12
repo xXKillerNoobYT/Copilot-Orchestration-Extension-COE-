@@ -1009,11 +1009,11 @@
       "description": "Implement 4 core plan templates as JSON files with complete project structure, features, timeline, and best practices for each project type.",
       "details": "Templates to create:\n1. web-app-template.json - Full-stack web application with auth, database, UI\n2. api-service-template.json - RESTful API with endpoints, auth, database\n3. cli-tool-template.json - Command-line tool with commands, config, testing\n4. library-package-template.json - Reusable library with API, docs, publishing\n\nEach template includes:\n- Project metadata (name, description, type)\n- Architecture pattern appropriate for project type\n- Common features for that project type\n- Timeline with typical phases\n- Team roles and responsibilities\n\nEstimate: 2-3 hours",
       "testStrategy": "Load each template JSON; validate against PlanJSON schema; verify no validation errors; test template application generates valid plan",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": ["TASK-mk9c0001-templates-types"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T20:25:00.000Z"
     },
     {
       "id": "TASK-mk9c0003-template-loader",
