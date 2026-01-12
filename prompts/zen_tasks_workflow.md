@@ -81,20 +81,24 @@ Previously, the system used _ZENTASKS/tasks.json for task management with these 
 3. Identify dependencies between tasks
 4. Assign priorities based on business value and technical dependencies
 
-### Phase 2: Task Planning
+### Phase 2: Task Planning (Legacy - Now use GitHub Issues)
 
-1. Use `zen-tasks_parse_requirements` to create initial task structure
-2. Review and refine task descriptions
-3. Add technical details and acceptance criteria
-4. Define test strategies for each task
+~~1. Use `zen-tasks_parse_requirements` to create initial task structure~~  
+**Current**: Parse requirements and create GitHub Issues with proper labels
 
-### Phase 3: Execution
+2. Review and refine issue descriptions
+3. Add technical details and acceptance criteria in issue body
+4. Define test strategies in each issue
 
-1. Use `zen-tasks_next_task` to identify ready-to-start tasks
-2. Mark tasks as `in-progress` before beginning work
+### Phase 3: Execution (Legacy - Now use GitHub Issues)
+
+~~1. Use `zen-tasks_next_task` to identify ready-to-start tasks~~  
+**Current**: Query GitHub Issues with `github-mcp-server-search_issues` using filters
+
+2. Update issue labels to `status: in-progress` before beginning work
 3. Follow test-driven development when appropriate
-4. Update task status as work progresses
-5. Maintain a human-readable checklist in `Docs/TO DO/` (e.g., `EXECUTION-ORDER.md`) mirroring the Zen Tasks DAG and critical path to aid multi-task coordination and handoffs.
+4. Update issue labels and comments as work progresses
+5. Maintain a human-readable checklist in `Docs/TO DO/` (e.g., `EXECUTION-ORDER.md`) mirroring GitHub Issues DAG and critical path to aid multi-issue coordination and handoffs.
 
 ### Phase 4: Validation
 
