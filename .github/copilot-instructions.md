@@ -40,24 +40,24 @@ OR after stopping:
 - One task in-progress at a time
 
 **Plan Alignment**:
-- Before ANY task: read `Docs/Plan/detailed project description` + `Docs/Plan/feature list`
-- If task conflicts with plan → create planning task instead of deviating
-- All task creation must trace back to plan documents
+- Before ANY issue: read `Docs/Plan/detailed project description` + `Docs/Plan/feature list`
+- If issue conflicts with plan → create planning issue instead of deviating
+- All issue creation must trace back to plan documents
 
 **Core Loop**:
 ```
 WHILE work exists:
-  1. Load workflow context (Zen Tasks tool OR fallback to prompts/zen_tasks_workflow.md)
-  2. Refresh plan context from Docs/Plan/
-  3. Get next ready task (highest priority, dependencies met, plan-aligned)
-  4. Mark in-progress
+  1. Load plan context from Docs/Plan/
+  2. Query GitHub Issues for current state (github-mcp-server-search_issues)
+  3. Get next ready issue (highest priority, dependencies met, plan-aligned)
+  4. Update labels to in-progress + assign to self
   5. Execute (implement, test, verify)
-  6. Mark done
-  7. Observe for new issues → create follow-up tasks
+  6. Close issue or update labels to done
+  7. Observe for new issues → create follow-up GitHub issues
   8. Repeat
 ```
 
-**Observation Triggers** (create tasks for):
+**Observation Triggers** (create GitHub issues for):
 - Code smells, duplication, complexity, dead code
 - Lint/type errors, test failures
 - Missing test coverage
@@ -65,7 +65,7 @@ WHILE work exists:
 - Security concerns
 - Performance issues
 
-**Verification Checklist** (before marking done):
+**Verification Checklist** (before closing issue):
 - [ ] Code compiles/runs without errors
 - [ ] Tests pass (new tests added if needed)
 - [ ] No new lint/type errors
@@ -73,10 +73,10 @@ WHILE work exists:
 - [ ] Changes committed/staged
 
 **Blockers**:
-- Mark task blocked immediately when stuck
-- Document blocker in task details
-- Create investigation task to unblock
-- Move to next available task
+- Add label `status: blocked` immediately when stuck
+- Document blocker in issue comment
+- Create investigation issue to unblock
+- Move to next available issue
 
 ---
 
@@ -92,31 +92,44 @@ WHILE work exists:
 
 **Plan Alignment**:
 - Ground all plans in `Docs/Plan/detailed project description` and `Docs/Plan/feature list`
-- Reject requests conflicting with plan → create clarification task instead
-- Ensure every task traces back to plan or documented changes
+- Reject requests conflicting with plan → create clarification issue instead
+- Ensure every issue traces back to plan or documented changes
 
 **Decomposition Rules**:
-- Task has >3 actions → split
-- Task spans multiple files/domains → split by domain
-- Task has "and" in title → likely needs splitting
+- Issue has >3 actions → split into sub-issues
+- Issue spans multiple files/domains → split by domain
+- Issue has "and" in title → likely needs splitting
 - Estimate >4 hours → decompose further
-- **Microtasking**: Default 15-45 min subtasks; split anything >60 min or mixing domains
+- **Microtasking**: Default 15-45 min sub-issues; split anything >60 min or mixing domains
 
-**Task Creation Template**:
-```yaml
-title: "Verb + Clear Object"
-description: "What, Why, Scope"
-details: "Files, approach, edge cases, related docs"
-priority: critical | high | medium | low
-dependencies: [TASK-xxx, TASK-yyy]
-testStrategy: "How to verify completion"
+**Issue Creation Template**:
+```markdown
+**Title**: Verb + Clear Object
+
+## Description
+What, Why, Scope
+
+## Details
+Files, approach, edge cases, related docs
+
+## Dependencies
+- Depends on #123
+- Depends on #124
+
+## Test Strategy
+How to verify completion
+
+**Labels**: 
+- type: [feature|bug|refactor|maintenance|architecture|testing|documentation]
+- priority: [critical|high|medium|low]
+- status: [pending|approved]
 ```
 
 **Priority Matrix**:
-- **critical**: Blocking all work, security, production down
-- **high**: Critical path, time-sensitive, unblocks multiple tasks
-- **medium**: Standard feature work, improvements
-- **low**: Nice-to-have, tech debt
+- **priority: critical** - Blocking all work, security, production down
+- **priority: high** - Critical path, time-sensitive, unblocks multiple issues
+- **priority: medium** - Standard feature work, improvements
+- **priority: low** - Nice-to-have, tech debt
 
 ---
 
@@ -156,7 +169,7 @@ Test Strategy:
 
 **Test Generation Workflow**:
 ```
-INPUT: Completed task or code needing tests
+INPUT: Completed GitHub issue or code needing tests
   ↓
 1. Analyze code paths & edge cases
 2. Generate unit tests
@@ -164,7 +177,7 @@ INPUT: Completed task or code needing tests
 4. Generate E2E tests
 5. Run all tests
 6. Measure coverage
-7. Create tasks for untested paths
+7. Create GitHub issues for untested paths
   ↓
 OUTPUT: Comprehensive test suite + coverage report
 ```
@@ -224,7 +237,7 @@ OUTPUT: Comprehensive test suite + coverage report
 Auto Zen Implementation
     ↓ (observes issues/unknowns)
     ↓
-Zen Planner (creates follow-up tasks)
+Zen Planner (creates follow-up GitHub issues)
     ↓ (confirms plan alignment)
     ↓
 Testing Agent (validates quality)
@@ -237,36 +250,36 @@ Auto Zen (implements fixes)
 
 ---
 
-## 📁 Zen Tasks Workflow (load first)
+## 📁 GitHub Issues Workflow
 
-Before any development work, load the workflow context to ensure structured, dependency-driven execution.
+All task management now uses GitHub Issues as the single source of truth.
 
-### Primary: Use the automation tools
-1. **Load context**: `zen-tasks_000_workflow_context` — hydrates guidelines and task state.
-2. **Query tasks**: `zen-tasks_list_tasks`, `zen-tasks_get_task`, `zen-tasks_next_task`.
-3. **Manage tasks**: `zen-tasks_add_task`, `zen-tasks_update_task`, `zen-tasks_set_status`.
-4. **Bulk create**: `zen-tasks_parse_requirements` — converts requirements text into tasks.
+### Working with GitHub Issues
+1. **Query issues**: Use `github-mcp-server-list_issues` or `github-mcp-server-search_issues`
+2. **Read issue details**: Use `github-mcp-server-issue_read` with method: "get"
+3. **Create issues**: Use GitHub API with proper labels and structure
+4. **Update issues**: Modify labels, assignees, body, state via GitHub API
+5. **Bulk operations**: Parse requirements, then create multiple issues
 
-### Fallback: Read files directly (when tools fail)
-If the workflow context tool errors, load context from the file system:
-- `prompts/zen_tasks_workflow.md` — workflow guidelines
-- `prompts/base.md` — system overview
-- **`Docs/Plan/detailed project description`** — project vision
-- **`Docs/Plan/feature list`** — planned features
-- **`_ZENTASKS/tasks.json`** — current task state
+### Load Context
+Before starting work:
+- **Plan context**: Read `Docs/Plan/detailed project description` and `Docs/Plan/feature list`
+- **Current state**: Query GitHub Issues for open work (github-mcp-server-list_issues)
+- **Dependencies**: Parse issue bodies for "Depends on #X" references
 
-### Task Management Files Location
-- Task definitions: `_ZENTASKS/tasks.json` (source of truth)
-- Plan context: `Docs/Plan/` folder (vision & features)
-- Workflow docs: `prompts/` folder (guidelines)
+### GitHub Issues Location
+- **Primary source**: GitHub Issues in this repository
+- **Plan context**: `Docs/Plan/` folder (vision & features)
+- **Migration guide**: `Docs/GitHub-Migration-Tool-Mapping.md`
+- **Legacy**: `_ZENTASKS/` folder (deprecated, read-only for backward compatibility)
 
 ### Continuous development loop
 ```
-1. Load workflow context (tool or fallback)
-2. Inspect current tasks (_ZENTASKS/tasks.json)
-3. Pick highest-priority ready task (zen-tasks_next_task or manual)
-4. Mark in-progress → implement → test → mark done
-5. Create follow-up tasks for discovered work
+1. Load plan context from Docs/Plan/
+2. Query current GitHub Issues (github-mcp-server-search_issues)
+3. Pick highest-priority ready issue (query by priority label: critical, then high, then medium, then low)
+4. Update labels to in-progress + assign → implement → test → close
+5. Create follow-up GitHub issues for discovered work
 6. Repeat
 ```
 
@@ -281,8 +294,9 @@ Operate autonomously: no oversight required—just get the job done right.
 - **VS Code extension scaffold** in `vscode-extension/` parses Markdown tasks with YAML front matter (see `src/taskParser.ts`, `sample-tasks/`, `TEMPLATE-*.md`). Provides a tree view and refresh command (`copilot-orchestrator.refreshTasks`).
 
 ## Domain rules & conventions
-- **Task enums** (from migrations/parser): `task_type` = feature|bug|refactor|maintenance|architecture|testing|documentation; `priority` = critical|high|medium|low; `status` = pending|approved|in_progress|testing|review|completed|failed|blocked|cancelled. Keep these consistent across backend and extension parser.
-- **Relationships**: Tasks can have parent/child (`parent_task_id`), dependencies (`task_dependencies`), workflow states, context bundles, GitHub issue linkage, and branches. Context bundles support types (`task_context`, `architecture_context`, `test_context`, `issue_context`) and store file lists/notes.
+- **Issue labels** (GitHub native): `type: feature|bug|refactor|maintenance|architecture|testing|documentation`; `priority: critical|high|medium|low`; `status: pending|approved|in-progress|testing|review|blocked`. Keep these consistent across all issue creation.
+- **Dependencies**: Document in issue body using "Depends on #123" format. Parse these when determining which issues are ready to work.
+- **Backend integration**: Laravel backend (`app/`) can sync with GitHub Issues via webhooks. GitHub issue linkage stored in `github_issue_id`, `github_issue_url` fields.
 - **Layering**: Controllers stay thin; validation is via Form Requests; services encapsulate business rules; repositories wrap Eloquent queries; custom exceptions live under `app/Exceptions`. Preserve this separation when adding features.
 - **Observability**: Logging/metrics/audit are part of Phase 5—prefer existing logging helpers and avoid silent failures.
 
@@ -312,6 +326,8 @@ Operate autonomously: no oversight required—just get the job done right.
 - Prefer existing logging/metrics/audit paths over bespoke logging.
 
 ## Remember. 
-- All documentation, notes, projects, all that must be properly updated in the proper location inside the docs folder. No MD files in. [./] root or other folders.
-- Always follow the task format specification when creating or updating tasks.
-- Always Use the tools to. Update tasks. Never edit the MD or JSON files directly in the _ZENTASKS folder. The changes will not be remembered if you do not use the tool.
+- All documentation, notes, projects must be properly updated in the Docs folder
+- Always follow the GitHub issue format specification when creating or updating issues
+- GitHub Issues are the single source of truth for task management
+- Use GitHub MCP tools (github-mcp-server-*) for all issue operations
+- Never edit _ZENTASKS files directly (deprecated system)

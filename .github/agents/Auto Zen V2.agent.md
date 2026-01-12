@@ -6,14 +6,14 @@ tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'github-copilot-ap
 handoffs:
   - label: Continue Autonomous Execution
     agent: Auto Zen
-    prompt: Load Zen Tasks workflow context using zen-tasks_000_workflow_context. Inspect current tasks in _ZENTASKS/tasks.json. Pick the highest-priority ready task with zen-tasks_next_task. Mark it in-progress with zen-tasks_set_status. Implement the task, run tests, verify completion, and mark done. Observe for new issues, create follow-up tasks with zen-tasks_add_task. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder, follow task format specification, and always use tools to update tasks—never edit _ZENTASKS files directly. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{task-id}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
+    prompt: Load workflow context from Docs/Plan/ (detailed project description and feature list). Query current GitHub Issues using github-mcp-server-search_issues to inspect open tasks. Pick the highest-priority ready task (query with filters: is:open -label:"status: blocked" -label:"status: in-progress" sort:priority). Update issue labels to mark in-progress and assign to self. Implement the task, run tests, verify completion, and close the issue (or update labels to done). Observe for new issues during implementation and create follow-up GitHub issues as needed. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder and follow GitHub issue format. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{issue-number}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
   - label: Full Auto - Cloud Task Master
     agent: Auto Zen
     prompt:
       Execute complete cloud deployment and management cycle with intelligent orchestration.
       
       **Phase 1: Local Validation (0-5 min)**
-      - Load workflow context (zen-tasks_000_workflow_context)
+      - Load workflow context from Docs/Plan/
       - Verify all tests pass locally
       - Run linting and type checks
       - Build production assets
@@ -82,33 +82,33 @@ handoffs:
       - Configuration mismatch → Pause + validation task
       
       **Task Management:**
-      - Use zen-tasks_update_task for status updates
-      - Create follow-up tasks with zen-tasks_add_task
-      - Link all cloud resources to parent task
-      - Document difficulties and resolutions in task details
+      - Update GitHub issue labels for status changes
+      - Create follow-up GitHub issues as needed
+      - Link all cloud resources to parent issue
+      - Document difficulties and resolutions in issue comments
       
       Execute fully autonomously with checkpoints at each phase. No manual intervention required unless critical failure occurs.
   - label: Deploy to Cloud Environment
     agent: Auto Zen
-    prompt: Review the completed task and prepare for cloud deployment. Create deployment branch (deploy/{environment}-{timestamp}). Verify cloud configuration files (docker-compose.yml, .env.production, deployment scripts). Run pre-deployment checks (tests, security scans, dependency audits). Coordinate with CI/CD workflows (.github/workflows/deploy-*.yml). Hand off to cloud platform-specific agents if specialized deployment needed. Document deployment steps in Docs/Deployments/. Monitor deployment status and rollback on failure.
+    prompt: Review the completed GitHub issue and prepare for cloud deployment. Create deployment branch (deploy/{environment}-{timestamp}). Verify cloud configuration files (docker-compose.yml, .env.production, deployment scripts). Run pre-deployment checks (tests, security scans, dependency audits). Coordinate with CI/CD workflows (.github/workflows/deploy-*.yml). Hand off to cloud platform-specific agents if specialized deployment needed. Document deployment steps in Docs/Deployments/. Monitor deployment status and rollback on failure. Update GitHub issue with deployment status.
   - label: Coordinate Remote Agent Work
     agent: Auto Zen
-    prompt: Identify tasks requiring remote or cloud agent coordination. Create coordination branches (coord/{agent-type}-{task-id}). Use GitHub Actions workflows to trigger remote agent work. Monitor remote agent progress via webhooks and API polling. Sync results back to _ZENTASKS using zen-tasks_update_task. Handle remote failures by creating investigation tasks and fallback strategies. Document remote coordination patterns in Docs/RemoteAgents/.
+    prompt: Identify GitHub issues requiring remote or cloud agent coordination. Create coordination branches (coord/{agent-type}-{issue-number}). Use GitHub Actions workflows to trigger remote agent work. Monitor remote agent progress via webhooks and API polling. Update GitHub issue comments with sync results. Handle remote failures by creating investigation issues and fallback strategies. Document remote coordination patterns in Docs/RemoteAgents/.
   - label: Manage Feature Branches
     agent: Auto Zen
-    prompt: Create and manage feature branches for parallel work streams. Use naming convention: feature/{task-id}-{description-slug}. Track branch-to-task mappings in task details. Coordinate merges with dependency-aware sequencing. Resolve conflicts automatically where possible, escalate complex conflicts to human review. Keep branches synced with main to prevent drift. Archive completed feature branches after successful PR merge. Document branching strategy in Docs/BranchingStrategy.md.
+    prompt: Create and manage feature branches for parallel work streams. Use naming convention: feature/{issue-number}-{description-slug}. Track branch-to-issue mappings in issue comments. Coordinate merges with dependency-aware sequencing. Resolve conflicts automatically where possible, escalate complex conflicts to human review. Keep branches synced with main to prevent drift. Archive completed feature branches after successful PR merge. Document branching strategy in Docs/BranchingStrategy.md.
   - label: Hand Off to Cloud Specialist
     agent: Auto Zen
-    prompt: This task requires cloud platform expertise. Review task requirements, cloud configuration, and deployment targets. Validate infrastructure as code (Terraform/CloudFormation). Execute deployment workflows with proper staging gates. Monitor cloud resource provisioning and health checks. Roll back on deployment failures. Update task with deployment status, logs, and resource URLs. Create follow-up tasks for optimization or incident response.
+    prompt: This GitHub issue requires cloud platform expertise. Review issue requirements, cloud configuration, and deployment targets. Validate infrastructure as code (Terraform/CloudFormation). Execute deployment workflows with proper staging gates. Monitor cloud resource provisioning and health checks. Roll back on deployment failures. Update issue with deployment status, logs, and resource URLs. Create follow-up issues for optimization or incident response.
   - label: Coordinate Multi-Branch Workflow
     agent: Auto Zen
-    prompt: Orchestrate work across multiple feature branches. Load all in-progress tasks and their branch associations. Identify parallel work tracks with no cross-dependencies. Execute independent branches concurrently. Queue dependent branches by priority and critical path. Merge completed branches in dependency order. Run integration tests after each merge. Create branch sync tasks when conflicts detected. Document multi-branch coordination status in _ZENTASKS/branch-state.json.
+    prompt: Orchestrate work across multiple feature branches. Load all in-progress GitHub issues and their branch associations. Identify parallel work tracks with no cross-dependencies. Execute independent branches concurrently. Queue dependent branches by priority and critical path. Merge completed branches in dependency order. Run integration tests after each merge. Create branch sync issues when conflicts detected. Document multi-branch coordination status in issue comments.
   - label: Request Planning Assistance
     agent: Zen Planner
-    prompt: Analyze the current task state in _ZENTASKS/tasks.json. Identify gaps, blockers, or new requirements from implementation. Break down complex tasks, map dependencies, assign priorities, and define test strategies. Update or create tasks to resolve issues and advance the project.
+    prompt: Analyze the current GitHub Issues state using github-mcp-server-list_issues. Identify gaps, blockers, or new requirements from implementation. Break down complex issues, map dependencies, assign priorities, and define test strategies. Create or update GitHub issues to resolve problems and advance the project. Ensure all issues have proper labels (type, priority, status) and are linked via dependencies in issue body.
   - label: Report Completion and Next Steps
     agent: Zen Planner
-    prompt: Review completed tasks in _ZENTASKS/tasks.json. Assess progress against project goals in Docs/Plan/. Identify remaining work, potential optimizations, or new features. Create tasks for next phase work and ensure dependency chains are maintained.
+    prompt: Review completed GitHub issues using github-mcp-server-search_issues with filter 'is:closed'. Assess progress against project goals in Docs/Plan/. Identify remaining work, potential optimizations, or new features. Create issues for next phase work and ensure dependency chains are maintained. Update project documentation with progress summary.
     showContinueOn: true
     send: true
 ---
@@ -119,91 +119,88 @@ handoffs:
 
 ### 1. Workflow Context Loading Tests
 
-**Test: Primary Tool Loading**
-- Verify `zen-tasks_000_workflow_context` loads successfully
-- Confirm all workflow guidelines are hydrated
-- Validate task state is accessible
+**Test: GitHub Issues Query**
+- Verify `github-mcp-server-list_issues` executes successfully
+- Confirm all open issues are retrieved
+- Validate issue state is accessible
 
-**Test: Fallback File Loading**
-- Simulate tool failure
-- Verify fallback to filesystem:
-  - `prompts/zen_tasks_workflow.md` readable
-  - `prompts/base.md` accessible
+**Test: Plan Document Loading**
+- Load project plan from filesystem:
   - `Docs/Plan/detailed project description` loads
   - `Docs/Plan/feature list` available
-  - `_ZENTASKS/tasks.json` parseable
+  - Plan context is accessible
 
 **Test: Plan Alignment Verification**
 - Load project plan documents
-- Verify plan context is refreshed before task execution
-- Confirm task alignment validation occurs
+- Verify plan context is refreshed before issue execution
+- Confirm issue alignment validation occurs
 
-### 2. Task Selection & Prioritization Tests
+### 2. Issue Selection & Prioritization Tests
 
-**Test: Next Task Selection**
-- Query `zen-tasks_next_task`
-- Verify highest priority task is selected
-- Confirm dependencies are met
-- Validate only ready tasks are chosen
+**Test: Next Issue Selection**
+- Query `github-mcp-server-search_issues` with filters
+- Verify highest priority issue is selected
+- Confirm dependencies are met (via issue body parsing)
+- Validate only ready issues are chosen (not blocked, not in-progress)
 
 **Test: Priority Matrix**
-- Create tasks with priorities: critical, high, medium, low
-- Verify critical tasks selected first
-- Confirm blocked tasks are skipped
+- Create issues with priority labels: critical, high, medium, low
+- Verify critical issues selected first
+- Confirm blocked issues are skipped
 
 **Test: Dependency Resolution**
-- Create task chain: A → B → C
+- Create issue chain: A → B → C (linked via "Depends on #X")
 - Verify A selected before B
 - Confirm B waits for A completion
 - Validate C waits for B completion
 
-### 3. Task Execution Loop Tests
+### 3. Issue Execution Loop Tests
 
-**Test: Single Task Lifecycle**
-1. Mark task `in-progress`
+**Test: Single Issue Lifecycle**
+1. Update issue labels to `status: in-progress`
 2. Execute implementation
 3. Run verification checks
-4. Mark task `done`
+4. Close issue or update to `done` status
 5. Verify status transitions
 
 **Test: Continuous Loop**
-- Load multiple tasks
-- Execute first task
-- Automatically pick next task
-- Continue until no ready tasks remain
+- Load multiple open issues
+- Execute first issue
+- Automatically pick next issue
+- Continue until no ready issues remain
 
 **Test: Microtasking Compliance**
-- Identify task >60 minutes
-- Verify automatic task splitting
-- Confirm subtasks are 15-45 minutes each
-- Validate one subtask in-progress at a time
+- Identify issue >60 minutes estimated
+- Verify automatic issue splitting (create sub-issues)
+- Confirm sub-issues are 15-45 minutes each
+- Validate one sub-issue in-progress at a time
 
 ### 4. Observation & Follow-up Tests
 
 **Test: Code Smell Detection**
 - Introduce code duplication
-- Verify Auto Zen creates cleanup task
-- Confirm task links to observed issue
+- Verify Auto Zen creates cleanup issue
+- Confirm issue links to observed problem
 
 **Test: Error Detection**
 - Introduce lint error
-- Verify task created for fix
-- Confirm error details captured
+- Verify issue created for fix
+- Confirm error details captured in issue body
 
 **Test: Missing Test Coverage**
 - Add untested code path
-- Verify test task created
-- Confirm coverage gap documented
+- Verify test issue created
+- Confirm coverage gap documented in issue
 
 **Test: Documentation Gap Detection**
 - Create undocumented function
-- Verify documentation task created
-- Confirm missing docs tracked
+- Verify documentation issue created
+- Confirm missing docs tracked in issue
 
 ### 5. Verification Checklist Tests
 
 **Test: Completion Criteria**
-- Attempt to mark task done with failing tests → should block
+- Attempt to close issue with failing tests → should block
 - Fix tests, retry → should succeed
 - Verify all checklist items validated:
   - [ ] Code compiles/runs
@@ -212,20 +209,20 @@ handoffs:
   - [ ] Docs updated
   - [ ] Changes committed
 
-**Test: Incomplete Task Handling**
-- Mark task done with unmet criteria
+**Test: Incomplete Issue Handling**
+- Try to close issue with unmet criteria
 - Verify rejection
-- Confirm task remains `in-progress`
+- Confirm issue remains in `status: in-progress`
 
-### 6. Post-Task Comment Tests
+### 6. Post-Issue Comment Tests
 
 **Test: Mandatory Comment**
-- Complete task
+- Complete issue
 - Verify comment includes:
   - What was done
   - Files changed
   - Tests run + results
-  - Follow-ups created
+  - Follow-up issues created
   - Next step recommendation
 
 **Test: Comment Format**
@@ -236,67 +233,67 @@ handoffs:
 ### 7. Blocker Handling Tests
 
 **Test: Immediate Blocker Marking**
-- Encounter blocking issue
-- Verify task marked `blocked` immediately
-- Confirm blocker documented in details
+- Encounter blocking problem
+- Verify issue marked `status: blocked` immediately
+- Confirm blocker documented in issue comment
 
-**Test: Investigation Task Creation**
-- Mark task blocked
-- Verify investigation task created
-- Confirm dependency link established
+**Test: Investigation Issue Creation**
+- Mark issue blocked
+- Verify investigation issue created
+- Confirm dependency link established (Depends on #X)
 
-**Test: Move to Next Task**
-- Block current task
-- Verify Auto Zen picks next available task
-- Confirm blocked task skipped in selection
+**Test: Move to Next Issue**
+- Block current issue
+- Verify Auto Zen picks next available issue
+- Confirm blocked issue skipped in selection
 
 ### 8. Plan Alignment Tests
 
 **Test: Conflict Detection**
-- Attempt task conflicting with plan
-- Verify pause and planning task creation
+- Attempt issue conflicting with plan
+- Verify pause and planning issue creation
 - Confirm no plan deviation
 
 **Test: Traceability**
-- Complete task
-- Verify plan section referenced
+- Complete issue
+- Verify plan section referenced in issue comments
 - Confirm alignment documented
 
 **Test: Plan Context Refresh**
 - Update plan document
-- Start new task
+- Start new issue
 - Verify latest plan version loaded
 
-### 9. Task Creation Tests
+### 9. Issue Creation Tests
 
-**Test: Task Template Compliance**
-- Create new task
+**Test: Issue Template Compliance**
+- Create new issue
 - Verify all required fields present:
   - title (verb + object)
   - description (what + why)
   - details (approach, files)
-  - priority
-  - testStrategy
-  - dependencies
+  - labels (priority, type, status)
+  - test strategy
+  - dependencies (in body)
 
 **Test: Dependency Linking**
-- Create parent task
-- Create child tasks
-- Verify parent_task_id set
-- Confirm dependency array populated
+- Create parent issue
+- Create child issues
+- Verify "Depends on #X" in issue body
+- Confirm dependency chain is valid
 
 ### 10. Status Transition Tests
 
-**Test: Valid Transitions**
-- pending → in_progress ✓
-- in_progress → done ✓
-- in_progress → blocked ✓
-- in_progress → review ✓
+**Test: Valid Label Transitions**
+- status: pending → status: in-progress ✓
+- status: in-progress → (close issue) ✓
+- status: in-progress → status: blocked ✓
+- status: in-progress → status: review ✓
 
 **Test: Invalid Transitions**
-- pending → done (should fail)
-- blocked → done (should fail without unblocking)
-- done → in_progress (should require reopening)
+- status: pending → (close without work) should fail
+- status: blocked → (close without unblocking) should fail
+- closed → status: in-progress (should require reopening)
 
 ### 11. Boundary Tests
 
@@ -317,17 +314,17 @@ handoffs:
 ### 12. Integration Tests
 
 **Test: Full Autonomous Cycle**
-1. Start with empty task queue
-2. Create initial tasks from requirements
-3. Execute tasks autonomously
-4. Observe and create follow-ups
-5. Continue until all tasks done
+1. Start with empty issue queue
+2. Create initial issues from requirements
+3. Execute issues autonomously
+4. Observe and create follow-up issues
+5. Continue until all issues closed
 6. Verify complete project state
 
 **Test: Agent Handoff**
 - Auto Zen discovers complex issue
 - Handoff to Zen Planner for decomposition
-- Receive decomposed tasks
+- Receive decomposed sub-issues
 - Resume autonomous execution
 
 ## Test Execution Commands
@@ -359,14 +356,14 @@ handoffs:
 
 **Pre-Test Memory Load:**
 - Load previous test results
-- Restore task state snapshots
+- Restore issue state snapshots
 - Recall past failures and resolutions
 - Access historical code changes
 
 **During-Test Memory:**
 - Track decision points and reasoning
 - Log observation patterns
-- Maintain execution context across tasks
+- Maintain execution context across issues
 - Record dependency resolution paths
 
 **Post-Test Memory:**
@@ -379,7 +376,7 @@ handoffs:
 - Share context between test runs
 - Learn from previous test cycles
 - Adapt behavior based on history
-- Optimize task selection using past performance
+- Optimize issue selection using past performance
 
 **Full Programming Process Integration:**
 @Auto Zen start --with-memory --learn-mode=active --context-bundle=full
