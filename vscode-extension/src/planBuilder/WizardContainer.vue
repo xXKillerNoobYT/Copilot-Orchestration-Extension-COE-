@@ -1,10 +1,19 @@
 <template>
-  <div class="wizard-container">
+  <div class="wizard-container" :class="{ 'with-assistant': showAssistant }">
     <!-- Header with progress -->
     <div class="wizard-header">
       <div class="wizard-title">
         <h1>Interactive Plan Builder</h1>
         <p class="subtitle">Step {{ currentStep + 1 }} of {{ totalSteps }}</p>
+      </div>
+      <div class="header-actions">
+        <button 
+          class="toggle-assistant-btn"
+          @click="toggleAssistant"
+          :title="showAssistant ? 'Hide AI Assistant' : 'Show AI Assistant'"
+        >
+          💡 AI {{ showAssistant ? 'ON' : 'OFF' }}
+        </button>
       </div>
       <div class="progress-indicator">
         <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
@@ -12,7 +21,7 @@
       </div>
     </div>
 
-    <!-- Main content area -->
+    <!-- Main content area with optional side panel -->
     <div class="wizard-content">
       <transition name="fade" mode="out-in">
         <div :key="currentStep" class="step-content">
@@ -26,6 +35,21 @@
           />
         </div>
       </transition>
+
+      <!-- AI Assistant Side Panel -->
+      <ContextualAssistant
+        v-if="showAssistant"
+        :visible="showAssistant"
+        :suggestions="aiSuggestions"
+        :loading="aiLoading"
+        :error="aiError"
+        :acceptance-rate="aiAcceptanceRate"
+        :suggestion-count="aiSuggestionCount"
+        @close="showAssistant = false"
+        @accept="handleSuggestionAccepted"
+        @reject="handleSuggestionRejected"
+        @retry="refreshAiSuggestions"
+      />
     </div>
 
     <!-- Navigation footer -->
@@ -75,6 +99,8 @@
 import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue';
 import { useWizardStore } from './wizardStore';
 import { PlanMetadataManager } from './planMetadata';
+import { AiAssistanceService, type AiSuggestion } from './aiAssistanceService';
+import ContextualAssistant from './ContextualAssistant.vue';
 
 // Component imports (lazy loaded for performance)
 const QuestionRenderer = defineAsyncComponent(() =>
@@ -88,6 +114,15 @@ const validationErrors = ref<Record<string, string[]>>({});
 const autoSaveStatus = ref<'idle' | 'saving' | 'saved'>('idle');
 const isSubmitting = ref(false);
 const autoSaveTimer = ref<ReturnType<typeof setInterval> | null>(null);
+
+// AI Assistant state
+const showAssistant = ref(false);
+const aiLoading = ref(false);
+const aiError = ref<string | null>(null);
+const aiSuggestions = ref<AiSuggestion[]>([]);
+const aiService = new AiAssistanceService({ debounceMs: 1000, enableLogging: true });
+const aiAcceptanceRate = computed(() => aiService.getAcceptanceRate());
+const aiSuggestionCount = computed(() => aiService.getSuggestionHistory().length);
 
 // Question definitions (would typically come from config)
 const questions = ref([
@@ -173,7 +208,71 @@ const handleAnswerChanged = (answer: any) => {
     if (validationErrors.value[question.id]) {
       validationErrors.value[question.id] = [];
     }
+    
+    // Trigger AI assistance if enabled
+    if (showAssistant.value) {
+      generateAiSuggestions();
+    }
   }
+};
+
+// AI Assistant methods
+const toggleAssistant = () => {
+  showAssistant.value = !showAssistant.value;
+  
+  // Generate suggestions when first opened
+  if (showAssistant.value && aiSuggestions.value.length === 0) {
+    generateAiSuggestions();
+  }
+};
+
+const generateAiSuggestions = () => {
+  const currentQuestion = getCurrentQuestion();
+  if (!currentQuestion) return;
+  
+  // Get current wizard state
+  const currentAnswers = wizardStore.container.getAllAnswers();
+  const userRole = wizardStore.container['userRole'] || 'analyst';
+  
+  aiLoading.value = true;
+  aiError.value = null;
+  
+  // Convert currentQuestion to WizardPage format
+  const wizardPage = {
+    id: currentQuestion.id,
+    title: currentQuestion.title,
+    description: currentQuestion.description,
+    questions: [] // Empty array since we're working with simplified question structure
+  };
+  
+  // Use debounced generation
+  aiService.debouncedGenerateSuggestions(
+    wizardPage,
+    currentAnswers,
+    userRole,
+    (suggestions) => {
+      aiSuggestions.value = suggestions;
+      aiLoading.value = false;
+    }
+  );
+};
+
+const refreshAiSuggestions = () => {
+  generateAiSuggestions();
+};
+
+const handleSuggestionAccepted = (suggestion: AiSuggestion) => {
+  // Log the acceptance
+  aiService.acceptSuggestion(suggestion.id, suggestion.question);
+  
+  // Could auto-populate or show a prompt to help user answer
+  console.log('[Wizard] Suggestion accepted:', suggestion);
+  
+  // Optional: show notification or auto-fill helper
+};
+
+const handleSuggestionRejected = (id: string) => {
+  console.log('[Wizard] Suggestion rejected:', id);
 };
 
 const handleValidationError = (errors: string[]) => {
@@ -269,6 +368,9 @@ onUnmounted(() => {
   }
   window.removeEventListener('keydown', handleKeyboardShortcuts);
   window.removeEventListener('beforeunload', () => {});
+  
+  // Clean up AI service
+  aiService.dispose();
 });
 
 // Sync currentStep with store
@@ -290,13 +392,40 @@ watch(() => wizardStore.currentPageIndex, () => {
 
 /* Header */
 .wizard-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
   padding: 20px 24px;
   border-bottom: 1px solid var(--vscode-panel-border);
   background: var(--vscode-sideBar-background);
 }
 
 .wizard-title {
+  flex: 1;
   margin-bottom: 12px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-assistant-btn {
+  padding: 6px 12px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.toggle-assistant-btn:hover {
+  background: var(--vscode-button-hoverBackground);
 }
 
 .wizard-title h1 {
@@ -339,12 +468,20 @@ watch(() => wizardStore.currentPageIndex, () => {
 .wizard-content {
   flex: 1;
   overflow-y: auto;
-  padding: 32px 24px;
+  display: flex;
+  gap: 0;
+}
+
+.wizard-container.with-assistant .wizard-content {
+  display: grid;
+  grid-template-columns: 1fr 350px;
 }
 
 .step-content {
   max-width: 600px;
   margin: 0 auto;
+  padding: 32px 24px;
+  overflow-y: auto;
 }
 
 /* Footer */

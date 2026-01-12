@@ -479,6 +479,82 @@ export class PlanPersistenceService {
     return lines.join('\n');
   }
 
+  /**
+   * Decompose plan into tasks using backend API
+   * 
+   * @param planId Plan ID from backend
+   * @param options Decomposition options
+   * @returns Decomposition result with tasks and metadata
+   */
+  async decomposePlan(planId: number, options: {
+    autoCreate?: boolean;
+    microtaskSize?: number;
+    projectId?: number;
+  } = {}): Promise<{
+    success: boolean;
+    tasks: any[];
+    metadata: any;
+    preview: boolean;
+    createdTasks?: any[];
+  }> {
+    try {
+      // Get MCP backend URL from configuration
+      const config = vscode.workspace.getConfiguration('copilotOrchestration');
+      const backendUrl = config.get<string>('mcpServerUrl') || 'http://localhost:8000';
+
+      const url = `${backendUrl}/api/mcp/plans/${planId}/decompose`;
+      
+      // Prepare request body
+      const requestBody = {
+        options: {
+          auto_create: options.autoCreate ?? false,
+          microtask_size: options.microtaskSize ?? 45,
+        },
+        project_id: options.projectId,
+      };
+
+      console.log('[PlanPersistence] Calling decompose endpoint:', url);
+      console.log('[PlanPersistence] Request body:', requestBody);
+
+      // Make HTTP request to backend
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        throw this.createError(
+          'DECOMPOSE_FAILED',
+          `Failed to decompose plan: ${errorData.error || response.statusText}`,
+          JSON.stringify(errorData)
+        );
+      }
+
+      const result = await response.json();
+      console.log('[PlanPersistence] Decomposition result:', {
+        taskCount: result.tasks?.length,
+        preview: result.preview,
+        success: result.success,
+      });
+
+      return result;
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error) {
+        throw error; // Re-throw PersistenceError
+      }
+      throw this.createError(
+        'DECOMPOSE_ERROR',
+        `Error calling decompose API: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined
+      );
+    }
+  }
+
   private createError(code: string, message: string, details?: string): PersistenceError {
     return { code, message, details };
   }
