@@ -3,7 +3,7 @@
     "target": "ES2020",
     "module": "commonjs",
     "lib": ["ES2020", "DOM"],
-    "moduleResolution": "node",
+    "moduleResolution": "node10",
     "outDir": "dist",
     "sourceMap": true,
     "rootDir": "src",
@@ -11,7 +11,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": ["node", "@types/jest"],
+    "types": ["node", "jest"],
     "typeRoots": [
       "./node_modules/@types",
       "./node_modules"
