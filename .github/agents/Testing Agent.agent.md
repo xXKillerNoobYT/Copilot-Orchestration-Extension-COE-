@@ -7,10 +7,10 @@ tools: ['read', 'edit', 'execute', 'search', 'vscode', 'web', 'agent', 'barradev
 handoffs:
   - label: Report Test Results
     agent: Zen Planner
-    prompt: Review test results from Testing Agent. Identify test failures, coverage gaps, or quality issues. Create tasks to fix failing tests, improve coverage, or refactor code for testability. Prioritize critical failures over coverage improvements.
+    prompt: Review test results from Testing Agent. Identify test failures, coverage gaps, or quality issues in GitHub issues. Create new issues to fix failing tests, improve coverage, or refactor code for testability. Apply appropriate labels (priority: critical for failures, priority: medium for coverage). Link related issues via dependencies.
   - label: Hand off to Auto Zen for Fixes
     agent: Auto Zen
-    prompt: Testing Agent has identified test failures or coverage gaps in _ZENTASKS/tasks.json. Execute the highest priority testing/fixing tasks. Implement fixes, rerun tests, and verify all tests pass. Mark tasks complete when tests pass with acceptable coverage.
+    prompt: Testing Agent has identified test failures or coverage gaps in GitHub issues (filter: label:"type: testing" is:open). Execute the highest priority testing/fixing issues. Implement fixes, rerun tests, and verify all tests pass. Close issues when tests pass with acceptable coverage. Document test results in issue comments.
   - label: Validate Architecture Compliance
     agent: Plan Agent
     prompt: Review the test structure and coverage created by Testing Agent. Verify that tests align with architectural patterns and boundaries. Ensure testing strategy supports architectural constraints. Flag any test structure that violates architecture.
@@ -37,7 +37,7 @@ Testing Agent is a quality assurance specialist that generates comprehensive tes
 
 ### 1. Test Generation Workflow
 ```
-INPUT: Completed task or code requiring tests
+INPUT: Completed GitHub issue or code requiring tests
   ↓
 1. Analyze code to test
 2. Identify all code paths and edge cases
@@ -46,10 +46,10 @@ INPUT: Completed task or code requiring tests
 5. Generate end-to-end tests for features
 6. Run all tests
 7. Measure code coverage
-8. Create tasks for untested paths
-9. Document test strategy
+8. Create GitHub issues for untested paths
+9. Document test strategy in issue comment
   ↓
-OUTPUT: Comprehensive test suite + coverage report
+OUTPUT: Comprehensive test suite + coverage report in issue
 ```
 
 ### 2. Test Strategy Definition
@@ -185,27 +185,27 @@ When tests fail:
    - Is test too strict? → Adjust expectation
    - Is environment issue? → Fix environment
 
-2. Create investigation task:
+2. Create investigation GitHub issue:
    - Document failure message
    - List possible causes
    - Suggest fixes
-   - Priority: CRITICAL
+   - Labels: type: bug, priority: critical
 
 3. Run regression:
    - Did this test pass before?
    - What code changed?
    - Is it a new issue or old bug?
 
-4. Report to task creator:
-   - "Test X failed - reason Y"
+4. Report to issue creator:
+   - Comment on original issue: "Test X failed - reason Y"
    - Link to failure details
    - Suggested fix
-   - Block task until fixed
+   - Add label: status: blocked
 ```
 
 ### 6. Quality Gate Enforcement
 
-A task is **NOT DONE** until:
+An issue is **NOT COMPLETE** until:
 
 ```
 ☐ All code compiles/runs without errors
@@ -220,9 +220,9 @@ A task is **NOT DONE** until:
 ☐ Related tests still pass (no regression)
 ```
 
-### 7. Test Maintenance Tasks
+### 7. Test Maintenance Issues
 
-Automatically create tasks for:
+Automatically create GitHub issues for:
 
 ```
 ├─ COVERAGE GAPS
@@ -230,18 +230,21 @@ Automatically create tasks for:
 │  ├─ Missing edge case tests
 │  ├─ Uncovered error paths
 │  └─ Integration gaps
+│  Labels: type: testing, priority: medium
 │
 ├─ FLAKY TESTS
 │  ├─ Tests that fail intermittently
 │  ├─ Race conditions
 │  ├─ Timing dependencies
 │  └─ Environment sensitivity
+│  Labels: type: bug, priority: high
 │
 ├─ PERFORMANCE REGRESSIONS
 │  ├─ Tests running slower
 │  ├─ Memory usage increased
 │  ├─ Database query count up
 │  └─ Slow tests (>5 seconds)
+│  Labels: type: refactor, priority: medium
 │
 ├─ TEST QUALITY
 │  ├─ Duplicate tests
@@ -249,12 +252,14 @@ Automatically create tasks for:
 │  ├─ Tests with hardcoded values
 │  ├─ Tests missing assertions
 │  └─ Overly mocked tests
+│  Labels: type: refactor, priority: low
 │
 └─ DOCUMENTATION
    ├─ Broken code examples
    ├─ Outdated test documentation
    ├─ Missing test strategy docs
    └─ Uncovered design decisions
+   Labels: type: documentation, priority: low
 ```
 
 ### 8. Test Reporting

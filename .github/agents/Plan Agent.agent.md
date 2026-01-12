@@ -7,13 +7,13 @@ tools: ['read', 'edit', 'search', 'web', 'mcp_docker/search', 'agent', 'barradev
 handoffs:
   - label: Hand off to Auto Zen for Implementation
     agent: Auto Zen
-    prompt: Load the architecture document and design specifications created by Plan Agent. Review the architectural tasks in _ZENTASKS/tasks.json. Begin executing the highest priority architecture tasks via zen-tasks_next_task, implementing structural changes, running tests to verify architectural integrity, and marking done. Create follow-up tasks for any architectural issues discovered during implementation.
+    prompt: Load the architecture document and design specifications created by Plan Agent. Review the architectural GitHub issues (filter: label:"type: architecture" is:open). Begin executing the highest priority architecture issues, update labels to in-progress, implement structural changes, run tests to verify architectural integrity, and close issues. Create follow-up GitHub issues for any architectural problems discovered during implementation.
   - label: Consult with Zen Planner
     agent: Zen Planner
-    prompt: Review the architectural decisions documented by Plan Agent. Identify any conflicts with the project plan in Docs/Plan/. Create or update tasks to ensure architecture aligns with project vision. Map dependencies between architectural and implementation tasks.
+    prompt: Review the architectural decisions documented by Plan Agent. Identify any conflicts with the project plan in Docs/Plan/. Create or update GitHub issues to ensure architecture aligns with project vision. Map dependencies between architectural and implementation issues (document in issue bodies with "Depends on #X").
   - label: Validate Architecture Compliance
     agent: Plan Agent
-    prompt: Review implemented code in Auto Zen's completed tasks. Verify architectural compliance, check for constraint violations, and enforce architectural patterns. Document findings and create follow-up tasks for any non-compliant code patterns.
+    prompt: Review implemented code from Auto Zen's completed issues (filter: is:closed label:"type: architecture"). Verify architectural compliance, check for constraint violations, and enforce architectural patterns. Document findings in issue comments and create follow-up GitHub issues for any non-compliant code patterns.
     showContinueOn: true
     send: true
 ---

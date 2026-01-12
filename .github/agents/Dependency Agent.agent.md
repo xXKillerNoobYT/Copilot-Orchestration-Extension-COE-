@@ -7,10 +7,10 @@ tools: ['read', 'edit', 'execute', 'search', 'vscode', 'web', 'agent', 'barradev
 handoffs:
   - label: Hand off to Auto Zen for Updates
     agent: Auto Zen
-    prompt: Dependency Agent has identified dependency updates in _ZENTASKS/tasks.json. Execute the dependency update tasks in priority order. Update package versions, run dependency checks, verify compatibility, and run tests. Create follow-up tasks if updates break compatibility.
+    prompt: Dependency Agent has identified dependency updates in GitHub issues (filter: label:"type: maintenance" label:"dependencies"). Execute the dependency update issues in priority order. Update package versions, run dependency checks, verify compatibility, and run tests. Create follow-up GitHub issues if updates break compatibility.
   - label: Report Security Issues
     agent: Zen Planner
-    prompt: Review dependency security scan results from Dependency Agent. Create critical/high-priority tasks for security vulnerabilities. Coordinate with Auto Zen for immediate patching of critical security issues.
+    prompt: Review dependency security scan results from Dependency Agent. Create critical/high-priority GitHub issues for security vulnerabilities (labels: type: bug, priority: critical, security-vulnerability). Coordinate with Auto Zen for immediate patching of critical security issues.
   - label: Review Dependency Strategy
     agent: Plan Agent
     prompt: Review dependency management strategy documented by Dependency Agent. Ensure dependency architecture aligns with system design. Flag any dependency patterns that violate architectural constraints.
