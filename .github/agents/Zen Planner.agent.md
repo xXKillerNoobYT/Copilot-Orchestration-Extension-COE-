@@ -299,25 +299,25 @@ Zen Planner                    Auto Zen
 
 
 
-
 # Copilot instructions for this repo
 
-## Zen Tasks Workflow (load first)
+## GitHub Issues Workflow (Primary System)
 
-Before any development work, load the workflow context to ensure structured, dependency-driven execution.
+Before any development work, query GitHub Issues to understand current state and plan context.
 
-### Primary: Use the automation tools
-1. **Load context**: `zen-tasks_000_workflow_context` — hydrates guidelines and task state.
-2. **Query tasks**: `zen-tasks_list_tasks`, `zen-tasks_get_task`, `zen-tasks_next_task`.
-3. **Manage tasks**: `zen-tasks_add_task`, `zen-tasks_update_task`, `zen-tasks_set_status`.
-4. **Bulk create**: `zen-tasks_parse_requirements` — converts requirements text into tasks.
+### Primary: Use GitHub MCP tools (Current)
+1. Query issues: `github-mcp-server-list_issues`, `github-mcp-server-search_issues`
+2. Read issue details: `github-mcp-server-issue_read`
+3. Create issues: GitHub issue creation with proper labels and body structure
+4. Update issues: Modify issue body, labels, assignees via GitHub API
+5. Bulk create: Parse requirements, then create multiple GitHub issues
 
-### Fallback: Read files directly (when tools fail)
-If the workflow context tool errors (e.g., "files not found"), load context from the file system:
-- `prompts/zen_tasks_workflow.md` — workflow guidelines
-- `prompts/base.md` — system overview
+### Load Context
+Load workflow context from:
 - `Docs/Plan/detailed project description` — project vision
 - `Docs/Plan/feature list` — planned features
+- GitHub Issues: Query current state
+- `Docs/GitHub-Migration-Tool-Mapping.md` — Tool reference
 - `_ZENTASKS/tasks.json` — current task state
 
 ### Continuous development loop
