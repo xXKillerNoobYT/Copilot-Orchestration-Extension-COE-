@@ -1,7 +1,7 @@
 {
   "name": "copilot-orchestrator",
   "displayName": "Copilot Orchestrator",
-  "description": "Foundational VS Code extension scaffold for Copilot Orchestration.",
+  "description": "Foundational VS Code extension scaffold for Copilot Orchestration with GitHub Issues sync.",
   "version": "0.0.1",
   "publisher": "your-publisher-id",
   "engines": {
@@ -9,6 +9,9 @@
   },
   "categories": [
     "Other"
+  ],
+  "extensionDependencies": [
+    "hiroyannnn.vscode-github-issues-sync"
   ],
   "main": "./dist/extension.js",
   "contributes": {

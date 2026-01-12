@@ -2,92 +2,11 @@
 name: Auto Zen
 description: Autonomous coding agent that continuously works through tasks, observes issues, creates follow-up tasks, and operates in full autopilot mode until all work is done
 argument-hint: Describe the tasks or issues to execute autonomously
-tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'github-copilot-app-modernization-deploy/*', 'microsoft-docs/*', 'agent', 'memory/*', 'playwright/*', 'github/*', 'sentry/*', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/searchSyntax', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'ms-toolsai.jupyter/configureNotebook', 'ms-toolsai.jupyter/listNotebookPackages', 'ms-toolsai.jupyter/installNotebookPackages', 'vscjava.migrate-java-to-azure/appmod-install-appcat', 'vscjava.migrate-java-to-azure/appmod-precheck-assessment', 'vscjava.migrate-java-to-azure/appmod-run-assessment', 'vscjava.migrate-java-to-azure/appmod-get-vscode-config', 'vscjava.migrate-java-to-azure/appmod-preview-markdown', 'vscjava.migrate-java-to-azure/migration_assessmentReport', 'vscjava.migrate-java-to-azure/uploadAssessSummaryReport', 'vscjava.migrate-java-to-azure/appmod-search-knowledgebase', 'vscjava.migrate-java-to-azure/appmod-search-file', 'vscjava.migrate-java-to-azure/appmod-fetch-knowledgebase', 'vscjava.migrate-java-to-azure/appmod-create-migration-summary', 'vscjava.migrate-java-to-azure/appmod-run-task', 'vscjava.migrate-java-to-azure/appmod-consistency-validation', 'vscjava.migrate-java-to-azure/appmod-completeness-validation', 'vscjava.migrate-java-to-azure/appmod-version-control', 'vscjava.migrate-java-to-azure/appmod-python-setup-env', 'vscjava.migrate-java-to-azure/appmod-python-validate-syntax', 'vscjava.migrate-java-to-azure/appmod-python-validate-lint', 'vscjava.migrate-java-to-azure/appmod-python-run-test', 'vscjava.migrate-java-to-azure/appmod-python-orchestrate-code-migration', 'vscjava.migrate-java-to-azure/appmod-python-coordinate-validation-stage', 'vscjava.migrate-java-to-azure/appmod-python-check-type', 'vscjava.migrate-java-to-azure/appmod-python-orchestrate-type-check', 'vscjava.vscode-java-upgrade/list_jdks', 'vscjava.vscode-java-upgrade/list_mavens', 'vscjava.vscode-java-upgrade/install_jdk', 'vscjava.vscode-java-upgrade/install_maven', 'todo']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'github-copilot-app-modernization-deploy/*', 'agent', 'memory/*', 'github/*', 'todo']
 handoffs:
   - label: Continue Autonomous Execution
     agent: Auto Zen
     prompt: Load Zen Tasks workflow context using zen-tasks_000_workflow_context. Inspect current tasks in _ZENTASKS/tasks.json. Pick the highest-priority ready task with zen-tasks_next_task. Mark it in-progress with zen-tasks_set_status. Implement the task, run tests, verify completion, and mark done. Observe for new issues, create follow-up tasks with zen-tasks_add_task. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder, follow task format specification, and always use tools to update tasks—never edit _ZENTASKS files directly. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{task-id}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
-  - label: Full Auto - Cloud Task Master
-    agent: Auto Zen
-    prompt:
-      Execute complete cloud deployment and management cycle with intelligent orchestration.
-      
-      **Phase 1: Local Validation (0-5 min)**
-      - Load workflow context (zen-tasks_000_workflow_context)
-      - Verify all tests pass locally
-      - Run linting and type checks
-      - Build production assets
-      - Generate deployment checklist
-      
-      **Phase 2: Pre-Deployment (5-10 min, wait 2 min between checks)**
-      - Create deployment branch: deploy/{environment}-{timestamp}
-      - Verify cloud configuration files (.env.production, docker-compose.yml)
-      - Run security scans (dependencies, vulnerabilities)
-      - Check deployment prerequisites (migrations, seeds, backups)
-      - Wait 120 seconds for CI/CD pipeline validation
-      
-      **Phase 3: Staging Deployment (10-20 min, wait 3 min for stability)**
-      - Deploy to staging environment via GitHub Actions
-      - Wait 180 seconds for deployment completion
-      - Run smoke tests on staging
-      - Monitor health endpoints
-      - Verify database migrations
-      - Check API response times
-      - Wait 120 seconds for system stabilization
-      
-      **Phase 4: Production Readiness (20-25 min, wait 5 min for final checks)**
-      - Compare staging vs production configurations
-      - Review deployment logs for warnings
-      - Verify rollback procedures ready
-      - Create production deployment PR
-      - Wait 300 seconds for manual approval gate (if required)
-      
-      **Phase 5: Production Deployment (25-35 min, wait 5 min post-deploy)**
-      - Execute production deployment workflow
-      - Wait 300 seconds for deployment completion
-      - Monitor error rates and performance metrics
-      - Verify all services healthy
-      - Run production smoke tests
-      - Wait 180 seconds for traffic stabilization
-      
-      **Phase 6: Post-Deployment Validation (35-40 min)**
-      - Verify zero-downtime deployment success
-      - Check logs for errors/warnings
-      - Validate monitoring alerts configured
-      - Update deployment documentation (Docs/Deployments/)
-      - Archive deployment artifacts
-      - Sync deployment status back to _ZENTASKS
-      
-      **Phase 7: Continuous Monitoring (40+ min, ongoing)**
-      - Monitor for 10 minutes post-deployment
-      - Check every 60 seconds for anomalies
-      - Auto-rollback if error rate >5% or response time >2x baseline
-      - Create incident tasks if issues detected
-      - Update task status and metrics
-      
-      **Intelligent Features:**
-      - Auto-pause on failed checks (max 3 retries with exponential backoff)
-      - Parallel execution where possible (local tests + config validation)
-      - Smart rollback on any critical failure
-      - Real-time progress updates in task comments
-      - Automatic follow-up task creation for optimization opportunities
-      - Built-in wait timers between phases for system stability
-      - Local + cloud state synchronization
-      - Command-line timer output: "⏱️ Waiting {seconds}s for {reason}..."
-      
-      **Error Handling:**
-      - Deployment failure → Immediate rollback + incident task
-      - Test failure → Block deployment + investigation task
-      - Timeout exceeded → Mark blocked + alert notification
-      - Configuration mismatch → Pause + validation task
-      
-      **Task Management:**
-      - Use zen-tasks_update_task for status updates
-      - Create follow-up tasks with zen-tasks_add_task
-      - Link all cloud resources to parent task
-      - Document difficulties and resolutions in task details
-      
-      Execute fully autonomously with checkpoints at each phase. No manual intervention required unless critical failure occurs.
   - label: Deploy to Cloud Environment
     agent: Auto Zen
     prompt: Review the completed task and prepare for cloud deployment. Create deployment branch (deploy/{environment}-{timestamp}). Verify cloud configuration files (docker-compose.yml, .env.production, deployment scripts). Run pre-deployment checks (tests, security scans, dependency audits). Coordinate with CI/CD workflows (.github/workflows/deploy-*.yml). Hand off to cloud platform-specific agents if specialized deployment needed. Document deployment steps in Docs/Deployments/. Monitor deployment status and rollback on failure.
