@@ -1086,9 +1086,21 @@
       "dependencies": ["TASK-mk9c0006-template-integration"],
       "createdAt": "2026-01-12T20:00:00.000Z",
       "updatedAt": "2026-01-12T20:00:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0009-branch-management",
+      "title": "Implement feature branch management system",
+      "description": "Create automated branch management system for parallel work streams with dependency-aware merge sequencing, conflict resolution, and branch archival.",
+      "details": "BRANCHING STRATEGY:\n- Branch naming: feature/{task-id}-{description-slug}\n- Track branch-to-task mappings in task metadata (branchInfo field)\n- Automated sync with main (daily rebases)\n- Dependency-aware merge order (resolve dependencies first)\n- Auto-conflict resolution where safe, escalate complex conflicts\n- Archive merged branches after PR completion\n\nDELIVERABLES:\n- Docs/BranchingStrategy.md (✅ COMPLETE - comprehensive guide with workflows, naming, sync, archival)\n- _ZENTASKS/scripts/branch-manager.sh (branch creation, sync, cleanup automation)\n- Update tasks.json schema to add branchInfo field\n- GitHub Actions workflow for automated branch sync\n- Conflict resolution helper script\n\nFILES:\n- Docs/BranchingStrategy.md (✅ created - 600+ LOC)\n- _ZENTASKS/scripts/branch-manager.sh (pending)\n- _ZENTASKS/scripts/resolve-conflicts.sh (pending)\n- .github/workflows/sync-feature-branches.yml (pending)\n- TypeScript types for branch metadata (pending)\n\nBRANCH INFO SCHEMA:\n{\n  \"branchInfo\": {\n    \"branchName\": \"feature/TASK-xxxxx-description\",\n    \"createdAt\": \"2026-01-12T23:30:00.000Z\",\n    \"baseBranch\": \"main\",\n    \"status\": \"active\" | \"merged\" | \"abandoned\",\n    \"lastSyncedWithMain\": \"2026-01-12T23:45:00.000Z\",\n    \"prUrl\": \"https://github.com/.../pull/42\",\n    \"mergedAt\": \"2026-01-13T01:00:00.000Z\"\n  }\n}\n\nIMPLEMENTATION STEPS:\n1. ✅ Create Docs/BranchingStrategy.md with comprehensive guidelines\n2. Create branch-manager.sh for branch CRUD operations\n3. Create resolve-conflicts.sh for automated conflict resolution\n4. Create GitHub Actions workflow for daily sync\n5. Update task schema to support branchInfo field\n6. Test branch creation and tracking\n7. Test dependency-aware merge ordering\n8. Test automated sync and conflict resolution",
+      "testStrategy": "Create test branches for multiple tasks with dependencies. Verify naming convention. Test automated sync workflow. Create intentional conflicts and verify auto-resolution. Test merge sequencing respects dependencies. Verify branch archival after PR merge.",
+      "status": "in-progress",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-12T23:30:00.000Z",
+      "updatedAt": "2026-01-12T23:35:00.000Z"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-12T20:00:00.000Z"
+    "updatedAt": "2026-01-12T23:35:00.000Z"
   }
 }

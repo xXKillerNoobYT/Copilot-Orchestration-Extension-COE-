@@ -1,0 +1,133 @@
+name: Sync Feature Branches with Main
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Fetch all branches
+        run: |
+          git fetch --all
+          git fetch origin main:main
+      
+      - name: List active feature branches
+        id: list-branches
+        run: |
+          echo "Finding active feature branches..."
+          BRANCHES=$(git branch -r | grep -E 'origin/(feature|bugfix|epic)/' | sed 's|origin/||' | tr '\n' ' ')
+          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+          echo "Found branches: $BRANCHES"
+      
+      - name: Sync branches with main
+        if: steps.list-branches.outputs.branches != ''
+        run: |
+          SYNC_SUCCESS=0
+          SYNC_FAILED=0
+          SYNC_CONFLICTS=0
+          
+          echo "## Branch Sync Report" > sync-report.md
+          echo "" >> sync-report.md
+          echo "**Triggered by:** ${{ github.event_name }}" >> sync-report.md
+          echo "**Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> sync-report.md
+          echo "" >> sync-report.md
+          
+          for BRANCH in ${{ steps.list-branches.outputs.branches }}; do
+            echo "----------------------------------------"
+            echo "Syncing: $BRANCH"
+            
+            # Checkout branch
+            git checkout "$BRANCH" || {
+              echo "⚠️ Failed to checkout $BRANCH" >> sync-report.md
+              ((SYNC_FAILED++))
+              continue
+            }
+            
+            # Attempt rebase
+            if git rebase origin/main; then
+              echo "✅ Successfully synced $BRANCH" >> sync-report.md
+              
+              # Force push (safe because feature branches)
+              if git push --force-with-lease origin "$BRANCH"; then
+                echo "  └─ Pushed to remote"
+                ((SYNC_SUCCESS++))
+              else
+                echo "  └─ Push failed"
+                echo "⚠️ $BRANCH - Sync succeeded but push failed" >> sync-report.md
+                ((SYNC_FAILED++))
+              fi
+            else
+              echo "❌ $BRANCH - Rebase conflicts detected" >> sync-report.md
+              git rebase --abort
+              ((SYNC_CONFLICTS++))
+            fi
+          done
+          
+          # Return to main
+          git checkout main
+          
+          # Summary
+          echo "" >> sync-report.md
+          echo "### Summary" >> sync-report.md
+          echo "- ✅ Synced: $SYNC_SUCCESS" >> sync-report.md
+          echo "- ❌ Failed: $SYNC_FAILED" >> sync-report.md
+          echo "- ⚠️ Conflicts: $SYNC_CONFLICTS" >> sync-report.md
+          
+          cat sync-report.md
+          
+          # Exit with error if any failures
+          if [ $SYNC_FAILED -gt 0 ] || [ $SYNC_CONFLICTS -gt 0 ]; then
+            exit 1
+          fi
+      
+      - name: Create issue for conflicts (if any)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('sync-report.md', 'utf8');
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ Branch Sync Conflicts Detected',
+              body: `## Automated Branch Sync Failed\n\n${report}\n\n### Action Required\n\nSome feature branches could not be automatically synced with main due to conflicts. Please review and resolve manually:\n\n1. Checkout the conflicted branch\n2. Run: \`git rebase origin/main\`\n3. Resolve conflicts\n4. Run: \`git rebase --continue\`\n5. Force push: \`git push --force-with-lease\`\n\nOr use the conflict resolution helper:\n\`\`\`bash\ncd _ZENTASKS/scripts\n./resolve-conflicts.sh\n\`\`\`\n\n**Triggered by:** ${context.eventName}\n**Workflow:** ${context.workflow}\n**Run:** ${context.runNumber}`,
+              labels: ['automation', 'merge-conflict', 'needs-review']
+            });
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Branch Sync Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f sync-report.md ]; then
+            cat sync-report.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No feature branches found to sync." >> $GITHUB_STEP_SUMMARY
+          fi
