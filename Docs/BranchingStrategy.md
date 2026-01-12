@@ -42,6 +42,187 @@ This document defines the branching strategy for managing parallel work streams,
 - **Lifespan:** Longer-lived, merges to main after full EPIC completion
 - **Sub-branches:** Feature branches created from epic branch
 
+### 6. `cloud/{environment}-{purpose}` — Cloud Deployment Branches
+- **Purpose:** Cloud infrastructure and deployment configurations
+- **Naming:** `cloud/production-optimization`, `cloud/staging-setup`
+- **Lifespan:** Created for cloud changes, merged after deployment validation
+- **Managed by:** Cloud Agent
+
+---
+
+## Development Lifecycle with Phases
+
+### Phase 1: Planning & Design
+**Duration:** 30-60 minutes per feature  
+**Responsible:** Zen Planner, Plan Agent
+
+**Activities:**
+- Analyze requirements
+- Break into tasks
+- Design architecture
+- Estimate effort
+- Identify dependencies
+- Define success criteria
+
+**Outputs:**
+- Task breakdown in `_ZENTASKS/tasks.json`
+- Architecture diagrams (if applicable)
+- Dependency map
+- Test strategy
+
+**Checklist:**
+- [ ] Requirements clear and documented
+- [ ] Tasks created with priorities
+- [ ] Dependencies mapped
+- [ ] Architecture validated
+- [ ] Test strategy defined
+
+---
+
+### Phase 2: Implementation
+**Duration:** Varies by task complexity  
+**Responsible:** Auto Zen
+
+**Activities:**
+- Create feature branch
+- Implement code changes
+- Write unit tests
+- Verify compilation
+- Commit changes
+- Sync with main daily
+
+**Outputs:**
+- Working code in feature branch
+- Unit tests passing
+- Git commits with clear messages
+
+**Checklist:**
+- [ ] Branch created from latest main
+- [ ] Code implements requirements
+- [ ] Tests written and passing
+- [ ] No compilation errors
+- [ ] Code follows patterns
+- [ ] Changes committed
+
+---
+
+### Phase 3: Quality Assurance
+**Duration:** 15-30 minutes per feature  
+**Responsible:** Testing Agent
+
+**Activities:**
+- Run full test suite
+- Measure code coverage
+- Validate against requirements
+- Test edge cases
+- Generate coverage report
+
+**Outputs:**
+- Test results
+- Coverage report (80%+ target)
+- Quality gates passed
+
+**Checklist:**
+- [ ] All tests passing
+- [ ] Coverage ≥ 80%
+- [ ] Edge cases tested
+- [ ] Performance acceptable
+- [ ] No regressions
+
+---
+
+### Phase 4: Code Review
+**Duration:** 30-60 minutes  
+**Responsible:** Human reviewers + Copilot
+
+**Activities:**
+- Create pull request
+- Automated checks run (CI/CD)
+- Human code review
+- Address feedback
+- Re-review if needed
+
+**Outputs:**
+- Pull request with description
+- Review comments
+- Approval(s)
+
+**Checklist:**
+- [ ] PR created with clear description
+- [ ] CI checks passing
+- [ ] Code reviewed by human
+- [ ] Feedback addressed
+- [ ] Required approvals obtained
+
+---
+
+### Phase 5: Deployment (Cloud)
+**Duration:** 30-90 minutes  
+**Responsible:** Cloud Agent
+
+**Activities:**
+- Deploy to staging environment
+- Run smoke tests
+- Validate health checks
+- Deploy to production (if staging passes)
+- Monitor post-deployment
+
+**Outputs:**
+- Deployed application
+- Deployment logs
+- Health check results
+- Monitoring dashboards
+
+**Checklist:**
+- [ ] Staging deployment successful
+- [ ] Smoke tests passing
+- [ ] Health checks green
+- [ ] Production deployment complete
+- [ ] Monitoring active
+- [ ] Rollback plan ready
+
+---
+
+### Phase 6: Post-Deployment Checkup
+**Duration:** 30 minutes, then continuous monitoring  
+**Responsible:** Cloud Agent
+
+**Activities:**
+- Monitor application health
+- Track error rates
+- Measure performance metrics
+- Validate user experience
+- Check cost metrics
+
+**Outputs:**
+- Health report
+- Performance metrics
+- Error logs (if any)
+- Cost analysis
+
+**Checkup Schedule:**
+- Immediate: First 30 minutes post-deployment
+- Hourly: First 24 hours
+- Daily: First week
+- Weekly: Ongoing
+
+**Health Checks:**
+- [ ] Application responding (HTTP 200)
+- [ ] API endpoints functional
+- [ ] Database connections healthy
+- [ ] Error rate < 0.1%
+- [ ] Response time < 200ms (p95)
+- [ ] CPU usage < 80%
+- [ ] Memory usage < 85%
+- [ ] No security alerts
+- [ ] Costs within budget
+
+**Auto-remediation Triggers:**
+- High error rate → Auto-rollback
+- Slow response → Auto-scale
+- High CPU → Alert + scale recommendation
+- Security alert → Immediate team notification
+
 ---
 
 ## Branching Workflow

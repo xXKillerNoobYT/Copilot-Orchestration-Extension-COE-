@@ -74,6 +74,25 @@ This directory contains the complete configuration for the 6-agent orchestration
 
 ---
 
+### 7. **Cloud Agent** — Infrastructure & Deployment Specialist
+📄 `Cloud Agent.agent.md`
+
+**Role**: Manages cloud infrastructure, deployments, and operations  
+**Specialty**: Cloud provisioning, deployment automation, health monitoring, cost optimization  
+**Use When**: Cloud deployment, infrastructure setup, health checks, cost management  
+
+**Invocation**: `@Cloud Agent deploy to [azure|aws|gcp]`
+
+**Workflow Phases:**
+- Planning (requirements → architecture → cost estimate)
+- Provisioning (infrastructure creation)
+- Deployment (application deployment)
+- Health Check (monitoring & validation)
+- Optimization (cost & performance tuning)
+- Maintenance (updates & compliance)
+
+---
+
 ## 📚 Orchestration Guides
 
 Located in `.github/` directory:
