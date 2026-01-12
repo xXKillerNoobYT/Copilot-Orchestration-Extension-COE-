@@ -292,7 +292,7 @@
   "dependencies": {
     "chart.js": "^4.5.1",
     "graphlib": "^2.1.8",
-    "laravel-echo": "^1.14.0",
+    "laravel-echo": "^2.2.7",
     "pusher-js": "^8.4.0",
     "socket.io-client": "^4.7.0",
     "yaml": "^2.6.0",
@@ -303,8 +303,8 @@
     "@types/graphlib": "^2.1.12",
     "@types/jest": "^29.5.14",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^22.19.3",
-    "@types/vscode": "^1.90.0",
+    "@types/node": "^25.0.6",
+    "@types/vscode": "^1.108.1",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vitest/coverage-v8": "^4.0.16",
     "@vscode/test-electron": "^2.3.9",
@@ -320,6 +320,6 @@
     "vitest": "^4.0.16",
     "vue": "^3.5.26",
     "webpack": "^5.91.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^6.0.1"
   }
 }
