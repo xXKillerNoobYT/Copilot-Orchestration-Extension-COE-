@@ -9,7 +9,7 @@ handoffs:
     prompt: Load Zen Tasks workflow context using zen-tasks_000_workflow_context. Inspect current tasks in _ZENTASKS/tasks.json. Pick the highest-priority ready task with zen-tasks_next_task. Mark it in-progress with zen-tasks_set_status. Implement the task, run tests, verify completion, and mark done. Observe for new issues, create follow-up tasks with zen-tasks_add_task. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder, follow task format specification, and always use tools to update tasks—never edit _ZENTASKS files directly. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{task-id}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
   - label: Full Auto - Cloud Task Master
     agent: Auto Zen
-    prompt: |
+    prompt:
       Execute complete cloud deployment and management cycle with intelligent orchestration.
       
       **Phase 1: Local Validation (0-5 min)**

@@ -1021,11 +1021,11 @@
       "description": "Create TemplateService to load templates from disk, validate structure, and provide template listing/retrieval API.",
       "details": "File: vscode-extension/src/planBuilder/services/TemplateService.ts\n\nMethods:\n- loadTemplate(templateId: string): Promise<PlanTemplate>\n- listTemplates(): Promise<PlanTemplateMetadata[]>\n- validateTemplate(template: PlanTemplate): ValidationResult\n- applyTemplate(templateId: string, customizations?: Partial<PlanJSON>): Promise<PlanJSON>\n\nHandles:\n- Template file reading from templates/plan-templates/\n- JSON parsing and validation\n- Error handling for missing/invalid templates\n- Template metadata caching\n\nEstimate: 2 hours",
       "testStrategy": "Unit tests: load each core template, validate structure, test error handling for missing templates, verify metadata listing, test template application with customizations",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": ["TASK-mk9c0002-core-templates"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T21:00:00.000Z"
     },
     {
       "id": "TASK-mk9c0004-template-selector-ui",
