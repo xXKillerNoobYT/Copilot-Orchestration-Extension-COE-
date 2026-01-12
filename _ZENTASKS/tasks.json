@@ -1061,7 +1061,7 @@
       "priority": "medium",
       "dependencies": ["TASK-mk9c0004-template-selector-ui"],
       "createdAt": "2026-01-12T20:00:00.000Z",
-      "updatedAt": "2026-01-12T20:00:00.000Z"
+      "updatedAt": "2026-01-12T22:10:00.000Z"
     },
     {
       "id": "TASK-mk9c0007-template-tests",
