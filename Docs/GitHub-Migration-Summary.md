@@ -75,6 +75,8 @@ Successfully migrated all 6 orchestration agents from the `_ZENTASKS` JSON-based
 - `status: blocked` - Waiting on dependency
 - `status: review` - Awaiting review
 - `status: testing` - In testing phase
+- `status: failed` - Closed - work attempted but failed or did not deliver as planned
+- `status: cancelled` - Closed - work intentionally stopped or no longer needed
 
 #### Agent Labels (Optional)
 - `agent: auto-zen`
@@ -137,7 +139,7 @@ Successfully migrated all 6 orchestration agents from the `_ZENTASKS` JSON-based
 ```
 1. Load plan context from Docs/Plan/
 2. Query issues: github-mcp-server-search_issues
-3. Pick ready issue (is:open -label:"status: blocked" sort:priority)
+3. Pick ready issue (query by priority label: critical, then high, then medium, then low)
 4. Update to in-progress + assign
 5. Execute → test → verify
 6. Close issue
@@ -180,7 +182,7 @@ Successfully migrated all 6 orchestration agents from the `_ZENTASKS` JSON-based
 ### 5. Dependency Agent (Dependency Manager)
 **Changes**:
 - Dependency updates tracked as GitHub issues
-- Security vulnerabilities flagged with `security-vulnerability` label
+- Security vulnerabilities flagged with `type: bug` + `priority: critical` labels
 - Dependency issues labeled `type: maintenance`
 
 ### 6. Issue Handler (GitHub Integration)
@@ -211,8 +213,10 @@ WHILE work exists:
 
 **Get next ready issue**:
 ```
+// Note: GitHub doesn't support sort:priority
+// Query by priority label (critical first, then high, etc.)
 github-mcp-server-search_issues({
-  query: "is:open -label:\"status: blocked\" -label:\"status: in-progress\" sort:priority",
+  query: "is:open label:\"priority: critical\" -label:\"status: blocked\" -label:\"status: in-progress\"",
   perPage: 1
 })
 ```

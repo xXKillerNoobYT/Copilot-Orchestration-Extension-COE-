@@ -276,8 +276,8 @@ Before starting work:
 ### Continuous development loop
 ```
 1. Load plan context from Docs/Plan/
-2. Query current GitHub Issues (github-mcp-server-list_issues)
-3. Pick highest-priority ready issue (is:open -label:"status: blocked" sort:priority)
+2. Query current GitHub Issues (github-mcp-server-search_issues)
+3. Pick highest-priority ready issue (query by priority label: critical, then high, then medium, then low)
 4. Update labels to in-progress + assign → implement → test → close
 5. Create follow-up GitHub issues for discovered work
 6. Repeat

@@ -21,7 +21,7 @@ This document provides the exact mapping from the old `zen-tasks_*` tool system 
 | `zen-tasks_000_workflow_context` | N/A - Remove | Load context from `Docs/Plan/` and GitHub Issues directly |
 | `zen-tasks_list_tasks` | `github-mcp-server-list_issues` or `github-mcp-server-search_issues` | Use search_issues with filters for more control |
 | `zen-tasks_get_task` | `github-mcp-server-issue_read` (method: get) | Returns full issue details |
-| `zen-tasks_next_task` | `github-mcp-server-search_issues` with filters | Query: `is:open sort:priority assignee:me` or similar |
+| `zen-tasks_next_task` | `github-mcp-server-search_issues` with filters | Query with label filters for priority: `is:open label:"priority: high" sort:updated` or similar |
 | `zen-tasks_add_task` | GitHub issue creation (via GitHub API) | Use appropriate GitHub tools to create issues |
 | `zen-tasks_update_task` | GitHub issue update (via GitHub API) | Update issue body, labels, assignees, etc. |
 | `zen-tasks_set_status` | GitHub issue state + labels | Use labels: `status: in-progress`, `status: blocked`, etc. |
@@ -128,7 +128,7 @@ github-mcp-server-search_issues({
 github-mcp-server-search_issues({
   owner: "xXKillerNoobYT",
   repo: "Copilot-Orchestration-Extension-COE-",
-  query: "is:open label:\"status: approved\" -assignee:* sort:priority",
+  query: "is:open label:\"status: approved\" label:\"priority: high\" -assignee:*",
   perPage: 1
 })
 ```
@@ -137,7 +137,7 @@ github-mcp-server-search_issues({
 1. Query for open issues
 2. Exclude blocked (`-label:"status: blocked"`)
 3. Exclude in-progress (`-label:"status: in-progress"`)
-4. Sort by priority labels (critical > high > medium > low)
+4. Filter by priority labels (query critical first, then high, then medium, then low)
 5. Return first result
 
 ---
@@ -296,6 +296,8 @@ zen-tasks_parse_requirements(requirements_text)
 - `status: blocked` - Waiting on dependency
 - `status: review` - Awaiting review
 - `status: testing` - In testing phase
+- `status: failed` - Closed - work attempted but failed or did not deliver as planned
+- `status: cancelled` - Closed - work intentionally stopped or no longer needed
 
 ### Agent Labels (Optional)
 - `agent: auto-zen` - Assigned to Auto Zen
@@ -451,10 +453,11 @@ github-mcp-server-search_issues({
 
 ### Get Tasks Ready to Work
 ```typescript
+// Note: Query by priority label, GitHub doesn't support sort:priority
 github-mcp-server-search_issues({
   owner: "xXKillerNoobYT",
   repo: "Copilot-Orchestration-Extension-COE-",
-  query: "is:open label:\"status: approved\" -assignee:* sort:priority"
+  query: "is:open label:\"status: approved\" label:\"priority: high\" -assignee:*"
 })
 ```
 
