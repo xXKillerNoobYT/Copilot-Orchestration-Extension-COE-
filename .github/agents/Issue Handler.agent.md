@@ -5,12 +5,12 @@ description: GitHub issue management specialist that syncs issues with tasks, co
 argument-hint: Describe the GitHub issue or issue management work needed
 tools: ['read', 'edit', 'search', 'web', 'vscode', 'agent', 'barradevdigitalsolutions.zen-tasks-copilot/listTasks', 'barradevdigitalsolutions.zen-tasks-copilot/addTask', 'barradevdigitalsolutions.zen-tasks-copilot/getTask', 'barradevdigitalsolutions.zen-tasks-copilot/updateTask', 'barradevdigitalsolutions.zen-tasks-copilot/setTaskStatus', 'barradevdigitalsolutions.zen-tasks-copilot/getNextTask', 'barradevdigitalsolutions.zen-tasks-copilot/parseRequirements', 'memory', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'github.vscode-pull-request-github/createIssue', 'github.vscode-pull-request-github/updateIssue', 'github.vscode-pull-request-github/closeIssue', 'mermaidchart.vscode-mermaid-chart/get_syntax_docs', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-validator', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-preview']
 handoffs:
-  - label: Hand off to Zen Planner for Task Creation
+  - label: Hand off to Zen Planner for Issue Breakdown
     agent: Zen Planner
-    prompt: Issue Handler has converted GitHub issue into structured task format. Review the issue details and proposed task breakdown in _ZENTASKS/tasks.json. Create comprehensive task hierarchy with subtasks, dependencies, and priority assignments. Ensure tasks align with project plan.
+    prompt: Issue Handler has identified a complex GitHub issue requiring decomposition. Review the issue details and break it down into comprehensive sub-issues with proper dependencies and priority assignments. Ensure issues align with project plan in Docs/Plan/. Create sub-issues and link them to parent issue.
   - label: Hand off to Auto Zen for Implementation
     agent: Auto Zen
-    prompt: Issue Handler has created implementation tasks from GitHub issue in _ZENTASKS/tasks.json. Execute the highest priority tasks. Implement changes, run tests, and report back to Issue Handler for issue status updates and closure when complete.
+    prompt: Issue Handler has triaged and labeled GitHub issue for implementation. Execute the issue: update labels to in-progress, assign to self, implement changes, run tests, and close issue when complete. Report progress in issue comments.
   - label: Request Plan Alignment
     agent: Plan Agent
     prompt: Issue Handler has identified architectural implications of GitHub issue. Review the issue scope and proposed implementation approach. Verify architectural alignment and document any structural changes needed. Flag architecture violations.

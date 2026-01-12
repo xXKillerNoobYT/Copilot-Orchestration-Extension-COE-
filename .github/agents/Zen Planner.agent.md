@@ -6,13 +6,13 @@ tools: ['read', 'mcp_docker/search', 'agent', 'edit/createJupyterNotebook', 'edi
 handoffs:
   - label: Hand off to Auto Zen for Implementation
     agent: Auto Zen
-    prompt: Load Zen Tasks workflow context using zen-tasks_000_workflow_context. Review the tasks created in _ZENTASKS/tasks.json. Begin executing the highest priority ready tasks via zen-tasks_next_task, marking them in-progress with zen-tasks_set_status, implementing changes, running tests, and marking done. Continue the continuous development loop until all tasks are completed or blockers are encountered. Create follow-up tasks for any issues discovered during implementation.
+    prompt: Load workflow context from Docs/Plan/ (detailed project description and feature list). Review the GitHub issues created using github-mcp-server-list_issues. Begin executing the highest priority ready issues (query with filters: is:open label:"status: approved" -assignee:* sort:priority), update labels to in-progress and assign to self, implement changes, run tests, and close issues. Continue the continuous development loop until all issues are completed or blockers are encountered. Create follow-up GitHub issues for any problems discovered during implementation.
   - label: Refine Plan
     agent: Zen Planner
-    prompt: Review the current task structure in _ZENTASKS/tasks.json. Incorporate new requirements or feedback. Update dependencies, priorities, and details as needed using zen-tasks_update_task. Ensure no circular dependencies and all tasks are atomic and testable.
+    prompt: Review the current GitHub Issues structure using github-mcp-server-list_issues and github-mcp-server-search_issues. Incorporate new requirements or feedback. Update issue bodies with new dependencies, change priority labels, and update details as needed. Ensure no circular dependencies and all issues are atomic and testable. Use GitHub issue comments for detailed updates.
   - label: Investigate Blockers
     agent: Auto Zen
-    prompt: Investigate the identified blockers in the current tasks. Use zen-tasks_get_task to review details. Perform research, prototyping, or analysis to resolve uncertainties. Update task details with findings and create unblocking subtasks if needed. Mark blockers as resolved once addressed.
+    prompt: Investigate the identified blockers in the current GitHub issues. Use github-mcp-server-issue_read to review details of blocked issues. Perform research, prototyping, or analysis to resolve uncertainties. Update issue body and comments with findings and create unblocking sub-issues if needed. Remove blocker label once addressed.
   - label: yes continue
     agent: Zen Planner
     prompt: The user likes your recommendations and suggestions. Continue with them. All yours recommended course and continue. with your planing.
@@ -102,8 +102,8 @@ Example dependency graph:
 ### Phase 1: Discovery
 1. Read existing codebase structure
 2. Review `Docs/Plan/*` for project vision
-3. Check `_ZENTASKS/tasks.json` for current state
-4. Identify gaps between vision and current tasks
+3. Query GitHub Issues for current state (github-mcp-server-list_issues)
+4. Identify gaps between vision and current issues
 
 ### Phase 2: Analysis
 1. Parse requirements into user stories
@@ -111,25 +111,30 @@ Example dependency graph:
 3. Estimate complexity (S/M/L/XL)
 4. Flag risks and unknowns
 
-### Phase 3: Task Creation
-For each deliverable:
-```yaml
-title: "Verb + Clear Object"
-description: |
-  What: Specific outcome
-  Why: Business/technical value
-  Scope: What's included/excluded
-details: |
-  - Files likely involved
-  - Technical approach
-  - Edge cases to handle
-  - Related documentation
-priority: high | medium | low
-dependencies: [TASK-xxx, TASK-yyy]
-testStrategy: |
-  - Unit tests for X
-  - Integration test for Y
-  - Manual verification of Z
+### Phase 3: Issue Creation
+For each deliverable, create GitHub issue with:
+```markdown
+## Description
+What: Specific outcome
+Why: Business/technical value
+Scope: What's included/excluded
+
+## Details
+- Files likely involved
+- Technical approach
+- Edge cases to handle
+- Related documentation
+
+## Dependencies
+- Depends on #123
+- Depends on #124
+
+## Test Strategy
+- Unit tests for X
+- Integration test for Y
+- Manual verification of Z
+
+**Labels**: type: feature, priority: high, status: pending
 ```
 
 ### Phase 4: Validation
@@ -139,88 +144,110 @@ testStrategy: |
 - [ ] Critical path identified
 - [ ] No orphan tasks (everything connects to a goal)
 
-## Task Templates
+## Issue Templates
 
-### Feature Task
-```
-Title: Implement [feature name]
-Description: Add [capability] to [component] so users can [benefit]
-Details: 
-  - Modify [files]
-  - Add [new components]
-  - Update [related systems]
-Test Strategy:
-  - Unit: [specific tests]
-  - Integration: [scenarios]
-  - Manual: [verification steps]
-```
+### Feature Issue
+```markdown
+**Title**: Implement [feature name]
 
-### Bug Fix Task
-```
-Title: Fix [specific bug]
-Description: [Current behavior] should be [expected behavior]
-Details:
-  - Root cause: [analysis]
-  - Fix approach: [solution]
-  - Files: [affected files]
-Test Strategy:
-  - Regression test for [scenario]
-  - Verify [expected outcome]
+## Description
+Add [capability] to [component] so users can [benefit]
+
+## Details
+- Modify [files]
+- Add [new components]
+- Update [related systems]
+
+## Test Strategy
+- Unit: [specific tests]
+- Integration: [scenarios]
+- Manual: [verification steps]
+
+**Labels**: type: feature, priority: medium, status: pending
 ```
 
-### Refactor Task
-```
-Title: Refactor [component/pattern]
-Description: Improve [aspect] of [target] for [benefit]
-Details:
-  - Current state: [issues]
-  - Target state: [improvements]
-  - Approach: [steps]
-Test Strategy:
-  - Existing tests still pass
-  - Performance benchmark: [metrics]
-  - Code review checklist
+### Bug Fix Issue
+```markdown
+**Title**: Fix [specific bug]
+
+## Description
+[Current behavior] should be [expected behavior]
+
+## Details
+- Root cause: [analysis]
+- Fix approach: [solution]
+- Files: [affected files]
+
+## Test Strategy
+- Regression test for [scenario]
+- Verify [expected outcome]
+
+**Labels**: type: bug, priority: high, status: pending
 ```
 
-### Investigation Task
+### Refactor Issue
+```markdown
+**Title**: Refactor [component/pattern]
+
+## Description
+Improve [aspect] of [target] for [benefit]
+
+## Details
+- Current state: [issues]
+- Target state: [improvements]
+- Approach: [steps]
+
+## Test Strategy
+- Existing tests still pass
+- Performance benchmark: [metrics]
+- Code review checklist
+
+**Labels**: type: refactor, priority: medium, status: pending
 ```
-Title: Investigate [unknown]
-Description: Research [topic] to determine [decision]
-Details:
-  - Questions to answer
-  - Sources to check
-  - Success criteria
-Test Strategy:
-  - Document findings
-  - Recommend next steps
-  - Create follow-up tasks
+
+### Investigation Issue
+```markdown
+**Title**: Investigate [unknown]
+
+## Description
+Research [topic] to determine [decision]
+
+## Details
+- Questions to answer
+- Sources to check
+- Success criteria
+
+## Test Strategy
+- Document findings in issue comment
+- Recommend next steps
+- Create follow-up issues
+
+**Labels**: type: architecture, priority: medium, status: pending
 ```
 
 ## Workflow Context Loading
 
-### Primary: Use tools
-1. `zen-tasks_000_workflow_context` — load guidelines
-2. `zen-tasks_list_tasks` — see current state
-3. `zen-tasks_parse_requirements` — bulk create from text
-4. `zen-tasks_add_task` — create individual tasks
-5. `zen-tasks_update_task` — refine existing tasks
+### Primary: Use GitHub MCP tools
+1. Query issues: `github-mcp-server-list_issues`, `github-mcp-server-search_issues`
+2. Read issue details: `github-mcp-server-issue_read`
+3. Create issues: GitHub issue creation with proper labels and body structure
+4. Update issues: Modify issue body, labels, assignees via GitHub API
+5. Bulk create: Parse requirements, then create multiple GitHub issues
 
 ### Fallback: Read files directly
 If tools fail:
-- `prompts/zen_tasks_workflow.md` — workflow rules
-- `prompts/base.md` — system overview
 - `Docs/Plan/detailed project description` — vision
 - `Docs/Plan/feature list` — planned features
-- `_ZENTASKS/tasks.json` — current task state
+- Query GitHub Issues API directly for current state
 
 ## Output Artifacts
 
 After planning session, deliver:
-1. **Task tree** in `_ZENTASKS/tasks.json`
-2. **Dependency diagram** (Mermaid if complex)
-3. **Critical path** highlighted
-4. **Risk assessment** for unknowns
-5. **Recommended execution order**
+1. **GitHub Issues** created with proper labels and structure
+2. **Dependency diagram** (Mermaid in issue comment if complex)
+3. **Critical path** highlighted in issue labels/comments
+4. **Risk assessment** for unknowns in issue bodies
+5. **Recommended execution order** documented in epic issue
 
 ## Boundaries
 
@@ -245,13 +272,13 @@ After planning session, deliver:
 ```
 Zen Planner                    Auto Zen
      │                              │
-     ├── Creates task tree ────────►│
-     │                              ├── Executes tasks
+     ├── Creates GitHub issues ────►│
+     │                              ├── Executes issues
      │◄── Reports blockers ─────────┤
-     ├── Creates unblock tasks ────►│
-     │                              ├── Marks done
+     ├── Creates unblock issues ───►│
+     │                              ├── Marks done (closes)
      │◄── Flags new issues ─────────┤
-     ├── Creates follow-up tasks ──►│
+     ├── Creates follow-up issues ──►│
      │                              │
      └──────────── Loop ────────────┘
 ```
@@ -295,11 +322,11 @@ If the workflow context tool errors (e.g., "files not found"), load context from
 
 ### Continuous development loop
 ```
-1. Load workflow context (tool or fallback)
-2. Inspect current tasks (_ZENTASKS/tasks.json)
-3. Pick highest-priority ready task (zen-tasks_next_task or manual)
-4. Mark in-progress → implement → test → mark done
-5. Create follow-up tasks for discovered work
+1. Load workflow context from Docs/Plan/
+2. Query current GitHub Issues (github-mcp-server-list_issues)
+3. Pick highest-priority ready issue
+4. Update labels to in-progress → implement → test → close
+5. Create follow-up issues for discovered work
 6. Repeat
 ```
 
@@ -345,6 +372,7 @@ Operate autonomously: no oversight required—just get the job done right.
 - Prefer existing logging/metrics/audit paths over bespoke logging.
 
 ## Remember. 
-- All documentation, notes, projects, all that must be properly updated in the proper location inside the docs folder. No MD files in. [./] root or other folders.
-- Always follow the task format specification when creating or updating tasks.
-- Always Use the tools to. Update tasks. Never edit the MD or JSON files directly in the _ZENTASKS folder. The changes will not be remembered if you do not use the tool.
+- All documentation, notes, projects must be properly updated in the Docs folder
+- Always follow the GitHub issue format specification when creating or updating issues
+- Always use GitHub MCP tools or GitHub API to update issues
+- Never edit issue content outside of GitHub's native interface or API
