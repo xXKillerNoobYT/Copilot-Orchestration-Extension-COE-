@@ -990,9 +990,105 @@
       },
       "createdAt": "2026-01-11T08:00:00.000Z",
       "updatedAt": "2026-01-11T08:15:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0001-templates-types",
+      "title": "Create template storage structure and TypeScript types",
+      "description": "Define template storage directory structure and TypeScript interfaces for plan templates with metadata (name, description, tags, author, version).",
+      "details": "Files to create:\n- vscode-extension/templates/plan-templates/ (directory)\n- vscode-extension/src/planBuilder/types/PlanTemplate.ts (type definitions)\n\nTypes needed:\n- PlanTemplateMetadata (name, description, tags, author, version, created, updated)\n- PlanTemplate (metadata + plan content)\n- TemplateCategory (web-app, api-service, cli-tool, library)\n\nEstimate: 1 hour",
+      "testStrategy": "Create test file importing types; verify TypeScript compilation; test template directory exists",
+      "status": "done",
+      "priority": "high",
+      "dependencies": [],
+      "createdAt": "2026-01-12T20:00:00.000Z",
+      "updatedAt": "2026-01-12T20:10:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0002-core-templates",
+      "title": "Create 4 core plan templates (Web App, API Service, CLI Tool, Library)",
+      "description": "Implement 4 core plan templates as JSON files with complete project structure, features, timeline, and best practices for each project type.",
+      "details": "Templates to create:\n1. web-app-template.json - Full-stack web application with auth, database, UI\n2. api-service-template.json - RESTful API with endpoints, auth, database\n3. cli-tool-template.json - Command-line tool with commands, config, testing\n4. library-package-template.json - Reusable library with API, docs, publishing\n\nEach template includes:\n- Project metadata (name, description, type)\n- Architecture pattern appropriate for project type\n- Common features for that project type\n- Timeline with typical phases\n- Team roles and responsibilities\n\nEstimate: 2-3 hours",
+      "testStrategy": "Load each template JSON; validate against PlanJSON schema; verify no validation errors; test template application generates valid plan",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["TASK-mk9c0001-templates-types"],
+      "createdAt": "2026-01-12T20:00:00.000Z",
+      "updatedAt": "2026-01-12T20:00:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0003-template-loader",
+      "title": "Implement template loading and validation service",
+      "description": "Create TemplateService to load templates from disk, validate structure, and provide template listing/retrieval API.",
+      "details": "File: vscode-extension/src/planBuilder/services/TemplateService.ts\n\nMethods:\n- loadTemplate(templateId: string): Promise<PlanTemplate>\n- listTemplates(): Promise<PlanTemplateMetadata[]>\n- validateTemplate(template: PlanTemplate): ValidationResult\n- applyTemplate(templateId: string, customizations?: Partial<PlanJSON>): Promise<PlanJSON>\n\nHandles:\n- Template file reading from templates/plan-templates/\n- JSON parsing and validation\n- Error handling for missing/invalid templates\n- Template metadata caching\n\nEstimate: 2 hours",
+      "testStrategy": "Unit tests: load each core template, validate structure, test error handling for missing templates, verify metadata listing, test template application with customizations",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["TASK-mk9c0002-core-templates"],
+      "createdAt": "2026-01-12T20:00:00.000Z",
+      "updatedAt": "2026-01-12T20:00:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0004-template-selector-ui",
+      "title": "Create TemplateSelector.vue component for browsing and applying templates",
+      "description": "Build Vue component for template selection UI with grid view, search/filter, template preview, and apply button.",
+      "details": "Component: vscode-extension/src/planBuilder/components/TemplateSelector.vue\n\nFeatures:\n- Grid layout showing template cards (name, description, tags)\n- Search bar for filtering by name/tags\n- Category filter (All, Web App, API Service, CLI Tool, Library)\n- Template preview modal showing full details\n- Apply button to load template into wizard\n- VS Code theming integration\n\nProps:\n- onTemplateSelected: (template: PlanTemplate) => void\n\nEmits:\n- template-applied: { templateId: string, plan: PlanJSON }\n\nEstimate: 2-3 hours",
+      "testStrategy": "Component tests: render templates, test search filter, test category filter, test template selection, verify apply event emitted, test VS Code theme styling",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["TASK-mk9c0003-template-loader"],
+      "createdAt": "2026-01-12T20:00:00.000Z",
+      "updatedAt": "2026-01-12T20:00:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0005-custom-template-creator",
+      "title": "Implement custom template creator to save plans as templates",
+      "description": "Create UI and service logic to save current plan as a reusable template with custom metadata (name, description, tags, author).",
+      "details": "Files:\n- vscode-extension/src/planBuilder/components/TemplateSaveDialog.vue\n- vscode-extension/src/planBuilder/services/TemplateService.ts (extend)\n\nTemplateSaveDialog features:\n- Modal dialog with form fields (name, description, tags, author)\n- Validation (required fields, unique template name)\n- Save button triggers template creation\n- Success/error notifications\n\nTemplateService.saveTemplate() method:\n- Accepts current PlanJSON + metadata\n- Generates unique template ID\n- Writes template to templates/plan-templates/custom/\n- Updates template index/cache\n\nEstimate: 2 hours",
+      "testStrategy": "Test dialog validation, test template save to disk, verify template appears in TemplateSelector, test duplicate name handling, verify custom template loads correctly",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["TASK-mk9c0003-template-loader"],
+      "createdAt": "2026-01-12T20:00:00.000Z",
+      "updatedAt": "2026-01-12T20:00:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0006-template-integration",
+      "title": "Integrate template system into Plan Builder wizard",
+      "description": "Wire TemplateSelector into wizard flow, add 'Start from Template' option on wizard start screen, handle template application and pre-filling wizard state.",
+      "details": "Integration points:\n- Add 'Start from Template' button to wizard start screen\n- Show TemplateSelector when button clicked\n- When template applied, pre-fill wizard state with template data\n- Update wizard to show 'Template Applied' indicator\n- Allow users to modify template values before completion\n\nFiles to modify:\n- vscode-extension/src/planBuilder/components/WizardContainer.vue\n- vscode-extension/src/planBuilder/wizardState.ts (add template tracking)\n\nEstimate: 1-2 hours",
+      "testStrategy": "E2E test: start wizard, select template, verify wizard pre-filled, modify values, complete wizard, verify final plan includes customizations",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["TASK-mk9c0004-template-selector-ui"],
+      "createdAt": "2026-01-12T20:00:00.000Z",
+      "updatedAt": "2026-01-12T20:00:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0007-template-tests",
+      "title": "Create comprehensive test suite for template system",
+      "description": "Write unit and integration tests for TemplateService, template validation, UI components, and end-to-end template workflows.",
+      "details": "Test files to create:\n- TemplateService.test.ts (load, list, validate, apply, save)\n- TemplateSelector.test.vue (UI interactions, filtering, selection)\n- TemplateSaveDialog.test.vue (validation, save flow)\n- templateSystem.integration.test.ts (E2E: load → apply → customize → save)\n\nCoverage areas:\n- Template loading (success, errors, missing files)\n- Template validation (valid templates, invalid structure)\n- Template application (default, with customizations)\n- Custom template saving (success, duplicate names, validation)\n- UI components (rendering, user interactions, events)\n\nTarget: 80%+ code coverage\n\nEstimate: 2 hours",
+      "testStrategy": "Run full test suite, verify coverage meets target, ensure all core workflows tested, test edge cases (corrupt JSON, missing metadata)",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["TASK-mk9c0006-template-integration"],
+      "createdAt": "2026-01-12T20:00:00.000Z",
+      "updatedAt": "2026-01-12T20:00:00.000Z"
+    },
+    {
+      "id": "TASK-mk9c0008-template-docs",
+      "title": "Document template system usage and template creation guide",
+      "description": "Create comprehensive documentation for using templates, creating custom templates, and template file format specification.",
+      "details": "Documentation files:\n- Docs/Plan-Templates.md (user guide for using templates)\n- Docs/Template-Creation-Guide.md (guide for creating custom templates)\n- vscode-extension/templates/plan-templates/README.md (template directory structure)\n- vscode-extension/templates/plan-templates/TEMPLATE-SPEC.md (JSON schema, metadata fields)\n\nContent:\n- How to start wizard from template\n- How to browse and filter templates\n- How to apply and customize templates\n- How to save current plan as template\n- Template file format specification\n- Best practices for template creation\n- Examples of good template structure\n\nEstimate: 1 hour",
+      "testStrategy": "Review documentation for completeness, verify examples are accurate, test documentation against actual implementation",
+      "status": "pending",
+      "priority": "low",
+      "dependencies": ["TASK-mk9c0006-template-integration"],
+      "createdAt": "2026-01-12T20:00:00.000Z",
+      "updatedAt": "2026-01-12T20:00:00.000Z"
     }
   ],
   "metadata": {
-    "updatedAt": "2026-01-11T08:00:00.000Z"
+    "updatedAt": "2026-01-12T20:00:00.000Z"
   }
 }
