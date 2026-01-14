@@ -22,10 +22,10 @@ Each task contains:
 
 ### Storage
 
-- Tasks stored in JSON format
-- Default location: `.zen-tasks/tasks.json`
-- Human-readable and git-friendly
-- Supports backup and versioning
+- Tasks stored as GitHub Issues
+- Query via `github-mcp-server-list_issues` or `github-mcp-server-search_issues`
+- Human-readable and accessible via web UI
+- Automatic versioning through GitHub
 
 ## Available Operations
 
@@ -112,17 +112,17 @@ Each task should define how completion will be verified:
 
 ### Starting a Project
 
-1. Load workflow context (zen-tasks_000_workflow_context)
-2. Parse requirements into tasks
-3. Review and refine task structure
-4. Begin execution with next_task
+1. Load plan context from `Docs/Plan/` documents
+2. Query existing GitHub issues or create initial issues
+3. Review and refine issue structure
+4. Begin execution with next ready issue
 
 ### During Development
 
-1. Query next available task
-2. Mark task as in-progress
-3. Implement according to details and test strategy
-4. Update status upon completion
+1. Query next available issue via `github-mcp-server-search_issues`
+2. Update issue labels to mark as in-progress
+3. Implement according to issue details and test strategy
+4. Update issue status upon completion
 5. Move to next task
 
 ### Task Updates
