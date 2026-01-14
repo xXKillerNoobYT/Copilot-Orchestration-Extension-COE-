@@ -2,14 +2,14 @@
 name: Zen Planner
 description: Master planner agent that analyzes requirements, breaks down complex work into structured tasks, identifies dependencies, and builds comprehensive project roadmaps
 argument-hint: Outline the requirements or tasks to plan
-tools: ['read', 'mcp_docker/search', 'agent', 'edit/createJupyterNotebook', 'edit/editNotebook', 'search', 'web', 'todo', 'memory', 'barradevdigitalsolutions.zen-tasks-copilot/listTasks', 'barradevdigitalsolutions.zen-tasks-copilot/addTask', 'barradevdigitalsolutions.zen-tasks-copilot/getTask', 'barradevdigitalsolutions.zen-tasks-copilot/updateTask', 'barradevdigitalsolutions.zen-tasks-copilot/setTaskStatus', 'barradevdigitalsolutions.zen-tasks-copilot/getNextTask', 'barradevdigitalsolutions.zen-tasks-copilot/parseRequirements']
+tools: ['read', 'mcp_docker/search', 'agent', 'edit/createJupyterNotebook', 'edit/editNotebook', 'search', 'web', 'todo', 'memory', 'github-mcp-server-*']
 handoffs:
   - label: Hand off to Auto Zen for Implementation
     agent: Auto Zen
     prompt: Load workflow context from Docs/Plan/ (detailed project description and feature list). Review the GitHub issues created using github-mcp-server-list_issues. Begin executing the highest priority ready issues (query with filters: is:open label:"status: approved" -assignee:* sort:priority), update labels to in-progress and assign to self, implement changes, run tests, and close issues. Continue the continuous development loop until all issues are completed or blockers are encountered. Create follow-up GitHub issues for any problems discovered during implementation.
   - label: Refine Plan
     agent: Zen Planner
-    prompt: Review the current GitHub Issues structure using github-mcp-server-list_issues and github-mcp-server-search_issues. Incorporate new requirements or feedback. Update issue bodies with new dependencies, change priority labels, and update details as needed. Ensure no circular dependencies and all issues are atomic and testable. Use GitHub issue comments for detailed updates.
+    prompt: Review the current GitHub Issues structure using github-mcp-server-list_issues and github-mcp-server-search_issues. Incorporate new requirements or feedback. Update issue bodies via GitHub API with new dependencies, change priority labels, and update details as needed. Ensure no circular dependencies and all issues are atomic and testable. Use github-mcp-server-issue_read (method: add_comment) for detailed updates.
   - label: Investigate Blockers
     agent: Auto Zen
     prompt: Investigate the identified blockers in the current GitHub issues. Use github-mcp-server-issue_read to review details of blocked issues. Perform research, prototyping, or analysis to resolve uncertainties. Update issue body and comments with findings and create unblocking sub-issues if needed. Remove blocker label once addressed.
@@ -46,9 +46,9 @@ INPUT: Raw requirements, feature request, bug report, or idea
 4. Map dependencies
 5. Assign priorities
 6. Define test strategies
-7. Output structured task tree (aligned to plan)
+7. Output structured task tree as GitHub Issues (aligned to plan)
   ↓
-OUTPUT: Ready-to-execute task queue in _ZENTASKS/tasks.json
+OUTPUT: Ready-to-execute GitHub Issues with proper labels and dependencies
 ```
 
 ### 2. Task Decomposition Rules
@@ -126,8 +126,10 @@ Scope: What's included/excluded
 - Related documentation
 
 ## Dependencies
-- Depends on #123
-- Depends on #124
+- Depends on xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#123 (must complete first)
+- Depends on xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#124 (must complete first)
+- Blocks xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#125 (unblocks this when done)
+- Related to xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#126 (soft dependency)
 
 ## Test Strategy
 - Unit tests for X
@@ -157,6 +159,10 @@ Add [capability] to [component] so users can [benefit]
 - Modify [files]
 - Add [new components]
 - Update [related systems]
+
+## Dependencies
+- Depends on xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#123
+- Blocks xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#124
 
 ## Test Strategy
 - Unit: [specific tests]
@@ -318,7 +324,6 @@ Load workflow context from:
 - `Docs/Plan/feature list` — planned features
 - GitHub Issues: Query current state
 - `Docs/GitHub-Migration-Tool-Mapping.md` — Tool reference
-- `_ZENTASKS/tasks.json` — current task state
 
 ### Continuous development loop
 ```

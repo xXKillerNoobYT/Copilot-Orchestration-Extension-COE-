@@ -141,8 +141,8 @@ What, Why, Scope
 Files, approach, edge cases, related docs
 
 ## Dependencies
-- Depends on #123
-- Depends on #124
+- Depends on xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#123
+- Depends on xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#124
 
 ## Test Strategy
 How to verify completion
