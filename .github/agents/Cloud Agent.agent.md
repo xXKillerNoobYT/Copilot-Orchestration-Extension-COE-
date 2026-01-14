@@ -2,10 +2,10 @@
 name: Cloud Agent
 description: Autonomous cloud infrastructure manager that provisions resources, deploys applications, monitors health, creates deployment issues, assigns specialized agents, manages cloud branches/PRs, and coordinates the full cloud lifecycle until deployment completes
 argument-hint: Specify cloud platform (azure|aws|gcp), environment (staging|production), and deployment action (provision|deploy|monitor|optimize)
-tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'github-copilot-app-modernization-deploy/*', 'agent', 'memory/*', 'github/*', 'todo']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'github-copilot-app-modernization-deploy/*', 'github/*', 'memory/*', 'agent', 'todo']
 handoffs:
   - label: Continue Autonomous Execution
-    agent: Auto Zen
+    agent: Cloud Agent
     prompt: Full Auto GO
     showContinueOn: true
     send: true
