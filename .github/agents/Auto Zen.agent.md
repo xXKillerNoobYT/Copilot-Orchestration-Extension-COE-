@@ -7,14 +7,56 @@ tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'copilot-container
 handoffs:
   - label: Continue Autonomous Execution
     agent: Auto Zen
-    prompt: Load workflow context from Docs/Plan/ (detailed project description and feature list). Query current GitHub Issues using github-mcp-server-search_issues to inspect open tasks. Pick the highest-priority ready task (query with filters: is:open -label:"status: blocked" -label:"status: in-progress" sort:priority). Update issue labels to mark in-progress and assign to self. Implement the task, run tests, verify completion, and close the issue (or update labels to done). Observe for new issues during implementation and create follow-up GitHub issues as needed. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder and follow GitHub issue format. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{issue-number}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
+    prompt: |
+      Execute the autonomous development loop using GitHub Issues as the single source of truth.
+      
+      **Step 1: Load Context**
+      - Read plan documents: Docs/Plan/detailed project description and Docs/Plan/feature list
+      - Query open issues: Use github-mcp-server-search_issues with query "is:open label:\"status:approved\" OR label:\"status:pending\""
+      
+      **Step 2: Select Next Task**
+      - Find highest priority ready issue using github-mcp-server-search_issues
+      - Query pattern: "is:open -label:\"status:blocked\" -label:\"status:in-progress\" label:\"priority:critical\""
+      - If no critical, try: "is:open -label:\"status:blocked\" -label:\"status:in-progress\" label:\"priority:high\""
+      - Continue with medium, then low priorities
+      - Parse issue body for dependencies ("Depends on #X") and ensure all dependencies are closed
+      
+      **Step 3: Start Work**
+      - Update issue via GitHub API: Add label "status:in-progress", assign to @copilot
+      - Create feature branch if needed: feature/{issue-number}-{slug}
+      
+      **Step 4: Execute Task**
+      - Implement according to issue description and test strategy
+      - Run tests and verification checks
+      - Fix any lint/type errors
+      - Update related documentation
+      
+      **Step 5: Complete Task**
+      - Run verification checklist (code compiles, tests pass, no new errors)
+      - Add completion comment using github-mcp-server-issue_write (method: add_comment)
+        - What was done
+        - Files changed
+        - Tests run and results
+        - Follow-up issues created (if any)
+      - Close issue (state: closed) OR update labels to "status:review"
+      
+      **Step 6: Create Follow-ups**
+      - Observe for code smells, missing tests, documentation gaps, security issues
+      - Create GitHub issues for discovered work with proper labels and dependencies
+      
+      **Step 7: Repeat**
+      - Continue loop until no ready issues remain
+      
+      For cloud deployments: coordinate with GitHub workflows and specialized cloud agents.
+      Always align with plan documents before starting work.
   - label: Full Auto - Cloud Task Master
     agent: Auto Zen
-    prompt:
+    prompt: |
       Execute complete cloud deployment and management cycle with intelligent orchestration.
       
       **Phase 1: Local Validation (0-5 min)**
-      - Load workflow context from Docs/Plan/
+      - Load plan context from Docs/Plan/
+      - Query GitHub issue for deployment details using github-mcp-server-issue_read
       - Verify all tests pass locally
       - Run linting and type checks
       - Build production assets
@@ -22,26 +64,31 @@ handoffs:
       
       **Phase 2: Pre-Deployment (5-10 min, wait 2 min between checks)**
       - Create deployment branch: deploy/{environment}-{timestamp}
+      - Update GitHub issue with status comment
       - Verify cloud configuration files (.env.production, docker-compose.yml)
       - Run security scans (dependencies, vulnerabilities)
       - Check deployment prerequisites (migrations, seeds, backups)
       - Wait 120 seconds for CI/CD pipeline validation
+      - Add progress comment to GitHub issue
       
       **Phase 3: Staging Deployment (10-20 min, wait 3 min for stability)**
       - Deploy to staging environment via GitHub Actions
+      - Update issue status: "status:testing"
       - Wait 180 seconds for deployment completion
       - Run smoke tests on staging
       - Monitor health endpoints
       - Verify database migrations
       - Check API response times
       - Wait 120 seconds for system stabilization
+      - Comment results on GitHub issue
       
       **Phase 4: Production Readiness (20-25 min, wait 5 min for final checks)**
       - Compare staging vs production configurations
       - Review deployment logs for warnings
       - Verify rollback procedures ready
-      - Create production deployment PR
+      - Create production deployment PR (links to issue)
       - Wait 300 seconds for manual approval gate (if required)
+      - Update issue with PR reference
       
       **Phase 5: Production Deployment (25-35 min, wait 5 min post-deploy)**
       - Execute production deployment workflow
@@ -50,6 +97,7 @@ handoffs:
       - Verify all services healthy
       - Run production smoke tests
       - Wait 180 seconds for traffic stabilization
+      - Add deployment success comment to issue
       
       **Phase 6: Post-Deployment Validation (35-40 min)**
       - Verify zero-downtime deployment success
@@ -57,53 +105,121 @@ handoffs:
       - Validate monitoring alerts configured
       - Update deployment documentation (Docs/Deployments/)
       - Archive deployment artifacts
-      - Sync deployment status back to _ZENTASKS
+      - Close GitHub issue with deployment summary
       
       **Phase 7: Continuous Monitoring (40+ min, ongoing)**
       - Monitor for 10 minutes post-deployment
       - Check every 60 seconds for anomalies
       - Auto-rollback if error rate >5% or response time >2x baseline
-      - Create incident tasks if issues detected
-      - Update task status and metrics
-      
-      **Intelligent Features:**
-      - Auto-pause on failed checks (max 3 retries with exponential backoff)
-      - Parallel execution where possible (local tests + config validation)
-      - Smart rollback on any critical failure
-      - Real-time progress updates in task comments
-      - Automatic follow-up task creation for optimization opportunities
-      - Built-in wait timers between phases for system stability
-      - Local + cloud state synchronization
-      - Command-line timer output: "⏱️ Waiting {seconds}s for {reason}..."
+      - Create GitHub issues if problems detected
+      - Update issue with monitoring status
       
       **Error Handling:**
-      - Deployment failure → Immediate rollback + incident task
-      - Test failure → Block deployment + investigation task
-      - Timeout exceeded → Mark blocked + alert notification
-      - Configuration mismatch → Pause + validation task
+      - Deployment failure → Immediate rollback + create incident issue
+      - Test failure → Block deployment + create investigation issue
+      - Timeout exceeded → Add "status:blocked" label + alert
+      - Configuration mismatch → Pause + create validation issue
       
-      **Task Management:**
+      **Issue Management:**
       - Update GitHub issue labels for status changes
-      - Create follow-up GitHub issues as needed
-      - Link all cloud resources to parent issue
+      - Create follow-up GitHub issues for discovered work
+      - Link all cloud resources to parent issue in comments
       - Document difficulties and resolutions in issue comments
       
-      Execute fully autonomously with checkpoints at each phase. No manual intervention required unless critical failure occurs.
-    prompt: Load Zen Tasks workflow context using zen-tasks_000_workflow_context. Inspect current tasks in _ZENTASKS/tasks.json. Pick the highest-priority ready task with zen-tasks_next_task. Mark it in-progress with zen-tasks_set_status. Implement the task, run tests, verify completion, and mark done. Observe for new issues, create follow-up tasks with zen-tasks_add_task. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder, follow task format specification, and always use tools to update tasks—never edit _ZENTASKS files directly. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{task-id}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
+      Execute fully autonomously with checkpoints at each phase. Use GitHub issues for all status tracking.
   - label: Deploy to Cloud Environment
     agent: Auto Zen
-    prompt: Review the completed GitHub issue and prepare for cloud deployment. Create deployment branch (deploy/{environment}-{timestamp}). Verify cloud configuration files (docker-compose.yml, .env.production, deployment scripts). Run pre-deployment checks (tests, security scans, dependency audits). Coordinate with CI/CD workflows (.github/workflows/deploy-*.yml). Hand off to cloud platform-specific agents if specialized deployment needed. Document deployment steps in Docs/Deployments/. Monitor deployment status and rollback on failure. Update GitHub issue with deployment status.
+    prompt: |
+      Review the completed GitHub issue and prepare for cloud deployment.
+      
+      **Deployment Flow:**
+      1. Read issue details using github-mcp-server-issue_read
+      2. Create deployment branch: deploy/{environment}-{timestamp}
+      3. Verify cloud configuration files (docker-compose.yml, .env.production, deployment scripts)
+      4. Run pre-deployment checks (tests, security scans, dependency audits)
+      5. Coordinate with CI/CD workflows (.github/workflows/deploy-*.yml)
+      6. Hand off to cloud platform-specific agents if specialized deployment needed
+      7. Document deployment steps in Docs/Deployments/
+      8. Monitor deployment status via GitHub Actions
+      9. Add deployment logs and status to issue comments
+      10. Close issue on successful deployment or add "status:blocked" on failure
+      11. Create rollback issue if deployment fails
+      
+      Track all deployment progress in the GitHub issue comments.
   - label: Coordinate Remote Agent Work
     agent: Auto Zen
-    prompt: Identify GitHub issues requiring remote or cloud agent coordination. Create coordination branches (coord/{agent-type}-{issue-number}). Use GitHub Actions workflows to trigger remote agent work. Monitor remote agent progress via webhooks and API polling. Update GitHub issue comments with sync results. Handle remote failures by creating investigation issues and fallback strategies. Document remote coordination patterns in Docs/RemoteAgents/.
+    prompt: |
+      Identify and coordinate GitHub issues requiring remote or cloud agent work.
+      
+      **Coordination Flow:**
+      1. Query issues needing remote work: github-mcp-server-search_issues with filter "is:open label:\"agent:cloud\" OR label:\"remote-required\""
+      2. Create coordination branches: coord/{agent-type}-{issue-number}
+      3. Use GitHub Actions workflows to trigger remote agent work
+      4. Monitor remote agent progress via webhooks and API polling
+      5. Add sync results as issue comments using github-mcp-server-issue_write
+      6. Handle remote failures by creating investigation issues with proper labels
+      7. Document remote coordination patterns in Docs/RemoteAgents/
+      8. Update issue labels based on remote work status
+      9. Close coordinated issues when remote work completes
+      
+      Track all remote coordination in issue comment threads.
   - label: Manage Feature Branches
     agent: Auto Zen
-    prompt: Create and manage feature branches for parallel work streams. Use naming convention: feature/{issue-number}-{description-slug}. Track branch-to-issue mappings in issue comments. Coordinate merges with dependency-aware sequencing. Resolve conflicts automatically where possible, escalate complex conflicts to human review. Keep branches synced with main to prevent drift. Archive completed feature branches after successful PR merge. Document branching strategy in Docs/BranchingStrategy.md.
+    prompt: |
+      Create and manage feature branches for parallel work streams using GitHub issues.
+      
+      **Branch Management Flow:**
+      1. Query in-progress issues: github-mcp-server-search_issues with "is:open label:\"status:in-progress\""
+      2. Use naming convention: feature/{issue-number}-{description-slug}
+      3. Track branch-to-issue mappings in issue comments
+      4. Parse issue dependencies to determine merge sequencing
+      5. Coordinate merges with dependency-aware ordering
+      6. Resolve conflicts automatically where possible
+      7. Create conflict resolution issues for complex conflicts
+      8. Keep branches synced with main to prevent drift
+      9. Archive completed feature branches after successful PR merge
+      10. Update issue comments with branch status
+      11. Document branching strategy in Docs/BranchingStrategy.md
+      
+      All branch tracking happens via issue comments and labels.
   - label: Hand Off to Cloud Specialist
     agent: Auto Zen
-    prompt: This GitHub issue requires cloud platform expertise. Review issue requirements, cloud configuration, and deployment targets. Validate infrastructure as code (Terraform/CloudFormation). Execute deployment workflows with proper staging gates. Monitor cloud resource provisioning and health checks. Roll back on deployment failures. Update issue with deployment status, logs, and resource URLs. Create follow-up issues for optimization or incident response.
+    prompt: |
+      This GitHub issue requires cloud platform expertise. Coordinate cloud deployment.
+      
+      **Cloud Handoff Flow:**
+      1. Read issue requirements using github-mcp-server-issue_read
+      2. Review cloud configuration and deployment targets
+      3. Validate infrastructure as code (Terraform/CloudFormation)
+      4. Execute deployment workflows with proper staging gates
+      5. Monitor cloud resource provisioning and health checks
+      6. Roll back on deployment failures
+      7. Add deployment status, logs, and resource URLs to issue comments
+      8. Create follow-up issues for optimization or incident response
+      9. Update issue labels based on deployment status
+      10. Close issue on successful deployment
+      
+      All cloud coordination tracked in issue comments.
   - label: Coordinate Multi-Branch Workflow
     agent: Auto Zen
+    prompt: |
+      Orchestrate work across multiple feature branches using GitHub issues.
+      
+      **Multi-Branch Orchestration:**
+      1. Query all in-progress issues: github-mcp-server-search_issues with "is:open label:\"status:in-progress\""
+      2. Read each issue and parse dependencies from issue body
+      3. Identify parallel work tracks with no cross-dependencies
+      4. Execute independent branches concurrently
+      5. Queue dependent branches by priority and critical path
+      6. Merge completed branches in dependency order
+      7. Run integration tests after each merge
+      8. Create branch sync issues when conflicts detected
+      9. Document multi-branch coordination status in issue comments
+      10. Update issue labels as branches complete
+      
+      All coordination state tracked via GitHub issues and comments.
+    prompt: Load workflow context from Docs/Plan/ (detailed project description and feature list). Query current GitHub Issues using github-mcp-server-search_issues to inspect open tasks. Pick the highest-priority ready task (query with filters: is:open -label:"status: blocked" -label:"status: in-progress" sort:priority). Update issue labels to mark in-progress and assign to self. Implement the task, run tests, verify completion, and close the issue (or update labels to done). Observe for new issues during implementation and create follow-up GitHub issues as needed. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder and follow GitHub issue format. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{issue-number}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
+  
     prompt: Orchestrate work across multiple feature branches. Load all in-progress GitHub issues and their branch associations. Identify parallel work tracks with no cross-dependencies. Execute independent branches concurrently. Queue dependent branches by priority and critical path. Merge completed branches in dependency order. Run integration tests after each merge. Create branch sync issues when conflicts detected. Document multi-branch coordination status in issue comments.
   - label: Request Planning Assistance
     agent: Zen Planner
