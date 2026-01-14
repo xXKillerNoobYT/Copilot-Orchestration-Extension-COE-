@@ -67,18 +67,12 @@ OR after stopping:
 
 ```
 WHILE work exists:
-  1. Load workflow context (GitHub Issues from .github/issues/ OR fallback to prompts/zen_tasks_workflow.md)
-  2. Refresh plan context from Docs/Plan/
-  3. Get next ready issue (highest priority, dependencies met, plan-aligned)
-  4. Mark in-progress (update issue labels/status)
   1. Load plan context from Docs/Plan/
   2. Query GitHub Issues for current state (github-mcp-server-search_issues)
   3. Get next ready issue (highest priority, dependencies met, plan-aligned)
   4. Update labels to in-progress + assign to self
   5. Execute (implement, test, verify)
   6. Close issue or update labels to done
-  7. Observe for new issues → create follow-up GitHub issues
-  6. Mark done (close issue or update status)
   7. Observe for new issues → create follow-up GitHub issues
   8. Repeat
 ```
