@@ -2,13 +2,47 @@
 
 **Location**: `Docs/GitHub-Migration/`  
 **Purpose**: Central hub for _ZENTASKS → GitHub Issues migration documentation  
-**Last Updated**: 2026-01-12
+**Last Updated**: 2026-01-13
 
 ---
 
 ## 📁 Available Documents
 
-### 1. **audit-report.md** (Comprehensive Analysis)
+### 1. **issues-schema.md** (Schema Specification) ⭐ NEW
+**Size**: ~650 lines  
+**Purpose**: Complete GitHub Issues schema and label taxonomy
+
+**Contents**:
+- Field mapping (task.json → GitHub Issues)
+- Label taxonomy (25 labels: type, priority, status, agent)
+- Custom fields design (GitHub Projects)
+- Dependency handling documentation
+- Issue body structure template
+- Migration JSON schema
+- Example mappings
+
+**Best For**: Schema design, migration implementation, label reference
+
+---
+
+### 2. **SCHEMA-TEMPLATES-README.md** (Migration Guide) ⭐ NEW
+**Size**: ~350 lines  
+**Purpose**: Quick start guide for using schema and templates
+
+**Contents**:
+- Quick start instructions
+- Label creation script usage
+- Issue template documentation
+- Label reference tables
+- Migration workflow
+- Validation checklist
+- Troubleshooting guide
+
+**Best For**: Getting started, running scripts, testing templates
+
+---
+
+### 3. **audit-report.md** (Comprehensive Analysis)
 **Size**: ~940 lines  
 **Purpose**: Complete audit of all _ZENTASKS and zen-tasks_* references
 
@@ -28,7 +62,7 @@
 
 ---
 
-### 2. **QUICK-REFERENCE.md** (At-a-Glance Summary)
+### 4. **QUICK-REFERENCE.md** (At-a-Glance Summary)
 **Size**: ~136 lines  
 **Purpose**: Quick lookup for key metrics and status
 
@@ -46,7 +80,7 @@
 
 ---
 
-### 3. **MIGRATION-ROADMAP.md** (Visual Diagrams)
+### 5. **MIGRATION-ROADMAP.md** (Visual Diagrams)
 **Size**: ~300 lines  
 **Purpose**: Visual representation of migration strategy
 
@@ -65,7 +99,7 @@
 
 ---
 
-### 4. **README.md** (This File)
+### 6. **README.md** (This File)
 **Purpose**: Navigation and overview
 
 **Best For**: Starting point, finding the right document
@@ -76,6 +110,8 @@
 
 ### I need to...
 
+- **Create labels and templates** → Read `SCHEMA-TEMPLATES-README.md` (Quick Start)
+- **Understand the schema design** → Read `issues-schema.md`
 - **Understand the full scope** → Read `audit-report.md`
 - **Check current status** → Read `QUICK-REFERENCE.md`
 - **Visualize the plan** → Read `MIGRATION-ROADMAP.md`
@@ -121,6 +157,10 @@
 - `Docs/ZENTASKS-MIGRATION-PLAN.md` - Original migration plan
 - `Docs/GitHub-Migration-Summary.md` - Migration overview
 - `Docs/GitHub-Migration-Tool-Mapping.md` - Tool equivalency guide
+- `Docs/GitHub-Migration/issues-schema.md` - **Schema specification (NEW)**
+- `Docs/GitHub-Migration/SCHEMA-TEMPLATES-README.md` - **Quick start guide (NEW)**
+- `.github/ISSUE_TEMPLATE/` - **Issue templates (NEW)**
+- `_ZENTASKS/scripts/create-github-labels.sh` - **Label creation script (NEW)**
 - `.github/copilot-instructions.md` - System instructions (has 4 zen-tasks refs)
 - `prompts/zen_tasks_workflow.md` - Workflow docs (has 10+ zen-tasks refs)
 
@@ -159,11 +199,13 @@ Phase 5: Cleanup (Week 5)
 
 ## 🎬 Next Steps
 
-1. **Review** → Read `audit-report.md` for complete analysis
-2. **Approve** → Stakeholder review and sign-off
-3. **Plan** → Create GitHub Issues for each migration task
-4. **Execute** → Follow 5-week phased approach
-5. **Validate** → 30-day production monitoring
+1. **Create Labels** → Run `_ZENTASKS/scripts/create-github-labels.sh` (see `SCHEMA-TEMPLATES-README.md`)
+2. **Test Templates** → Create test issues using `.github/ISSUE_TEMPLATE/` templates
+3. **Review Schema** → Read `issues-schema.md` for complete specification
+4. **Approve** → Stakeholder review and sign-off
+5. **Plan** → Create GitHub Issues for each migration task
+6. **Execute** → Follow 5-week phased approach
+7. **Validate** → 30-day production monitoring
 
 ---
 
@@ -180,6 +222,9 @@ Phase 5: Cleanup (Week 5)
 
 | Date | Document | Change |
 |------|----------|--------|
+| 2026-01-13 | issues-schema.md | Initial creation - complete schema spec |
+| 2026-01-13 | SCHEMA-TEMPLATES-README.md | Initial creation - quick start guide |
+| 2026-01-13 | README.md | Updated to include new schema docs |
 | 2026-01-12 | audit-report.md | Initial creation |
 | 2026-01-12 | QUICK-REFERENCE.md | Initial creation |
 | 2026-01-12 | MIGRATION-ROADMAP.md | Initial creation |
