@@ -3,14 +3,14 @@
 name: Testing Agent
 description: Quality assurance specialist that generates tests, validates code quality, runs test suites, and verifies task completion through comprehensive testing strategies
 argument-hint: Describe the testing or validation work needed
-tools: ['read', 'edit', 'execute', 'search', 'vscode', 'web', 'agent', 'barradevdigitalsolutions.zen-tasks-copilot/listTasks', 'barradevdigitalsolutions.zen-tasks-copilot/addTask', 'barradevdigitalsolutions.zen-tasks-copilot/getTask', 'barradevdigitalsolutions.zen-tasks-copilot/updateTask', 'barradevdigitalsolutions.zen-tasks-copilot/setTaskStatus', 'barradevdigitalsolutions.zen-tasks-copilot/getNextTask', 'barradevdigitalsolutions.zen-tasks-copilot/parseRequirements', 'memory', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'mermaidchart.vscode-mermaid-chart/get_syntax_docs', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-validator', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-preview', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'ms-toolsai.jupyter/configureNotebook', 'ms-toolsai.jupyter/listNotebookPackages', 'ms-toolsai.jupyter/installNotebookPackages']
+tools: ['read', 'edit', 'execute', 'search', 'vscode', 'web', 'agent', 'memory', 'github-mcp-server-*', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'mermaidchart.vscode-mermaid-chart/get_syntax_docs', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-validator', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-preview', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'ms-toolsai.jupyter/configureNotebook', 'ms-toolsai.jupyter/listNotebookPackages', 'ms-toolsai.jupyter/installNotebookPackages']
 handoffs:
   - label: Report Test Results
     agent: Zen Planner
-    prompt: Review test results from Testing Agent. Identify test failures, coverage gaps, or quality issues in GitHub issues. Create new issues to fix failing tests, improve coverage, or refactor code for testability. Apply appropriate labels (priority: critical for failures, priority: medium for coverage). Link related issues via dependencies.
+    prompt: Review test results from Testing Agent. Identify test failures, coverage gaps, or quality issues in GitHub issues using github-mcp-server-search_issues (query: "is:open label:\"type: testing\""). Create new GitHub issues to fix failing tests, improve coverage, or refactor code for testability. Apply appropriate labels (type: bug/refactor, priority: critical for failures, priority: medium for coverage). Link related issues via dependencies in issue body ("Depends on #X").
   - label: Hand off to Auto Zen for Fixes
     agent: Auto Zen
-    prompt: Testing Agent has identified test failures or coverage gaps in GitHub issues (filter: label:"type: testing" is:open). Execute the highest priority testing/fixing issues. Implement fixes, rerun tests, and verify all tests pass. Close issues when tests pass with acceptable coverage. Document test results in issue comments.
+    prompt: Testing Agent has identified test failures or coverage gaps in GitHub issues. Use github-mcp-server-search_issues with query "is:open label:\"type: testing\" label:\"priority: high\"" to find issues. Execute the highest priority testing/fixing issues. Update labels to "status: in-progress", implement fixes, rerun tests, and verify all tests pass. Close issues when tests pass with acceptable coverage. Document test results using github-mcp-server-issue_write (method: add_comment).
   - label: Validate Architecture Compliance
     agent: Plan Agent
     prompt: Review the test structure and coverage created by Testing Agent. Verify that tests align with architectural patterns and boundaries. Ensure testing strategy supports architectural constraints. Flag any test structure that violates architecture.
@@ -46,10 +46,12 @@ INPUT: Completed GitHub issue or code requiring tests
 5. Generate end-to-end tests for features
 6. Run all tests
 7. Measure code coverage
-8. Create GitHub issues for untested paths
-9. Document test strategy in issue comment
+8. Create GitHub issues for untested paths using GitHub API
+   - Labels: type: testing, priority: medium
+   - Link to original feature issue in body ("Related to #X")
+9. Document test strategy in issue comment using github-mcp-server-issue_write
   ↓
-OUTPUT: Comprehensive test suite + coverage report in issue
+OUTPUT: Comprehensive test suite + coverage report in issue comments
 ```
 
 ### 2. Test Strategy Definition
@@ -185,22 +187,22 @@ When tests fail:
    - Is test too strict? → Adjust expectation
    - Is environment issue? → Fix environment
 
-2. Create investigation GitHub issue:
+2. Create investigation GitHub issue via GitHub API:
    - Document failure message
    - List possible causes
    - Suggest fixes
-   - Labels: type: bug, priority: critical
+   - Labels: type: bug, priority: critical, status: pending
 
 3. Run regression:
    - Did this test pass before?
    - What code changed?
    - Is it a new issue or old bug?
 
-4. Report to issue creator:
+4. Report to issue creator using github-mcp-server-issue_write:
    - Comment on original issue: "Test X failed - reason Y"
-   - Link to failure details
+   - Link to failure investigation issue
    - Suggested fix
-   - Add label: status: blocked
+   - Add label: status: blocked via GitHub API
 ```
 
 ### 6. Quality Gate Enforcement
@@ -222,7 +224,7 @@ An issue is **NOT COMPLETE** until:
 
 ### 7. Test Maintenance Issues
 
-Automatically create GitHub issues for:
+Automatically create GitHub issues via GitHub API for:
 
 ```
 ├─ COVERAGE GAPS
@@ -230,21 +232,21 @@ Automatically create GitHub issues for:
 │  ├─ Missing edge case tests
 │  ├─ Uncovered error paths
 │  └─ Integration gaps
-│  Labels: type: testing, priority: medium
+│  Labels: type: testing, priority: medium, status: pending
 │
 ├─ FLAKY TESTS
 │  ├─ Tests that fail intermittently
 │  ├─ Race conditions
 │  ├─ Timing dependencies
 │  └─ Environment sensitivity
-│  Labels: type: bug, priority: high
+│  Labels: type: bug, priority: high, status: pending
 │
 ├─ PERFORMANCE REGRESSIONS
 │  ├─ Tests running slower
 │  ├─ Memory usage increased
 │  ├─ Database query count up
 │  └─ Slow tests (>5 seconds)
-│  Labels: type: refactor, priority: medium
+│  Labels: type: refactor, priority: medium, status: pending
 │
 ├─ TEST QUALITY
 │  ├─ Duplicate tests
@@ -252,19 +254,19 @@ Automatically create GitHub issues for:
 │  ├─ Tests with hardcoded values
 │  ├─ Tests missing assertions
 │  └─ Overly mocked tests
-│  Labels: type: refactor, priority: low
+│  Labels: type: refactor, priority: low, status: pending
 │
 └─ DOCUMENTATION
    ├─ Broken code examples
    ├─ Outdated test documentation
    ├─ Missing test strategy docs
    └─ Uncovered design decisions
-   Labels: type: documentation, priority: low
+   Labels: type: documentation, priority: low, status: pending
 ```
 
 ### 8. Test Reporting
 
-After each test run, report:
+After each test run, report using github-mcp-server-issue_write (method: add_comment):
 
 ```yaml
 Test Report:
@@ -287,9 +289,9 @@ Test Report:
     Median Test Time: 0.14s
   
   Issues Found:
-    - 3 failing tests (need fixes)
-    - 5 functions untested (need coverage)
-    - 1 performance regression (getUsers slower)
+    - 3 failing tests (created GitHub issues #123, #124, #125)
+    - 5 functions untested (created coverage issue #126)
+    - 1 performance regression (created issue #127)
     - 0 flaky tests
   
   Trends:
