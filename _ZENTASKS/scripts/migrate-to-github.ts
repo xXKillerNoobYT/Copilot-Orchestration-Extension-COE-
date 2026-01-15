@@ -168,7 +168,7 @@ function mapTaskLabels(task: Task): string[] {
   
   // Status (only if not done - done tasks will be closed)
   if (task.status !== 'done' && task.status !== 'cancelled') {
-    labels.push(`status: ${task.status.replace('_', '-')}`);
+    labels.push(`status: ${task.status.replace(/_/g, '-')}`);
   }
   
   return labels;

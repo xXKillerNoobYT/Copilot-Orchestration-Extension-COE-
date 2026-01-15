@@ -146,7 +146,7 @@ github-mcp-server-issue_read(issue_number: 123)
 
 - **Migration Date**: [TO BE FILLED]
 - **Active Reference Period**: 30 days
-- **Archival Date**: [TO BE FILLED]
+- **Archival Date**: [Migration Date + 30 days]
 - **Final Disposition**: Compressed and moved to `Docs/Archive/`
 
 During the active reference period (30 days), this directory will remain in place for reference. After that, it will be archived.
