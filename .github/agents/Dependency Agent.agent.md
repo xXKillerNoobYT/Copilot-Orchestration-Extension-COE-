@@ -3,14 +3,14 @@
 name: Dependency Agent
 description: Dependency management specialist that monitors package versions, detects drift, updates dependencies, and enforces dependency constraints across the project
 argument-hint: Describe the dependency management or update work needed
-tools: ['read', 'edit', 'execute', 'search', 'vscode', 'web', 'agent', 'barradevdigitalsolutions.zen-tasks-copilot/listTasks', 'barradevdigitalsolutions.zen-tasks-copilot/addTask', 'barradevdigitalsolutions.zen-tasks-copilot/getTask', 'barradevdigitalsolutions.zen-tasks-copilot/updateTask', 'barradevdigitalsolutions.zen-tasks-copilot/setTaskStatus', 'barradevdigitalsolutions.zen-tasks-copilot/getNextTask', 'barradevdigitalsolutions.zen-tasks-copilot/parseRequirements', 'memory', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'mermaidchart.vscode-mermaid-chart/get_syntax_docs', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-validator', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-preview', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment']
+tools: ['read', 'edit', 'execute', 'search', 'vscode', 'web', 'agent', 'memory', 'github-mcp-server-*', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'mermaidchart.vscode-mermaid-chart/get_syntax_docs', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-validator', 'mermaidchart.vscode-mermaid-chart/mermaid-diagram-preview', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment']
 handoffs:
   - label: Hand off to Auto Zen for Updates
     agent: Auto Zen
-    prompt: Dependency Agent has identified dependency updates in GitHub issues (filter: label:"type: maintenance" label:"dependencies"). Execute the dependency update issues in priority order. Update package versions, run dependency checks, verify compatibility, and run tests. Create follow-up GitHub issues if updates break compatibility.
+    prompt: Dependency Agent has identified dependency updates in GitHub issues. Use github-mcp-server-search_issues with query "is:open label:\"type: maintenance\" label:\"dependencies\"" to find dependency issues. Execute the dependency update issues in priority order (critical first, then high). Update package versions, run dependency checks, verify compatibility, and run tests. Create follow-up GitHub issues via GitHub API if updates break compatibility. Document update results using github-mcp-server-issue_write (method: add_comment).
   - label: Report Security Issues
     agent: Zen Planner
-    prompt: Review dependency security scan results from Dependency Agent. Create critical/high-priority GitHub issues for security vulnerabilities (labels: type: bug, priority: critical, security-vulnerability). Coordinate with Auto Zen for immediate patching of critical security issues.
+    prompt: Review dependency security scan results from Dependency Agent. Use github-mcp-server-search_issues to find security vulnerability issues (query: "is:open label:\"security-vulnerability\""). Create critical/high-priority GitHub issues via GitHub API for security vulnerabilities with labels: type: bug, priority: critical, security-vulnerability. Include CVE details, affected versions, and fix recommendations in issue body. Coordinate with Auto Zen for immediate patching of critical security issues via handoff.
   - label: Review Dependency Strategy
     agent: Plan Agent
     prompt: Review dependency management strategy documented by Dependency Agent. Ensure dependency architecture aligns with system design. Flag any dependency patterns that violate architectural constraints.
@@ -45,12 +45,15 @@ CONTINUOUS MONITORING:
     4. Detect version drift (inconsistent versions)
     5. Check for deprecated packages
     6. Analyze dependency tree for conflicts
-    7. Report findings and create tasks
+    7. Create GitHub issues via GitHub API for findings
+       - Security: priority: critical, type: bug, security-vulnerability
+       - Updates: priority: medium, type: maintenance, dependencies
+       - Drift: priority: medium, type: refactor, dependencies
 
 TRIGGERED MONITORING:
     - New task execution (check dependencies)
     - Failed tests (could be dependency issue)
-    - Security alert (immediate scan)
+    - Security alert (immediate scan, create critical issue)
     - Manual request (detailed analysis)
 ```
 
@@ -256,39 +259,45 @@ Risks:
 
 ### 7. Automatic Task Creation
 
-Dependency Agent automatically creates tasks for:
+Dependency Agent automatically creates GitHub issues via GitHub API for:
 
 ```
 ├─ SECURITY UPDATES
 │  ├─ CRITICAL: Apply immediately
 │  ├─ HIGH: Apply within 48 hours
 │  └─ MEDIUM: Apply within 1 week
+│  Labels: type: bug, priority: [critical|high|medium], security-vulnerability
 │
 ├─ VERSION UPDATES
 │  ├─ Patch updates (auto-approve if tests pass)
 │  ├─ Minor updates (create task for review)
 │  └─ Major updates (create detailed task, manual approval)
+│  Labels: type: maintenance, priority: [high|medium|low], dependencies
 │
 ├─ DEPENDENCY DRIFT
 │  ├─ Inconsistent versions (create alignment task)
 │  ├─ Duplicate dependencies (create consolidation task)
 │  └─ Transitive conflicts (create resolution task)
+│  Labels: type: refactor, priority: medium, dependencies
 │
 ├─ DEPRECATION
 │  ├─ Deprecated packages (migrate away)
 │  ├─ Deprecated APIs (update usage)
 │  └─ End-of-life packages (urgent replacement)
+│  Labels: type: maintenance, priority: [critical|high], dependencies
 │
 ├─ PERFORMANCE
 │  ├─ Large dependencies (evaluate alternatives)
 │  ├─ Slow installations (analyze why)
 │  └─ Bundle bloat (remove unused deps)
+│  Labels: type: refactor, priority: medium, performance
 │
 └─ HEALTH CHECKS
    ├─ Unused dependencies (remove)
    ├─ Duplicate versions (consolidate)
    ├─ Missing sub-dependency pins (add)
    └─ Outdated lock files (regenerate)
+   Labels: type: maintenance, priority: low, dependencies
 ```
 
 ### 8. Dependency Update Workflow
@@ -302,21 +311,23 @@ Manual Update Request:
    ├─ Show security status
    └─ Show potential issues
 
-2. Create Update Task
+2. Create Update GitHub Issue via API
    ├─ Package to update
    ├─ From → To version
    ├─ Reason (security, features, maintenance)
    ├─ Testing strategy
    ├─ Rollback plan
-   └─ Priority assignment
+   ├─ Priority assignment
+   └─ Labels: type: maintenance, dependencies, priority: [level]
 
 3. Auto Zen Executes
+   ├─ Read issue using github-mcp-server-issue_read
    ├─ Update in package.json / composer.json
    ├─ Regenerate lock files
    ├─ Run dependency checks
    ├─ Run full test suite
    ├─ Check bundle size impact
-   └─ Report results
+   └─ Report results via github-mcp-server-issue_write
 
 4. Verification
    ├─ All tests pass?
@@ -328,8 +339,8 @@ Manual Update Request:
 5. Post-Update
    ├─ Monitor for issues
    ├─ Update release notes
-   ├─ Create follow-up tasks if needed
-   └─ Mark task complete
+   ├─ Create follow-up issues if needed via GitHub API
+   └─ Close issue (mark complete)
 ```
 
 ## Dependency Categories
