@@ -1,9 +1,9 @@
 name: Sync Zen Tasks with GitHub Issues
 
 on:
-  # Run every 6 hours
+  # Run every 12 hours (reduced from 6 hours to minimize API usage)
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 */12 * * *'
   
   # Allow manual triggering
   workflow_dispatch:

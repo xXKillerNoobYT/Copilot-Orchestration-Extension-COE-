@@ -18,7 +18,7 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     # Group Vue ecosystem updates
     groups:
       vue:
@@ -35,7 +35,7 @@ updates:
   - package-ecosystem: "npm"
     directory: "/vscode-extension"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     # Group VS Code API updates
     groups:
       vscode:
