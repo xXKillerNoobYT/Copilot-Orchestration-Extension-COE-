@@ -257,4 +257,204 @@ class PlanDecompositionTest extends TestCase
                 ],
             ]);
     }
+
+    /** @test */
+    public function it_validates_invalid_microtask_size()
+    {
+        $plan = Plan::factory()->create([
+            'status' => 'active',
+            'wizard_state' => ['features' => [], 'timeline' => []],
+        ]);
+        
+        $response = $this->postJson("/api/mcp/plans/{$plan->id}/decompose", [
+            'options' => [
+                'microtask_size' => 300, // Greater than maximum 240
+            ],
+        ]);
+        
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['options.microtask_size']);
+    }
+
+    /** @test */
+    public function it_returns_critical_path_in_metadata()
+    {
+        $plan = Plan::factory()->create([
+            'status' => 'active',
+            'wizard_state' => [
+                'features' => [
+                    [
+                        'id' => 'feat-1',
+                        'name' => 'Foundation',
+                        'description' => 'Base feature',
+                        'priority' => 'high',
+                        'dependencies' => [],
+                    ],
+                    [
+                        'id' => 'feat-2',
+                        'name' => 'Build on Foundation',
+                        'description' => 'Depends on foundation',
+                        'priority' => 'high',
+                        'dependencies' => ['feat-1'],
+                    ],
+                ],
+                'timeline' => [],
+                'architecture' => 'mvc',
+            ],
+        ]);
+        
+        $response = $this->postJson("/api/mcp/plans/{$plan->id}/decompose");
+        
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'metadata' => [
+                    'critical_path',
+                ],
+            ]);
+        
+        $data = $response->json();
+        $this->assertIsArray($data['metadata']['critical_path']);
+    }
+
+    /** @test */
+    public function it_assigns_priorities_correctly()
+    {
+        $plan = Plan::factory()->create([
+            'status' => 'active',
+            'wizard_state' => [
+                'features' => [
+                    [
+                        'id' => 'feat-critical',
+                        'name' => 'Critical Feature',
+                        'description' => 'Very important',
+                        'priority' => 'critical',
+                        'dependencies' => [],
+                    ],
+                    [
+                        'id' => 'feat-low',
+                        'name' => 'Low Priority Feature',
+                        'description' => 'Not urgent',
+                        'priority' => 'low',
+                        'dependencies' => [],
+                    ],
+                ],
+                'timeline' => [],
+                'architecture' => 'mvc',
+            ],
+        ]);
+        
+        $response = $this->postJson("/api/mcp/plans/{$plan->id}/decompose");
+        
+        $response->assertStatus(200);
+        
+        $tasks = $response->json('tasks');
+        
+        $this->assertEquals('critical', $tasks[0]['priority']);
+        $this->assertEquals('low', $tasks[1]['priority']);
+    }
+
+    /** @test */
+    public function it_handles_complex_feature_with_many_dependencies()
+    {
+        $plan = Plan::factory()->create([
+            'status' => 'active',
+            'wizard_state' => [
+                'features' => [
+                    [
+                        'id' => 'feat-1',
+                        'name' => 'Feature 1',
+                        'description' => 'Base',
+                        'priority' => 'high',
+                        'dependencies' => [],
+                    ],
+                    [
+                        'id' => 'feat-2',
+                        'name' => 'Feature 2',
+                        'description' => 'Base 2',
+                        'priority' => 'high',
+                        'dependencies' => [],
+                    ],
+                    [
+                        'id' => 'feat-complex',
+                        'name' => 'Complex Feature',
+                        'description' => 'Complex authentication with database integration and OAuth',
+                        'priority' => 'high',
+                        'dependencies' => ['feat-1', 'feat-2'],
+                    ],
+                ],
+                'timeline' => [],
+                'architecture' => 'microservices',
+            ],
+        ]);
+        
+        $response = $this->postJson("/api/mcp/plans/{$plan->id}/decompose", [
+            'options' => [
+                'auto_create' => false,
+            ],
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $tasks = $response->json('tasks');
+        
+        // Complex feature should have 2 dependencies
+        $complexTask = collect($tasks)->firstWhere('id', 'feat-complex');
+        $this->assertNotNull($complexTask);
+        $this->assertCount(2, $complexTask['dependencies']);
+    }
+
+    /** @test */
+    public function it_includes_priority_breakdown_in_metadata()
+    {
+        $plan = Plan::factory()->create([
+            'status' => 'active',
+            'wizard_state' => [
+                'features' => [
+                    [
+                        'id' => 'feat-1',
+                        'name' => 'High Priority Feature',
+                        'description' => 'Important',
+                        'priority' => 'high',
+                        'dependencies' => [],
+                    ],
+                    [
+                        'id' => 'feat-2',
+                        'name' => 'Medium Priority Feature',
+                        'description' => 'Medium',
+                        'priority' => 'medium',
+                        'dependencies' => [],
+                    ],
+                    [
+                        'id' => 'feat-3',
+                        'name' => 'Low Priority Feature',
+                        'description' => 'Low',
+                        'priority' => 'low',
+                        'dependencies' => [],
+                    ],
+                ],
+                'timeline' => [],
+                'architecture' => 'mvc',
+            ],
+        ]);
+        
+        $response = $this->postJson("/api/mcp/plans/{$plan->id}/decompose");
+        
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'metadata' => [
+                    'priority_breakdown' => [
+                        'critical',
+                        'high',
+                        'medium',
+                        'low',
+                    ],
+                ],
+            ]);
+        
+        $breakdown = $response->json('metadata.priority_breakdown');
+        $this->assertIsArray($breakdown);
+        $this->assertArrayHasKey('high', $breakdown);
+        $this->assertArrayHasKey('medium', $breakdown);
+        $this->assertArrayHasKey('low', $breakdown);
+    }
 }
