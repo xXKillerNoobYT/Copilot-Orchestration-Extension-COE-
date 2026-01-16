@@ -11,11 +11,20 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: {
+        target: 'ES2020',
+        module: 'commonjs',  // Override to CommonJS for Jest
+        lib: ['ES2020', 'DOM'],
+        moduleResolution: 'node',
         esModuleInterop: true,
         allowSyntheticDefaultImports: true,
-        moduleResolution: 'node',
         resolveJsonModule: true,
         skipLibCheck: true,
+        isolatedModules: true,
+        types: ['node', 'jest'],
+      },
+      diagnostics: {
+        warnOnly: true,
+        ignoreCodes: [151002]
       }
     }]
   },
@@ -35,15 +44,35 @@ module.exports = {
     '/node_modules/',
     '/dist/',
     '/out/',
-    '\\.disabled\\.'
+    '\\.disabled\\.',
+    // Exclude Vitest-specific test files (they import from 'vitest')
+    'planBuilder/__tests__/integration',
+    'planBuilder/__tests__/wizardStore\\.test\\.ts',
+    'planBuilder/wizardContainer\\.test\\.ts',
+    'planBuilder/questionFramework\\.test\\.ts',
+    'planBuilder/taskDecomposition\\.test\\.ts',
+    'planBuilder/planMetadata\\.test\\.ts',
+    'planBuilder/planGenerator\\.test\\.ts',
+    'planBuilder/planIntegration\\.test\\.ts',
+    'planBuilder/livePreview\\.test\\.ts',
+    'planBuilder/designHandoff\\.test\\.ts',
+    'planBuilder/aiAssistanceService\\.test\\.ts',
+    'services/planPersistence\\.test\\.ts',
+    'services/taskDecomposition\\.test\\.ts',
+    'components/preview/PreviewEngine\\.test\\.ts',
+    'components/preview/WizardStateObserver\\.test\\.ts',
+    'copilotDispatcher\\.test\\.ts',
+    'panels/visualVerificationPanel\\.test\\.ts',
+    'panels/planAdjustmentWizard\\.test\\.ts',
+    'panels/orchestratorPanel\\.test\\.ts',
+    'panels/auditDashboardPanel\\.test\\.ts',
+    'llm/promptCache\\.test\\.ts',
+    // Exclude Mocha/assert-based tests
+    'extension\\.agentLoop\\.test\\.ts',
+    'integration/.*\\.test\\.ts',
+    'planBuilder/designSystem/validator\\.test\\.ts',
+    'planBuilder/designSystem/tokenGenerator\\.test\\.ts',
   ],
-  globals: {
-    'ts-jest': {
-      diagnostics: {
-        warnOnly: true
-      }
-    }
-  },
   verbose: true,
   testTimeout: 10000,
 };

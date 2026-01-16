@@ -80,12 +80,26 @@
     <div v-if="isValid && !hasErrors" class="validation-summary success">
       ✓ All fields complete and valid
     </div>
+
+    <!-- AI-Assisted Follow-up Questions -->
+    <DynamicFollowUpQuestions
+      v-if="isValid && !hasErrors"
+      :questions="followUpQuestions"
+      :existing-answers="followUpAnswers"
+      :show-ai-loader="isLoadingFollowUps"
+      header-text="🤖 AI-Assisted Questions"
+      hint-text="Based on your project type and plan, we've generated some follow-up questions to better understand your needs."
+      @answers-changed="handleFollowUpAnswers"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { useWizardStore } from '../wizardStore';
+import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
+import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
+import { PlanContextService } from '../services/PlanContextService';
 
 // Props
 interface Props {
@@ -98,11 +112,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Store
 const wizardStore = useWizardStore();
+const planContextService = PlanContextService.getInstance();
 
 // State
 const projectName = ref('');
 const projectDescription = ref('');
 const projectType = ref('');
+const followUpQuestions = ref<FollowUpQuestion[]>([]);
+const followUpAnswers = ref<Record<string, unknown>>({});
+const isLoadingFollowUps = ref(false);
 
 const errors = ref({
   name: '',
@@ -223,12 +241,108 @@ function validateAll(): boolean {
   return nameValid && descValid && typeValid;
 }
 
+// Generate follow-up questions based on answers
+async function generateFollowUpQuestions(): Promise<void> {
+  isLoadingFollowUps.value = true;
+
+  try {
+    // Load plan context
+    const planContext = await planContextService.loadPlanContext();
+
+    const questions: FollowUpQuestion[] = [];
+
+    // Generate questions based on project type
+    if (projectType.value === 'web') {
+      questions.push({
+        id: 'frontend-framework',
+        text: 'What frontend framework will you use?',
+        type: 'select',
+        placeholder: 'Select a framework...',
+        options: [
+          { value: 'react', label: 'React' },
+          { value: 'vue', label: 'Vue.js' },
+          { value: 'angular', label: 'Angular' },
+          { value: 'svelte', label: 'Svelte' },
+          { value: 'vanilla', label: 'Vanilla JavaScript' },
+        ],
+      });
+      questions.push({
+        id: 'backend-needed',
+        text: 'Does this web app need a backend?',
+        type: 'checkbox',
+        checkboxLabel: 'Yes, this app needs a backend API',
+      });
+    }
+
+    if (projectType.value === 'api') {
+      questions.push({
+        id: 'api-type',
+        text: 'What type of API will you build?',
+        type: 'radio',
+        options: [
+          { value: 'rest', label: 'REST API' },
+          { value: 'graphql', label: 'GraphQL' },
+          { value: 'grpc', label: 'gRPC' },
+        ],
+      });
+      questions.push({
+        id: 'database-type',
+        text: 'What database will you use?',
+        type: 'select',
+        placeholder: 'Select a database...',
+        options: [
+          { value: 'postgresql', label: 'PostgreSQL' },
+          { value: 'mysql', label: 'MySQL' },
+          { value: 'mongodb', label: 'MongoDB' },
+          { value: 'redis', label: 'Redis' },
+          { value: 'sqlite', label: 'SQLite' },
+        ],
+      });
+    }
+
+    // Add questions based on plan context
+    if (planContext.technicalRequirements.length > 0) {
+      questions.push({
+        id: 'tech-stack-alignment',
+        text: 'Does your chosen technology align with the requirements in your plan?',
+        type: 'textarea',
+        placeholder: 'Explain how your tech stack meets the requirements...',
+        rows: 3,
+        hint: 'Reference specific requirements from your plan document.',
+      });
+    }
+
+    if (planContext.constraints.length > 0) {
+      questions.push({
+        id: 'compliance-requirements',
+        text: 'Are there any compliance or regulatory requirements?',
+        type: 'text',
+        placeholder: 'e.g., GDPR, HIPAA, SOC 2...',
+        hint: 'List any compliance standards your project must meet.',
+      });
+    }
+
+    followUpQuestions.value = questions;
+  } catch (error) {
+    console.error('[ProjectOverview] Error generating follow-up questions:', error);
+  } finally {
+    isLoadingFollowUps.value = false;
+  }
+}
+
+// Handle follow-up answers
+function handleFollowUpAnswers(answers: Record<string, unknown>): void {
+  followUpAnswers.value = answers;
+  updateStore();
+}
+
 // Watch for changes and update store
 watch(
   () => ({
     name: projectName.value,
     description: projectDescription.value,
     type: projectType.value,
+    followUpAnswers: followUpAnswers.value,
   }),
   (value) => {
     if (isValid.value) {
@@ -238,18 +352,35 @@ watch(
   { deep: true }
 );
 
+// Watch for project type changes to generate follow-ups
+watch(
+  () => projectType.value,
+  (newType) => {
+    if (newType && isValid.value) {
+      generateFollowUpQuestions();
+    }
+  }
+);
+
 // Load existing answer from store
 onMounted(() => {
   const existingAnswer = wizardStore.getAnswer<{
     name: string;
     description: string;
     type: string;
+    followUpAnswers?: Record<string, unknown>;
   }>(props.questionId);
 
   if (existingAnswer) {
     projectName.value = existingAnswer.name || '';
     projectDescription.value = existingAnswer.description || '';
     projectType.value = existingAnswer.type || '';
+    followUpAnswers.value = existingAnswer.followUpAnswers || {};
+
+    // Generate follow-ups if we have a project type
+    if (existingAnswer.type) {
+      generateFollowUpQuestions();
+    }
   }
 });
 

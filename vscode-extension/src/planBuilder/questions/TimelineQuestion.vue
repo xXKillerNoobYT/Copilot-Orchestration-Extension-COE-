@@ -130,12 +130,25 @@
     <div v-if="isValid && !timelineDateError" class="validation-summary success">
       ✓ Timeline with {{ milestones.length }} milestone(s) is valid
     </div>
+
+    <!-- AI-Assisted Follow-up Questions -->
+    <DynamicFollowUpQuestions
+      v-if="isValid && !timelineDateError"
+      :questions="followUpQuestions"
+      :existing-answers="followUpAnswers"
+      :show-ai-loader="isLoadingFollowUps"
+      header-text="🤖 Timeline Optimization"
+      hint-text="Fine-tune your project timeline with these insights."
+      @answers-changed="handleFollowUpAnswers"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useWizardStore } from '../wizardStore';
+import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
+import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
 
 interface Milestone {
   name: string;
@@ -164,6 +177,9 @@ const milestones = ref<Milestone[]>([
   { name: '', date: '', phase: '', dependsOn: null, error: '', dateError: '' },
 ]);
 const timelineErrors = ref<string[]>([]);
+const followUpQuestions = ref<FollowUpQuestion[]>([]);
+const followUpAnswers = ref<Record<string, unknown>>({});
+const isLoadingFollowUps = ref(false);
 
 // Phase definitions
 const phases = [
@@ -322,14 +338,68 @@ function updateStore(): void {
         phase: m.phase,
         dependsOn: m.dependsOn,
       })),
+      followUpAnswers: followUpAnswers.value,
     });
   }
+}
+
+// Generate follow-up questions
+async function generateFollowUpQuestions(): Promise<void> {
+  if (milestones.value.length < MIN_MILESTONES) return;
+  
+  isLoadingFollowUps.value = true;
+  try {
+    const questions: FollowUpQuestion[] = [];
+    
+    if (milestones.value.length > 3) {
+      questions.push({
+        id: 'sprint-structure',
+        text: 'Will you use sprints or iterations?',
+        type: 'radio',
+        options: [
+          { value: '1-week', label: '1-week sprints' },
+          { value: '2-week', label: '2-week sprints' },
+          { value: 'no-sprints', label: 'No sprints, continuous flow' },
+        ],
+      });
+    }
+    
+    questions.push({
+      id: 'buffer-time',
+      text: 'Do you want to include buffer time for unknowns?',
+      type: 'checkbox',
+      checkboxLabel: 'Yes, add 20% buffer time to estimates',
+      hint: 'Recommended for projects with uncertainties or new technologies.',
+    });
+    
+    questions.push({
+      id: 'review-cadence',
+      text: 'How often will you review progress?',
+      type: 'select',
+      options: [
+          { value: 'daily', label: 'Daily standups' },
+          { value: 'weekly', label: 'Weekly reviews' },
+          { value: 'biweekly', label: 'Bi-weekly reviews' },
+          { value: 'monthly', label: 'Monthly reviews' },
+      ],
+    });
+    
+    followUpQuestions.value = questions;
+  } finally {
+    isLoadingFollowUps.value = false;
+  }
+}
+
+function handleFollowUpAnswers(answers: Record<string, unknown>): void {
+  followUpAnswers.value = answers;
+  updateStore();
 }
 
 // Load existing answer from store
 onMounted(() => {
   const existingAnswer = wizardStore.getAnswer<{
     milestones: Array<{ name: string; date: string; phase: string; dependsOn?: number | null }>;
+    followUpAnswers?: Record<string, unknown>;
   }>(props.questionId);
 
   if (existingAnswer && existingAnswer.milestones) {
@@ -339,6 +409,11 @@ onMounted(() => {
       error: '',
       dateError: '',
     }));
+    followUpAnswers.value = existingAnswer.followUpAnswers || {};
+    
+    if (existingAnswer.milestones.length >= MIN_MILESTONES) {
+      generateFollowUpQuestions();
+    }
   }
 
   validateTimeline();

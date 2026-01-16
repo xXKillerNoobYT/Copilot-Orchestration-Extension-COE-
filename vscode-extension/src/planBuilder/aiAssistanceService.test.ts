@@ -4,7 +4,7 @@
  * Tests for AI-powered contextual suggestion generation
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+// Jest provides describe, it, expect, beforeEach as globals
 import { AiAssistanceService, type AiSuggestion } from './aiAssistanceService';
 import { QuestionFramework } from './questionFramework';
 
@@ -17,7 +17,7 @@ describe('AiAssistanceService', () => {
     framework = new QuestionFramework();
 
     // Mock MCP client if needed
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Initialization', () => {

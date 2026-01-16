@@ -188,12 +188,26 @@
     <div v-if="isValid" class="validation-summary success">
       ✓ Team with {{ teamMembers.length }} member(s) is valid
     </div>
+
+    <!-- AI-Assisted Follow-up Questions -->
+    <DynamicFollowUpQuestions
+      v-if="isValid"
+      :questions="followUpQuestions"
+      :existing-answers="followUpAnswers"
+      :show-ai-loader="isLoadingFollowUps"
+      header-text="🤖 Team Optimization"
+      hint-text="Provide additional context about your team structure and needs."
+      @answers-changed="handleFollowUpAnswers"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useWizardStore } from '../wizardStore';
+import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
+import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
+import { PlanContextService } from '../services/PlanContextService';
 
 interface TeamMember {
   role: string;
@@ -214,12 +228,16 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Store
 const wizardStore = useWizardStore();
+const planContextService = PlanContextService.getInstance();
 
 // State
 const teamMembers = ref<TeamMember[]>([
   { role: '', customRole: '', skills: '', agentMapping: null, availability: 'full-time', error: '' },
 ]);
 const teamErrors = ref<string[]>([]);
+const followUpQuestions = ref<FollowUpQuestion[]>([]);
+const followUpAnswers = ref<Record<string, unknown>>({});
+const isLoadingFollowUps = ref(false);
 
 // Predefined roles
 const predefinedRoles = [
@@ -388,8 +406,75 @@ function updateStore(): void {
         agentMapping: m.agentMapping,
         availability: m.availability,
       })),
+      followUpAnswers: followUpAnswers.value,
     });
   }
+}
+
+// Generate follow-up questions
+async function generateFollowUpQuestions(): Promise<void> {
+  if (teamMembers.value.length === 0) return;
+  
+  isLoadingFollowUps.value = true;
+  try {
+    const questions: FollowUpQuestion[]= [];
+    
+    // Team size and structure
+    questions.push({
+      id: 'team-size',
+      text: 'What is your target team size?',
+      type: 'select',
+      options: [
+        { value: 'solo', label: 'Solo (just me)' },
+        { value: 'small', label: 'Small (2-5 people)' },
+        { value: 'medium', label: 'Medium (6-15 people)' },
+        { value: 'large', label: 'Large (16+ people)' },
+      ],
+    });
+    
+    // Experience level
+    questions.push({
+      id: 'team-experience',
+      text: 'What is the team\'s overall experience level?',
+      type: 'radio',
+      options: [
+        { value: 'junior', label: 'Mostly junior developers' },
+        { value: 'mid', label: 'Mix of junior and senior' },
+        { value: 'senior', label: 'Mostly senior developers' },
+      ],
+    });
+    
+    // Remote/onsite
+    questions.push({
+      id: 'work-model',
+      text: 'What is your team\'s work model?',
+      type: 'radio',
+      options: [
+        { value: 'remote', label: 'Fully remote' },
+        { value: 'hybrid', label: 'Hybrid (remote + office)' },
+        { value: 'onsite', label: 'Fully on-site' },
+      ],
+    });
+    
+    // Skill gaps
+    questions.push({
+      id: 'skill-gaps',
+      text: 'Are there any skill gaps you need to fill?',
+      type: 'textarea',
+      placeholder: 'e.g., Need someone with DevOps experience...',
+      rows: 2,
+      hint: 'This helps identify hiring needs or training opportunities.',
+    });
+    
+    followUpQuestions.value = questions;
+  } finally {
+    isLoadingFollowUps.value = false;
+  }
+}
+
+function handleFollowUpAnswers(answers: Record<string, unknown>): void {
+  followUpAnswers.value = answers;
+  updateStore();
 }
 
 // Load existing answer from store
@@ -401,6 +486,7 @@ onMounted(() => {
       agentMapping?: string | null;
       availability: string;
     }>;
+    followUpAnswers?: Record<string, unknown>;
   }>(props.questionId);
 
   if (existingAnswer && existingAnswer.teamMembers) {
@@ -412,6 +498,11 @@ onMounted(() => {
       availability: m.availability,
       error: '',
     }));
+    followUpAnswers.value = existingAnswer.followUpAnswers || {};
+    
+    if (existingAnswer.teamMembers.length > 0) {
+      generateFollowUpQuestions();
+    }
   }
 
   validateTeam();
