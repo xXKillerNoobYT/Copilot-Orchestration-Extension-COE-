@@ -311,7 +311,7 @@ class GitHubApiClient
         $cachedLimit = Cache::get(self::RATE_LIMIT_CACHE_KEY);
 
         if ($cachedLimit && isset($cachedLimit['remaining'])) {
-            if ($cachedLimit['remaining'] < self::RATE_LIMIT_THRESHOLD) {
+            if ($cachedLimit['remaining'] <= self::RATE_LIMIT_THRESHOLD) {
                 $resetTime = $cachedLimit['reset'] ?? time() + 3600;
                 $waitMinutes = ceil(($resetTime - time()) / 60);
 
