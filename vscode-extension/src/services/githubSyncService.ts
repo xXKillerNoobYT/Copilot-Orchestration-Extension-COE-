@@ -148,8 +148,8 @@ export class GitHubSyncService {
    */
   async performFullSync(): Promise<{ synced: number; errors: number }> {
     try {
-      // Limit to 30 issues per sync to avoid rate limiting
-      const issues = await this.client.listIssues(this.config.owner, this.config.repo, { per_page: 30 });
+      // Limit to 20 issues per sync to further minimize rate limiting
+      const issues = await this.client.listIssues(this.config.owner, this.config.repo, { per_page: 20 });
 
       let synced = 0;
       let errors = 0;
@@ -164,7 +164,7 @@ export class GitHubSyncService {
         }
       }
 
-      this.logSync('full_sync', `Full sync completed: ${synced} synced, ${errors} errors (limited to 30 issues)`);
+      this.logSync('full_sync', `Full sync completed: ${synced} synced, ${errors} errors (limited to 20 issues)`);
       return { synced, errors };
     } catch (error) {
       this.logSync('full_sync_error', `Full sync failed: ${error instanceof Error ? error.message : String(error)}`);

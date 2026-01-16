@@ -97,10 +97,10 @@ class GitHubSyncService
     public function syncRepository(string $owner, string $repo, ?string $projectId = null): array
     {
         try {
-            // Limit to 50 issues per sync to reduce API usage
+            // Limit to 20 issues per sync to further reduce API usage
             $issues = $this->githubClient->listIssues($owner, $repo, [
                 'state' => 'all',
-                'per_page' => 50,
+                'per_page' => 20,
             ]);
 
             $syncedTasks = [];

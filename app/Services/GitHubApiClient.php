@@ -10,7 +10,7 @@ class GitHubApiClient
 {
     private const API_BASE_URL = 'https://api.github.com';
     private const CACHE_TTL = 300; // 5 minutes
-    private const RATE_LIMIT_THRESHOLD = 100; // Stop when fewer than 100 requests remaining
+    private const RATE_LIMIT_THRESHOLD = 200; // Stop when fewer than 200 requests remaining
     private const RATE_LIMIT_CACHE_KEY = 'github:rate_limit';
 
     private string $token;
