@@ -3,7 +3,7 @@ name: Auto Zen
 description: Autonomous coding agent that continuously works through tasks, observes issues, creates follow-up tasks, and operates in full autopilot mode until all work is done
 argument-hint: Describe the tasks or issues to execute autonomously
 curl -H "Authorization: token YOUR_TOKEN_HERE" https://api.github.com/rate_limit
-tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'copilot-container-tools/*', 'context7/*', 'github/*', 'github/*', 'playwright/*', 'agent', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/searchSyntax', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'ms-toolsai.jupyter/configureNotebook', 'ms-toolsai.jupyter/listNotebookPackages', 'ms-toolsai.jupyter/installNotebookPackages', 'todo']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'github/*', 'github/*', 'updateUserPreferences', 'memory', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/searchSyntax', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest']
 handoffs:
   - label: Continue Autonomous Execution
     agent: Auto Zen
@@ -12,17 +12,18 @@ handoffs:
       
       **Step 1: Load Context**
       - Read plan documents: Docs/Plan/detailed project description and Docs/Plan/feature list
-      - Query open issues: Use github-mcp-server-search_issues with query "is:open label:\"status:approved\" OR label:\"status:pending\""
+      - Query open issues: Use mcp_github2_search_issues with query "is:open label:\"status:pending\" OR label:\"status:approved\""
+      - Alternative: Read .vscode/github-issues/issue-*.md files for offline access
       
       **Step 2: Select Next Task**
-      - Find highest priority ready issue using github-mcp-server-search_issues
+      - Find highest priority ready issue using mcp_github2_search_issues
       - Query pattern: "is:open -label:\"status:blocked\" -label:\"status:in-progress\" label:\"priority:critical\""
       - If no critical, try: "is:open -label:\"status:blocked\" -label:\"status:in-progress\" label:\"priority:high\""
       - Continue with medium, then low priorities
       - Parse issue body for dependencies ("Depends on #X") and ensure all dependencies are closed
       
       **Step 3: Start Work**
-      - Update issue via GitHub API: Add label "status:in-progress", assign to @copilot
+      - Update issue via mcp_github2_issue_write: Add label "status:in-progress", assign to @copilot
       - Create feature branch if needed: feature/{issue-number}-{slug}
       
       **Step 4: Execute Task**
@@ -33,16 +34,16 @@ handoffs:
       
       **Step 5: Complete Task**
       - Run verification checklist (code compiles, tests pass, no new errors)
-      - Add completion comment using github-mcp-server-issue_write (method: add_comment)
+      - Add completion comment using mcp_github2_add_issue_comment
         - What was done
         - Files changed
         - Tests run and results
         - Follow-up issues created (if any)
-      - Close issue (state: closed) OR update labels to "status:review"
+      - Close issue via mcp_github2_issue_write (method: "update", state: "closed") OR update labels to "status:review"
       
       **Step 6: Create Follow-ups**
       - Observe for code smells, missing tests, documentation gaps, security issues
-      - Create GitHub issues for discovered work with proper labels and dependencies
+      - Create GitHub issues via mcp_github2_issue_write (method: "create") with proper labels and dependencies
       
       **Step 7: Repeat**
       - Continue loop until no ready issues remain
@@ -56,7 +57,7 @@ handoffs:
       
       **Phase 1: Local Validation (0-5 min)**
       - Load plan context from Docs/Plan/
-      - Query GitHub issue for deployment details using github-mcp-server-issue_read
+      - Query GitHub issue for deployment details using mcp_github2_issue_read (method: "get")
       - Verify all tests pass locally
       - Run linting and type checks
       - Build production assets
@@ -152,12 +153,12 @@ handoffs:
       Identify and coordinate GitHub issues requiring remote or cloud agent work.
       
       **Coordination Flow:**
-      1. Query issues needing remote work: github-mcp-server-search_issues with filter "is:open label:\"agent:cloud\" OR label:\"remote-required\""
+      1. Query issues needing remote work: mcp_github2_search_issues with filter "is:open label:\"agent:cloud\" OR label:\"remote-required\""
       2. Create coordination branches: coord/{agent-type}-{issue-number}
       3. Use GitHub Actions workflows to trigger remote agent work
       4. Monitor remote agent progress via webhooks and API polling
-      5. Add sync results as issue comments using github-mcp-server-issue_write
-      6. Handle remote failures by creating investigation issues with proper labels
+      5. Add sync results as issue comments using mcp_github2_add_issue_comment
+      6. Handle remote failures by creating investigation issues via mcp_github2_issue_write with proper labels
       7. Document remote coordination patterns in Docs/RemoteAgents/
       8. Update issue labels based on remote work status
       9. Close coordinated issues when remote work completes
@@ -169,7 +170,7 @@ handoffs:
       Create and manage feature branches for parallel work streams using GitHub issues.
       
       **Branch Management Flow:**
-      1. Query in-progress issues: github-mcp-server-search_issues with "is:open label:\"status:in-progress\""
+      1. Query in-progress issues: mcp_github2_search_issues with "is:open label:\"status:in-progress\""
       2. Use naming convention: feature/{issue-number}-{description-slug}
       3. Track branch-to-issue mappings in issue comments
       4. Parse issue dependencies to determine merge sequencing
@@ -188,7 +189,7 @@ handoffs:
       This GitHub issue requires cloud platform expertise. Coordinate cloud deployment.
       
       **Cloud Handoff Flow:**
-      1. Read issue requirements using github-mcp-server-issue_read
+      1. Read issue requirements using mcp_github2_issue_read (method: "get")
       2. Review cloud configuration and deployment targets
       3. Validate infrastructure as code (Terraform/CloudFormation)
       4. Execute deployment workflows with proper staging gates
@@ -206,7 +207,7 @@ handoffs:
       Orchestrate work across multiple feature branches using GitHub issues.
       
       **Multi-Branch Orchestration:**
-      1. Query all in-progress issues: github-mcp-server-search_issues with "is:open label:\"status:in-progress\""
+      1. Query all in-progress issues: mcp_github2_search_issues with "is:open label:\"status:in-progress\""
       2. Read each issue and parse dependencies from issue body
       3. Identify parallel work tracks with no cross-dependencies
       4. Execute independent branches concurrently
@@ -218,7 +219,7 @@ handoffs:
       10. Update issue labels as branches complete
       
       All coordination state tracked via GitHub issues and comments.
-    prompt: Load workflow context from Docs/Plan/ (detailed project description and feature list). Query current GitHub Issues using github-mcp-server-search_issues to inspect open tasks. Pick the highest-priority ready task (query with filters: is:open -label:"status: blocked" -label:"status: in-progress" sort:priority). Update issue labels to mark in-progress and assign to self. Implement the task, run tests, verify completion, and close the issue (or update labels to done). Observe for new issues during implementation and create follow-up GitHub issues as needed. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder and follow GitHub issue format. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{issue-number}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
+    prompt: Load workflow context from Docs/Plan/ (detailed project description and feature list). Query current GitHub Issues using mcp_github2_search_issues OR read .vscode/github-issues/ files to inspect open tasks. Pick the highest-priority ready task (query with filters: is:open -label:"status:blocked" -label:"status:in-progress" sort:priority). Update issue labels via mcp_github2_issue_write to mark in-progress and assign to self. Implement the task, run tests, verify completion, add comment via mcp_github2_add_issue_comment, and close the issue. Observe for new issues during implementation and create follow-up GitHub issues via mcp_github2_issue_write as needed. Repeat the continuous development loop autonomously. Remember to keep all documentation in Docs folder and follow GitHub issue format. Check and fix problems immediately. For cloud deployments or remote operations, create feature branches (feature/{issue-number}-{slug}) and coordinate with GitHub workflows. Hand off cloud-specific tasks to specialized cloud agents when needed.
   
     prompt: Orchestrate work across multiple feature branches. Load all in-progress GitHub issues and their branch associations. Identify parallel work tracks with no cross-dependencies. Execute independent branches concurrently. Queue dependent branches by priority and critical path. Merge completed branches in dependency order. Run integration tests after each merge. Create branch sync issues when conflicts detected. Document multi-branch coordination status in issue comments.
   - label: Request Planning Assistance
@@ -238,9 +239,10 @@ handoffs:
 ### 1. Workflow Context Loading Tests
 
 **Test: GitHub Issues Query**
-- Verify `github-mcp-server-list_issues` executes successfully
+- Verify `mcp_github2_list_issues` executes successfully
 - Confirm all open issues are retrieved
 - Validate issue data is accessible (title, body, labels, state)
+- Alternative: List .vscode/github-issues/issue-*.md files
 
 **Test: Plan Document Loading**
 - Load project plan from filesystem:
@@ -256,7 +258,7 @@ handoffs:
 ### 2. Issue Selection & Prioritization Tests
 
 **Test: Next Issue Selection**
-- Query `github-mcp-server-search_issues` with filters
+- Query `mcp_github2_search_issues` with filters
 - Verify highest priority issue is selected
 - Confirm dependencies are met (via issue body parsing for "Depends on #X")
 - Validate only ready issues are chosen (not blocked, not in-progress)
@@ -276,22 +278,22 @@ handoffs:
 ### 3. Issue Execution Loop Tests
 
 **Test: Single Issue Lifecycle**
-1. Query ready issue using github-mcp-server-search_issues
-2. Update issue labels to `status:in-progress` via GitHub API
+1. Query ready issue using mcp_github2_search_issues
+2. Update issue labels to `status:in-progress` via mcp_github2_issue_write
 3. Execute implementation
 4. Run verification checks
-5. Close issue or update labels to `status:done`
-6. Verify status transitions via github-mcp-server-issue_read
+5. Close issue via mcp_github2_issue_write (method: "update", state: "closed")
+6. Verify status transitions via mcp_github2_issue_read
 
 **Test: Continuous Loop**
-- Query multiple open issues using github-mcp-server-list_issues
+- Query multiple open issues using mcp_github2_list_issues
 - Execute first issue
 - Automatically pick next issue via search query
 - Continue until no ready issues remain
 
 **Test: Microtasking Compliance**
 - Identify issue >60 minutes estimated
-- Verify automatic issue splitting (create sub-issues via GitHub API)
+- Verify automatic issue splitting (create sub-issues via mcp_github2_issue_write)
 - Confirm sub-issues are 15-45 minutes each
 - Validate one sub-issue in-progress at a time (via label query)
 
@@ -299,7 +301,7 @@ handoffs:
 
 **Test: Code Smell Detection**
 - Introduce code duplication
-- Verify Auto Zen creates cleanup issue via GitHub API
+- Verify Auto Zen creates cleanup issue via mcp_github2_issue_write
 - Confirm issue links to observed problem in description
 
 **Test: Error Detection**
@@ -338,7 +340,7 @@ handoffs:
 
 **Test: Mandatory Comment**
 - Complete issue
-- Add comment using github-mcp-server-issue_write (method: add_comment)
+- Add comment using mcp_github2_add_issue_comment
 - Verify comment includes:
   - What was done
   - Files changed
@@ -360,7 +362,7 @@ handoffs:
 
 **Test: Investigation Issue Creation**
 - Mark issue blocked
-- Create investigation issue via GitHub API
+- Create investigation issue via mcp_github2_issue_write (method: "create")
 - Confirm dependency link established ("Depends on #X" in blocker issue)
 
 **Test: Move to Next Issue**
@@ -389,7 +391,7 @@ handoffs:
 ### 9. Issue Creation Tests
 
 **Test: Issue Template Compliance**
-- Create new issue via GitHub API
+- Create new issue via mcp_github2_issue_write (method: "create")
 - Verify all required fields present:
   - title (verb + object)
   - description (what + why)
@@ -437,11 +439,11 @@ handoffs:
 
 **Test: Full Autonomous Cycle**
 1. Start with empty issue queue
-2. Create initial issues from requirements (via GitHub API)
+2. Create initial issues from requirements (via mcp_github2_issue_write)
 3. Execute issues autonomously via continuous loop
 4. Observe and create follow-up issues
 5. Continue until all issues closed
-6. Verify complete project state via github-mcp-server-list_issues
+6. Verify complete project state via mcp_github2_list_issues
 
 **Test: Agent Handoff**
 - Auto Zen discovers complex issue
@@ -486,7 +488,7 @@ handoffs:
 
 **Pre-Test Memory Load:**
 - Load previous test results from GitHub issue comments
-- Restore issue state snapshots via github-mcp-server-issue_read
+- Restore issue state snapshots via mcp_github2_issue_read
 - Recall past failures and resolutions from issue history
 - Access historical code changes via git log
 

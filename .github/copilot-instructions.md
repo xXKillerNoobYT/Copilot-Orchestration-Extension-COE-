@@ -1,18 +1,19 @@
 # Copilot Instructions - Multi-Agent Orchestration System
 
-**Last Updated**: 2026-01-12  
-**Status**: Active - Phase 2 Complete, GitHub Issues Integration Active
+**Last Updated**: 2026-01-15  
+**Status**: Active - ZenTasks Migration Complete ✅
 
 ---
 
 ## 📍 Task Management Location
 
-**All tasks are now managed as GitHub Issues:**
+**✅ GitHub Issues is the SINGLE SOURCE OF TRUTH:**
 
--   **Location:** `.github/issues/` (synced from GitHub)
--   **GitHub:** https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues
--   **Sync:** Automatic bidirectional sync via `hiroyannnn.vscode-github-issues-sync`
--   **Legacy:** `_ZENTASKS/` has been deprecated and will be removed
+-   **Primary Location:** https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues
+-   **Total Active Issues:** 18 (3 in-progress, 15 pending)
+-   **Migration Complete:** 2026-01-15 - All ZenTasks migrated to GitHub Issues
+-   **Migration Map:** `Docs/ZENTASKS-MIGRATION-MAP.md`
+-   **Legacy System:** `_ZENTASKS/` folder is now **DEPRECATED** (read-only for historical reference only)
 
 ---
 
@@ -296,55 +297,42 @@ Auto Zen (implements fixes)
 All task management now uses GitHub Issues as the single source of truth.
 
 ### Working with GitHub Issues
-1. **Query issues**: Use `github-mcp-server-list_issues` or `github-mcp-server-search_issues`
-2. **Read issue details**: Use `github-mcp-server-issue_read` with method: "get"
-3. **Create issues**: Use GitHub API with proper labels and structure
-4. **Update issues**: Modify labels, assignees, body, state via GitHub API
-5. **Bulk operations**: Parse requirements, then create multiple issues
+1. **Query issues**: Use `mcp_github2_list_issues` or `mcp_github2_search_issues`
+2. **Read issue details**: Use `mcp_github2_issue_read` with method: "get" OR read `.vscode/github-issues/issue-{number}.md`
+3. **Create issues**: Use `mcp_github2_issue_write` with method: "create" and proper labels
+4. **Update issues**: Use `mcp_github2_issue_write` with method: "update" to modify labels, assignees, body, state
+5. **Add comments**: Use `mcp_github2_add_issue_comment` for issue comments
+6. **Bulk operations**: Parse requirements, then create multiple issues via MCP tools
 
 ### Load Context
 Before starting work:
 - **Plan context**: Read `Docs/Plan/detailed project description` and `Docs/Plan/feature list`
-- **Current state**: Query GitHub Issues for open work (github-mcp-server-list_issues)
+- **Current state**: Query GitHub Issues via `mcp_github2_list_issues` OR read `.vscode/github-issues/issue-*.md` files
 - **Dependencies**: Parse issue bodies for "Depends on #X" references
 
 ### GitHub Issues Location
 - **Primary source**: GitHub Issues in this repository
+- **Local sync**: `.vscode/github-issues/` folder (synced markdown files)
 - **Plan context**: `Docs/Plan/` folder (vision & features)
-- **Migration guide**: `Docs/GitHub-Migration-Tool-Mapping.md`
+- **Migration guide**: `Docs/ZENTASKS-MIGRATION-MAP.md`
 - **Legacy**: `_ZENTASKS/` folder (deprecated, read-only for backward compatibility)
-### Primary: Use the automation tools
 
-1. **Load context**: `zen-tasks_000_workflow_context` — hydrates guidelines and task state.
-2. **Query tasks**: `zen-tasks_list_tasks`, `zen-tasks_get_task`, `zen-tasks_next_task`.
-3. **Manage tasks**: `zen-tasks_add_task`, `zen-tasks_update_task`, `zen-tasks_set_status`.
-4. **Bulk create**: `zen-tasks_parse_requirements` — converts requirements text into tasks.
-
-### Fallback: Read files directly (when tools fail)
-
-If the workflow context tool errors, load context from the file system:
-
--   `prompts/zen_tasks_workflow.md` — workflow guidelines
--   `prompts/base.md` — system overview
--   **`Docs/Plan/detailed project description`** — project vision
--   **`Docs/Plan/feature list`** — planned features
--   **`_ZENTASKS/tasks.json`** — current task state
-
-### Task Management Files Location
-
--   Task definitions: `_ZENTASKS/tasks.json` (source of truth)
--   Plan context: `Docs/Plan/` folder (vision & features)
--   Workflow docs: `prompts/` folder (guidelines)
+### Working with Issues
+1. **Via MCP Tools (Preferred)**: Use `mcp_github2_*` tools for all GitHub operations
+2. **Local Files**: Read from `.vscode/github-issues/issue-*.md` for offline access
+3. **Sync**: Automatic bidirectional sync via VS Code extension
 
 ### Continuous development loop
 
 ```
 1. Load plan context from Docs/Plan/
-2. Query current GitHub Issues (github-mcp-server-search_issues)
+2. Query current GitHub Issues (mcp_github2_search_issues OR list .vscode/github-issues/ files)
 3. Pick highest-priority ready issue (query by priority label: critical, then high, then medium, then low)
-4. Update labels to in-progress + assign → implement → test → close
-5. Create follow-up GitHub issues for discovered work
-6. Repeat
+4. Update labels to in-progress via mcp_github2_issue_write + assign to copilot
+5. Implement → test → add completion comment via mcp_github2_add_issue_comment
+6. Close issue via mcp_github2_issue_write (state: closed)
+7. Create follow-up GitHub issues via mcp_github2_issue_write for discovered work
+8. Repeat
 ```
 
 Operate autonomously: no oversight required—just get the job done right.
@@ -400,5 +388,7 @@ Operate autonomously: no oversight required—just get the job done right.
 -   All documentation, notes, projects must be properly updated in the Docs folder
 -   Always follow the GitHub issue format specification when creating or updating issues
 -   GitHub Issues are the single source of truth for task management
-- Use GitHub MCP tools (github-mcp-server-*) for all issue operations
-- Never edit \_ZENTASKS files directly (deprecated system)
+-   **Use MCP tools (mcp_github2_*)** for all GitHub operations (create, update, comment)
+-   Local issue files at `.vscode/github-issues/issue-*.md` are auto-synced (read-only reference)
+-   Never edit \_ZENTASKS files directly (deprecated system)
+-   Never manually edit `.vscode/github-issues/` files (auto-synced from GitHub)
