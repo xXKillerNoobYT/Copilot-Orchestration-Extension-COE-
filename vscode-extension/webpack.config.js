@@ -12,7 +12,7 @@ module.exports = [
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: '[name].js',
-        filename: 'extension.js',
+      filename: 'extension.js',
       libraryTarget: 'commonjs2',
     },
     devtool: 'source-map',
@@ -56,6 +56,8 @@ module.exports = [
       'github/githubSyncTest': './src/github/githubSyncTest.ts',
       'panels/llmResponsePanelTest': './src/panels/llmResponsePanelTest.ts',
       'transport/transportTest': './src/transport/transportTest.ts',
+      // Mocha test runner (for integration/agent loop tests)
+      'extension.agentLoop.test': './src/extension.agentLoop.test.ts',
       // Integration test runner
       'integration/runTest': './src/integration/runTest.ts',
     },
@@ -83,7 +85,7 @@ module.exports = [
       rules: [
         {
           test: /\.ts$/,
-          exclude: [/node_modules/, /__tests__/, /\.test\.ts$/],
+          exclude: [/node_modules/, /__tests__/],
           use: [{ loader: 'ts-loader' }],
         },
       ],
