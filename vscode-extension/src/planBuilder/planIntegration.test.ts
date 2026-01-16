@@ -26,15 +26,15 @@ async function runTests() {
   // Test 1: Validate wizard state structure
   try {
     console.assert(
-      mockWizardState.project_name && typeof mockWizardState.project_name === 'string',
+      Boolean(mockWizardState.project_name && typeof mockWizardState.project_name === 'string'),
       'Wizard state should have project_name'
     );
     console.assert(
-      mockWizardState.project_category && typeof mockWizardState.project_category === 'string',
+      Boolean(mockWizardState.project_category && typeof mockWizardState.project_category === 'string'),
       'Wizard state should have project_category'
     );
     console.assert(
-      mockWizardState.team_size && typeof mockWizardState.team_size === 'number',
+      Boolean(mockWizardState.team_size && typeof mockWizardState.team_size === 'number'),
       'Wizard state should have team_size as number'
     );
     console.assert(
