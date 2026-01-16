@@ -17,6 +17,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
+      issues: write
     
     steps:
       - name: Checkout repository
@@ -33,7 +34,6 @@ jobs:
       - name: Fetch all branches
         run: |
           git fetch --all
-          git fetch origin main:main
       
       - name: List active feature branches
         id: list-branches
@@ -110,14 +110,21 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const report = fs.readFileSync('sync-report.md', 'utf8');
+            let report = '';
+            
+            // Check if sync-report.md exists before reading
+            if (fs.existsSync('sync-report.md')) {
+              report = fs.readFileSync('sync-report.md', 'utf8');
+            } else {
+              report = '_No sync report available. The workflow may have failed before branch syncing started._';
+            }
             
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: '⚠️ Branch Sync Conflicts Detected',
-              body: `## Automated Branch Sync Failed\n\n${report}\n\n### Action Required\n\nSome feature branches could not be automatically synced with main due to conflicts. Please review and resolve manually:\n\n1. Checkout the conflicted branch\n2. Run: \`git rebase origin/main\`\n3. Resolve conflicts\n4. Run: \`git rebase --continue\`\n5. Force push: \`git push --force-with-lease\`\n\nOr use the conflict resolution helper:\n\`\`\`bash\ncd _ZENTASKS/scripts\n./resolve-conflicts.sh\n\`\`\`\n\n**Triggered by:** ${context.eventName}\n**Workflow:** ${context.workflow}\n**Run:** ${context.runNumber}`,
-              labels: ['automation', 'merge-conflict', 'needs-review']
+              title: '⚠️ Branch Sync Workflow Failed',
+              body: `## Automated Branch Sync Failed\n\n${report}\n\n### Action Required\n\nThe branch sync workflow encountered an error. Please review the workflow logs and resolve manually:\n\n1. Check the [workflow run logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n2. If there are merge conflicts:\n   - Checkout the conflicted branch\n   - Run: \`git rebase origin/main\`\n   - Resolve conflicts\n   - Run: \`git rebase --continue\`\n   - Force push: \`git push --force-with-lease\`\n\n**Triggered by:** ${context.eventName}\n**Workflow:** ${context.workflow}\n**Run:** ${context.runNumber}`,
+              labels: ['automation', 'workflow-failure', 'needs-review']
             });
       
       - name: Summary
