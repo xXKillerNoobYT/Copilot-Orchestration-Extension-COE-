@@ -129,12 +129,26 @@
     <div v-if="isValid && !circularDependency" class="validation-summary success">
       ✓ {{ features.length }} feature(s) defined and validated
     </div>
+
+    <!-- AI-Assisted Follow-up Questions -->
+    <DynamicFollowUpQuestions
+      v-if="isValid && !circularDependency && features.length >= MIN_FEATURES"
+      :questions="followUpQuestions"
+      :existing-answers="followUpAnswers"
+      :show-ai-loader="isLoadingFollowUps"
+      header-text="🤖 Feature Planning Insights"
+      hint-text="Help us understand your feature priorities and complexity."
+      @answers-changed="handleFollowUpAnswers"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useWizardStore } from '../wizardStore';
+import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
+import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
+import { PlanContextService } from '../services/PlanContextService';
 
 interface Feature {
   name: string;
@@ -157,12 +171,16 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Store
 const wizardStore = useWizardStore();
+const planContextService = PlanContextService.getInstance();
 
 // State
 const features = ref<Feature[]>([
   { name: '', description: '', priority: '', dependsOn: null, error: '' },
 ]);
 const featureErrors = ref<string[]>([]);
+const followUpQuestions = ref<FollowUpQuestion[]>([]);
+const followUpAnswers = ref<Record<string, unknown>>({});
+const isLoadingFollowUps = ref(false);
 
 // Computed
 const circularDependency = computed(() => {
@@ -252,14 +270,81 @@ function updateStore(): void {
         priority: f.priority,
         dependsOn: f.dependsOn,
       })),
+      followUpAnswers: followUpAnswers.value,
     });
   }
+}
+
+// Generate follow-up questions based on features
+async function generateFollowUpQuestions(): Promise<void> {
+  if (features.value.length < MIN_FEATURES) return;
+
+  isLoadingFollowUps.value = true;
+
+  try {
+    const questions: FollowUpQuestion[] = [];
+
+    // If many features, suggest phasing
+    if (features.value.length > 5) {
+      questions.push({
+        id: 'feature-phases',
+        text: 'Would you like to phase these features into multiple releases?',
+        type: 'radio',
+        options: [
+          { value: 'single', label: 'No, deliver all at once' },
+          { value: 'phases', label: 'Yes, split into phases/versions' },
+          { value: 'mvp', label: 'Start with MVP, then iterate' },
+        ],
+      });
+    }
+
+    // Critical path analysis
+    questions.push({
+      id: 'critical-path',
+      text: 'Which features are absolutely critical for launch?',
+      type: 'textarea',
+      placeholder: 'List the must-have features for your minimum viable product...',
+      rows: 3,
+      hint: 'These will be prioritized and scheduled first.',
+    });
+
+    // Technical complexity
+    questions.push({
+      id: 'complex-features',
+      text: 'Which features are technically most complex?',
+      type: 'textarea',
+      placeholder: 'Identify features that need extra time or specialized skills...',
+      rows: 3,
+    });
+
+    // User impact
+    questions.push({
+      id: 'user-impact',
+      text: 'Which features will have the highest user impact?',
+      type: 'textarea',
+      placeholder: 'Features that users will notice and value most...',
+      rows: 2,
+    });
+
+    followUpQuestions.value = questions;
+  } catch (error) {
+    console.error('[Features] Error generating follow-up questions:', error);
+  } finally {
+    isLoadingFollowUps.value = false;
+  }
+}
+
+// Handle follow-up answers
+function handleFollowUpAnswers(answers: Record<string, unknown>): void {
+  followUpAnswers.value = answers;
+  updateStore();
 }
 
 // Load existing answer from store
 onMounted(() => {
   const existingAnswer = wizardStore.getAnswer<{
     features: Array<{ name: string; description: string; priority: string; dependsOn?: number | null }>;
+    followUpAnswers?: Record<string, unknown>;
   }>(props.questionId);
 
   if (existingAnswer && existingAnswer.features) {
@@ -268,6 +353,11 @@ onMounted(() => {
       dependsOn: f.dependsOn ?? null,
       error: '',
     }));
+    followUpAnswers.value = existingAnswer.followUpAnswers || {};
+    
+    if (existingAnswer.features.length >= MIN_FEATURES) {
+      generateFollowUpQuestions();
+    }
   }
 
   validateFeatures();

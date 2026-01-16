@@ -65,12 +65,26 @@
     <div v-if="selectedArchitecture" class="validation-summary success">
       ✓ Architecture pattern selected: <strong>{{ getPatternLabel(selectedArchitecture) }}</strong>
     </div>
+
+    <!-- AI-Assisted Follow-up Questions -->
+    <DynamicFollowUpQuestions
+      v-if="selectedArchitecture"
+      :questions="followUpQuestions"
+      :existing-answers="followUpAnswers"
+      :show-ai-loader="isLoadingFollowUps"
+      header-text="🤖 Architecture Deep Dive"
+      hint-text="Based on your architecture choice, let's dive deeper into the technical details."
+      @answers-changed="handleFollowUpAnswers"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useWizardStore } from '../wizardStore';
+import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
+import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
+import { PlanContextService } from '../services/PlanContextService';
 
 // Props
 interface Props {
@@ -83,11 +97,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Store
 const wizardStore = useWizardStore();
+const planContextService = PlanContextService.getInstance();
 
 // State
 const selectedArchitecture = ref('');
 const architectureNotes = ref('');
 const showDiagram = ref(true);
+const followUpQuestions = ref<FollowUpQuestion[]>([]);
+const followUpAnswers = ref<Record<string, unknown>>({});
+const isLoadingFollowUps = ref(false);
 
 // Architecture patterns
 const architecturePatterns = [
@@ -132,6 +150,7 @@ const architecturePatterns = [
 function selectArchitecture(value: string): void {
   selectedArchitecture.value = value;
   updateStore();
+  generateFollowUpQuestions();
 }
 
 function getPatternLabel(value: string): string {
@@ -235,7 +254,123 @@ function updateStore(): void {
   wizardStore.setAnswer(props.questionId, {
     pattern: selectedArchitecture.value,
     notes: architectureNotes.value,
+    followUpAnswers: followUpAnswers.value,
   });
+}
+
+// Generate follow-up questions based on architecture selection
+async function generateFollowUpQuestions(): Promise<void> {
+  isLoadingFollowUps.value = true;
+
+  try {
+    const planContext = await planContextService.loadPlanContext();
+    const questions: FollowUpQuestion[] = [];
+
+    // Architecture-specific questions
+    if (selectedArchitecture.value === 'microservices') {
+      questions.push({
+        id: 'service-discovery',
+        text: 'What service discovery mechanism will you use?',
+        type: 'select',
+        options: [
+          { value: 'consul', label: 'Consul' },
+          { value: 'eureka', label: 'Eureka' },
+          { value: 'kubernetes', label: 'Kubernetes Service Discovery' },
+          { value: 'etcd', label: 'etcd' },
+        ],
+      });
+      questions.push({
+        id: 'inter-service-communication',
+        text: 'How will services communicate?',
+        type: 'radio',
+        options: [
+          { value: 'rest', label: 'REST/HTTP' },
+          { value: 'grpc', label: 'gRPC' },
+          { value: 'message-queue', label: 'Message Queue' },
+        ],
+      });
+      questions.push({
+        id: 'api-gateway',
+        text: 'Will you use an API Gateway?',
+        type: 'checkbox',
+        checkboxLabel: 'Yes, use an API Gateway for routing and authentication',
+      });
+    }
+
+    if (selectedArchitecture.value === 'serverless') {
+      questions.push({
+        id: 'serverless-provider',
+        text: 'Which serverless platform will you use?',
+        type: 'select',
+        options: [
+          { value: 'aws-lambda', label: 'AWS Lambda' },
+          { value: 'azure-functions', label: 'Azure Functions' },
+          { value: 'google-cloud-functions', label: 'Google Cloud Functions' },
+          { value: 'cloudflare-workers', label: 'Cloudflare Workers' },
+        ],
+      });
+      questions.push({
+        id: 'event-sources',
+        text: 'What will trigger your functions?',
+        type: 'textarea',
+        placeholder: 'e.g., HTTP requests, S3 events, database changes...',
+        rows: 3,
+      });
+    }
+
+    if (selectedArchitecture.value === 'mvc' || selectedArchitecture.value === 'monolithic') {
+      questions.push({
+        id: 'deployment-strategy',
+        text: 'How will you deploy the application?',
+        type: 'select',
+        options: [
+          { value: 'traditional', label: 'Traditional server deployment' },
+          { value: 'container', label: 'Containerized (Docker)' },
+          { value: 'paas', label: 'Platform as a Service (Heroku, etc.)' },
+        ],
+      });
+    }
+
+    // Universal architecture questions
+    questions.push({
+      id: 'scalability-requirements',
+      text: 'What are your scalability requirements?',
+      type: 'textarea',
+      placeholder: 'Expected concurrent users, data volume, request rate...',
+      rows: 3,
+      hint: 'This helps determine infrastructure and caching strategies.',
+    });
+
+    questions.push({
+      id: 'performance-targets',
+      text: 'Do you have specific performance targets?',
+      type: 'text',
+      placeholder: 'e.g., Response time < 200ms, 99.9% uptime...',
+    });
+
+    if (planContext.architectureNotes) {
+      questions.push({
+        id: 'plan-alignment',
+        text: 'How does this architecture align with your plan?',
+        type: 'textarea',
+        placeholder: 'Explain how your architecture choice meets the plan requirements...',
+        rows: 3,
+        hint: 'Reference specific architectural requirements from your plan.',
+      });
+    }
+
+    followUpQuestions.value = questions;
+  } catch (error) {
+    console.error('[Architecture] Error generating follow-up questions:', error);
+  } finally {
+    isLoadingFollowUps.value = false;
+  }
+}
+
+// Handle follow-up answers
+function handleFollowUpAnswers(answers: Record<string, unknown>): void {
+  followUpAnswers.value = answers;
+  updateStore();
 }
 
 // Load existing answer from store
@@ -243,11 +378,17 @@ onMounted(() => {
   const existingAnswer = wizardStore.getAnswer<{
     pattern: string;
     notes: string;
+    followUpAnswers?: Record<string, unknown>;
   }>(props.questionId);
 
   if (existingAnswer) {
     selectedArchitecture.value = existingAnswer.pattern || '';
     architectureNotes.value = existingAnswer.notes || '';
+    followUpAnswers.value = existingAnswer.followUpAnswers || {};
+
+    if (existingAnswer.pattern) {
+      generateFollowUpQuestions();
+    }
   }
 });
 
