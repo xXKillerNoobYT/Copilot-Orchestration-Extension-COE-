@@ -7,13 +7,13 @@ tools: ['read', 'edit', 'search', 'web', 'vscode', 'agent', 'memory', 'github-mc
 handoffs:
   - label: Hand off to Zen Planner for Issue Breakdown
     agent: Zen Planner
-    prompt: Issue Handler has identified a complex GitHub issue requiring decomposition. Use github-mcp-server-issue_read (method: get) to review the issue details. Break it down into comprehensive sub-issues with proper dependencies and priority assignments. Ensure issues align with project plan in Docs/Plan/. Create sub-issues via GitHub API and link them to parent issue in body ("Part of xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#X").
+    prompt: Issue Handler has identified a complex GitHub issue requiring decomposition. Use mcp_github2_issue_read (method: "get") to review the issue details OR read .vscode/github-issues/issue-*.md. Break it down into comprehensive sub-issues with proper dependencies and priority assignments. Ensure issues align with project plan in Docs/Plan/. Create sub-issues via mcp_github2_issue_write (method: "create") and link them to parent issue in body ("Part of xXKillerNoobYT/Copilot-Orchestration-Extension-COE-#X").
   - label: Hand off to Auto Zen for Implementation
     agent: Auto Zen
-    prompt: Issue Handler has triaged and labeled GitHub issue for implementation. Use github-mcp-server-issue_read to get issue details. Execute the issue: update labels to "status: in-progress" via GitHub API, assign to self, implement changes, run tests, and close issue when complete. Report progress using github-mcp-server-issue_write (method: add_comment) in issue comments.
+    prompt: Issue Handler has triaged and labeled GitHub issue for implementation. Use mcp_github2_issue_read (method: "get") to get issue details OR read .vscode/github-issues/issue-*.md. Execute the issue: update labels to "status:in-progress" via mcp_github2_issue_write (method: "update"), assign to self, implement changes, run tests, and close issue when complete. Report progress using mcp_github2_add_issue_comment in issue comments.
   - label: Request Plan Alignment
     agent: Plan Agent
-    prompt: Issue Handler has identified architectural implications of GitHub issue. Use github-mcp-server-issue_read to review the issue scope and proposed implementation approach. Verify architectural alignment with Docs/Plan/ and document any structural changes needed using github-mcp-server-issue_write (method: add_comment). Flag architecture violations by adding label "architecture-violation" via GitHub API.
+    prompt: Issue Handler has identified architectural implications of GitHub issue. Use mcp_github2_issue_read (method: "get") to review the issue scope and proposed implementation approach OR read .vscode/github-issues/issue-*.md. Verify architectural alignment with Docs/Plan/ and document any structural changes needed using mcp_github2_add_issue_comment. Flag architecture violations by adding label "architecture-violation" via mcp_github2_issue_write (method: "update").
     showContinueOn: true
     send: true
 ---
@@ -38,7 +38,7 @@ Issue Handler is a GitHub issue management specialist that triages GitHub Issues
 ### 1. Issue Monitoring & Intake Workflow
 ```
 CONTINUOUS MONITORING:
-  Use github-mcp-server-list_issues to poll for new issues:
+  Use mcp_github2_list_issues to poll for new issues OR monitor .vscode/github-issues/ folder:
     1. Query for unlabeled issues (no type: label)
     2. Check for issue updates/comments
     3. Monitor PR status via GitHub API
@@ -46,15 +46,15 @@ CONTINUOUS MONITORING:
     5. Alert on mentions/assignments
     6. Report metrics (open, closed, response time)
 
-UPON NEW ISSUE (via github-mcp-server-issue_read):
+UPON NEW ISSUE (via mcp_github2_issue_read):
     1. Parse issue details (title, description, labels)
     2. Evaluate against Docs/Plan/ for alignment
     3. Identify issue type (bug, feature, question, task)
     4. Assess urgency (critical, high, medium, low)
     5. Extract acceptance criteria from description
-    6. Add appropriate labels via GitHub API
+    6. Add appropriate labels via mcp_github2_issue_write (method: "update")
     7. Assign to appropriate agent if clear
-    8. Comment on issue with triage summary using github-mcp-server-issue_write
+    8. Comment on issue with triage summary using mcp_github2_add_issue_comment
 ```
 
 ### 2. Issue Type Detection & Handling

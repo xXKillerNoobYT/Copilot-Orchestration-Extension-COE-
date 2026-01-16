@@ -7,7 +7,7 @@ tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'github/*
 handoffs:
   - label: Continue Autonomous Execution
     agent: Auto Zen
-    prompt: |
+    prompt: 
       Execute the autonomous development loop using GitHub Issues as the single source of truth.
       
       **Step 1: Load Context**

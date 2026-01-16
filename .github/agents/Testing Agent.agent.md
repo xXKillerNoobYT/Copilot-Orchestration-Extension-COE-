@@ -7,10 +7,10 @@ tools: ['read', 'edit', 'execute', 'search', 'vscode', 'web', 'agent', 'memory',
 handoffs:
   - label: Report Test Results
     agent: Zen Planner
-    prompt: Review test results from Testing Agent. Identify test failures, coverage gaps, or quality issues in GitHub issues using github-mcp-server-search_issues (query: "is:open label:\"type: testing\""). Create new GitHub issues to fix failing tests, improve coverage, or refactor code for testability. Apply appropriate labels (type: bug/refactor, priority: critical for failures, priority: medium for coverage). Link related issues via dependencies in issue body ("Depends on #X").
+    prompt: Review test results from Testing Agent. Identify test failures, coverage gaps, or quality issues in GitHub issues using mcp_github2_search_issues (query: "is:open label:\"type:testing\"") OR read .vscode/github-issues/ files. Create new GitHub issues via mcp_github2_issue_write to fix failing tests, improve coverage, or refactor code for testability. Apply appropriate labels (type:bug/refactor, priority:critical for failures, priority:medium for coverage). Link related issues via dependencies in issue body ("Depends on #X").
   - label: Hand off to Auto Zen for Fixes
     agent: Auto Zen
-    prompt: Testing Agent has identified test failures or coverage gaps in GitHub issues. Use github-mcp-server-search_issues with query "is:open label:\"type: testing\" label:\"priority: high\"" to find issues. Execute the highest priority testing/fixing issues. Update labels to "status: in-progress", implement fixes, rerun tests, and verify all tests pass. Close issues when tests pass with acceptable coverage. Document test results using github-mcp-server-issue_write (method: add_comment).
+    prompt: Testing Agent has identified test failures or coverage gaps in GitHub issues. Use mcp_github2_search_issues with query "is:open label:\"type:testing\" label:\"priority:high\"" to find issues OR read .vscode/github-issues/ files. Execute the highest priority testing/fixing issues. Update labels to "status:in-progress" via mcp_github2_issue_write, implement fixes, rerun tests, and verify all tests pass. Close issues via mcp_github2_issue_write when tests pass with acceptable coverage. Document test results using mcp_github2_add_issue_comment.
   - label: Validate Architecture Compliance
     agent: Plan Agent
     prompt: Review the test structure and coverage created by Testing Agent. Verify that tests align with architectural patterns and boundaries. Ensure testing strategy supports architectural constraints. Flag any test structure that violates architecture.
@@ -46,10 +46,10 @@ INPUT: Completed GitHub issue or code requiring tests
 5. Generate end-to-end tests for features
 6. Run all tests
 7. Measure code coverage
-8. Create GitHub issues for untested paths using GitHub API
-   - Labels: type: testing, priority: medium
+8. Create GitHub issues for untested paths using mcp_github2_issue_write (method: "create")
+   - Labels: type:testing, priority:medium
    - Link to original feature issue in body ("Related to #X")
-9. Document test strategy in issue comment using github-mcp-server-issue_write
+9. Document test strategy in issue comment using mcp_github2_add_issue_comment
   ↓
 OUTPUT: Comprehensive test suite + coverage report in issue comments
 ```
