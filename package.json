@@ -3,7 +3,11 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vue-tsc && vite build && vite build --ssr"
+        "build": "vue-tsc && vite build && vite build --ssr",
+        "test": "jest",
+        "test:jest": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --coverage"
     },
     "devDependencies": {
         "@inertiajs/vue3": "^2.3.10",

@@ -5,7 +5,7 @@
  * Reference: Code Master Section 9 - Interactive Design Phase
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+// Jest provides describe, it, expect, beforeEach, afterEach as globals
 import { WizardContainer, NavigationDirection } from '../../src/planBuilder/wizardContainer';
 import { QuestionFramework } from '../../src/planBuilder/questionFramework';
 
