@@ -10,6 +10,8 @@ class GitHubApiClient
 {
     private const API_BASE_URL = 'https://api.github.com';
     private const CACHE_TTL = 300; // 5 minutes
+    private const RATE_LIMIT_THRESHOLD = 200; // Stop when fewer than 200 requests remaining
+    private const RATE_LIMIT_CACHE_KEY = 'github:rate_limit';
 
     private string $token;
     private string $userAgent;
@@ -235,6 +237,9 @@ class GitHubApiClient
      */
     private function request(string $method, string $endpoint, array $data = []): array
     {
+        // Check rate limit before making request
+        $this->checkRateLimit();
+
         $url = self::API_BASE_URL . $endpoint;
 
         try {
@@ -244,6 +249,9 @@ class GitHubApiClient
                 'User-Agent' => $this->userAgent,
                 'X-GitHub-Api-Version' => '2022-11-28',
             ])->{strtolower($method)}($url, $data);
+
+            // Update rate limit cache from response headers
+            $this->updateRateLimitFromHeaders($response->headers());
 
             if ($response->failed()) {
                 throw new GitHubApiException(
@@ -293,6 +301,64 @@ class GitHubApiClient
     public function getRateLimit(): array
     {
         return $this->request('GET', '/rate_limit');
+    }
+
+    /**
+     * Check if we're approaching rate limit and throw exception if so
+     */
+    private function checkRateLimit(): void
+    {
+        $cachedLimit = Cache::get(self::RATE_LIMIT_CACHE_KEY);
+
+        if ($cachedLimit && isset($cachedLimit['remaining'])) {
+            if ($cachedLimit['remaining'] <= self::RATE_LIMIT_THRESHOLD) {
+                $resetTime = $cachedLimit['reset'] ?? time() + 3600;
+                $waitMinutes = ceil(($resetTime - time()) / 60);
+
+                throw new GitHubApiException(
+                    "GitHub API rate limit approaching threshold. " .
+                    "Remaining: {$cachedLimit['remaining']}/{$cachedLimit['limit']}. " .
+                    "Resets in {$waitMinutes} minutes.",
+                    429
+                );
+            }
+        }
+    }
+
+    /**
+     * Update rate limit cache from response headers
+     */
+    private function updateRateLimitFromHeaders(array $headers): void
+    {
+        $remaining = $headers['x-ratelimit-remaining'][0] ?? null;
+        $limit = $headers['x-ratelimit-limit'][0] ?? null;
+        $reset = $headers['x-ratelimit-reset'][0] ?? null;
+
+        if ($remaining !== null && $limit !== null && $reset !== null) {
+            Cache::put(self::RATE_LIMIT_CACHE_KEY, [
+                'remaining' => (int) $remaining,
+                'limit' => (int) $limit,
+                'reset' => (int) $reset,
+                'updated_at' => time(),
+            ], 3600);
+
+            // Log warning if getting low
+            if ((int) $remaining < 500) {
+                \Log::warning("GitHub API rate limit getting low", [
+                    'remaining' => $remaining,
+                    'limit' => $limit,
+                    'reset_at' => date('Y-m-d H:i:s', (int) $reset),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Get current rate limit status from cache
+     */
+    public function getRateLimitStatus(): ?array
+    {
+        return Cache::get(self::RATE_LIMIT_CACHE_KEY);
     }
 
     /**

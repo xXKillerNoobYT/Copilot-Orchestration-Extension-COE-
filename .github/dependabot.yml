@@ -18,7 +18,7 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     # Group Vue ecosystem updates
     groups:
       vue:
@@ -29,13 +29,13 @@ updates:
         patterns:
           - "vite*"
           - "@vitejs/*"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
 
   # VS Code extension dependencies
   - package-ecosystem: "npm"
     directory: "/vscode-extension"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     # Group VS Code API updates
     groups:
       vscode:
@@ -46,19 +46,19 @@ updates:
         patterns:
           - "webpack*"
           - "*-loader"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     # Group action updates by provider
     groups:
       actions:
         patterns:
           - "actions/*"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
 
   # Docker (if you add Dockerfile later)
   # - package-ecosystem: "docker"

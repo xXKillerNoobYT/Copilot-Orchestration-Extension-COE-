@@ -97,9 +97,10 @@ class GitHubSyncService
     public function syncRepository(string $owner, string $repo, ?string $projectId = null): array
     {
         try {
+            // Limit to 20 issues per sync to further reduce API usage
             $issues = $this->githubClient->listIssues($owner, $repo, [
                 'state' => 'all',
-                'per_page' => 100,
+                'per_page' => 20,
             ]);
 
             $syncedTasks = [];
@@ -123,6 +124,13 @@ class GitHubSyncService
                     \Log::error("Failed to sync issue #{$issueData['number']}: " . $e->getMessage());
                 }
             }
+
+            \Log::info("Repository sync completed", [
+                'owner' => $owner,
+                'repo' => $repo,
+                'synced_count' => count($syncedTasks),
+                'issues_processed' => count($issues),
+            ]);
 
             return $syncedTasks;
         } catch (\Exception $e) {
