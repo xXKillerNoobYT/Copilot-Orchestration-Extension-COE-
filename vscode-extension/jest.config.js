@@ -46,6 +46,7 @@ module.exports = {
     '/out/',
     '\\.disabled\\.',
     // Exclude Vitest-specific test files (they import from 'vitest')
+    '__tests__/sample\\.test\\.ts',  // Vitest-based sample test
     'planBuilder/__tests__/integration',
     'planBuilder/__tests__/wizardStore\\.test\\.ts',
     'planBuilder/wizardContainer\\.test\\.ts',

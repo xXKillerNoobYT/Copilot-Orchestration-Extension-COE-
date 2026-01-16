@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">11.76% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/119</span>
+                <span class='fraction'>14/119</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">2.32% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/86</span>
+                <span class='fraction'>2/86</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">13.04% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/23</span>
+                <span class='fraction'>3/23</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">12.84% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/109</span>
+                <span class='fraction'>14/109</span>
             </div>
         
             
@@ -596,16 +596,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -628,18 +628,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">30x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1040,7 +1040,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Live Preview System
  * 
@@ -1085,18 +1085,18 @@ export interface PreviewUpdateEvent {
   previewState: PreviewDesignState;
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class L</span>ivePreviewEngine {
-  private <span class="cstat-no" title="statement not covered" >lastPreviewState: PreviewDesignState | null = null;</span>
-  private <span class="cstat-no" title="statement not covered" >updateListeners: ((event: PreviewUpdateEvent) =&gt; void)[] = [];</span>
-  private <span class="cstat-no" title="statement not covered" >updateThrottleMs = 100; </span>// Throttle updates to 100ms
-  private <span class="cstat-no" title="statement not covered" >lastUpdateTime = 0;</span>
-  private <span class="cstat-no" title="statement not covered" >pendingUpdate: {</span>
+export class LivePreviewEngine {
+  private lastPreviewState: PreviewDesignState | null = null;
+  private updateListeners: ((event: PreviewUpdateEvent) =&gt; void)[] = [];
+  private updateThrottleMs = 100; // Throttle updates to 100ms
+  private lastUpdateTime = 0;
+  private pendingUpdate: {
     answers: Record&lt;string, unknown&gt;;
     changedAnswers: string[];
   } | null = null;
-  private <span class="cstat-no" title="statement not covered" >updateTimer: NodeJS.Timeout | null = null;</span>
+  private updateTimer: NodeJS.Timeout | null = null;
 &nbsp;
-<span class="fstat-no" title="function not covered" >  constructor() {}</span>
+  constructor() {}
 &nbsp;
   /**
    * Register a listener for preview updates
@@ -1113,21 +1113,21 @@ export interface PreviewUpdateEvent {
    * Generate preview state from wizard answers
    * Called when wizard answers change
    */
-<span class="fstat-no" title="function not covered" >  updatePreview(</span>
+  updatePreview(
     wizardAnswers: Record&lt;string, unknown&gt;,
     changedAnswers: string[] = <span class="branch-0 cbranch-no" title="branch not covered" >[]</span>
   ): PreviewUpdateEvent {
-    const startTime = <span class="cstat-no" title="statement not covered" >performance.now();</span>
+    const startTime = performance.now();
 &nbsp;
     // Throttle updates to prevent excessive re-renders
-<span class="cstat-no" title="statement not covered" >    if (this.updateTimer) {</span>
-<span class="cstat-no" title="statement not covered" >      clearTimeout(this.updateTimer);</span>
+    if (this.updateTimer) {
+      clearTimeout(this.updateTimer);
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    this.pendingUpdate = { answers: wizardAnswers, changedAnswers };</span>
+    this.pendingUpdate = { answers: wizardAnswers, changedAnswers };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return new Promise(<span class="fstat-no" title="function not covered" >(r</span>esolve) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      this.updateTimer = setTimeout(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+    return new Promise((resolve) =&gt; {
+      this.updateTimer = setTimeout(<span class="fstat-no" title="function not covered" >() =</span>&gt; {
 <span class="cstat-no" title="statement not covered" >        if (!this.pendingUpdate) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
         const { answers, changedAnswers: pendingChanged } = <span class="cstat-no" title="statement not covered" >this.pendingUpdate;</span>
@@ -1529,7 +1529,7 @@ export interface PreviewUpdateEvent {
 }
 &nbsp;
 // Export singleton instance
-export const <span class="cstat-no" title="statement not covered" >livePreviewEngine = new LivePreviewEngine();</span>
+export const livePreviewEngine = new LivePreviewEngine();
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -1537,7 +1537,7 @@ export const <span class="cstat-no" title="statement not covered" >livePreviewEn
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-16T07:27:13.463Z
+                at 2026-01-16T07:43:01.477Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

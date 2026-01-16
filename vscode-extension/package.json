@@ -280,7 +280,7 @@
     "build:vue": "vite build",
     "watch": "webpack --watch --mode development --stats=errors-warnings",
     "lint": "echo 'no lint configured'",
-    "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js && node dist/workspace/tasksSourceTest.js && node dist/commands/executeLLMTest.js && node dist/github/githubSyncTest.js && node dist/panels/llmResponsePanelTest.js && node dist/llm/transportTest.js && node dist/transport/transportTest.js && npx mocha dist/extension.agentLoop.test.js",
+    "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js && node dist/workspace/tasksSourceTest.js && node dist/commands/executeLLMTest.js && node dist/github/githubSyncTest.js && node dist/panels/llmResponsePanelTest.js && node dist/llm/transportTest.js && node dist/transport/transportTest.js",
     "test:jest": "jest",
     "test:jest:watch": "jest --watch",
     "test:jest:coverage": "jest --coverage",

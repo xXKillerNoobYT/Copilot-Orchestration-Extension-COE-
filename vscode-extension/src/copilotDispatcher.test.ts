@@ -67,27 +67,34 @@ instructions: Test agent instructions
 
     // Initialize dispatcher with test directories
     const mockAgentLoader = {
-      loadProfile: async (name: string) => ({
-        version: 1,
-        name: name || 'test-agent',
-        role: 'test-role',
-        instructions: 'You are a test agent.',
-        tool_permissions: {
-          read_files: true,
-          write_files: false,
-        } as any,
-        execution_constraints: {
-          max_depth: 5,
-          require_tests_for_changes: true,
-        } as any,
-        prompt_templates: {
-          system: 'Test system template',
-          planning: 'Analyze: {{task}}',
-        },
-        defaults: {
-          timeout: 30000,
-        },
-      } as AgentProfile),
+      loadProfile: async (name: string) => {
+        // Return null for non-existent agents
+        if (name === 'nonexistent-agent') {
+          return null;
+        }
+        
+        return {
+          version: 1,
+          name: name || 'test-agent',
+          role: 'test-role',
+          instructions: 'You are a test agent.',
+          tool_permissions: {
+            read_files: true,
+            write_files: false,
+          } as any,
+          execution_constraints: {
+            max_depth: 5,
+            require_tests_for_changes: true,
+          } as any,
+          prompt_templates: {
+            system: 'Test system template',
+            planning: 'Analyze: {{task}}',
+          },
+          defaults: {
+            timeout: 30000,
+          },
+        } as AgentProfile;
+      },
       loadAllProfiles: async () => [],
     } as any;
 
@@ -469,8 +476,18 @@ instructions: Test agent instructions
     });
 
     test('tasksDir option is stored in metadata', async () => {
-      const customTasksDir = '/custom/tasks';
-      const payload = await dispatcher.composePrompt('TASK-test-dispatcher', {
+      const customTasksDir = path.join(tempDir, 'custom-tasks');
+      await fs.mkdir(customTasksDir, { recursive: true });
+      
+      // Create task in custom directory
+      const customTaskPath = path.join(customTasksDir, 'TASK-custom.md');
+      await fs.writeFile(customTaskPath, `---
+id: TASK-custom
+title: Test Custom Task
+---
+Test description for custom task dir.`);
+
+      const payload = await dispatcher.composePrompt('TASK-custom', {
         tasksDir: customTasksDir,
       });
 

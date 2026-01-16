@@ -1,7 +1,464 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1768548434066" clover="3.2.0">
-  <project timestamp="1768548434067" name="All files">
-    <metrics statements="13445" coveredstatements="22" conditionals="5328" coveredconditionals="12" methods="2750" coveredmethods="4" elements="21523" coveredelements="38" complexity="0" loc="13445" ncloc="13445" packages="24" files="134" classes="134"/>
+<coverage generated="1768549382261" clover="3.2.0">
+  <project timestamp="1768549382262" name="All files">
+    <metrics statements="13866" coveredstatements="647" conditionals="5481" coveredconditionals="302" methods="2830" coveredmethods="151" elements="22177" coveredelements="1100" complexity="0" loc="13866" ncloc="13866" packages="26" files="144" classes="144"/>
+    <package name="context-manager.src">
+      <metrics statements="315" coveredstatements="238" conditionals="126" coveredconditionals="90" methods="52" coveredmethods="39"/>
+      <file name="context-manager.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\context-manager.ts">
+        <metrics statements="120" coveredstatements="96" conditionals="54" coveredconditionals="37" methods="25" coveredmethods="22"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="18" count="2" type="stmt"/>
+        <line num="19" count="2" type="stmt"/>
+        <line num="20" count="2" type="stmt"/>
+        <line num="31" count="2" type="stmt"/>
+        <line num="39" count="21" type="stmt"/>
+        <line num="40" count="21" type="stmt"/>
+        <line num="44" count="21" type="stmt"/>
+        <line num="45" count="21" type="stmt"/>
+        <line num="46" count="21" type="cond" truecount="2" falsecount="0"/>
+        <line num="53" count="9" type="stmt"/>
+        <line num="54" count="9" type="stmt"/>
+        <line num="55" count="9" type="stmt"/>
+        <line num="57" count="9" type="stmt"/>
+        <line num="58" count="11" type="stmt"/>
+        <line num="59" count="11" type="cond" truecount="3" falsecount="1"/>
+        <line num="60" count="11" type="stmt"/>
+        <line num="64" count="9" type="stmt"/>
+        <line num="74" count="32" type="stmt"/>
+        <line num="76" count="32" type="stmt"/>
+        <line num="81" count="32" type="stmt"/>
+        <line num="82" count="32" type="stmt"/>
+        <line num="92" count="7" type="stmt"/>
+        <line num="94" count="7" type="stmt"/>
+        <line num="99" count="7" type="stmt"/>
+        <line num="100" count="7" type="stmt"/>
+        <line num="110" count="0" type="stmt"/>
+        <line num="112" count="0" type="stmt"/>
+        <line num="117" count="0" type="stmt"/>
+        <line num="118" count="0" type="stmt"/>
+        <line num="128" count="2" type="stmt"/>
+        <line num="130" count="2" type="stmt"/>
+        <line num="135" count="2" type="stmt"/>
+        <line num="136" count="2" type="stmt"/>
+        <line num="143" count="43" type="stmt"/>
+        <line num="150" count="43" type="stmt"/>
+        <line num="153" count="43" type="stmt"/>
+        <line num="156" count="43" type="stmt"/>
+        <line num="164" count="4" type="stmt"/>
+        <line num="165" count="4" type="stmt"/>
+        <line num="167" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="168" count="1" type="stmt"/>
+        <line num="171" count="3" type="stmt"/>
+        <line num="178" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="179" count="4" type="stmt"/>
+        <line num="180" count="4" type="stmt"/>
+        <line num="182" count="4" type="stmt"/>
+        <line num="183" count="11" type="stmt"/>
+        <line num="184" count="11" type="cond" truecount="1" falsecount="1"/>
+        <line num="187" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="188" count="1" type="stmt"/>
+        <line num="191" count="10" type="stmt"/>
+        <line num="195" count="4" type="stmt"/>
+        <line num="196" count="6" type="stmt"/>
+        <line num="200" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="201" count="1" type="stmt"/>
+        <line num="204" count="3" type="stmt"/>
+        <line num="211" count="2" type="stmt"/>
+        <line num="212" count="2" type="stmt"/>
+        <line num="214" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="215" count="1" type="stmt"/>
+        <line num="218" count="1" type="stmt"/>
+        <line num="219" count="1" type="stmt"/>
+        <line num="220" count="1" type="stmt"/>
+        <line num="227" count="1" type="stmt"/>
+        <line num="228" count="1" type="stmt"/>
+        <line num="230" count="1" type="stmt"/>
+        <line num="231" count="2" type="stmt"/>
+        <line num="232" count="2" type="stmt"/>
+        <line num="235" count="1" type="stmt"/>
+        <line num="246" count="0" type="stmt"/>
+        <line num="249" count="0" type="stmt"/>
+        <line num="251" count="0" type="stmt"/>
+        <line num="258" count="4" type="stmt"/>
+        <line num="265" count="1" type="stmt"/>
+        <line num="266" count="1" type="stmt"/>
+        <line num="268" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="269" count="0" type="stmt"/>
+        <line num="272" count="1" type="stmt"/>
+        <line num="273" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="274" count="0" type="stmt"/>
+        <line num="277" count="1" type="stmt"/>
+        <line num="290" count="1" type="stmt"/>
+        <line num="291" count="1" type="stmt"/>
+        <line num="293" count="1" type="stmt"/>
+        <line num="294" count="2" type="stmt"/>
+        <line num="300" count="2" type="stmt"/>
+        <line num="309" count="1" type="stmt"/>
+        <line num="316" count="1" type="stmt"/>
+        <line num="327" count="41" type="stmt"/>
+        <line num="341" count="26" type="cond" truecount="1" falsecount="1"/>
+        <line num="342" count="26" type="stmt"/>
+        <line num="346" count="0" type="stmt"/>
+        <line num="347" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="348" count="0" type="stmt"/>
+        <line num="351" count="0" type="stmt"/>
+        <line num="359" count="43" type="stmt"/>
+        <line num="360" count="43" type="stmt"/>
+        <line num="361" count="37" type="stmt"/>
+        <line num="365" count="43" type="stmt"/>
+        <line num="366" count="43" type="cond" truecount="1" falsecount="1"/>
+        <line num="368" count="0" type="stmt"/>
+        <line num="369" count="0" type="stmt"/>
+        <line num="370" count="0" type="stmt"/>
+        <line num="371" count="0" type="stmt"/>
+        <line num="375" count="43" type="stmt"/>
+        <line num="383" count="11" type="cond" truecount="4" falsecount="0"/>
+        <line num="384" count="1" type="stmt"/>
+        <line num="388" count="10" type="cond" truecount="2" falsecount="2"/>
+        <line num="389" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="390" count="0" type="stmt"/>
+        <line num="391" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="392" count="0" type="stmt"/>
+        <line num="397" count="10" type="cond" truecount="3" falsecount="1"/>
+        <line num="398" count="0" type="stmt"/>
+        <line num="400" count="10" type="cond" truecount="3" falsecount="1"/>
+        <line num="401" count="0" type="stmt"/>
+        <line num="405" count="10" type="cond" truecount="3" falsecount="1"/>
+        <line num="406" count="0" type="stmt"/>
+        <line num="409" count="10" type="stmt"/>
+      </file>
+      <file name="index.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\index.ts">
+        <metrics statements="6" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="6" coveredmethods="0"/>
+        <line num="5" count="0" type="stmt"/>
+        <line num="6" count="0" type="stmt"/>
+        <line num="7" count="0" type="stmt"/>
+        <line num="8" count="0" type="stmt"/>
+        <line num="9" count="0" type="stmt"/>
+        <line num="10" count="0" type="stmt"/>
+      </file>
+      <file name="pruner.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\pruner.ts">
+        <metrics statements="126" coveredstatements="115" conditionals="55" coveredconditionals="47" methods="10" coveredmethods="10"/>
+        <line num="12" count="2" type="stmt"/>
+        <line num="14" count="2" type="stmt"/>
+        <line num="19" count="25" type="stmt"/>
+        <line num="20" count="25" type="stmt"/>
+        <line num="37" count="4" type="stmt"/>
+        <line num="38" count="4" type="stmt"/>
+        <line num="39" count="4" type="stmt"/>
+        <line num="41" count="4" type="stmt"/>
+        <line num="43" count="4" type="stmt"/>
+        <line num="44" count="4" type="stmt"/>
+        <line num="47" count="4" type="stmt"/>
+        <line num="48" count="11" type="stmt"/>
+        <line num="49" count="11" type="stmt"/>
+        <line num="50" count="11" type="cond" truecount="3" falsecount="1"/>
+        <line num="51" count="11" type="stmt"/>
+        <line num="54" count="0" type="stmt"/>
+        <line num="59" count="4" type="stmt"/>
+        <line num="60" count="4" type="stmt"/>
+        <line num="61" count="4" type="stmt"/>
+        <line num="64" count="4" type="stmt"/>
+        <line num="65" count="4" type="stmt"/>
+        <line num="66" count="4" type="stmt"/>
+        <line num="69" count="4" type="stmt"/>
+        <line num="70" count="4" type="stmt"/>
+        <line num="71" count="4" type="stmt"/>
+        <line num="74" count="4" type="stmt"/>
+        <line num="75" count="4" type="stmt"/>
+        <line num="76" count="4" type="stmt"/>
+        <line num="79" count="0" type="stmt"/>
+        <line num="82" count="4" type="stmt"/>
+        <line num="91" count="4" type="stmt"/>
+        <line num="92" count="4" type="stmt"/>
+        <line num="94" count="4" type="stmt"/>
+        <line num="95" count="11" type="cond" truecount="1" falsecount="1"/>
+        <line num="96" count="0" type="stmt"/>
+        <line num="97" count="0" type="stmt"/>
+        <line num="98" count="0" type="stmt"/>
+        <line num="99" count="0" type="stmt"/>
+        <line num="103" count="4" type="stmt"/>
+        <line num="112" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="113" count="0" type="stmt"/>
+        <line num="116" count="4" type="stmt"/>
+        <line num="117" count="4" type="stmt"/>
+        <line num="119" count="4" type="stmt"/>
+        <line num="120" count="4" type="stmt"/>
+        <line num="122" count="4" type="stmt"/>
+        <line num="124" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="125" count="1" type="stmt"/>
+        <line num="128" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="129" count="1" type="stmt"/>
+        <line num="130" count="1" type="stmt"/>
+        <line num="131" count="1" type="stmt"/>
+        <line num="132" count="1" type="stmt"/>
+        <line num="136" count="4" type="stmt"/>
+        <line num="145" count="4" type="stmt"/>
+        <line num="148" count="4" type="stmt"/>
+        <line num="149" count="11" type="stmt"/>
+        <line num="150" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="151" count="9" type="stmt"/>
+        <line num="153" count="11" type="stmt"/>
+        <line num="156" count="4" type="stmt"/>
+        <line num="157" count="4" type="stmt"/>
+        <line num="160" count="4" type="stmt"/>
+        <line num="162" count="9" type="stmt"/>
+        <line num="163" count="2" type="stmt"/>
+        <line num="167" count="9" type="cond" truecount="4" falsecount="0"/>
+        <line num="168" count="1" type="stmt"/>
+        <line num="169" count="1" type="stmt"/>
+        <line num="170" count="1" type="stmt"/>
+        <line num="171" count="1" type="stmt"/>
+        <line num="172" count="1" type="stmt"/>
+        <line num="173" count="1" type="stmt"/>
+        <line num="178" count="9" type="cond" truecount="1" falsecount="1"/>
+        <line num="179" count="9" type="stmt"/>
+        <line num="180" count="9" type="stmt"/>
+        <line num="181" count="11" type="stmt"/>
+        <line num="184" count="9" type="stmt"/>
+        <line num="185" count="11" type="stmt"/>
+        <line num="186" count="11" type="cond" truecount="1" falsecount="1"/>
+        <line num="187" count="0" type="stmt"/>
+        <line num="188" count="0" type="stmt"/>
+        <line num="189" count="0" type="stmt"/>
+        <line num="195" count="4" type="stmt"/>
+        <line num="204" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="205" count="0" type="stmt"/>
+        <line num="209" count="4" type="stmt"/>
+        <line num="210" count="4" type="stmt"/>
+        <line num="212" count="4" type="stmt"/>
+        <line num="213" count="11" type="stmt"/>
+        <line num="214" count="11" type="stmt"/>
+        <line num="215" count="11" type="stmt"/>
+        <line num="223" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="224" count="3" type="stmt"/>
+        <line num="228" count="4" type="stmt"/>
+        <line num="230" count="1" type="stmt"/>
+        <line num="231" count="1" type="stmt"/>
+        <line num="232" count="1" type="stmt"/>
+        <line num="235" count="1" type="stmt"/>
+        <line num="236" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="237" count="1" type="stmt"/>
+        <line num="240" count="4" type="stmt"/>
+        <line num="241" count="4" type="stmt"/>
+        <line num="242" count="4" type="stmt"/>
+        <line num="243" count="4" type="stmt"/>
+        <line num="246" count="1" type="stmt"/>
+        <line num="253" count="5" type="stmt"/>
+        <line num="254" count="5" type="stmt"/>
+        <line num="264" count="5" type="stmt"/>
+        <line num="265" count="12" type="stmt"/>
+        <line num="266" count="12" type="stmt"/>
+        <line num="267" count="12" type="cond" truecount="3" falsecount="1"/>
+        <line num="269" count="12" type="stmt"/>
+        <line num="271" count="12" type="stmt"/>
+        <line num="272" count="12" type="stmt"/>
+        <line num="275" count="12" type="stmt"/>
+        <line num="276" count="12" type="cond" truecount="2" falsecount="0"/>
+        <line num="279" count="12" type="stmt"/>
+        <line num="280" count="12" type="cond" truecount="2" falsecount="0"/>
+        <line num="283" count="12" type="stmt"/>
+        <line num="284" count="12" type="cond" truecount="4" falsecount="0"/>
+        <line num="285" count="5" type="stmt"/>
+        <line num="287" count="12" type="cond" truecount="3" falsecount="1"/>
+        <line num="288" count="12" type="stmt"/>
+        <line num="295" count="5" type="stmt"/>
+        <line num="296" count="5" type="stmt"/>
+        <line num="298" count="5" type="stmt"/>
+      </file>
+      <file name="types.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\types.ts">
+        <metrics statements="8" coveredstatements="8" conditionals="4" coveredconditionals="4" methods="2" coveredmethods="2"/>
+        <line num="8" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="9" count="3" type="stmt"/>
+        <line num="10" count="3" type="stmt"/>
+        <line num="11" count="3" type="stmt"/>
+        <line num="12" count="3" type="stmt"/>
+        <line num="18" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="19" count="3" type="stmt"/>
+        <line num="20" count="3" type="stmt"/>
+      </file>
+      <file name="utils.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\utils.ts">
+        <metrics statements="31" coveredstatements="19" conditionals="8" coveredconditionals="2" methods="8" coveredmethods="5"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="11" count="2" type="stmt"/>
+        <line num="12" count="41" type="stmt"/>
+        <line num="13" count="41" type="stmt"/>
+        <line num="14" count="41" type="stmt"/>
+        <line num="20" count="2" type="stmt"/>
+        <line num="25" count="45" type="stmt"/>
+        <line num="31" count="2" type="stmt"/>
+        <line num="36" count="0" type="stmt"/>
+        <line num="37" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="38" count="0" type="stmt"/>
+        <line num="41" count="0" type="stmt"/>
+        <line num="51" count="2" type="stmt"/>
+        <line num="52" count="123" type="stmt"/>
+        <line num="53" count="123" type="stmt"/>
+        <line num="59" count="2" type="stmt"/>
+        <line num="63" count="69" type="cond" truecount="1" falsecount="1"/>
+        <line num="65" count="69" type="stmt"/>
+        <line num="68" count="0" type="stmt"/>
+        <line num="74" count="2" type="stmt"/>
+        <line num="75" count="32" type="cond" truecount="1" falsecount="1"/>
+        <line num="76" count="32" type="stmt"/>
+        <line num="78" count="0" type="stmt"/>
+        <line num="84" count="2" type="stmt"/>
+        <line num="85" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="87" count="0" type="stmt"/>
+        <line num="88" count="0" type="stmt"/>
+        <line num="89" count="0" type="stmt"/>
+        <line num="91" count="0" type="stmt"/>
+        <line num="97" count="2" type="stmt"/>
+        <line num="98" count="0" type="stmt"/>
+      </file>
+      <file name="validation.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\validation.ts">
+        <metrics statements="24" coveredstatements="0" conditionals="5" coveredconditionals="0" methods="1" coveredmethods="0"/>
+        <line num="5" count="0" type="stmt"/>
+        <line num="6" count="0" type="stmt"/>
+        <line num="11" count="0" type="stmt"/>
+        <line num="25" count="0" type="stmt"/>
+        <line num="44" count="0" type="stmt"/>
+        <line num="62" count="0" type="stmt"/>
+        <line num="74" count="0" type="stmt"/>
+        <line num="88" count="0" type="stmt"/>
+        <line num="101" count="0" type="stmt"/>
+        <line num="112" count="0" type="stmt"/>
+        <line num="124" count="0" type="stmt"/>
+        <line num="125" count="0" type="stmt"/>
+        <line num="126" count="0" type="cond" truecount="0" falsecount="5"/>
+        <line num="128" count="0" type="stmt"/>
+        <line num="129" count="0" type="stmt"/>
+        <line num="131" count="0" type="stmt"/>
+        <line num="132" count="0" type="stmt"/>
+        <line num="134" count="0" type="stmt"/>
+        <line num="135" count="0" type="stmt"/>
+        <line num="137" count="0" type="stmt"/>
+        <line num="138" count="0" type="stmt"/>
+        <line num="140" count="0" type="stmt"/>
+        <line num="142" count="0" type="stmt"/>
+        <line num="144" count="0" type="stmt"/>
+      </file>
+    </package>
+    <package name="context-manager.src.storage">
+      <metrics statements="106" coveredstatements="95" conditionals="27" coveredconditionals="20" methods="28" coveredmethods="22"/>
+      <file name="base.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\storage\base.ts">
+        <metrics statements="40" coveredstatements="37" conditionals="6" coveredconditionals="4" methods="10" coveredmethods="10"/>
+        <line num="6" count="3" type="stmt"/>
+        <line num="7" count="3" type="stmt"/>
+        <line num="12" count="3" type="stmt"/>
+        <line num="16" count="40" type="stmt"/>
+        <line num="23" count="91" type="stmt"/>
+        <line num="24" count="91" type="stmt"/>
+        <line num="26" count="33" type="stmt"/>
+        <line num="34" count="200" type="stmt"/>
+        <line num="41" count="59" type="stmt"/>
+        <line num="42" count="59" type="stmt"/>
+        <line num="43" count="59" type="stmt"/>
+        <line num="45" count="29" type="stmt"/>
+        <line num="53" count="3" type="stmt"/>
+        <line num="54" count="3" type="stmt"/>
+        <line num="55" count="1" type="stmt"/>
+        <line num="57" count="2" type="stmt"/>
+        <line num="65" count="37" type="stmt"/>
+        <line num="66" count="37" type="stmt"/>
+        <line num="67" count="33" type="stmt"/>
+        <line num="69" count="4" type="stmt"/>
+        <line num="77" count="10" type="stmt"/>
+        <line num="78" count="10" type="stmt"/>
+        <line num="81" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="82" count="0" type="stmt"/>
+        <line num="91" count="32" type="stmt"/>
+        <line num="93" count="32" type="stmt"/>
+        <line num="94" count="32" type="stmt"/>
+        <line num="98" count="79" type="stmt"/>
+        <line num="99" count="79" type="stmt"/>
+        <line num="100" count="106" type="stmt"/>
+        <line num="101" count="106" type="stmt"/>
+        <line num="102" count="106" type="cond" truecount="2" falsecount="0"/>
+        <line num="103" count="47" type="stmt"/>
+        <line num="105" count="59" type="stmt"/>
+        <line num="110" count="32" type="stmt"/>
+        <line num="112" count="32" type="cond" truecount="2" falsecount="0"/>
+        <line num="113" count="1" type="stmt"/>
+        <line num="117" count="31" type="stmt"/>
+        <line num="118" count="56" type="stmt"/>
+        <line num="120" count="0" type="stmt"/>
+      </file>
+      <file name="index.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\storage\index.ts">
+        <metrics statements="12" coveredstatements="10" conditionals="3" coveredconditionals="1" methods="4" coveredmethods="1"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="6" count="2" type="stmt"/>
+        <line num="7" count="2" type="stmt"/>
+        <line num="8" count="2" type="stmt"/>
+        <line num="10" count="2" type="stmt"/>
+        <line num="12" count="21" type="cond" truecount="1" falsecount="2"/>
+        <line num="14" count="21" type="stmt"/>
+        <line num="16" count="0" type="stmt"/>
+        <line num="18" count="0" type="stmt"/>
+        <line num="23" count="2" type="stmt"/>
+        <line num="24" count="2" type="stmt"/>
+        <line num="25" count="2" type="stmt"/>
+      </file>
+      <file name="json-adapter.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\storage\json-adapter.ts">
+        <metrics statements="22" coveredstatements="21" conditionals="6" coveredconditionals="5" methods="6" coveredmethods="6"/>
+        <line num="6" count="3" type="stmt"/>
+        <line num="7" count="3" type="stmt"/>
+        <line num="12" count="3" type="stmt"/>
+        <line num="17" count="55" type="stmt"/>
+        <line num="18" count="55" type="stmt"/>
+        <line num="20" count="55" type="stmt"/>
+        <line num="23" count="55" type="stmt"/>
+        <line num="25" count="55" type="stmt"/>
+        <line num="32" count="27" type="stmt"/>
+        <line num="33" count="27" type="stmt"/>
+        <line num="34" count="27" type="stmt"/>
+        <line num="37" count="313" type="stmt"/>
+        <line num="39" count="26" type="stmt"/>
+        <line num="41" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="42" count="1" type="stmt"/>
+        <line num="44" count="0" type="stmt"/>
+        <line num="53" count="679" type="stmt"/>
+        <line num="61" count="313" type="cond" truecount="4" falsecount="0"/>
+        <line num="62" count="26" type="stmt"/>
+        <line num="64" count="287" type="stmt"/>
+        <line num="71" count="228" type="stmt"/>
+        <line num="72" count="228" type="stmt"/>
+      </file>
+      <file name="yaml-adapter.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\context-manager\src\storage\yaml-adapter.ts">
+        <metrics statements="32" coveredstatements="27" conditionals="12" coveredconditionals="10" methods="8" coveredmethods="5"/>
+        <line num="6" count="3" type="stmt"/>
+        <line num="7" count="3" type="stmt"/>
+        <line num="8" count="3" type="stmt"/>
+        <line num="13" count="3" type="stmt"/>
+        <line num="18" count="4" type="stmt"/>
+        <line num="19" count="4" type="stmt"/>
+        <line num="21" count="4" type="stmt"/>
+        <line num="24" count="4" type="stmt"/>
+        <line num="31" count="4" type="stmt"/>
+        <line num="38" count="5" type="stmt"/>
+        <line num="39" count="5" type="stmt"/>
+        <line num="40" count="5" type="stmt"/>
+        <line num="43" count="4" type="stmt"/>
+        <line num="48" count="4" type="stmt"/>
+        <line num="50" count="4" type="stmt"/>
+        <line num="52" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="53" count="1" type="stmt"/>
+        <line num="55" count="0" type="stmt"/>
+        <line num="63" count="4" type="stmt"/>
+        <line num="65" count="0" type="stmt"/>
+        <line num="67" count="0" type="stmt"/>
+        <line num="68" count="0" type="stmt"/>
+        <line num="77" count="12" type="cond" truecount="3" falsecount="1"/>
+        <line num="78" count="0" type="stmt"/>
+        <line num="81" count="12" type="stmt"/>
+        <line num="82" count="58" type="stmt"/>
+        <line num="85" count="58" type="cond" truecount="4" falsecount="0"/>
+        <line num="86" count="5" type="stmt"/>
+        <line num="87" count="53" type="cond" truecount="2" falsecount="0"/>
+        <line num="88" count="8" type="stmt"/>
+        <line num="98" count="46" type="stmt"/>
+        <line num="99" count="46" type="stmt"/>
+      </file>
+    </package>
     <package name="vscode-extension">
       <metrics statements="92" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="17" coveredmethods="0"/>
       <file name="taskFileSupport.test.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\taskFileSupport.test.ts">
@@ -4354,10 +4811,10 @@
       </file>
     </package>
     <package name="vscode-extension.src.github">
-      <metrics statements="257" coveredstatements="1" conditionals="96" coveredconditionals="0" methods="37" coveredmethods="0"/>
+      <metrics statements="257" coveredstatements="0" conditionals="96" coveredconditionals="0" methods="37" coveredmethods="0"/>
       <file name="githubClient.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\github\githubClient.ts">
-        <metrics statements="51" coveredstatements="1" conditionals="32" coveredconditionals="0" methods="9" coveredmethods="0"/>
-        <line num="47" count="1" type="stmt"/>
+        <metrics statements="51" coveredstatements="0" conditionals="32" coveredconditionals="0" methods="9" coveredmethods="0"/>
+        <line num="47" count="0" type="stmt"/>
         <line num="52" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="53" count="0" type="stmt"/>
         <line num="64" count="0" type="stmt"/>
@@ -6573,30 +7030,30 @@
       </file>
     </package>
     <package name="vscode-extension.src.planBuilder">
-      <metrics statements="2717" coveredstatements="0" conditionals="1241" coveredconditionals="0" methods="540" coveredmethods="0"/>
+      <metrics statements="2717" coveredstatements="254" conditionals="1241" coveredconditionals="143" methods="540" coveredmethods="81"/>
       <file name="aiAssistanceService.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\aiAssistanceService.ts">
-        <metrics statements="47" coveredstatements="0" conditionals="37" coveredconditionals="0" methods="15" coveredmethods="0"/>
-        <line num="10" count="0" type="stmt"/>
-        <line num="31" count="0" type="stmt"/>
-        <line num="35" count="0" type="stmt"/>
-        <line num="36" count="0" type="stmt"/>
-        <line num="39" count="0" type="stmt"/>
-        <line num="40" count="0" type="stmt"/>
+        <metrics statements="47" coveredstatements="14" conditionals="37" coveredconditionals="7" methods="15" coveredmethods="6"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="35" count="10" type="stmt"/>
+        <line num="36" count="10" type="stmt"/>
+        <line num="39" count="10" type="stmt"/>
+        <line num="40" count="10" type="stmt"/>
         <line num="56" count="0" type="stmt"/>
         <line num="58" count="0" type="stmt"/>
         <line num="59" count="0" type="stmt"/>
         <line num="65" count="0" type="stmt"/>
         <line num="67" count="0" type="stmt"/>
         <line num="68" count="0" type="stmt"/>
-        <line num="76" count="0" type="stmt"/>
-        <line num="78" count="0" type="stmt"/>
-        <line num="79" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="76" count="1" type="stmt"/>
+        <line num="78" count="1" type="stmt"/>
+        <line num="79" count="1" type="cond" truecount="1" falsecount="1"/>
         <line num="80" count="0" type="stmt"/>
-        <line num="88" count="0" type="stmt"/>
-        <line num="95" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="88" count="3" type="stmt"/>
+        <line num="95" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="96" count="0" type="stmt"/>
-        <line num="103" count="0" type="stmt"/>
-        <line num="104" count="0" type="stmt"/>
+        <line num="103" count="1" type="stmt"/>
+        <line num="104" count="1" type="stmt"/>
         <line num="115" count="0" type="stmt"/>
         <line num="130" count="0" type="stmt"/>
         <line num="131" count="0" type="stmt"/>
@@ -6621,7 +7078,7 @@
         <line num="189" count="0" type="stmt"/>
         <line num="197" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="198" count="0" type="stmt"/>
-        <line num="206" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="206" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="207" count="0" type="stmt"/>
       </file>
       <file name="architectureSuggestions.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\architectureSuggestions.ts">
@@ -6857,65 +7314,65 @@
         <line num="397" count="0" type="stmt"/>
       </file>
       <file name="designHandoff.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\designHandoff.ts">
-        <metrics statements="58" coveredstatements="0" conditionals="108" coveredconditionals="0" methods="14" coveredmethods="0"/>
-        <line num="6" count="0" type="stmt"/>
-        <line num="29" count="0" type="stmt"/>
-        <line num="37" count="0" type="stmt"/>
-        <line num="42" count="0" type="stmt"/>
-        <line num="47" count="0" type="stmt"/>
-        <line num="52" count="0" type="stmt"/>
-        <line num="56" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="57" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="58" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="60" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="61" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="62" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="63" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="64" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="66" count="0" type="stmt"/>
-        <line num="72" count="0" type="stmt"/>
-        <line num="73" count="0" type="stmt"/>
-        <line num="75" count="0" type="stmt"/>
-        <line num="92" count="0" type="stmt"/>
-        <line num="93" count="0" type="stmt"/>
-        <line num="94" count="0" type="stmt"/>
-        <line num="96" count="0" type="stmt"/>
-        <line num="97" count="0" type="cond" truecount="0" falsecount="4"/>
+        <metrics statements="58" coveredstatements="54" conditionals="108" coveredconditionals="83" methods="14" coveredmethods="12"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="29" count="1" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="42" count="1" type="stmt"/>
+        <line num="47" count="1" type="stmt"/>
+        <line num="52" count="1" type="stmt"/>
+        <line num="56" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="57" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="58" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="60" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="61" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="62" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="63" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="64" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="66" count="4" type="stmt"/>
+        <line num="72" count="1" type="stmt"/>
+        <line num="73" count="1" type="stmt"/>
+        <line num="75" count="1" type="stmt"/>
+        <line num="92" count="1" type="stmt"/>
+        <line num="93" count="2" type="stmt"/>
+        <line num="94" count="4" type="stmt"/>
+        <line num="96" count="2" type="stmt"/>
+        <line num="97" count="2" type="cond" truecount="3" falsecount="1"/>
         <line num="98" count="0" type="stmt"/>
-        <line num="101" count="0" type="stmt"/>
-        <line num="110" count="0" type="stmt"/>
+        <line num="101" count="2" type="stmt"/>
+        <line num="110" count="1" type="stmt"/>
         <line num="111" count="0" type="stmt"/>
-        <line num="114" count="0" type="stmt"/>
+        <line num="114" count="1" type="stmt"/>
         <line num="115" count="0" type="stmt"/>
-        <line num="119" count="0" type="stmt"/>
-        <line num="120" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="122" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="123" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="126" count="0" type="stmt"/>
-        <line num="127" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="128" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="130" count="0" type="cond" truecount="0" falsecount="6"/>
-        <line num="131" count="0" type="stmt"/>
-        <line num="135" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="136" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="137" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="138" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="141" count="0" type="stmt"/>
-        <line num="145" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="146" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="149" count="0" type="stmt"/>
-        <line num="157" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="158" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="161" count="0" type="stmt"/>
-        <line num="171" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="172" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="175" count="0" type="stmt"/>
-        <line num="176" count="0" type="stmt"/>
-        <line num="177" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="119" count="4" type="stmt"/>
+        <line num="120" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="122" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="123" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="126" count="3" type="stmt"/>
+        <line num="127" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="128" count="6" type="cond" truecount="1" falsecount="3"/>
+        <line num="130" count="2" type="cond" truecount="3" falsecount="3"/>
+        <line num="131" count="2" type="stmt"/>
+        <line num="135" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="136" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="137" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="138" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="141" count="3" type="stmt"/>
+        <line num="145" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="146" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="149" count="4" type="stmt"/>
+        <line num="157" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="158" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="161" count="3" type="stmt"/>
+        <line num="171" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="172" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="175" count="3" type="stmt"/>
+        <line num="176" count="3" type="stmt"/>
+        <line num="177" count="4" type="cond" truecount="1" falsecount="1"/>
         <line num="178" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="179" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="180" count="0" type="stmt"/>
-        <line num="184" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="179" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="180" count="4" type="stmt"/>
+        <line num="184" count="3" type="cond" truecount="3" falsecount="1"/>
       </file>
       <file name="livePreview.test.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\livePreview.test.ts">
         <metrics statements="161" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="31" coveredmethods="0"/>
@@ -7082,23 +7539,23 @@
         <line num="301" count="0" type="stmt"/>
       </file>
       <file name="livePreview.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\livePreview.ts">
-        <metrics statements="109" coveredstatements="0" conditionals="86" coveredconditionals="0" methods="23" coveredmethods="0"/>
-        <line num="45" count="0" type="stmt"/>
-        <line num="46" count="0" type="stmt"/>
-        <line num="47" count="0" type="stmt"/>
-        <line num="48" count="0" type="stmt"/>
-        <line num="49" count="0" type="stmt"/>
-        <line num="50" count="0" type="stmt"/>
-        <line num="54" count="0" type="stmt"/>
+        <metrics statements="109" coveredstatements="14" conditionals="86" coveredconditionals="2" methods="23" coveredmethods="3"/>
+        <line num="45" count="1" type="stmt"/>
+        <line num="46" count="1" type="stmt"/>
+        <line num="47" count="1" type="stmt"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="50" count="1" type="stmt"/>
+        <line num="54" count="1" type="stmt"/>
         <line num="62" count="0" type="stmt"/>
         <line num="64" count="0" type="stmt"/>
         <line num="65" count="0" type="stmt"/>
-        <line num="77" count="0" type="stmt"/>
-        <line num="80" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="81" count="0" type="stmt"/>
-        <line num="84" count="0" type="stmt"/>
-        <line num="86" count="0" type="stmt"/>
-        <line num="87" count="0" type="stmt"/>
+        <line num="77" count="31" type="stmt"/>
+        <line num="80" count="31" type="cond" truecount="2" falsecount="0"/>
+        <line num="81" count="30" type="stmt"/>
+        <line num="84" count="31" type="stmt"/>
+        <line num="86" count="31" type="stmt"/>
+        <line num="87" count="31" type="stmt"/>
         <line num="88" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="90" count="0" type="stmt"/>
         <line num="91" count="0" type="stmt"/>
@@ -7191,7 +7648,7 @@
         <line num="474" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="476" count="0" type="stmt"/>
         <line num="484" count="0" type="stmt"/>
-        <line num="489" count="0" type="stmt"/>
+        <line num="489" count="1" type="stmt"/>
       </file>
       <file name="llmPrompts.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\llmPrompts.ts">
         <metrics statements="13" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="9" coveredmethods="0"/>
@@ -8660,33 +9117,33 @@
         <line num="184" count="0" type="stmt"/>
       </file>
       <file name="questionFramework.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\questionFramework.ts">
-        <metrics statements="56" coveredstatements="0" conditionals="52" coveredconditionals="0" methods="20" coveredmethods="0"/>
-        <line num="57" count="0" type="stmt"/>
-        <line num="61" count="0" type="stmt"/>
-        <line num="68" count="0" type="stmt"/>
-        <line num="69" count="0" type="cond" truecount="0" falsecount="2"/>
+        <metrics statements="56" coveredstatements="32" conditionals="52" coveredconditionals="19" methods="20" coveredmethods="17"/>
+        <line num="57" count="2" type="stmt"/>
+        <line num="61" count="34" type="stmt"/>
+        <line num="68" count="86" type="stmt"/>
+        <line num="69" count="860" type="cond" truecount="1" falsecount="1"/>
         <line num="70" count="0" type="stmt"/>
         <line num="78" count="0" type="stmt"/>
         <line num="79" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="81" count="0" type="stmt"/>
         <line num="82" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="83" count="0" type="stmt"/>
-        <line num="91" count="0" type="stmt"/>
-        <line num="92" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="91" count="24" type="stmt"/>
+        <line num="92" count="24" type="cond" truecount="1" falsecount="1"/>
         <line num="93" count="0" type="stmt"/>
-        <line num="96" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="96" count="24" type="cond" truecount="3" falsecount="1"/>
         <line num="97" count="0" type="stmt"/>
-        <line num="100" count="0" type="stmt"/>
-        <line num="102" count="0" type="stmt"/>
-        <line num="103" count="0" type="cond" truecount="0" falsecount="5"/>
-        <line num="105" count="0" type="cond" truecount="0" falsecount="5"/>
-        <line num="106" count="0" type="stmt"/>
-        <line num="108" count="0" type="stmt"/>
-        <line num="111" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="100" count="24" type="stmt"/>
+        <line num="102" count="24" type="stmt"/>
+        <line num="103" count="48" type="cond" truecount="2" falsecount="3"/>
+        <line num="105" count="24" type="cond" truecount="5" falsecount="0"/>
+        <line num="106" count="17" type="stmt"/>
+        <line num="108" count="24" type="stmt"/>
+        <line num="111" count="24" type="cond" truecount="3" falsecount="1"/>
         <line num="112" count="0" type="stmt"/>
-        <line num="113" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="113" count="24" type="cond" truecount="2" falsecount="2"/>
         <line num="114" count="0" type="stmt"/>
-        <line num="116" count="0" type="stmt"/>
+        <line num="116" count="24" type="stmt"/>
         <line num="119" count="0" type="cond" truecount="0" falsecount="4"/>
         <line num="120" count="0" type="stmt"/>
         <line num="121" count="0" type="cond" truecount="0" falsecount="4"/>
@@ -8700,23 +9157,23 @@
         <line num="136" count="0" type="cond" truecount="0" falsecount="4"/>
         <line num="137" count="0" type="stmt"/>
         <line num="139" count="0" type="stmt"/>
-        <line num="143" count="0" type="stmt"/>
-        <line num="150" count="0" type="stmt"/>
-        <line num="151" count="0" type="stmt"/>
-        <line num="152" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="143" count="24" type="stmt"/>
+        <line num="150" count="24" type="stmt"/>
+        <line num="151" count="36" type="stmt"/>
+        <line num="152" count="24" type="cond" truecount="1" falsecount="1"/>
         <line num="154" count="0" type="stmt"/>
-        <line num="161" count="0" type="stmt"/>
-        <line num="176" count="0" type="stmt"/>
-        <line num="208" count="0" type="stmt"/>
-        <line num="260" count="0" type="stmt"/>
-        <line num="311" count="0" type="stmt"/>
-        <line num="359" count="0" type="stmt"/>
-        <line num="399" count="0" type="stmt"/>
-        <line num="434" count="0" type="stmt"/>
-        <line num="464" count="0" type="stmt"/>
-        <line num="500" count="0" type="stmt"/>
-        <line num="538" count="0" type="stmt"/>
-        <line num="569" count="0" type="stmt"/>
+        <line num="161" count="34" type="stmt"/>
+        <line num="176" count="34" type="stmt"/>
+        <line num="208" count="34" type="stmt"/>
+        <line num="260" count="34" type="stmt"/>
+        <line num="311" count="34" type="stmt"/>
+        <line num="359" count="34" type="stmt"/>
+        <line num="399" count="34" type="stmt"/>
+        <line num="434" count="34" type="stmt"/>
+        <line num="464" count="34" type="stmt"/>
+        <line num="500" count="34" type="stmt"/>
+        <line num="538" count="34" type="stmt"/>
+        <line num="569" count="2" type="stmt"/>
       </file>
       <file name="taskDecomposition.test.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\taskDecomposition.test.ts">
         <metrics statements="107" coveredstatements="0" conditionals="30" coveredconditionals="0" methods="4" coveredmethods="0"/>
@@ -8981,101 +9438,101 @@
         <line num="212" count="0" type="stmt"/>
       </file>
       <file name="wizardContainer.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\wizardContainer.ts">
-        <metrics statements="125" coveredstatements="0" conditionals="42" coveredconditionals="0" methods="34" coveredmethods="0"/>
-        <line num="10" count="0" type="stmt"/>
-        <line num="11" count="0" type="stmt"/>
-        <line num="12" count="0" type="stmt"/>
-        <line num="14" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="15" count="0" type="stmt"/>
-        <line num="16" count="0" type="stmt"/>
-        <line num="17" count="0" type="stmt"/>
-        <line num="44" count="0" type="stmt"/>
-        <line num="47" count="0" type="stmt"/>
-        <line num="48" count="0" type="stmt"/>
-        <line num="50" count="0" type="stmt"/>
-        <line num="60" count="0" type="stmt"/>
-        <line num="61" count="0" type="stmt"/>
-        <line num="62" count="0" type="stmt"/>
-        <line num="65" count="0" type="stmt"/>
-        <line num="72" count="0" type="stmt"/>
-        <line num="79" count="0" type="stmt"/>
-        <line num="80" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="87" count="0" type="stmt"/>
+        <metrics statements="125" coveredstatements="98" conditionals="42" coveredconditionals="23" methods="34" coveredmethods="27"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="14" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="15" count="1" type="stmt"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="44" count="1" type="stmt"/>
+        <line num="47" count="23" type="stmt"/>
+        <line num="48" count="23" type="stmt"/>
+        <line num="50" count="23" type="stmt"/>
+        <line num="60" count="23" type="stmt"/>
+        <line num="61" count="23" type="stmt"/>
+        <line num="62" count="23" type="stmt"/>
+        <line num="65" count="23" type="stmt"/>
+        <line num="72" count="85" type="stmt"/>
+        <line num="79" count="23" type="stmt"/>
+        <line num="80" count="23" type="cond" truecount="1" falsecount="1"/>
+        <line num="87" count="10" type="stmt"/>
         <line num="94" count="0" type="stmt"/>
         <line num="95" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="96" count="0" type="stmt"/>
-        <line num="106" count="0" type="stmt"/>
-        <line num="107" count="0" type="stmt"/>
-        <line num="110" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="111" count="0" type="stmt"/>
-        <line num="112" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="113" count="0" type="stmt"/>
-        <line num="114" count="0" type="stmt"/>
-        <line num="118" count="0" type="stmt"/>
-        <line num="121" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="122" count="0" type="stmt"/>
-        <line num="123" count="0" type="stmt"/>
+        <line num="106" count="10" type="stmt"/>
+        <line num="107" count="10" type="stmt"/>
+        <line num="110" count="10" type="cond" truecount="1" falsecount="1"/>
+        <line num="111" count="10" type="stmt"/>
+        <line num="112" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="113" count="7" type="stmt"/>
+        <line num="114" count="7" type="stmt"/>
+        <line num="118" count="3" type="stmt"/>
+        <line num="121" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="122" count="3" type="stmt"/>
+        <line num="123" count="3" type="stmt"/>
         <line num="126" count="0" type="stmt"/>
-        <line num="133" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="134" count="0" type="stmt"/>
-        <line num="135" count="0" type="stmt"/>
-        <line num="138" count="0" type="stmt"/>
-        <line num="145" count="0" type="stmt"/>
-        <line num="146" count="0" type="stmt"/>
-        <line num="148" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="133" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="134" count="1" type="stmt"/>
+        <line num="135" count="1" type="stmt"/>
+        <line num="138" count="1" type="stmt"/>
+        <line num="145" count="2" type="stmt"/>
+        <line num="146" count="5" type="stmt"/>
+        <line num="148" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="149" count="0" type="stmt"/>
         <line num="150" count="0" type="stmt"/>
-        <line num="154" count="0" type="stmt"/>
-        <line num="155" count="0" type="stmt"/>
-        <line num="157" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="158" count="0" type="stmt"/>
-        <line num="159" count="0" type="stmt"/>
-        <line num="162" count="0" type="stmt"/>
-        <line num="163" count="0" type="stmt"/>
-        <line num="170" count="0" type="stmt"/>
-        <line num="171" count="0" type="stmt"/>
-        <line num="172" count="0" type="stmt"/>
-        <line num="174" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="177" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="178" count="0" type="stmt"/>
-        <line num="187" count="0" type="stmt"/>
-        <line num="188" count="0" type="stmt"/>
-        <line num="191" count="0" type="stmt"/>
-        <line num="192" count="0" type="stmt"/>
-        <line num="199" count="0" type="stmt"/>
-        <line num="202" count="0" type="stmt"/>
-        <line num="203" count="0" type="stmt"/>
-        <line num="206" count="0" type="stmt"/>
-        <line num="213" count="0" type="stmt"/>
-        <line num="220" count="0" type="stmt"/>
-        <line num="227" count="0" type="stmt"/>
-        <line num="228" count="0" type="stmt"/>
-        <line num="230" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="154" count="2" type="stmt"/>
+        <line num="155" count="2" type="stmt"/>
+        <line num="157" count="2" type="cond" truecount="4" falsecount="0"/>
+        <line num="158" count="1" type="stmt"/>
+        <line num="159" count="1" type="stmt"/>
+        <line num="162" count="1" type="stmt"/>
+        <line num="163" count="1" type="stmt"/>
+        <line num="170" count="5" type="stmt"/>
+        <line num="171" count="5" type="stmt"/>
+        <line num="172" count="5" type="stmt"/>
+        <line num="174" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="177" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="178" count="5" type="stmt"/>
+        <line num="187" count="5" type="stmt"/>
+        <line num="188" count="5" type="stmt"/>
+        <line num="191" count="5" type="stmt"/>
+        <line num="192" count="5" type="stmt"/>
+        <line num="199" count="31" type="stmt"/>
+        <line num="202" count="31" type="stmt"/>
+        <line num="203" count="31" type="stmt"/>
+        <line num="206" count="31" type="stmt"/>
+        <line num="213" count="3" type="stmt"/>
+        <line num="220" count="44" type="stmt"/>
+        <line num="227" count="12" type="stmt"/>
+        <line num="228" count="12" type="stmt"/>
+        <line num="230" count="12" type="cond" truecount="1" falsecount="1"/>
         <line num="231" count="0" type="stmt"/>
-        <line num="234" count="0" type="stmt"/>
-        <line num="235" count="0" type="stmt"/>
-        <line num="236" count="0" type="stmt"/>
-        <line num="238" count="0" type="stmt"/>
-        <line num="240" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="234" count="12" type="stmt"/>
+        <line num="235" count="12" type="stmt"/>
+        <line num="236" count="12" type="stmt"/>
+        <line num="238" count="12" type="stmt"/>
+        <line num="240" count="24" type="cond" truecount="2" falsecount="2"/>
         <line num="241" count="0" type="stmt"/>
-        <line num="244" count="0" type="stmt"/>
-        <line num="245" count="0" type="stmt"/>
-        <line num="247" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="248" count="0" type="stmt"/>
-        <line num="252" count="0" type="stmt"/>
-        <line num="259" count="0" type="stmt"/>
-        <line num="260" count="0" type="stmt"/>
-        <line num="263" count="0" type="stmt"/>
-        <line num="265" count="0" type="stmt"/>
-        <line num="267" count="0" type="stmt"/>
-        <line num="268" count="0" type="stmt"/>
-        <line num="270" count="0" type="stmt"/>
-        <line num="286" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="244" count="24" type="stmt"/>
+        <line num="245" count="24" type="stmt"/>
+        <line num="247" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="248" count="17" type="stmt"/>
+        <line num="252" count="12" type="stmt"/>
+        <line num="259" count="3" type="stmt"/>
+        <line num="260" count="3" type="stmt"/>
+        <line num="263" count="3" type="stmt"/>
+        <line num="265" count="30" type="stmt"/>
+        <line num="267" count="3" type="stmt"/>
+        <line num="268" count="3" type="stmt"/>
+        <line num="270" count="3" type="stmt"/>
+        <line num="286" count="3" type="cond" truecount="1" falsecount="3"/>
         <line num="288" count="0" type="stmt"/>
-        <line num="290" count="0" type="stmt"/>
+        <line num="290" count="3" type="stmt"/>
         <line num="292" count="0" type="stmt"/>
         <line num="294" count="0" type="stmt"/>
-        <line num="302" count="0" type="stmt"/>
+        <line num="302" count="5" type="stmt"/>
         <line num="310" count="0" type="stmt"/>
         <line num="311" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="312" count="0" type="stmt"/>
@@ -9089,40 +9546,40 @@
         <line num="333" count="0" type="stmt"/>
         <line num="335" count="0" type="stmt"/>
         <line num="344" count="0" type="stmt"/>
-        <line num="355" count="0" type="stmt"/>
-        <line num="356" count="0" type="stmt"/>
-        <line num="357" count="0" type="stmt"/>
-        <line num="358" count="0" type="stmt"/>
-        <line num="365" count="0" type="stmt"/>
-        <line num="368" count="0" type="stmt"/>
-        <line num="369" count="0" type="stmt"/>
-        <line num="371" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="372" count="0" type="stmt"/>
-        <line num="380" count="0" type="stmt"/>
-        <line num="387" count="0" type="stmt"/>
-        <line num="388" count="0" type="stmt"/>
-        <line num="395" count="0" type="stmt"/>
-        <line num="399" count="0" type="stmt"/>
+        <line num="355" count="1" type="stmt"/>
+        <line num="356" count="1" type="stmt"/>
+        <line num="357" count="1" type="stmt"/>
+        <line num="358" count="1" type="stmt"/>
+        <line num="365" count="24" type="stmt"/>
+        <line num="368" count="24" type="stmt"/>
+        <line num="369" count="24" type="stmt"/>
+        <line num="371" count="24" type="cond" truecount="1" falsecount="1"/>
+        <line num="372" count="24" type="stmt"/>
+        <line num="380" count="2" type="stmt"/>
+        <line num="387" count="1" type="stmt"/>
+        <line num="388" count="1" type="stmt"/>
+        <line num="395" count="1" type="stmt"/>
+        <line num="399" count="1" type="stmt"/>
         <line num="403" count="0" type="stmt"/>
         <line num="407" count="0" type="stmt"/>
         <line num="411" count="0" type="stmt"/>
-        <line num="418" count="0" type="stmt"/>
+        <line num="418" count="23" type="stmt"/>
       </file>
       <file name="wizardState.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\wizardState.ts">
-        <metrics statements="68" coveredstatements="0" conditionals="21" coveredconditionals="0" methods="24" coveredmethods="0"/>
-        <line num="21" count="0" type="stmt"/>
-        <line num="23" count="0" type="stmt"/>
-        <line num="24" count="0" type="stmt"/>
-        <line num="28" count="0" type="stmt"/>
-        <line num="39" count="0" type="stmt"/>
-        <line num="42" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="43" count="0" type="stmt"/>
-        <line num="51" count="0" type="stmt"/>
-        <line num="58" count="0" type="stmt"/>
-        <line num="59" count="0" type="stmt"/>
-        <line num="60" count="0" type="stmt"/>
-        <line num="67" count="0" type="stmt"/>
-        <line num="74" count="0" type="stmt"/>
+        <metrics statements="68" coveredstatements="42" conditionals="21" coveredconditionals="9" methods="24" coveredmethods="16"/>
+        <line num="21" count="1" type="stmt"/>
+        <line num="23" count="23" type="stmt"/>
+        <line num="24" count="23" type="stmt"/>
+        <line num="28" count="23" type="stmt"/>
+        <line num="39" count="23" type="stmt"/>
+        <line num="42" count="23" type="cond" truecount="1" falsecount="1"/>
+        <line num="43" count="23" type="stmt"/>
+        <line num="51" count="29" type="stmt"/>
+        <line num="58" count="31" type="stmt"/>
+        <line num="59" count="31" type="stmt"/>
+        <line num="60" count="31" type="stmt"/>
+        <line num="67" count="3" type="stmt"/>
+        <line num="74" count="129" type="stmt"/>
         <line num="83" count="0" type="stmt"/>
         <line num="84" count="0" type="stmt"/>
         <line num="87" count="0" type="stmt"/>
@@ -9134,50 +9591,50 @@
         <line num="115" count="0" type="stmt"/>
         <line num="116" count="0" type="stmt"/>
         <line num="117" count="0" type="stmt"/>
-        <line num="124" count="0" type="stmt"/>
-        <line num="126" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="127" count="0" type="stmt"/>
-        <line num="130" count="0" type="stmt"/>
-        <line num="131" count="0" type="stmt"/>
-        <line num="138" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="139" count="0" type="stmt"/>
-        <line num="141" count="0" type="stmt"/>
-        <line num="142" count="0" type="stmt"/>
+        <line num="124" count="5" type="stmt"/>
+        <line num="126" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="127" count="5" type="stmt"/>
+        <line num="130" count="5" type="stmt"/>
+        <line num="131" count="5" type="stmt"/>
+        <line num="138" count="3" type="cond" truecount="1" falsecount="1"/>
+        <line num="139" count="3" type="stmt"/>
+        <line num="141" count="3" type="stmt"/>
+        <line num="142" count="3" type="stmt"/>
         <line num="149" count="0" type="stmt"/>
         <line num="156" count="0" type="stmt"/>
         <line num="163" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="164" count="0" type="stmt"/>
-        <line num="171" count="0" type="stmt"/>
-        <line num="179" count="0" type="stmt"/>
-        <line num="186" count="0" type="stmt"/>
-        <line num="193" count="0" type="stmt"/>
-        <line num="194" count="0" type="stmt"/>
-        <line num="195" count="0" type="stmt"/>
-        <line num="201" count="0" type="stmt"/>
+        <line num="171" count="1" type="stmt"/>
+        <line num="179" count="1" type="stmt"/>
+        <line num="186" count="2" type="stmt"/>
+        <line num="193" count="1" type="stmt"/>
+        <line num="194" count="1" type="stmt"/>
+        <line num="195" count="1" type="stmt"/>
+        <line num="201" count="1" type="stmt"/>
         <line num="203" count="0" type="stmt"/>
-        <line num="211" count="0" type="stmt"/>
-        <line num="212" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="211" count="63" type="stmt"/>
+        <line num="212" count="63" type="cond" truecount="1" falsecount="1"/>
         <line num="213" count="0" type="stmt"/>
         <line num="216" count="0" type="stmt"/>
-        <line num="224" count="0" type="stmt"/>
-        <line num="225" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="224" count="23" type="stmt"/>
+        <line num="225" count="23" type="cond" truecount="1" falsecount="1"/>
         <line num="226" count="0" type="stmt"/>
         <line num="227" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="228" count="0" type="stmt"/>
         <line num="232" count="0" type="stmt"/>
-        <line num="240" count="0" type="stmt"/>
-        <line num="241" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="240" count="1" type="stmt"/>
+        <line num="241" count="1" type="cond" truecount="1" falsecount="1"/>
         <line num="242" count="0" type="stmt"/>
         <line num="245" count="0" type="stmt"/>
-        <line num="253" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="253" count="23" type="cond" truecount="1" falsecount="1"/>
         <line num="254" count="0" type="stmt"/>
-        <line num="257" count="0" type="stmt"/>
+        <line num="257" count="23" type="stmt"/>
         <line num="258" count="0" type="stmt"/>
-        <line num="266" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="267" count="0" type="stmt"/>
-        <line num="268" count="0" type="stmt"/>
-        <line num="276" count="0" type="stmt"/>
-        <line num="277" count="0" type="stmt"/>
+        <line num="266" count="23" type="cond" truecount="1" falsecount="1"/>
+        <line num="267" count="23" type="stmt"/>
+        <line num="268" count="23" type="stmt"/>
+        <line num="276" count="23" type="stmt"/>
+        <line num="277" count="23" type="stmt"/>
       </file>
       <file name="wizardStore.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\wizardStore.ts">
         <metrics statements="181" coveredstatements="0" conditionals="49" coveredconditionals="0" methods="65" coveredmethods="0"/>
@@ -9930,7 +10387,7 @@
       </file>
     </package>
     <package name="vscode-extension.src.planBuilder.designSystem">
-      <metrics statements="474" coveredstatements="0" conditionals="123" coveredconditionals="0" methods="153" coveredmethods="0"/>
+      <metrics statements="474" coveredstatements="33" conditionals="123" coveredconditionals="43" methods="153" coveredmethods="6"/>
       <file name="tokenGenerator.test.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\designSystem\tokenGenerator.test.ts">
         <metrics statements="174" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="43" coveredmethods="0"/>
         <line num="5" count="0" type="stmt"/>
@@ -10369,53 +10826,53 @@
         <line num="426" count="0" type="stmt"/>
       </file>
       <file name="validator.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\planBuilder\designSystem\validator.ts">
-        <metrics statements="46" coveredstatements="0" conditionals="59" coveredconditionals="0" methods="7" coveredmethods="0"/>
-        <line num="12" count="0" type="stmt"/>
-        <line num="13" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="14" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="16" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="19" count="0" type="stmt"/>
+        <metrics statements="46" coveredstatements="33" conditionals="59" coveredconditionals="43" methods="7" coveredmethods="6"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="13" count="18" type="cond" truecount="1" falsecount="1"/>
+        <line num="14" count="18" type="cond" truecount="1" falsecount="1"/>
+        <line num="16" count="18" type="cond" truecount="2" falsecount="0"/>
+        <line num="19" count="1" type="stmt"/>
         <line num="20" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="22" count="0" type="stmt"/>
-        <line num="25" count="0" type="stmt"/>
-        <line num="26" count="0" type="stmt"/>
-        <line num="29" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="32" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="25" count="1" type="stmt"/>
+        <line num="26" count="2" type="stmt"/>
+        <line num="29" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="32" count="2" type="cond" truecount="3" falsecount="1"/>
         <line num="33" count="0" type="stmt"/>
-        <line num="34" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="34" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="35" count="0" type="stmt"/>
-        <line num="37" count="0" type="stmt"/>
-        <line num="38" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="39" count="0" type="stmt"/>
-        <line num="45" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="37" count="2" type="stmt"/>
+        <line num="38" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="39" count="1" type="stmt"/>
+        <line num="45" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="46" count="0" type="stmt"/>
-        <line num="47" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="47" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="48" count="0" type="stmt"/>
-        <line num="50" count="0" type="stmt"/>
-        <line num="51" count="0" type="cond" truecount="0" falsecount="5"/>
+        <line num="50" count="2" type="stmt"/>
+        <line num="51" count="3" type="cond" truecount="4" falsecount="1"/>
         <line num="52" count="0" type="stmt"/>
-        <line num="54" count="0" type="cond" truecount="0" falsecount="5"/>
+        <line num="54" count="3" type="cond" truecount="4" falsecount="1"/>
         <line num="55" count="0" type="stmt"/>
-        <line num="56" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="57" count="0" type="stmt"/>
-        <line num="59" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="60" count="0" type="stmt"/>
-        <line num="61" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="56" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="57" count="1" type="stmt"/>
+        <line num="59" count="3" type="cond" truecount="4" falsecount="0"/>
+        <line num="60" count="2" type="stmt"/>
+        <line num="61" count="6" type="cond" truecount="1" falsecount="1"/>
         <line num="62" count="0" type="stmt"/>
-        <line num="70" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="70" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="71" count="0" type="stmt"/>
-        <line num="72" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="73" count="0" type="stmt"/>
-        <line num="75" count="0" type="stmt"/>
-        <line num="76" count="0" type="cond" truecount="0" falsecount="5"/>
+        <line num="72" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="73" count="1" type="stmt"/>
+        <line num="75" count="1" type="stmt"/>
+        <line num="76" count="2" type="cond" truecount="4" falsecount="1"/>
         <line num="77" count="0" type="stmt"/>
-        <line num="84" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="84" count="2" type="cond" truecount="3" falsecount="1"/>
         <line num="85" count="0" type="stmt"/>
-        <line num="86" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="87" count="0" type="stmt"/>
-        <line num="91" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="86" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="87" count="1" type="stmt"/>
+        <line num="91" count="2" type="cond" truecount="3" falsecount="1"/>
         <line num="92" count="0" type="stmt"/>
-        <line num="97" count="0" type="stmt"/>
+        <line num="97" count="2" type="stmt"/>
       </file>
     </package>
     <package name="vscode-extension.src.planBuilder.exporters">
@@ -10875,7 +11332,7 @@
       </file>
     </package>
     <package name="vscode-extension.src.services">
-      <metrics statements="2090" coveredstatements="21" conditionals="727" coveredconditionals="12" methods="520" coveredmethods="4"/>
+      <metrics statements="2090" coveredstatements="13" conditionals="727" coveredconditionals="4" methods="520" coveredmethods="2"/>
       <file name="agentLoopService.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\services\agentLoopService.ts">
         <metrics statements="63" coveredstatements="0" conditionals="29" coveredconditionals="0" methods="12" coveredmethods="0"/>
         <line num="35" count="0" type="stmt"/>
@@ -11207,28 +11664,28 @@
         <line num="341" count="0" type="stmt"/>
       </file>
       <file name="githubSyncService.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\services\githubSyncService.ts">
-        <metrics statements="56" coveredstatements="21" conditionals="32" coveredconditionals="12" methods="13" coveredmethods="4"/>
-        <line num="6" count="1" type="stmt"/>
-        <line num="34" count="1" type="cond" truecount="3" falsecount="1"/>
+        <metrics statements="56" coveredstatements="0" conditionals="32" coveredconditionals="0" methods="13" coveredmethods="0"/>
+        <line num="6" count="0" type="stmt"/>
+        <line num="34" count="0" type="cond" truecount="0" falsecount="4"/>
         <line num="35" count="0" type="stmt"/>
-        <line num="37" count="1" type="stmt"/>
+        <line num="37" count="0" type="stmt"/>
         <line num="44" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="50" count="1" type="stmt"/>
-        <line num="53" count="14" type="stmt"/>
-        <line num="56" count="14" type="stmt"/>
-        <line num="57" count="14" type="stmt"/>
-        <line num="68" count="15" type="stmt"/>
-        <line num="69" count="15" type="cond" truecount="2" falsecount="0"/>
-        <line num="71" count="15" type="cond" truecount="2" falsecount="0"/>
-        <line num="73" count="1" type="stmt"/>
-        <line num="81" count="1" type="stmt"/>
-        <line num="82" count="1" type="stmt"/>
-        <line num="83" count="1" type="stmt"/>
-        <line num="86" count="14" type="stmt"/>
-        <line num="93" count="11" type="stmt"/>
-        <line num="94" count="11" type="stmt"/>
-        <line num="97" count="3" type="cond" truecount="1" falsecount="1"/>
-        <line num="98" count="3" type="stmt"/>
+        <line num="50" count="0" type="stmt"/>
+        <line num="53" count="0" type="stmt"/>
+        <line num="56" count="0" type="stmt"/>
+        <line num="57" count="0" type="stmt"/>
+        <line num="68" count="0" type="stmt"/>
+        <line num="69" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="71" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="73" count="0" type="stmt"/>
+        <line num="81" count="0" type="stmt"/>
+        <line num="82" count="0" type="stmt"/>
+        <line num="83" count="0" type="stmt"/>
+        <line num="86" count="0" type="stmt"/>
+        <line num="93" count="0" type="stmt"/>
+        <line num="94" count="0" type="stmt"/>
+        <line num="97" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="98" count="0" type="stmt"/>
         <line num="106" count="0" type="stmt"/>
         <line num="108" count="0" type="stmt"/>
         <line num="114" count="0" type="stmt"/>
@@ -11261,8 +11718,8 @@
         <line num="179" count="0" type="stmt"/>
         <line num="186" count="0" type="stmt"/>
         <line num="193" count="0" type="stmt"/>
-        <line num="200" count="15" type="stmt"/>
-        <line num="207" count="15" type="cond" truecount="1" falsecount="1"/>
+        <line num="200" count="0" type="stmt"/>
+        <line num="207" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="208" count="0" type="stmt"/>
       </file>
       <file name="laravelServerController.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\services\laravelServerController.ts">
@@ -11561,21 +12018,21 @@
         <line num="446" count="0" type="stmt"/>
       </file>
       <file name="mcpClient.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\services\mcpClient.ts">
-        <metrics statements="67" coveredstatements="0" conditionals="28" coveredconditionals="0" methods="25" coveredmethods="0"/>
-        <line num="18" count="0" type="stmt"/>
-        <line num="19" count="0" type="stmt"/>
-        <line num="26" count="0" type="stmt"/>
-        <line num="28" count="0" type="stmt"/>
-        <line num="33" count="0" type="stmt"/>
-        <line num="34" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="35" count="0" type="stmt"/>
+        <metrics statements="67" coveredstatements="13" conditionals="28" coveredconditionals="4" methods="25" coveredmethods="2"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="28" count="1" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="34" count="1" type="cond" truecount="2" falsecount="0"/>
+        <line num="35" count="1" type="stmt"/>
         <line num="42" count="0" type="stmt"/>
         <line num="43" count="0" type="stmt"/>
-        <line num="47" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="48" count="0" type="stmt"/>
-        <line num="49" count="0" type="stmt"/>
-        <line num="50" count="0" type="stmt"/>
-        <line num="52" count="0" type="stmt"/>
+        <line num="47" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="50" count="1" type="stmt"/>
+        <line num="52" count="10" type="stmt"/>
         <line num="60" count="0" type="stmt"/>
         <line num="61" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="62" count="0" type="cond" truecount="0" falsecount="2"/>
@@ -11614,7 +12071,7 @@
         <line num="230" count="0" type="stmt"/>
         <line num="235" count="0" type="stmt"/>
         <line num="239" count="0" type="stmt"/>
-        <line num="248" count="0" type="stmt"/>
+        <line num="248" count="1" type="stmt"/>
         <line num="249" count="0" type="stmt"/>
         <line num="254" count="0" type="stmt"/>
         <line num="255" count="0" type="stmt"/>
@@ -13366,11 +13823,11 @@
       </file>
     </package>
     <package name="vscode-extension.src.utils">
-      <metrics statements="88" coveredstatements="0" conditionals="57" coveredconditionals="0" methods="16" coveredmethods="0"/>
+      <metrics statements="88" coveredstatements="14" conditionals="57" coveredconditionals="2" methods="16" coveredmethods="1"/>
       <file name="errorHandler.ts" path="C:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\vscode-extension\src\utils\errorHandler.ts">
-        <metrics statements="88" coveredstatements="0" conditionals="57" coveredconditionals="0" methods="16" coveredmethods="0"/>
-        <line num="6" count="0" type="stmt"/>
-        <line num="24" count="0" type="stmt"/>
+        <metrics statements="88" coveredstatements="14" conditionals="57" coveredconditionals="2" methods="16" coveredmethods="1"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
         <line num="34" count="0" type="stmt"/>
         <line num="38" count="0" type="stmt"/>
         <line num="39" count="0" type="stmt"/>
@@ -13383,13 +13840,13 @@
         <line num="51" count="0" type="stmt"/>
         <line num="52" count="0" type="stmt"/>
         <line num="57" count="0" type="stmt"/>
-        <line num="63" count="0" type="stmt"/>
-        <line num="64" count="0" type="stmt"/>
-        <line num="65" count="0" type="stmt"/>
-        <line num="66" count="0" type="stmt"/>
-        <line num="68" count="0" type="cond" truecount="0" falsecount="1"/>
-        <line num="69" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="70" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="63" count="1" type="stmt"/>
+        <line num="64" count="1" type="stmt"/>
+        <line num="65" count="1" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="68" count="1" type="cond" truecount="0" falsecount="1"/>
+        <line num="69" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="70" count="1" type="cond" truecount="1" falsecount="1"/>
         <line num="74" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="75" count="0" type="stmt"/>
         <line num="77" count="0" type="cond" truecount="0" falsecount="2"/>
@@ -13414,14 +13871,14 @@
         <line num="113" count="0" type="stmt"/>
         <line num="114" count="0" type="stmt"/>
         <line num="118" count="0" type="stmt"/>
-        <line num="125" count="0" type="stmt"/>
+        <line num="125" count="1" type="stmt"/>
         <line num="132" count="0" type="stmt"/>
         <line num="133" count="0" type="stmt"/>
         <line num="134" count="0" type="stmt"/>
         <line num="138" count="0" type="stmt"/>
         <line num="139" count="0" type="stmt"/>
         <line num="141" count="0" type="stmt"/>
-        <line num="148" count="0" type="stmt"/>
+        <line num="148" count="1" type="stmt"/>
         <line num="149" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="151" count="0" type="cond" truecount="0" falsecount="4"/>
         <line num="152" count="0" type="stmt"/>
@@ -13439,12 +13896,12 @@
         <line num="178" count="0" type="stmt"/>
         <line num="182" count="0" type="stmt"/>
         <line num="185" count="0" type="stmt"/>
-        <line num="191" count="0" type="stmt"/>
+        <line num="191" count="1" type="stmt"/>
         <line num="192" count="0" type="stmt"/>
         <line num="193" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="195" count="0" type="stmt"/>
         <line num="198" count="0" type="stmt"/>
-        <line num="204" count="0" type="stmt"/>
+        <line num="204" count="1" type="stmt"/>
         <line num="205" count="0" type="stmt"/>
         <line num="206" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="207" count="0" type="cond" truecount="0" falsecount="2"/>
@@ -13454,7 +13911,7 @@
         <line num="215" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="216" count="0" type="stmt"/>
         <line num="224" count="0" type="stmt"/>
-        <line num="230" count="0" type="stmt"/>
+        <line num="230" count="1" type="stmt"/>
         <line num="231" count="0" type="stmt"/>
         <line num="237" count="0" type="stmt"/>
       </file>

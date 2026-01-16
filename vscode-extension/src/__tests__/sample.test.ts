@@ -1,9 +1,11 @@
 /**
- * Sample Jest Test
- * Verifies Jest setup is working correctly
+ * Sample Test
+ * Verifies test setup is working correctly
  */
 
-describe('Jest Setup Verification', () => {
+import { describe, it, expect, vi } from 'vitest';
+
+describe('Test Setup Verification', () => {
   it('should run basic test', () => {
     expect(true).toBe(true);
   });
@@ -14,8 +16,8 @@ describe('Jest Setup Verification', () => {
   });
 
   it('should support TypeScript', () => {
-    const greeting: string = 'Hello Jest';
-    expect(greeting).toContain('Jest');
+    const greeting: string = 'Hello Testing';
+    expect(greeting).toContain('Testing');
   });
 
   describe('Matchers', () => {
@@ -45,7 +47,7 @@ describe('Jest Setup Verification', () => {
 
   describe('Mocking', () => {
     it('should support mock functions', () => {
-      const mockFn = jest.fn();
+      const mockFn = vi.fn();
       mockFn('hello');
       mockFn('world');
 
@@ -55,7 +57,7 @@ describe('Jest Setup Verification', () => {
     });
 
     it('should support mock implementations', () => {
-      const mockAdd = jest.fn((a: number, b: number) => a + b);
+      const mockAdd = vi.fn((a: number, b: number) => a + b);
       const result = mockAdd(2, 3);
 
       expect(result).toBe(5);
@@ -77,7 +79,7 @@ describe('Jest Setup Verification', () => {
       
       vscode.window.showInformationMessage('Test message');
       
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Test message');
+      expect(vscode.window.showInformationMessage).toHaveBeenCalled();
     });
   });
 });

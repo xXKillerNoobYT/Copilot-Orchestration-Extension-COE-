@@ -81,9 +81,9 @@ export class PreviewEngine {
       const projectName = state.answers.projectName || 'Untitled Project';
       const projectType = state.answers.projectType || 'unknown';
       const description = state.answers.description || '';
-      const technologies = state.answers.technologies || [];
-      const architecture = state.answers.architecture || {};
-      const features = state.answers.features || [];
+      const technologies = Array.isArray(state.answers.technologies) ? state.answers.technologies : [];
+      const architecture = (state.answers.architecture && typeof state.answers.architecture === 'object') ? state.answers.architecture : {};
+      const features = Array.isArray(state.answers.features) ? state.answers.features : [];
 
       // Build preview sections
       sections.push(this.renderProjectHeader(projectName, projectType, description));
@@ -311,12 +311,31 @@ export class PreviewEngine {
   }
 
   /**
-   * HTML escape utility
+   * HTML escape utility - works in Node and Browser environments
    */
-  private escapeHTML(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  private escapeHTML(text: any): string {
+    // Handle non-string types
+    if (text === null || text === undefined) return '';
+    if (typeof text !== 'string') {
+      text = String(text); // Convert to string
+    }
+    
+    // Check if document exists (browser environment)
+    if (typeof document !== 'undefined') {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Node/test environment - use manual escaping
+    const htmlEscapeMap: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return text.replace(/[&<>"']/g, (char: string) => htmlEscapeMap[char] || char);
   }
 
   /**

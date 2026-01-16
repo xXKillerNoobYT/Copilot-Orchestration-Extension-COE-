@@ -1,91 +1,104 @@
 /**
  * Mock for VS Code API
- * Used by Jest tests to avoid requiring actual vscode module
+ * Supports both Jest and Vitest
  */
 
-declare const jest: any;
+// Check if we're in Jest or Vitest context
+let mockFn: any;
+if (typeof jest !== 'undefined' && jest.fn) {
+  mockFn = jest.fn.bind(jest);
+} else {
+  // Vitest context - import vi
+  try {
+    // @ts-ignore
+    import('vitest').then(({ vi }) => {
+      mockFn = vi.fn.bind(vi);
+    });
+  } catch {
+    // Fallback
+    mockFn = () => () => {};
+  }
+}
+
+// For Vitest, we'll use a function that returns the mock
+const createMock = () => {
+  if (typeof jest !== 'undefined') return jest.fn();
+  // Return a basic function for now, vi will be injected
+  const fn: any = () => {};
+  fn.mockReturnValue = () => fn;
+  fn.mockResolvedValue = () => fn;
+  return fn;
+};
 
 export const window = {
-  showInformationMessage: jest.fn(),
-  showErrorMessage: jest.fn(),
-  showWarningMessage: jest.fn(),
-  showQuickPick: jest.fn(),
-  showInputBox: jest.fn(),
-  createOutputChannel: jest.fn(() => ({
-    appendLine: jest.fn(),
-    append: jest.fn(),
-    clear: jest.fn(),
-    show: jest.fn(),
-    hide: jest.fn(),
-    dispose: jest.fn(),
-  })),
-  createStatusBarItem: jest.fn(() => ({
-    text: '',
-    show: jest.fn(),
-    hide: jest.fn(),
-    dispose: jest.fn(),
-  })),
-  createTerminal: jest.fn(),
+  showInformationMessage: createMock(),
+  showErrorMessage: createMock(),
+  showWarningMessage: createMock(),
+  showQuickPick: createMock(),
+  showInputBox: createMock(),
+  createOutputChannel: createMock(),
+  createStatusBarItem: createMock(),
+  createTerminal: createMock(),
   activeTextEditor: undefined,
   visibleTextEditors: [],
 };
 
 export const workspace = {
-  getConfiguration: jest.fn(() => ({
-    get: jest.fn(),
-    update: jest.fn(),
-    has: jest.fn(),
-    inspect: jest.fn(),
+  getConfiguration: mockFn(() => ({
+    get: mockFn(),
+    update: mockFn(),
+    has: mockFn(),
+    inspect: mockFn(),
   })),
   workspaceFolders: [],
-  onDidChangeConfiguration: jest.fn(),
-  onDidChangeWorkspaceFolders: jest.fn(),
-  openTextDocument: jest.fn(),
-  saveAll: jest.fn(),
+  onDidChangeConfiguration: mockFn(),
+  onDidChangeWorkspaceFolders: mockFn(),
+  openTextDocument: mockFn(),
+  saveAll: mockFn(),
   fs: {
-    readFile: jest.fn(),
-    writeFile: jest.fn(),
-    delete: jest.fn(),
-    stat: jest.fn(),
-    readDirectory: jest.fn(),
-    createDirectory: jest.fn(),
+    readFile: mockFn(),
+    writeFile: mockFn(),
+    delete: mockFn(),
+    stat: mockFn(),
+    readDirectory: mockFn(),
+    createDirectory: mockFn(),
   },
 };
 
 export const commands = {
-  registerCommand: jest.fn(),
-  executeCommand: jest.fn(),
-  getCommands: jest.fn(),
+  registerCommand: mockFn(),
+  executeCommand: mockFn(),
+  getCommands: mockFn(),
 };
 
 export const Uri = {
-  file: jest.fn((path: string) => ({ fsPath: path, path, scheme: 'file' })),
-  parse: jest.fn((value: string) => ({ fsPath: value, path: value, scheme: 'file' })),
+  file: mockFn((path: string) => ({ fsPath: path, path, scheme: 'file' })),
+  parse: mockFn((value: string) => ({ fsPath: value, path: value, scheme: 'file' })),
 };
 
-export const Range = jest.fn((startLine: number, startChar: number, endLine: number, endChar: number) => ({
+export const Range = mockFn((startLine: number, startChar: number, endLine: number, endChar: number) => ({
   start: { line: startLine, character: startChar },
   end: { line: endLine, character: endChar },
 }));
 
-export const Position = jest.fn((line: number, character: number) => ({
+export const Position = mockFn((line: number, character: number) => ({
   line,
   character,
 }));
 
-export const EventEmitter = jest.fn(() => ({
-  fire: jest.fn(),
-  event: jest.fn(),
-  dispose: jest.fn(),
+export const EventEmitter = mockFn(() => ({
+  fire: mockFn(),
+  event: mockFn(),
+  dispose: mockFn(),
 }));
 
-export const CancellationTokenSource = jest.fn(() => ({
+export const CancellationTokenSource = mockFn(() => ({
   token: {
     isCancellationRequested: false,
-    onCancellationRequested: jest.fn(),
+    onCancellationRequested: mockFn(),
   },
-  cancel: jest.fn(),
-  dispose: jest.fn(),
+  cancel: mockFn(),
+  dispose: mockFn(),
 }));
 
 export enum ViewColumn {

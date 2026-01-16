@@ -85,8 +85,9 @@ describe('PreviewEngine', () => {
       const result = engine.render(state);
 
       expect(result.html).not.toContain('<script>');
-      expect(result.html).not.toContain('onerror=');
+      expect(result.html).not.toContain('alert("XSS")'); // Should be escaped
       expect(result.html).toContain('&lt;script&gt;');
+      expect(result.html).toContain('&lt;img'); // Should contain escaped img tag
     });
   });
 
@@ -285,9 +286,7 @@ describe('PreviewEngine', () => {
       const result = engine.render(state);
 
       expect(result.html).toBeDefined();
-      expect(result.warnings).toContain(
-        expect.stringContaining('Invalid wizard state')
-      );
+      expect(result.warnings[0]).toMatch(/Invalid wizard state/);
     });
 
     it('should handle invalid answer types', () => {
@@ -305,7 +304,9 @@ describe('PreviewEngine', () => {
       const result = engine.render(state);
 
       expect(result.html).toBeDefined();
+      // Should still render project header even with invalid types
       expect(result.sections.length).toBeGreaterThanOrEqual(1);
+      expect(result.html).toContain('123'); // projectName is coerced to string
     });
 
     it('should handle very long strings', () => {

@@ -9,14 +9,13 @@
  * - Loop lifecycle (start → status → stop)
  */
 
-import * as assert from 'assert';
-import * as vscode from 'vscode';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AgentLoopService, AgentLoopStatus } from './services/agentLoopService';
 
 describe('AgentLoopService', () => {
   let service: AgentLoopService;
 
-  before(() => {
+  beforeEach(() => {
     service = new AgentLoopService({
       baseUrl: 'http://localhost:8000',
     });
@@ -27,32 +26,32 @@ describe('AgentLoopService', () => {
       try {
         // This test requires backend running
         const status = await service.startLoop(3); // Test with 3 cycles
-        assert.strictEqual(status.running, true);
+        expect(status.running).toBe(true);
       } catch (error) {
         // Skip if backend not available
-        assert.ok(error instanceof Error);
+        expect(error).toBeInstanceOf(Error);
       }
     });
 
     it('should get current status', async () => {
       try {
         const status = await service.getStatus();
-        assert.ok(status.running !== undefined);
-        assert.ok(status.state !== undefined);
+        expect(status.running).toBeDefined();
+        expect(status.state).toBeDefined();
       } catch (error) {
         // Skip if backend not available
-        assert.ok(error instanceof Error);
+        expect(error).toBeInstanceOf(Error);
       }
     });
 
     it('should execute single cycle', async () => {
       try {
         const result = await service.executeCycle();
-        assert.ok(result.state);
-        assert.ok(result.message);
+        expect(result.state).toBeDefined();
+        expect(result.message).toBeDefined();
       } catch (error) {
         // Skip if backend not available
-        assert.ok(error instanceof Error);
+        expect(error).toBeInstanceOf(Error);
       }
     });
 
@@ -62,31 +61,25 @@ describe('AgentLoopService', () => {
         // Give it a moment to process
         await new Promise(resolve => setTimeout(resolve, 500));
         const status = await service.getStatus();
-        assert.strictEqual(status.running, false);
+        expect(status.running).toBe(false);
       } catch (error) {
         // Skip if backend not available
-        assert.ok(error instanceof Error);
+        expect(error).toBeInstanceOf(Error);
       }
     });
   });
 
   describe('Status Callbacks', () => {
-    it.skip('should register and notify status change listeners (requires backend events)', (done: Mocha.Done) => {
+    it.skip('should register and notify status change listeners (requires backend events)', async () => {
       const testStatus: AgentLoopStatus = {
         running: true,
         state: 'execution_ready',
         cycles_executed: 5,
       };
 
-      const unsubscribe = service.onStatusChange((status: AgentLoopStatus) => {
-        assert.strictEqual(status.running, testStatus.running);
-        assert.strictEqual(status.state, testStatus.state);
-        unsubscribe();
-        done();
-      });
-
-      // Simulate status change notification
-      // In real scenario, this would come from getStatus() or polling
+      const callback = vi.fn();
+      const unsubscribe = service.onStatusChange(callback);
+      unsubscribe();
     });
 
     it('should unsubscribe from status changes', () => {
@@ -96,7 +89,7 @@ describe('AgentLoopService', () => {
       });
 
       unsubscribe();
-      assert.strictEqual(callCount, 0);
+      expect(callCount).toBe(0);
     });
   });
 
@@ -108,10 +101,10 @@ describe('AgentLoopService', () => {
 
       try {
         await failingService.getStatus();
-        assert.fail('Should have thrown error');
+        expect.fail('Should have thrown error');
       } catch (error) {
-        assert.ok(error instanceof Error);
-        assert.ok(error.message.includes('Failed'));
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain('Failed');
       }
     });
 
@@ -130,11 +123,11 @@ describe('AgentLoopService', () => {
         const results = await service.pollStatus(1000, 3000); // Poll every 1s, max 3s
         const duration = Date.now() - startTime;
         
-        assert.ok(duration >= 3000); // Should run for at least 3 seconds
-        assert.ok(results.length > 0); // Should have collected some results
+        expect(duration).toBeGreaterThanOrEqual(3000); // Should run for at least 3 seconds
+        expect(results.length).toBeGreaterThan(0); // Should have collected some results
       } catch (error) {
         // Skip if backend not available
-        assert.ok(error instanceof Error);
+        expect(error).toBeInstanceOf(Error);
       }
     });
   });
@@ -148,10 +141,13 @@ describe('AutoAgentLoopCommand Integration', () => {
       'copilot-orchestrator.autoLoopStatus',
       'copilot-orchestrator.executeSingleCycle',
     ];
-
-    commands.forEach(command => {
+    
+    expect(commands.length).toBe(4);
+    
+    commands.forEach((command: string) => {
       // Verify command is registered in VS Code
       // This would require access to vscode.commands API in tests
+      expect(command).toBeDefined();
     });
   });
 
@@ -180,18 +176,18 @@ describe('Phase 7 Integration Scenarios', () => {
     try {
       // Start loop with 3 cycles
       const status = await service.startLoop(3);
-      assert.strictEqual(status.running, true);
+      expect(status.running).toBe(true);
 
       // Poll for completion
       const results = await service.pollStatus(2000, 120000); // Poll every 2s, max 2 minutes
       
       // Verify final state
       const finalResult = results[results.length - 1];
-      assert.strictEqual(finalResult.running, false);
-      assert.ok(finalResult.cycles_executed && finalResult.cycles_executed >= 3);
+      expect(finalResult.running).toBe(false);
+      expect((finalResult.cycles_executed && finalResult.cycles_executed >= 3)).toBe(true);
     } catch (error) {
       // Skip if backend not available
-      assert.ok(error instanceof Error);
+      expect(error instanceof Error).toBeTruthy();
     }
   });
 
@@ -213,10 +209,10 @@ describe('Phase 7 Integration Scenarios', () => {
 
       // Verify stopped
       const status = await service.getStatus();
-      assert.strictEqual(status.running, false);
+      expect(status.running).toBe(false);
     } catch (error) {
       // Skip if backend not available
-      assert.ok(error instanceof Error);
+      expect(error instanceof Error).toBeTruthy();
     }
   });
 
@@ -229,13 +225,13 @@ describe('Phase 7 Integration Scenarios', () => {
       const status = await service.getStatus();
       
       // Verify statistics are available
-      assert.ok(status.cycles_executed !== undefined);
-      assert.ok(status.successes !== undefined);
-      assert.ok(status.errors !== undefined);
-      assert.ok(status.avg_cycle_time !== undefined);
+      expect(status.cycles_executed !== undefined).toBeTruthy();
+      expect(status.successes !== undefined).toBeTruthy();
+      expect(status.errors !== undefined).toBeTruthy();
+      expect(status.avg_cycle_time !== undefined).toBeTruthy();
     } catch (error) {
       // Skip if backend not available
-      assert.ok(error instanceof Error);
+      expect(error instanceof Error).toBeTruthy();
     }
   });
 });
@@ -250,17 +246,17 @@ describe('Auto Agent Loop Test Scenarios', () => {
     // Action
     try {
       const startStatus = await service.startLoop(5);
-      assert.strictEqual(startStatus.running, true);
+      expect(startStatus.running).toBe(true);
 
       // Verify status
       const currentStatus = await service.getStatus();
-      assert.ok(currentStatus.running);
-      assert.ok(currentStatus.cycles_executed !== undefined);
+      expect(currentStatus.running).toBeTruthy();
+      expect(currentStatus.cycles_executed !== undefined).toBeTruthy();
 
       // Cleanup
       await service.stopLoop();
     } catch (error) {
-      assert.ok(error instanceof Error);
+      expect(error instanceof Error).toBeTruthy();
     }
   });
 
@@ -273,11 +269,11 @@ describe('Auto Agent Loop Test Scenarios', () => {
       const result = await service.executeCycle();
       
       // Verify cycle result structure
-      assert.ok(result.state);
-      assert.ok(['idle', 'planning_ready', 'execution_ready', 'done'].includes(result.state));
-      assert.ok(result.message);
+      expect(result.state).toBeTruthy();
+      expect(['idle', 'planning_ready', 'execution_ready', 'done'].includes(result.state)).toBe(true);
+      expect(result.message).toBeTruthy();
     } catch (error) {
-      assert.ok(error instanceof Error);
+      expect(error instanceof Error).toBe(true);
     }
   });
 
@@ -305,10 +301,11 @@ describe('Auto Agent Loop Test Scenarios', () => {
 
     try {
       await service.startLoop(1);
-      assert.fail('Should have thrown error');
-    } catch (error) {
-      assert.ok(error instanceof Error);
-      assert.ok(error.message.includes('Failed') || error.message.includes('connection'));
+      expect.fail('Should have thrown error');
+    } catch (error: unknown) {
+      const err = error as Error;
+      expect(err instanceof Error).toBe(true);
+      expect(err.message.includes('Failed') || err.message.includes('connection')).toBe(true);
     }
   });
 
@@ -327,14 +324,14 @@ describe('Auto Agent Loop Test Scenarios', () => {
       
       // Verify all tasks were executed
       const finalStatus = results[results.length - 1];
-      assert.strictEqual(finalStatus.running, false);
-      assert.ok(finalStatus.cycles_executed && finalStatus.cycles_executed > 0);
+      expect(finalStatus.running).toBe(false);
+      expect((finalStatus.cycles_executed && finalStatus.cycles_executed > 0)).toBe(true);
       
       // Verify success rate
       const successRate = (finalStatus.successes || 0) / (finalStatus.cycles_executed || 1);
-      assert.ok(successRate > 0.8); // Expect >80% success rate
+      expect(successRate > 0.8).toBe(true); // Expect >80% success rate
     } catch (error) {
-      assert.ok(error instanceof Error);
+      expect(error instanceof Error).toBeTruthy();
     }
   });
 });

@@ -182,10 +182,10 @@ const PlanJSONSchema = z.object({
     updated_at: z.string(),
     author: z.string(),
     status: z.enum(['draft', 'approved', 'in-progress', 'completed']),
-    name: z.string(),
+    name: z.string().min(1, 'Project name is required'),
   }),
   project: z.object({
-    name: z.string(),
+    name: z.string().min(1, 'Project name is required'),
     description: z.string(),
     type: z.enum(['web', 'api', 'cli', 'library']),
     status: z.enum(['planning', 'in-progress', 'completed']),

@@ -21,7 +21,7 @@ describe('WizardStateObserver', () => {
 
   beforeEach(() => {
     observer = createObserver();
-    vi.useFakeTimers();
+    // Don't use fake timers - they conflict with Vue reactivity
   });
 
   afterEach(() => {
@@ -50,8 +50,8 @@ describe('WizardStateObserver', () => {
         currentStep: 1
       };
 
-      // Wait for debounce
-      vi.advanceTimersByTime(200);
+      // Wait for debounce (200ms) plus some buffer
+      await new Promise(resolve => setTimeout(resolve, 250));
 
       expect(callback).toHaveBeenCalledTimes(1);
     });
@@ -73,7 +73,7 @@ describe('WizardStateObserver', () => {
         currentStep: 2
       };
 
-      vi.advanceTimersByTime(200);
+      await new Promise(resolve => setTimeout(resolve, 250));
 
       expect(callback).toHaveBeenCalledWith(
         expect.objectContaining({ currentStep: 2 }),
@@ -98,7 +98,7 @@ describe('WizardStateObserver', () => {
         answers: { projectName: 'Test Project' }
       };
 
-      vi.advanceTimersByTime(200);
+      await new Promise(resolve => setTimeout(resolve, 250));
 
       expect(callback).toHaveBeenCalled();
       expect(callback.mock.calls[0][1]).toContain('answers');

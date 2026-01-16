@@ -11,6 +11,42 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { WizardContainer, type WizardProgress } from '../../wizardContainer';
 import { QuestionFramework } from '../../questionFramework';
 
+/**
+ * Helper: Provide valid answers for all required questions on a page
+ */
+function answerPageQuestions(wizard: WizardContainer, framework: QuestionFramework) {
+  const currentPage = wizard.getCurrentPage();
+  if (!currentPage) return;
+  
+  const questions = framework.getQuestionsForPage(currentPage.id, wizard.getAllAnswers());
+  questions.forEach(q => {
+    // Provide appropriate test values based on type
+    let testValue: any;
+    switch (q.type) {
+      case 'text':
+      case 'textarea':
+        testValue = `Test ${q.id}`;
+        break;
+      case 'select':
+        testValue = q.options?.[0]?.value || 'default';
+        break;
+      case 'multi-select':
+        testValue = q.options ? [q.options[0]?.value] : [];
+        break;
+      case 'boolean':
+        testValue = true;
+        break;
+      case 'number':
+      case 'range':
+        testValue = 5;
+        break;
+      default:
+        testValue = 'test';
+    }
+    wizard.setAnswer(q.id, testValue);
+  });
+}
+
 describe('Wizard Flow Integration Tests', () => {
   let wizard: WizardContainer;
   let framework: QuestionFramework;
@@ -43,9 +79,11 @@ describe('Wizard Flow Integration Tests', () => {
       const pages = framework.getPages();
       expect(wizard.getCurrentPageIndex()).toBe(0);
 
-      // Navigate forward through all pages
+      // Navigate forward through all pages with valid answers
       for (let i = 0; i < pages.length - 1; i++) {
-        wizard.navigateNext();
+        answerPageQuestions(wizard, framework);
+        const success = wizard.navigateNext();
+        expect(success).toBe(true);
         expect(wizard.getCurrentPageIndex()).toBe(i + 1);
       }
 
@@ -110,7 +148,7 @@ describe('Wizard Flow Integration Tests', () => {
         
         questions.forEach(q => {
           expect(q).toHaveProperty('id');
-          expect(q).toHaveProperty('text');
+          expect(q).toHaveProperty('title'); // Actual property name
           expect(q).toHaveProperty('type');
         });
       });
@@ -134,7 +172,12 @@ describe('Wizard Flow Integration Tests', () => {
   describe('Navigation', () => {
     it('should navigate next successfully', () => {
       const initialIndex = wizard.getCurrentPageIndex();
-      wizard.navigateNext();
+      
+      // Answer all required questions on current page
+      answerPageQuestions(wizard, framework);
+      
+      const success = wizard.navigateNext();
+      expect(success).toBe(true);
       expect(wizard.getCurrentPageIndex()).toBe(initialIndex + 1);
     });
 
@@ -146,13 +189,25 @@ describe('Wizard Flow Integration Tests', () => {
 
     it('should jump to specific page by ID', () => {
       const pages = framework.getPages();
-      const page5 = pages[5];
       const page2 = pages[2];
       
-      wizard.jumpToPage(page5.id);
+      // Navigate to page 2 by stepping through with valid answers
+      for (let i = 0; i < 2; i++) {
+        answerPageQuestions(wizard, framework);
+        wizard.navigateNext();
+      }
+      expect(wizard.getCurrentPageIndex()).toBe(2);
+      
+      // Navigate to page 5
+      for (let i = 2; i < 5; i++) {
+        answerPageQuestions(wizard, framework);
+        wizard.navigateNext();
+      }
       expect(wizard.getCurrentPageIndex()).toBe(5);
       
-      wizard.jumpToPage(page2.id);
+      // Jump back to visited page 2
+      const success = wizard.jumpToPage(page2.id);
+      expect(success).toBe(true);
       expect(wizard.getCurrentPageIndex()).toBe(2);
     });
   });
@@ -180,15 +235,22 @@ describe('Wizard Flow Integration Tests', () => {
       const initialPercentage = progress.progressPercentage;
       expect(initialPercentage).toBeGreaterThanOrEqual(0);
 
-      // Navigate to middle page (should be ~50%)
-      const pages = framework.getPages();
-      wizard.jumpToPage(pages[5].id);
+      // Navigate through pages sequentially with helper
+      for (let i = 0; i < 5; i++) {
+        answerPageQuestions(wizard, framework);
+        wizard.navigateNext();
+      }
+      
       progress = wizard.getProgress();
       expect(progress.progressPercentage).toBeGreaterThan(initialPercentage);
       expect(progress.currentPageIndex).toBe(5);
 
-      // Navigate to last page
-      wizard.jumpToPage(pages[9].id);
+      // Continue to near end
+      for (let i = 5; i < 9; i++) {
+        answerPageQuestions(wizard, framework);
+        wizard.navigateNext();
+      }
+      
       progress = wizard.getProgress();
       expect(progress.progressPercentage).toBeGreaterThan(50);
       expect(progress.currentPageIndex).toBe(9);

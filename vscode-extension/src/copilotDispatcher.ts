@@ -124,6 +124,7 @@ export class CopilotDispatcher {
 
   async composePrompt(taskId: string, options?: ComposeOptions): Promise<PromptPayload> {
     const tasksDir = options?.tasksDir ?? this.tasksDir;
+    const workspaceRoot = options?.workspaceRoot ?? this.workspaceRoot;
     const agentName = options?.agentName ?? 'coder';
     const maxContextBytes = options?.maxContextBytes ?? DEFAULT_MAX_CONTEXT_BYTES;
 
@@ -156,7 +157,7 @@ export class CopilotDispatcher {
       memory,
       messages,
       metadata: {
-        workspaceRoot: this.workspaceRoot,
+        workspaceRoot: workspaceRoot,
         tasksDir,
         contextFileCount: contextFiles.length,
         memoryCount: memory.length,
