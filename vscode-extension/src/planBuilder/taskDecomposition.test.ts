@@ -155,7 +155,7 @@ async function runTests() {
     ];
 
     console.assert(
-      mockTasks[0].id && mockTasks[0].title,
+      Boolean(mockTasks[0].id && mockTasks[0].title),
       'Task should have id and title'
     );
     console.assert(
