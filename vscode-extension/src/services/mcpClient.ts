@@ -174,7 +174,6 @@ export class MCPClient {
   async reportTaskStatus(data: {
     taskId: string;
     status: 'in-progress' | 'done' | 'blocked' | 'failed';
-    expectedVersion?: number;
     progressPercent?: number;
     implementationNotes?: string;
     filesModified?: string[];
@@ -182,36 +181,35 @@ export class MCPClient {
     acceptanceCriteriaVerification?: any[];
     observations?: string[];
     followUpTasks?: any[];
+    expectedVersion?: number;
   }, maxAttempts: number = 3): Promise<any> {
     let attempt = 0;
-    
+
     while (attempt < maxAttempts) {
       try {
         return await this.fetchWithRetry(`${this.baseUrl}/mcp/reportTaskStatus`, 'POST', data);
       } catch (error: any) {
-        // Check if it's a version conflict (409) - only retry if error is explicitly version_conflict
+        // Retry only on explicit version conflict (HTTP 409)
         if (error.status === 409 && error.error === 'version_conflict') {
           attempt++;
-          
+
           if (attempt >= maxAttempts) {
             throw new Error(`Task status update failed after ${maxAttempts} attempts due to version conflicts. ${error.message || ''}`);
           }
-          
+
           // Exponential backoff: 1s, 2s, 4s (capped at 5s)
-          // Fixed formula: 2^(attempt-1) to get 1s → 2s → 4s
           const backoffMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
           await new Promise(resolve => setTimeout(resolve, backoffMs));
-          
+
           // Fetch latest task version for retry
           try {
             const taskData = await this.getTaskById(data.taskId);
             if (taskData?.task?.version !== undefined) {
               data.expectedVersion = taskData.task.version;
             } else {
-              const message = `Failed to fetch latest version for task ${data.taskId}: unexpected response format`;
-              throw new Error(message);
+              throw new Error(`Failed to fetch latest version for task ${data.taskId}: unexpected response format`);
             }
-          } catch (fetchError) {
+          } catch {
             // If we can't fetch latest version, throw the original error
             throw error;
           }
@@ -221,55 +219,9 @@ export class MCPClient {
         }
       }
     }
-    
+
     // TypeScript requires a return statement here, though this is unreachable
-    // The loop always exits via return or throw
     throw new Error('Unexpected error in retry loop');
-  }
-
-  /**
-   * POST /api/v1/mcp/reportObservation
-   * Log observations, discoveries, or issues
-   */
-  async reportObservation(data: {
-    taskId: string;
-    type: 'discovery' | 'issue' | 'risk' | 'optimization';
-    message: string;
-    severity?: string;
-    suggestedAction?: string;
-    createTask?: boolean;
-  }): Promise<any> {
-    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_OBSERVATION}`, 'POST', data);
-  }
-
-  /**
-   * POST /api/v1/mcp/reportTestFailure
-   * Report test failures and block task
-   */
-  async reportTestFailure(data: {
-    taskId: string;
-    testName: string;
-    errorMessage: string;
-    stackTrace?: string;
-    failureType?: 'assertion' | 'timeout' | 'error' | 'other';
-  }): Promise<any> {
-    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_TEST_FAILURE}`, 'POST', data);
-  }
-
-  /**
-   * POST /api/v1/mcp/reportVerificationResult
-   * Report visual/manual verification results
-   */
-  async reportVerificationResult(data: {
-    verificationTaskId: string;
-    originalTaskId: string;
-    status: 'passed' | 'failed' | 'partial';
-    checklist?: any[];
-    issuesFound?: any[];
-    followUpTasks?: any[];
-    notes?: string;
-  }): Promise<any> {
-    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_VERIFICATION_RESULT}`, 'POST', data);
   }
 
   /**
@@ -356,7 +308,7 @@ export class MCPClient {
       const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
+            if (!response.ok) {
         // Try to parse error response body for detailed error info
         let errorData: any;
         try {
