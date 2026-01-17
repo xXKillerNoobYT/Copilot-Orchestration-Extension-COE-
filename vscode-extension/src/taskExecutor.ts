@@ -29,7 +29,7 @@ export interface TaskExecutorOptions {
   workspaceRoot?: string;
   outputDir?: string;
   memoryLimit?: number;
-  memoryCleanupInterval?: number; // Clean memory every N cycles (default: 10)
+  memoryCleanupInterval?: number; // Clean memory every N memory additions (default: 10)
   memoryTTLMinutes?: number; // Remove entries older than N minutes (default: 30)
   enableVerification?: boolean;
   llmHandler?: LLMHandler;
@@ -54,7 +54,7 @@ export class TaskExecutor {
   private taskGraph: TaskGraph | null = null;
   private memory: MemoryEntry[] = [];
   private executionHistory: TaskExecutionResult[] = [];
-  private cycleCount: number = 0; // Track execution cycles for periodic cleanup
+  private memoryAdditionCount: number = 0; // Track memory additions for periodic cleanup
 
   constructor(options?: TaskExecutorOptions) {
     this.workspaceRoot = options?.workspaceRoot ?? process.cwd();
@@ -394,7 +394,13 @@ Return "PASS" or "FAIL" with explanation.
    */
   private static validatePositiveNumber(value: number | undefined, defaultValue: number): number {
     const num = value ?? defaultValue;
-    return num > 0 ? num : defaultValue;
+    
+    // Only accept finite, strictly positive numbers. Fallback to default otherwise.
+    if (!Number.isFinite(num) || num <= 0) {
+      return defaultValue;
+    }
+    
+    return num;
   }
 
   /**
@@ -436,17 +442,23 @@ Return "PASS" or "FAIL" with explanation.
   }
 
   /**
-   * Perform periodic memory cleanup
-   * Called every N cycles to actively manage memory
-   * Note: This method is designed for sequential execution in Node.js single-threaded environment.
-   * The cycleCount increment is safe because executeNextTask() calls are sequential.
+   * Perform periodic memory cleanup.
+   *
+   * This method is invoked as part of memory maintenance (e.g. from addToMemory)
+   * and uses a simple counter to decide when to run a cleanup pass. The
+   * `memoryAdditionCount` value therefore tracks memory-related cycles / entry additions,
+   * not task execution cycles.
+   *
+   * Note: This method is designed for sequential execution in Node.js'
+   * single-threaded environment. The `memoryAdditionCount` increment is safe because
+   * calls to this method are not executed concurrently.
    */
   private performPeriodicMemoryCleanup(): void {
-    this.cycleCount++;
+    this.memoryAdditionCount++;
     
-    // Perform cleanup every N cycles
-    if (this.cycleCount % this.memoryCleanupInterval === 0) {
-      console.log(`[MemoryCleanup] Performing periodic cleanup at cycle ${this.cycleCount}`);
+    // Perform cleanup every N memory additions
+    if (this.memoryAdditionCount % this.memoryCleanupInterval === 0) {
+      console.log(`[MemoryCleanup] Performing periodic cleanup at memory addition ${this.memoryAdditionCount}`);
       const initialCount = this.memory.length;
       
       // First, prune by TTL
@@ -502,7 +514,7 @@ Return "PASS" or "FAIL" with explanation.
       ready,
       executionHistory: this.executionHistory.length,
       memoryEntries: this.memory.length,
-      cycleCount: this.cycleCount,
+      memoryAdditionCount: this.memoryAdditionCount,
       memoryConfig: {
         limit: this.memoryLimit,
         cleanupInterval: this.memoryCleanupInterval,

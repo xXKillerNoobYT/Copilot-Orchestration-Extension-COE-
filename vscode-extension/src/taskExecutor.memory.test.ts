@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { TaskExecutor, TaskExecutorOptions } from './taskExecutor';
+import { TaskExecutor } from './taskExecutor';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -113,7 +113,7 @@ describe('TaskExecutor Memory Management', () => {
   });
 
   describe('Periodic Memory Cleanup', () => {
-    test('should track cycle count', () => {
+    test('should track memory addition count', () => {
       const executor = new TaskExecutor({
         workspaceRoot: tempDir,
         tasksDir,
@@ -123,16 +123,16 @@ describe('TaskExecutor Memory Management', () => {
 
       const addToMemory = (executor as any).addToMemory.bind(executor);
       
-      // Add entries to trigger cycles
+      // Add entries to trigger memory additions
       for (let i = 0; i < 3; i++) {
         addToMemory('user', `Message ${i}`);
       }
       
       const stats = executor.getStats();
-      expect(stats.cycleCount).toBe(3);
+      expect(stats.memoryAdditionCount).toBe(3);
     });
 
-    test('should perform periodic cleanup every N cycles', () => {
+    test('should perform periodic cleanup every N memory additions', () => {
       const executor = new TaskExecutor({
         workspaceRoot: tempDir,
         tasksDir,
@@ -143,13 +143,13 @@ describe('TaskExecutor Memory Management', () => {
 
       const addToMemory = (executor as any).addToMemory.bind(executor);
       
-      // Add 12 entries (cleanup should trigger at cycles 5 and 10)
+      // Add 12 entries (cleanup should trigger at memory additions 5 and 10)
       for (let i = 0; i < 12; i++) {
         addToMemory('user', `Message ${i}`);
       }
       
       const stats = executor.getStats();
-      expect(stats.cycleCount).toBe(12);
+      expect(stats.memoryAdditionCount).toBe(12);
       expect(stats.memoryConfig.cleanupInterval).toBe(5);
     });
 
@@ -357,6 +357,26 @@ describe('TaskExecutor Memory Management', () => {
       expect(stats2.memoryConfig.cleanupInterval).toBe(10);
     });
 
+    test('should handle Infinity values gracefully', () => {
+      const executor1 = new TaskExecutor({
+        workspaceRoot: tempDir,
+        tasksDir,
+        memoryCleanupInterval: Infinity, // Invalid, should default to 10
+      });
+
+      const executor2 = new TaskExecutor({
+        workspaceRoot: tempDir,
+        tasksDir,
+        memoryTTLMinutes: Infinity, // Invalid, should default to 30
+      });
+
+      const stats1 = executor1.getStats();
+      const stats2 = executor2.getStats();
+
+      expect(stats1.memoryConfig.cleanupInterval).toBe(10);
+      expect(stats2.memoryConfig.ttlMinutes).toBe(30);
+    });
+
     test('should handle zero or negative TTL gracefully', () => {
       const executor1 = new TaskExecutor({
         workspaceRoot: tempDir,
@@ -434,7 +454,7 @@ describe('TaskExecutor Memory Management', () => {
       
       // Old messages should be pruned
       expect(memory.every(m => m.content.startsWith('New'))).toBe(true);
-      expect(stats.cycleCount).toBe(5);
+      expect(stats.memoryAdditionCount).toBe(5);
     });
 
     test('should handle edge case with TTL and overflow together', async () => {
