@@ -385,8 +385,8 @@ instructions: Test agent instructions
   describe('Memory Management', () => {
     test('provided memory entries are preserved in payload', async () => {
       const testMemory = [
-        { role: 'user' as const, content: 'First message' },
-        { role: 'assistant' as const, content: 'First response' },
+        { role: 'user' as const, content: 'First message', timestamp: new Date().toISOString() },
+        { role: 'assistant' as const, content: 'First response', timestamp: new Date().toISOString() },
       ];
 
       const payload = await dispatcher.composePrompt('TASK-test-dispatcher', {
@@ -408,9 +408,9 @@ instructions: Test agent instructions
 
     test('metadata memoryCount reflects actual memory entries', async () => {
       const testMemory = [
-        { role: 'user' as const, content: 'Message 1' },
-        { role: 'assistant' as const, content: 'Message 2' },
-        { role: 'user' as const, content: 'Message 3' },
+        { role: 'user' as const, content: 'Message 1', timestamp: new Date().toISOString() },
+        { role: 'assistant' as const, content: 'Message 2', timestamp: new Date().toISOString() },
+        { role: 'user' as const, content: 'Message 3', timestamp: new Date().toISOString() },
       ];
 
       const payload = await dispatcher.composePrompt('TASK-test-dispatcher', {
@@ -579,9 +579,9 @@ Test description for custom task dir.`);
 
     test('memory role values are strictly typed', async () => {
       const testMemory = [
-        { role: 'user' as const, content: 'Message' },
-        { role: 'assistant' as const, content: 'Response' },
-        { role: 'system' as const, content: 'Context' },
+        { role: 'user' as const, content: 'Message', timestamp: new Date().toISOString() },
+        { role: 'assistant' as const, content: 'Response', timestamp: new Date().toISOString() },
+        { role: 'system' as const, content: 'Context', timestamp: new Date().toISOString() },
       ];
 
       const payload = await dispatcher.composePrompt('TASK-test-dispatcher', {

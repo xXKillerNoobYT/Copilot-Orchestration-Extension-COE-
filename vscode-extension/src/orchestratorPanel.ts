@@ -7,7 +7,7 @@ import { AgentProfile, defaultAgentProfileLoader } from './agentProfiles';
 export interface MemoryEntry {
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp?: string;
+  timestamp: string; // ISO 8601 timestamp when entry was created
 }
 
 /**
