@@ -1,0 +1,200 @@
+{
+    "metadata": {
+        "id": "core-library",
+        "name": "Reusable Library/Package",
+        "description": "Production-ready library/package with TypeScript, comprehensive tests, documentation, and publishing workflow. Perfect for npm, PyPI, or other package registries.",
+        "category": "library",
+        "tags": [
+            "library",
+            "package",
+            "npm",
+            "typescript",
+            "open-source",
+            "reusable"
+        ],
+        "author": "Copilot Orchestration Extension",
+        "version": "1.0.0",
+        "createdAt": "2026-01-12T00:00:00.000Z",
+        "updatedAt": "2026-01-12T00:00:00.000Z",
+        "isCore": true,
+        "icon": "package",
+        "estimatedDuration": "1-2 months",
+        "recommendedTeamSize": 2
+    },
+    "plan": {
+        "metadata": {
+            "version": "1.0.0",
+            "created_at": "2026-01-12T00:00:00.000Z",
+            "updated_at": "2026-01-12T00:00:00.000Z",
+            "author": "Template",
+            "status": "draft",
+            "name": "Library Package Project"
+        },
+        "project": {
+            "name": "My Library",
+            "description": "A reusable, well-tested library with comprehensive documentation and TypeScript support",
+            "type": "library",
+            "status": "planning"
+        },
+        "architecture": {
+            "pattern": "Modular Architecture",
+            "description": "Clean module boundaries with well-defined public API",
+            "components": [
+                "Core Module",
+                "Utilities",
+                "Type Definitions",
+                "Build System",
+                "Documentation"
+            ],
+            "rationale": "Modular design allows tree-shaking and selective imports"
+        },
+        "features": [
+            {
+                "id": "FEAT-001",
+                "name": "Core Library API",
+                "description": "Main library functionality with TypeScript types",
+                "priority": "critical",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "Public API documented",
+                    "TypeScript declarations",
+                    "Examples provided",
+                    "Backward compatibility"
+                ],
+                "dependencies": [],
+                "effort_estimate": 12
+            },
+            {
+                "id": "FEAT-002",
+                "name": "Comprehensive Testing",
+                "description": "Unit tests, integration tests, and E2E tests",
+                "priority": "critical",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "90%+ code coverage",
+                    "All public API tested",
+                    "Edge cases covered",
+                    "Performance tests"
+                ],
+                "dependencies": [
+                    "FEAT-001"
+                ],
+                "effort_estimate": 8
+            },
+            {
+                "id": "FEAT-003",
+                "name": "API Documentation",
+                "description": "Complete API reference and usage guides",
+                "priority": "high",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "JSDoc/TSDoc comments",
+                    "API reference generated",
+                    "Usage examples",
+                    "Migration guides"
+                ],
+                "dependencies": [
+                    "FEAT-001"
+                ],
+                "effort_estimate": 6
+            },
+            {
+                "id": "FEAT-004",
+                "name": "Build & Publishing",
+                "description": "Build pipeline and npm/PyPI publishing",
+                "priority": "high",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "TypeScript compilation",
+                    "Bundle generation (ESM/CJS)",
+                    "Version management",
+                    "CI/CD for publishing"
+                ],
+                "dependencies": [
+                    "FEAT-002"
+                ],
+                "effort_estimate": 4
+            }
+        ],
+        "timeline": {
+            "start_date": "2026-02-01T00:00:00.000Z",
+            "end_date": "2026-03-15T00:00:00.000Z",
+            "milestones": [
+                {
+                    "id": "M1",
+                    "name": "v1.0.0 Release",
+                    "target_date": "2026-03-15T00:00:00.000Z",
+                    "phase": "deployment",
+                    "completion_status": "pending",
+                    "dependencies": []
+                }
+            ],
+            "phases": [
+                {
+                    "name": "Development",
+                    "start_date": "2026-02-01T00:00:00.000Z",
+                    "end_date": "2026-03-15T00:00:00.000Z"
+                }
+            ]
+        },
+        "team": {
+            "members": [
+                {
+                    "id": "ROLE-001",
+                    "role_name": "Library Developer",
+                    "responsibilities": [
+                        "Core API",
+                        "Testing",
+                        "Documentation"
+                    ],
+                    "skills": [
+                        "TypeScript",
+                        "Testing",
+                        "Documentation"
+                    ],
+                    "agent_mapping": "Auto Zen",
+                    "availability": "full-time"
+                }
+            ],
+            "structure": "Open Source",
+            "communication_plan": "GitHub issues, PRs, Discussions"
+        },
+        "success_criteria": [
+            "Published to npm/PyPI",
+            "90%+ test coverage",
+            "Complete API documentation",
+            "Zero breaking changes in patches"
+        ],
+        "risks": [
+            {
+                "id": "RISK-001",
+                "description": "Breaking API changes alienate users",
+                "probability": "medium",
+                "impact": "high",
+                "mitigation": "Semantic versioning, deprecation warnings, migration guides"
+            }
+        ],
+        "assumptions": [
+            "Users install via package manager",
+            "Node.js/Python environment"
+        ],
+        "constraints": [
+            "Semantic versioning required",
+            "Zero dependencies preferred",
+            "Bundle size <100KB"
+        ]
+    },
+    "customizationHints": {
+        "requiredCustomizations": [
+            "project.name",
+            "project.description"
+        ],
+        "optionalCustomizations": [
+            {
+                "field": "features",
+                "description": "Add domain-specific functionality",
+                "example": "Add data validation, formatting, utilities"
+            }
+        ]
+    }
+}
