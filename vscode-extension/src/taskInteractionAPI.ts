@@ -2,6 +2,34 @@ import * as vscode from 'vscode';
 import { ParsedTask } from './taskParser';
 import { TaskStatusParser } from './taskStatusParser';
 import { defaultAgentProfileLoader, AgentProfile } from './agentProfiles';
+import { MAX_FILES_PER_BUNDLE } from './orchestratorPanel';
+
+/**
+ * Validates a context bundle's file list size.
+ * @param files Array of file paths in the bundle
+ * @returns Validation result with isValid flag and optional warning message
+ */
+export function validateContextBundleSize(files: string[]): { isValid: boolean; warning?: string; error?: string } {
+  const fileCount = files.length;
+  
+  if (fileCount > MAX_FILES_PER_BUNDLE) {
+    return {
+      isValid: false,
+      error: `Context bundle exceeds maximum file limit. Bundle has ${fileCount} files but limit is ${MAX_FILES_PER_BUNDLE}. ` +
+             `Large bundles can cause memory issues, WebSocket truncation, or MCP timeouts.`
+    };
+  }
+  
+  if (fileCount > MAX_FILES_PER_BUNDLE * 0.8) {
+    return {
+      isValid: true,
+      warning: `Context bundle is approaching the limit (${fileCount}/${MAX_FILES_PER_BUNDLE} files). ` +
+               `Consider splitting into multiple bundles to avoid performance issues.`
+    };
+  }
+  
+  return { isValid: true };
+}
 
 /**
  * TaskInteractionAPI: Bridge between .task.md files and the main orchestrator workflow
@@ -138,6 +166,28 @@ export class TaskInteractionAPI {
         vscode.window.showWarningMessage(
           'The context bundle file appears to be corrupted (invalid JSON). The file will still be opened.'
         );
+      }
+
+      // Validate bundle file list size
+      if (bundle && bundle.files && Array.isArray(bundle.files)) {
+        const validation = validateContextBundleSize(bundle.files);
+        if (!validation.isValid && validation.error) {
+          vscode.window.showErrorMessage(
+            `Context Bundle Size Limit Exceeded: ${validation.error}`
+          );
+          console.error('Context bundle size validation failed:', {
+            bundlePath,
+            fileCount: bundle.files.length,
+            limit: MAX_FILES_PER_BUNDLE
+          });
+        } else if (validation.warning) {
+          vscode.window.showWarningMessage(validation.warning);
+          console.warn('Context bundle size warning:', {
+            bundlePath,
+            fileCount: bundle.files.length,
+            limit: MAX_FILES_PER_BUNDLE
+          });
+        }
       }
 
       // Then, handle agent profile validation errors separately
