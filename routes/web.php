@@ -30,7 +30,12 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/orchestrator', function () {
-    return Inertia::render('OrchestratorDashboard');
+    // Default to 'default' project or use environment config
+    $projectId = request()->input('project', config('app.default_project_id', 'default'));
+    
+    return Inertia::render('OrchestratorDashboard', [
+        'projectId' => $projectId
+    ]);
 })->middleware(['auth', 'verified'])->name('orchestrator');
 
 Route::middleware('auth')->group(function () {

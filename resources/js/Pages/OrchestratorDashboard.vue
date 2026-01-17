@@ -4,6 +4,15 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import axios from 'axios';
 
+// Props
+interface Props {
+    projectId?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    projectId: 'default'
+});
+
 // Types
 interface Agent {
     id: string;
@@ -85,7 +94,7 @@ async function fetchData() {
 
         const [agentsRes, tasksRes, metricsRes, executionsRes] = await Promise.all([
             axios.get('/api/v1/agents'),
-            axios.get('/api/v1/projects/default/tasks'),
+            axios.get(`/api/v1/projects/${props.projectId}/tasks`),
             axios.get('/api/v1/metrics/health'),
             axios.get('/api/v1/monitoring/executions?limit=50')
         ]);
