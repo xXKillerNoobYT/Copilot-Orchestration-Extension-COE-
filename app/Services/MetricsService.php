@@ -21,12 +21,18 @@ class MetricsService
     {
         $cutoffDate = $this->parseTimeRange($range);
         
-        $totalTasks = Task::where('created_at', '>=', $cutoffDate)->count();
-        $completed = Task::where('status', 'completed')->where('created_at', '>=', $cutoffDate)->count();
-        $inProgress = Task::where('status', 'in_progress')->where('created_at', '>=', $cutoffDate)->count();
-        $pending = Task::where('status', 'pending')->where('created_at', '>=', $cutoffDate)->count();
-        $blocked = Task::where('status', 'blocked')->where('created_at', '>=', $cutoffDate)->count();
-        $failed = Task::where('status', 'failed')->where('created_at', '>=', $cutoffDate)->count();
+        // Use single query with groupBy for better performance
+        $statusCounts = Task::where('created_at', '>=', $cutoffDate)
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $totalTasks = $statusCounts->sum();
+        $completed = $statusCounts->get('completed', 0);
+        $inProgress = $statusCounts->get('in_progress', 0);
+        $pending = $statusCounts->get('pending', 0);
+        $blocked = $statusCounts->get('blocked', 0);
+        $failed = $statusCounts->get('failed', 0);
 
         $completionRate = $totalTasks > 0 ? round(($completed / $totalTasks) * 100, 2) : 0;
 
@@ -119,23 +125,23 @@ class MetricsService
             ->latest('completed_at');
         
         // Apply severity filter if provided using proper parameter binding
-        // Note: This assumes error_message or metadata contains severity information
-        // If there's a dedicated severity column, update this logic
+        // Note: This currently infers severity from the error_message content
+        // If there's a dedicated severity (or structured metadata) column, update this logic
         if ($severity) {
-            // Sanitize severity input to only allow valid severity levels
+            // Validate severity input against allowed values
             $validSeverities = ['critical', 'high', 'medium', 'low'];
             $sanitizedSeverity = strtolower(trim($severity));
             
             if (in_array($sanitizedSeverity, $validSeverities)) {
-                // Use parameter binding to prevent SQL injection
-                $errorQuery->where('error_message', 'LIKE', '%' . $sanitizedSeverity . '%');
+                // Use parameter binding and let SQL apply the wildcard pattern
+                $errorQuery->whereRaw("error_message LIKE CONCAT('%', ?, '%')", [$sanitizedSeverity]);
             }
         }
         
         $recentErrors = $errorQuery
             ->take($limit)
             ->get()
-            ->map(function (TaskExecution $execution) use ($severity) {
+            ->map(function (TaskExecution $execution) {
                 return [
                     'task_id' => $execution->task_id,
                     'agent_id' => $execution->agent_id,
@@ -174,21 +180,57 @@ class MetricsService
             return 'medium';
         }
         
-        $message = strtolower($message);
-        
-        if (str_contains($message, 'critical') || str_contains($message, 'fatal')) {
+        $normalized = strtolower(trim($message));
+
+        // Match explicit severity indicators like:
+        // - "critical: disk failure"
+        // - "[high] CPU usage"
+        // - "severity: low"
+        if ($this->matchesSeverity($normalized, ['critical', 'fatal'])) {
             return 'critical';
         }
-        
-        if (str_contains($message, 'high') || str_contains($message, 'severe')) {
+
+        if ($this->matchesSeverity($normalized, ['high', 'severe'])) {
             return 'high';
         }
-        
-        if (str_contains($message, 'low') || str_contains($message, 'minor')) {
+
+        if ($this->matchesSeverity($normalized, ['low', 'minor'])) {
             return 'low';
         }
-        
+
         return 'medium';
+    }
+
+    /**
+     * Check if the message contains any of the given severity keywords
+     * in a structured way (e.g., at the start, in brackets, or in a "severity:" clause).
+     *
+     * @param string $message
+     * @param array<string> $keywords
+     * @return bool
+     */
+    private function matchesSeverity(string $message, array $keywords): bool
+    {
+        foreach ($keywords as $keyword) {
+            $escaped = preg_quote($keyword, '/');
+
+            // 1. Keyword at the very start, followed by a common delimiter or whitespace
+            $patternStart = '/^' . $escaped . '\b[\s:\-\]]/i';
+
+            // 2. Keyword inside square brackets, e.g. "[critical]"
+            $patternBracket = '/\[' . $escaped . '\]/i';
+
+            // 3. In a severity label, e.g. "severity: critical"
+            $patternLabel = '/\bseverity\s*[:=\-]\s*' . $escaped . '\b/i';
+
+            if (preg_match($patternStart, $message) === 1 ||
+                preg_match($patternBracket, $message) === 1 ||
+                preg_match($patternLabel, $message) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function formatTopAgent(Collection $executionsByAgent): ?array
@@ -531,11 +573,12 @@ class MetricsService
      * @param string $range Time range (e.g., '7d', '30d', '24h', '1w')
      * @return \Carbon\Carbon
      */
-    private function parseTimeRange(string $range): \Carbon\Carbon
+    private function parseTimeRange(string $range): Carbon
     {
         // Extract numeric value and unit
         preg_match('/^(\d+)([hdwm])$/', $range, $matches);
         
+        // Check for 3 matches: full match + 2 capture groups (value and unit)
         if (count($matches) !== 3) {
             // Default to 7 days if invalid format
             return now()->subDays(7);

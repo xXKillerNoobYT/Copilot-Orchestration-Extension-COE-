@@ -251,4 +251,5 @@ Error severity is automatically extracted from error messages or can be explicit
 - Numeric values are rounded to 2 decimal places where applicable
 - Counts and IDs are always integers
 - The `range` parameter defaults to `7d` if not specified or invalid
-- The `severity` filter performs case-insensitive substring matching on error messages
+- The `severity` filter uses structured pattern matching to identify severity levels at the start of messages, in brackets (e.g., `[critical]`), or in severity labels (e.g., `severity: high`)
+- **Note:** The severity extraction uses pattern-based matching. While it looks for structured severity indicators, messages containing severity keywords in other contexts (for example, "not critical to performance") may still be classified with that severity level. When possible, prefer using structured error messages with explicit severity prefixes or labels (e.g., "Critical: ", "[high]", "severity: low") for more accurate classification.
