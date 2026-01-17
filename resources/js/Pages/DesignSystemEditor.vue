@@ -77,6 +77,7 @@ const handleStyleUpdate = (style: ComponentStyle) => {
                 <div class="border-b border-gray-200">
                   <nav class="flex space-x-8" aria-label="Tabs" role="tablist">
                     <button
+                      id="theme-tab"
                       @click="activeTab = 'theme'"
                       class="py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                       :class="{
@@ -90,6 +91,7 @@ const handleStyleUpdate = (style: ComponentStyle) => {
                       🎨 Color Theme
                     </button>
                     <button
+                      id="font-tab"
                       @click="activeTab = 'font'"
                       class="py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                       :class="{
@@ -103,6 +105,7 @@ const handleStyleUpdate = (style: ComponentStyle) => {
                       🔤 Font Family
                     </button>
                     <button
+                      id="style-tab"
                       @click="activeTab = 'style'"
                       class="py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                       :class="{
