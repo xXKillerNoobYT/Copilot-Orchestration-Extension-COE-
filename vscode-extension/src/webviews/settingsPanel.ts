@@ -694,6 +694,9 @@ export class SettingsPanel {
     }
 
     // Check for HTTPS on local addresses
+    // NOTE: This duplicates logic from src/config/llmConfig.ts isLocalHost()
+    // Keep these implementations synchronized to ensure consistent validation
+    // between client-side UI and server-side configuration.
     function isLocalHost(hostname) {
       const lower = hostname.toLowerCase();
       if (lower === 'localhost' || lower === 'localhost.localdomain' || hostname === '::1' || hostname === '[::1]') {
