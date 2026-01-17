@@ -116,23 +116,12 @@ export class MCPClient {
   }
 
   /**
-   * GET /mcp/task/:taskId
-   * Fetch a specific task by ID (for version conflict retry)
-   */
-  async getTaskById(taskId: string): Promise<any> {
-    return this.fetchWithRetry(`${this.baseUrl}/mcp/task/${taskId}`, 'GET');
-  }
-
-  /**
    * POST /mcp/reportTaskStatus
    * Report task completion and progress
-   * Supports optimistic locking with expectedVersion parameter
-   * Will retry with exponential backoff on version conflicts (409)
    */
   async reportTaskStatus(data: {
     taskId: string;
     status: 'in-progress' | 'done' | 'blocked' | 'failed';
-    expectedVersion?: number;
     progressPercent?: number;
     implementationNotes?: string;
     filesModified?: string[];
@@ -140,43 +129,8 @@ export class MCPClient {
     acceptanceCriteriaVerification?: any[];
     observations?: string[];
     followUpTasks?: any[];
-  }, maxRetries: number = 3): Promise<any> {
-    let attempt = 0;
-    
-    while (attempt < maxRetries) {
-      try {
-        return await this.fetchWithRetry(`${this.baseUrl}/mcp/reportTaskStatus`, 'POST', data);
-      } catch (error: any) {
-        // Check if it's a version conflict (409)
-        if (error.status === 409 && (error.error === 'version_conflict' || !error.error)) {
-          attempt++;
-          
-          if (attempt >= maxRetries) {
-            throw new Error(`Task status update failed after ${maxRetries} attempts due to version conflicts. ${error.message || ''}`);
-          }
-          
-          // Exponential backoff: 1s, 2s, 4s (capped at 5s)
-          const backoffMs = Math.min(1000 * Math.pow(2, attempt), 5000);
-          await new Promise(resolve => setTimeout(resolve, backoffMs));
-          
-          // Fetch latest task version for retry
-          try {
-            const taskData = await this.getTaskById(data.taskId);
-            if (taskData?.task) {
-              data.expectedVersion = taskData.task.version;
-            }
-          } catch (fetchError) {
-            // If we can't fetch latest version, throw the original error
-            throw error;
-          }
-        } else {
-          // Not a version conflict, throw immediately
-          throw error;
-        }
-      }
-    }
-    
-    throw new Error('Max retry attempts exceeded for task status update');
+  }): Promise<any> {
+    return this.fetchWithRetry(`${this.baseUrl}/mcp/reportTaskStatus`, 'POST', data);
   }
 
   /**
@@ -309,23 +263,7 @@ export class MCPClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Try to parse error response body for detailed error info
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          // If JSON parsing fails, use default error
-          errorData = { message: response.statusText };
-        }
-        
-        // Create enhanced error object with status and details
-        const error: any = new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-        error.status = response.status;
-        error.error = errorData.error;
-        error.currentVersion = errorData.currentVersion;
-        error.expectedVersion = errorData.expectedVersion;
-        error.currentStatus = errorData.currentStatus;
-        throw error;
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       return response.json();

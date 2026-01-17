@@ -24,7 +24,6 @@ class Task extends Model
         'task_type',
         'priority',
         'status',
-        'version',
         'assigned_agent',
         'assigned_github_agent',
         'branch_name',
@@ -37,7 +36,6 @@ class Task extends Model
 
     protected $casts = [
         'github_issue_id' => 'integer',
-        'version' => 'integer',
         'estimated_effort' => 'integer',
         'actual_effort' => 'integer',
         'started_at' => 'datetime',

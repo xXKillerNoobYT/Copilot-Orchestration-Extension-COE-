@@ -452,8 +452,6 @@ Route::prefix('v1')->group(function () {
     Route::prefix('mcp')->group(function () {
         Route::get('/nextTask', [McpController::class, 'getNextTask'])
             ->name('api.mcp.nextTask');
-        Route::get('/task/{taskId}', [McpController::class, 'getTaskById'])
-            ->name('api.mcp.getTaskById');
         Route::post('/reportTaskStatus', [McpController::class, 'reportTaskStatus'])
             ->name('api.mcp.reportTaskStatus');
         Route::post('/reportObservation', [McpController::class, 'reportObservation'])
