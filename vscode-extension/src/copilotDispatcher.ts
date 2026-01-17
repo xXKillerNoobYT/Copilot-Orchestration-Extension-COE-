@@ -1,7 +1,14 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { defaultAgentProfileLoader, AgentProfile, AgentProfileLoader } from './agentProfiles';
 import { parseTasksFromDirectory, ParsedTask } from './taskParser';
+
+function getConfiguredTaskFolder(workspaceRoot: string): string {
+  const config = vscode.workspace.getConfiguration('copilot-orchestrator');
+  const issueFolder = config.get<string>('task.issueFolder', '.vscode/github-issues');
+  return path.join(workspaceRoot, issueFolder);
+}
 
 export type MemoryRole = 'user' | 'assistant' | 'system';
 

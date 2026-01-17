@@ -146,15 +146,17 @@ export class PlanBuilderPanel {
         await openDecompositionSummary(result);
 
         // Optional: Offer to explore created tasks
+        const config = vscode.workspace.getConfiguration('copilot-orchestrator');
+        const issueFolder = config.get<string>('task.issueFolder', '.vscode/github-issues');
         const explore = await vscode.window.showInformationMessage(
-          `✓ Created ${result.taskCount} tasks. Open the _ZENTASKS folder?`,
+          `✓ Created ${result.taskCount} tasks. Open the ${issueFolder} folder?`,
           'Yes',
           'No'
         );
 
         if (explore === 'Yes') {
-          const zenTasksUri = vscode.Uri.file(path.join(workspaceRoot, '_ZENTASKS'));
-          await vscode.commands.executeCommand('revealFileInOS', zenTasksUri);
+          const taskFolderUri = vscode.Uri.file(path.join(workspaceRoot, issueFolder));
+          await vscode.commands.executeCommand('revealFileInOS', taskFolderUri);
         }
       }
 
@@ -188,15 +190,17 @@ export class PlanBuilderPanel {
         await openDecompositionSummary(result);
 
         // Optional: Offer to explore created tasks
+        const config = vscode.workspace.getConfiguration('copilot-orchestrator');
+        const issueFolder = config.get<string>('task.issueFolder', '.vscode/github-issues');
         const explore = await vscode.window.showInformationMessage(
-          `Created ${result.taskCount} tasks. Open the _ZENTASKS folder?`,
+          `Created ${result.taskCount} tasks. Open the ${issueFolder} folder?`,
           'Yes',
           'No'
         );
 
         if (explore === 'Yes') {
-          const zenTasksUri = vscode.Uri.file(path.join(workspaceRoot, '_ZENTASKS'));
-          await vscode.commands.executeCommand('revealFileInOS', zenTasksUri);
+          const taskFolderUri = vscode.Uri.file(path.join(workspaceRoot, issueFolder));
+          await vscode.commands.executeCommand('revealFileInOS', taskFolderUri);
         }
       }
 
