@@ -286,6 +286,30 @@
         "title": "Copilot Orchestrator: List Plans",
         "category": "Plan Builder",
         "icon": "$(list-unordered)"
+      },
+      {
+        "command": "copilot-orchestrator.detectPlanDrift",
+        "title": "Copilot Orchestrator: Detect Plan Drift",
+        "category": "Plan Adjustment",
+        "icon": "$(issues)"
+      },
+      {
+        "command": "copilot-orchestrator.openPlanAdjustmentWizard",
+        "title": "Copilot Orchestrator: Open Plan Adjustment Wizard",
+        "category": "Plan Adjustment",
+        "icon": "$(wand)"
+      },
+      {
+        "command": "copilot-orchestrator.showPlanDiff",
+        "title": "Copilot Orchestrator: Show Plan Diff Viewer",
+        "category": "Plan Adjustment",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "copilot-orchestrator.applyPlanAdjustment",
+        "title": "Copilot Orchestrator: Apply Plan Adjustment",
+        "category": "Plan Adjustment",
+        "icon": "$(check)"
       }
     ]
   },

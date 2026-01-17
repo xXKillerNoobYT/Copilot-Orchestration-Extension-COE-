@@ -63,7 +63,7 @@ jobs:
             # Checkout branch
             git checkout "$BRANCH" || {
               echo "⚠️ Failed to checkout $BRANCH" >> sync-report.md
-              ((SYNC_FAILED++))
+              SYNC_FAILED=$((SYNC_FAILED + 1))
               continue
             }
             
@@ -74,16 +74,16 @@ jobs:
               # Force push (safe because feature branches)
               if git push --force-with-lease origin "$BRANCH"; then
                 echo "  └─ Pushed to remote"
-                ((SYNC_SUCCESS++))
+                SYNC_SUCCESS=$((SYNC_SUCCESS + 1))
               else
                 echo "  └─ Push failed"
                 echo "⚠️ $BRANCH - Sync succeeded but push failed" >> sync-report.md
-                ((SYNC_FAILED++))
+                SYNC_FAILED=$((SYNC_FAILED + 1))
               fi
             else
               echo "❌ $BRANCH - Rebase conflicts detected" >> sync-report.md
               git rebase --abort
-              ((SYNC_CONFLICTS++))
+              SYNC_CONFLICTS=$((SYNC_CONFLICTS + 1))
             fi
           done
           
