@@ -19,17 +19,17 @@ import type { WizardState } from './PreviewEngine';
 type WatchCallback = (newVal: any, oldVal: any) => void;
 type WatchStopHandle = () => void;
 
-const watchCallbacks: Map<string, { callback: WatchCallback; options: any; source: any }> = new Map();
+const watchCallbacks: Map<string, { callback: WatchCallback; options: any; source: any; lastValue?: any }> = new Map();
 let watchIdCounter = 0;
 
 jest.mock('vue', () => ({
   watch: jest.fn((source: any, callback: WatchCallback, options?: any): WatchStopHandle => {
     const watchId = `watch-${watchIdCounter++}`;
-    watchCallbacks.set(watchId, { callback, options, source });
+    const initialValue = typeof source === 'function' ? source() : source.value;
+    watchCallbacks.set(watchId, { callback, options, source, lastValue: initialValue });
     
     // If immediate, call with initial value
     if (options?.immediate) {
-      const initialValue = typeof source === 'function' ? source() : source.value;
       setTimeout(() => callback(initialValue, undefined), 0);
     }
     
@@ -42,10 +42,20 @@ jest.mock('vue', () => ({
 }));
 
 // Helper to trigger watch callbacks manually
-function triggerWatchers(newState: WizardState, oldState?: WizardState) {
-  watchCallbacks.forEach(({ callback, source }) => {
-    // Call the callback with new state
-    callback(newState, oldState);
+// This simulates Vue's reactivity by checking the source function for changes
+function triggerWatchers() {
+  watchCallbacks.forEach(({ callback, source, lastValue }, watchId) => {
+    const currentValue = typeof source === 'function' ? source() : source.value;
+    
+    // Only trigger if value actually changed
+    if (currentValue !== lastValue) {
+      callback(currentValue, lastValue);
+      // Update last value
+      const entry = watchCallbacks.get(watchId);
+      if (entry) {
+        entry.lastValue = currentValue;
+      }
+    }
   });
 }
 
@@ -70,7 +80,7 @@ describe('WizardStateObserver', () => {
 
   describe('Basic Observation', () => {
     it('should detect state changes', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -82,9 +92,9 @@ describe('WizardStateObserver', () => {
 
       observer.observe(getState, callback);
 
-      // Simulate state change
-      const newState = { ...state, currentStep: 1 };
-      triggerWatchers(newState, state);
+      // Mutate state and trigger watchers
+      state = { ...state, currentStep: 1 };
+      triggerWatchers();
 
       // Fast-forward debounce timer
       jest.advanceTimersByTime(200);
@@ -93,7 +103,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should pass new state to callback', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -105,8 +115,8 @@ describe('WizardStateObserver', () => {
 
       observer.observe(getState, callback);
 
-      const newState = { ...state, currentStep: 2 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 2 };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -117,7 +127,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should detect field changes in answers', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -129,11 +139,11 @@ describe('WizardStateObserver', () => {
 
       observer.observe(getState, callback);
 
-      const newState = {
+      state = {
         ...state,
         answers: { projectName: 'Test Project' }
       };
-      triggerWatchers(newState, state);
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -144,7 +154,7 @@ describe('WizardStateObserver', () => {
 
   describe('Debouncing', () => {
     it('should debounce rapid changes', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -158,8 +168,8 @@ describe('WizardStateObserver', () => {
 
       // Trigger multiple rapid changes
       for (let i = 1; i <= 5; i++) {
-        const newState = { ...state, currentStep: i };
-        triggerWatchers(newState, { ...state, currentStep: i - 1 });
+        state = { ...state, currentStep: i };
+        triggerWatchers();
         jest.advanceTimersByTime(50); // Less than debounce time
       }
 
@@ -177,7 +187,7 @@ describe('WizardStateObserver', () => {
     it('should respect custom debounce time', () => {
       const customObserver = createObserver({ debounceMs: 500 });
 
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -189,8 +199,8 @@ describe('WizardStateObserver', () => {
 
       customObserver.observe(getState, callback);
 
-      const newState = { ...state, currentStep: 1 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 1 };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200); // Less than 500ms
       expect(callback).not.toHaveBeenCalled();
@@ -210,7 +220,7 @@ describe('WizardStateObserver', () => {
 
   describe('Field-Level Observation', () => {
     it('should observe specific field changes', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: { projectName: 'Initial' },
         validationErrors: {},
@@ -222,8 +232,12 @@ describe('WizardStateObserver', () => {
 
       observer.observeField(getField, 'projectName', callback);
 
-      // Simulate field change
-      triggerWatchers('Changed', 'Initial');
+      // Update state and trigger watchers
+      state = {
+        ...state,
+        answers: { projectName: 'Changed' }
+      };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -231,7 +245,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should not trigger on same value', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: { projectName: 'Same' },
         validationErrors: {},
@@ -243,8 +257,8 @@ describe('WizardStateObserver', () => {
 
       observer.observeField(getField, 'projectName', callback);
 
-      // Simulate no actual change
-      triggerWatchers('Same', 'Same');
+      // Trigger without actual change (value stays 'Same')
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -252,7 +266,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should pass field name to callback', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: { description: 'Test' },
         validationErrors: {},
@@ -264,7 +278,12 @@ describe('WizardStateObserver', () => {
 
       observer.observeField(getField, 'description', callback);
 
-      triggerWatchers('Updated', 'Test');
+      // Update state and trigger watchers
+      state = {
+        ...state,
+        answers: { description: 'Updated' }
+      };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -274,7 +293,7 @@ describe('WizardStateObserver', () => {
 
   describe('Change Detection', () => {
     it('should detect currentStep change', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -286,8 +305,8 @@ describe('WizardStateObserver', () => {
 
       observer.observe(getState, callback);
 
-      const newState = { ...state, currentStep: 3 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 3 };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -295,7 +314,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should detect isComplete change', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 5,
         answers: {},
         validationErrors: {},
@@ -307,8 +326,8 @@ describe('WizardStateObserver', () => {
 
       observer.observe(getState, callback);
 
-      const newState = { ...state, isComplete: true };
-      triggerWatchers(newState, state);
+      state = { ...state, isComplete: true };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -316,7 +335,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should detect validation error changes', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -328,11 +347,11 @@ describe('WizardStateObserver', () => {
 
       observer.observe(getState, callback);
 
-      const newState = {
+      state = {
         ...state,
         validationErrors: { field1: ['Error 1'] }
       };
-      triggerWatchers(newState, state);
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -342,7 +361,7 @@ describe('WizardStateObserver', () => {
 
   describe('Error Handling', () => {
     it('should handle callback errors gracefully', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -359,8 +378,8 @@ describe('WizardStateObserver', () => {
       const getState = () => state;
       faultyObserver.observe(getState, callback);
 
-      const newState = { ...state, currentStep: 1 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 1 };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -374,7 +393,7 @@ describe('WizardStateObserver', () => {
     it('should use default error handler if none provided', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -388,8 +407,8 @@ describe('WizardStateObserver', () => {
       const getState = () => state;
       observer.observe(getState, callback);
 
-      const newState = { ...state, currentStep: 1 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 1 };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -416,7 +435,7 @@ describe('WizardStateObserver', () => {
 
   describe('Lifecycle Management', () => {
     it('should clean up on destroy', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -431,8 +450,8 @@ describe('WizardStateObserver', () => {
       observer.destroy();
 
       // Change after destroy
-      const newState = { ...state, currentStep: 1 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 1 };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -457,7 +476,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should clean up multiple watchers', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: { field1: 'a', field2: 'b' },
         validationErrors: {},
@@ -475,8 +494,8 @@ describe('WizardStateObserver', () => {
 
       observer.destroy();
 
-      const newState = { ...state, currentStep: 1 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 1 };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -487,7 +506,7 @@ describe('WizardStateObserver', () => {
 
   describe('Pause and Resume', () => {
     it('should pause observations', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -499,8 +518,8 @@ describe('WizardStateObserver', () => {
 
       observer.observe(getState, callback);
 
-      const newState = { ...state, currentStep: 1 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 1 };
+      triggerWatchers();
       
       // Pause before debounce completes
       jest.advanceTimersByTime(100);
@@ -512,7 +531,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should resume observations', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {},
         validationErrors: {},
@@ -527,8 +546,8 @@ describe('WizardStateObserver', () => {
       observer.pause();
       observer.resume();
 
-      const newState = { ...state, currentStep: 1 };
-      triggerWatchers(newState, state);
+      state = { ...state, currentStep: 1 };
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -538,7 +557,7 @@ describe('WizardStateObserver', () => {
 
   describe('Deep Watching', () => {
     it('should detect nested object changes', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: {
           architecture: {
@@ -556,7 +575,7 @@ describe('WizardStateObserver', () => {
       observer.observe(getState, callback, { deep: true });
 
       // Simulate nested change
-      const newState = {
+      state = {
         ...state,
         answers: {
           architecture: {
@@ -565,7 +584,7 @@ describe('WizardStateObserver', () => {
           }
         }
       };
-      triggerWatchers(newState, state);
+      triggerWatchers();
 
       jest.advanceTimersByTime(200);
 
@@ -573,7 +592,7 @@ describe('WizardStateObserver', () => {
     });
 
     it('should respect deep option', () => {
-      const state: WizardState = {
+      let state: WizardState = {
         currentStep: 0,
         answers: { nested: { value: 1 } },
         validationErrors: {},
