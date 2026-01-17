@@ -299,4 +299,184 @@ Task description`,
       );
     });
   });
+
+  describe('addFilesToContextBundle', () => {
+    beforeEach(() => {
+      // Mock vscode.workspace
+      (vscode.workspace as any).workspaceFolders = [
+        { uri: { fsPath: '/test/workspace' } }
+      ];
+    });
+
+    it('should add valid files to an existing bundle', async () => {
+      const bundleContent = {
+        id: 'test-bundle',
+        taskId: 'task-1',
+        files: ['/existing/file.ts'],
+        version: 1,
+      };
+
+      const mockReadFile = jest.fn().mockResolvedValue(
+        new TextEncoder().encode(JSON.stringify(bundleContent))
+      );
+      const mockWriteFile = jest.fn().mockResolvedValue(undefined);
+      (vscode.workspace as any).fs = {
+        readFile: mockReadFile,
+        writeFile: mockWriteFile,
+      };
+      (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
+      (vscode.window as any).showInformationMessage = jest.fn();
+
+      // Mock the validation module
+      jest.mock('./utils/pathValidation', () => ({
+        validateAndFilterFilePaths: jest.fn().mockResolvedValue(['/new/file.ts']),
+        normalizeFilePath: jest.fn((path) => path),
+      }));
+
+      await api.addFilesToContextBundle('/test/bundle.json', ['/new/file.ts']);
+
+      expect(mockWriteFile).toHaveBeenCalled();
+      const writeCall = mockWriteFile.mock.calls[0];
+      const updatedBundle = JSON.parse(new TextDecoder().decode(writeCall[1]));
+      expect(updatedBundle.files).toContain('/new/file.ts');
+    });
+
+    it('should handle invalid file paths gracefully', async () => {
+      const bundleContent = {
+        id: 'test-bundle',
+        taskId: 'task-1',
+        files: [],
+        version: 1,
+      };
+
+      const mockReadFile = jest.fn().mockResolvedValue(
+        new TextEncoder().encode(JSON.stringify(bundleContent))
+      );
+      (vscode.workspace as any).fs = {
+        readFile: mockReadFile,
+        writeFile: jest.fn(),
+      };
+      (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
+      const mockShowWarning = jest.fn();
+      (vscode.window as any).showWarningMessage = mockShowWarning;
+
+      // Mock validation to return empty array (all invalid)
+      jest.mock('./utils/pathValidation', () => ({
+        validateAndFilterFilePaths: jest.fn().mockResolvedValue([]),
+        normalizeFilePath: jest.fn((path) => path),
+      }));
+
+      await api.addFilesToContextBundle('/test/bundle.json', ['/invalid/path.ts']);
+
+      expect(mockShowWarning).toHaveBeenCalledWith(
+        expect.stringContaining('No valid file paths')
+      );
+    });
+
+    it('should prevent duplicate files', async () => {
+      const bundleContent = {
+        id: 'test-bundle',
+        taskId: 'task-1',
+        files: ['/existing/file.ts'],
+        version: 1,
+      };
+
+      const mockReadFile = jest.fn().mockResolvedValue(
+        new TextEncoder().encode(JSON.stringify(bundleContent))
+      );
+      const mockWriteFile = jest.fn().mockResolvedValue(undefined);
+      (vscode.workspace as any).fs = {
+        readFile: mockReadFile,
+        writeFile: mockWriteFile,
+      };
+      (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
+      const mockShowInfo = jest.fn();
+      (vscode.window as any).showInformationMessage = mockShowInfo;
+
+      jest.mock('./utils/pathValidation', () => ({
+        validateAndFilterFilePaths: jest.fn().mockResolvedValue(['/existing/file.ts']),
+        normalizeFilePath: jest.fn((path) => path),
+      }));
+
+      await api.addFilesToContextBundle('/test/bundle.json', ['/existing/file.ts']);
+
+      expect(mockShowInfo).toHaveBeenCalledWith(
+        expect.stringContaining('already exist')
+      );
+    });
+
+    it('should emit contextBundleModified event', async () => {
+      const bundleContent = {
+        id: 'test-bundle',
+        taskId: 'task-1',
+        files: [],
+        version: 1,
+      };
+
+      const mockReadFile = jest.fn().mockResolvedValue(
+        new TextEncoder().encode(JSON.stringify(bundleContent))
+      );
+      const mockWriteFile = jest.fn().mockResolvedValue(undefined);
+      (vscode.workspace as any).fs = {
+        readFile: mockReadFile,
+        writeFile: mockWriteFile,
+      };
+      (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
+      (vscode.window as any).showInformationMessage = jest.fn();
+
+      const eventSpy = jest.fn();
+      api.onTaskInteraction(eventSpy);
+
+      jest.mock('./utils/pathValidation', () => ({
+        validateAndFilterFilePaths: jest.fn().mockResolvedValue(['/new/file.ts']),
+        normalizeFilePath: jest.fn((path) => path),
+      }));
+
+      await api.addFilesToContextBundle('/test/bundle.json', ['/new/file.ts']);
+
+      expect(eventSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'contextBundleModified',
+          bundlePath: '/test/bundle.json',
+        })
+      );
+    });
+  });
+
+  describe('validateContextFilePath', () => {
+    beforeEach(() => {
+      (vscode.workspace as any).workspaceFolders = [
+        { uri: { fsPath: '/test/workspace' } }
+      ];
+    });
+
+    it('should return valid result for valid file path', async () => {
+      jest.mock('./utils/pathValidation', () => ({
+        validateFilePath: jest.fn().mockResolvedValue({
+          valid: true,
+          normalizedPath: '/test/file.ts',
+        }),
+      }));
+
+      const result = await api.validateContextFilePath('/test/file.ts');
+
+      expect(result.valid).toBe(true);
+      expect(result.normalizedPath).toBe('/test/file.ts');
+      expect(result.errorMessage).toBeUndefined();
+    });
+
+    it('should return invalid result with error message for invalid path', async () => {
+      jest.mock('./utils/pathValidation', () => ({
+        validateFilePath: jest.fn().mockResolvedValue({
+          valid: false,
+          error: { message: 'File does not exist' },
+        }),
+      }));
+
+      const result = await api.validateContextFilePath('/invalid/path.ts');
+
+      expect(result.valid).toBe(false);
+      expect(result.errorMessage).toBe('File does not exist');
+    });
+  });
 });

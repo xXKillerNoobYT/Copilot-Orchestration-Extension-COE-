@@ -70,6 +70,33 @@ describe('Path Validation Utilities', () => {
       const normalized = normalizeFilePath(pathWithSpaces);
       expect(normalized).toBe(path.normalize('/home/user/file.txt'));
     });
+
+    it('should prevent path traversal attacks', () => {
+      const workspaceRoot = '/home/user/workspace';
+      const maliciousPath = '../../../../etc/passwd';
+      
+      expect(() => {
+        normalizeFilePath(maliciousPath, workspaceRoot);
+      }).toThrow('outside of the workspace root');
+    });
+
+    it('should allow relative paths within workspace', () => {
+      const workspaceRoot = tempDir;
+      const relativePath = 'subfolder/file.txt';
+      
+      const normalized = normalizeFilePath(relativePath, workspaceRoot);
+      expect(normalized).toBe(path.normalize(path.join(tempDir, 'subfolder/file.txt')));
+    });
+
+    it('should handle vscode.Uri objects', () => {
+      const mockUri = {
+        fsPath: '/home/user/file.txt',
+        scheme: 'file',
+      } as any;
+      
+      const normalized = normalizeFilePath(mockUri);
+      expect(normalized).toBe('/home/user/file.txt');
+    });
   });
 
   describe('validateFilePath', () => {

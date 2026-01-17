@@ -145,29 +145,43 @@ export async function validateFilePath(
  * @param workspaceRoot Optional workspace root for resolving relative paths
  * @returns Normalized absolute file path
  */
-export function normalizeFilePath(filePath: string, workspaceRoot?: string): string {
-  // Handle URI format (file://)
-  if (filePath.startsWith('file://')) {
-    try {
-      const uri = vscode.Uri.parse(filePath);
-      return uri.fsPath;
-    } catch (error) {
-      throw new Error(`Invalid file URI: ${filePath}`);
-    }
-  }
-
-  // Handle vscode.Uri objects
+export function normalizeFilePath(filePath: string | vscode.Uri, workspaceRoot?: string): string {
+  // Handle vscode.Uri objects first
   if (filePath && typeof filePath === 'object' && 'fsPath' in filePath && 'scheme' in filePath) {
     // More robust check for Uri-like object
     return (filePath as vscode.Uri).fsPath;
   }
 
-  // Clean up path
-  let cleanPath = filePath.trim();
+  const pathStr = String(filePath);
 
-  // Resolve relative paths if workspace root is provided
+  // Handle URI format (file://)
+  if (pathStr.startsWith('file://')) {
+    try {
+      const uri = vscode.Uri.parse(pathStr);
+      return uri.fsPath;
+    } catch (error) {
+      throw new Error(`Invalid file URI: ${pathStr} - ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  // Clean up path
+  let cleanPath = pathStr.trim();
+
+  // Resolve relative paths if workspace root is provided, and ensure the
+  // resolved path stays within the workspace root to prevent path traversal.
   if (!path.isAbsolute(cleanPath) && workspaceRoot) {
-    cleanPath = path.resolve(workspaceRoot, cleanPath);
+    const normalizedWorkspaceRoot = path.resolve(workspaceRoot);
+    const resolvedPath = path.resolve(normalizedWorkspaceRoot, cleanPath);
+    const relativeToRoot = path.relative(normalizedWorkspaceRoot, resolvedPath);
+
+    // If the relative path starts with '..' or is absolute, it escapes the workspace root.
+    if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
+      throw new Error(
+        `Resolved path is outside of the workspace root: ${resolvedPath} (root: ${normalizedWorkspaceRoot})`
+      );
+    }
+
+    cleanPath = resolvedPath;
   }
 
   // Normalize path separators and resolve . and ..
@@ -175,7 +189,7 @@ export function normalizeFilePath(filePath: string, workspaceRoot?: string): str
 }
 
 /**
- * Validate multiple file paths concurrently
+ * Validate multiple file paths concurrently with batching
  * 
  * @param filePaths Array of file paths to validate
  * @param options Validation options
@@ -185,10 +199,19 @@ export async function validateFilePaths(
   filePaths: string[],
   options: { checkExists?: boolean; workspaceRoot?: string } = {}
 ): Promise<PathValidationResult[]> {
-  // Validate all paths concurrently for better performance
-  return Promise.all(
-    filePaths.map(filePath => validateFilePath(filePath, options))
-  );
+  // Use batch processing with concurrency limit to prevent resource exhaustion
+  const BATCH_SIZE = 50; // Process 50 files at a time
+  const results: PathValidationResult[] = [];
+  
+  for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
+    const batch = filePaths.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map(filePath => validateFilePath(filePath, options))
+    );
+    results.push(...batchResults);
+  }
+  
+  return results;
 }
 
 /**

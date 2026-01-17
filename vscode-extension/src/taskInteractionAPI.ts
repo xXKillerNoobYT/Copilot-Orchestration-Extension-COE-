@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ParsedTask } from './taskParser';
 import { TaskStatusParser } from './taskStatusParser';
 import { defaultAgentProfileLoader, AgentProfile } from './agentProfiles';
-import { validateFilePath, validateAndFilterFilePaths, FilePathValidationError } from './utils/pathValidation';
+import { validateFilePath, validateAndFilterFilePaths, normalizeFilePath } from './utils/pathValidation';
 
 /**
  * TaskInteractionAPI: Bridge between .task.md files and the main orchestrator workflow
@@ -289,7 +289,16 @@ export class TaskInteractionAPI {
       }
 
       // Add validated paths to bundle (avoid duplicates)
-      const existingFiles = new Set(bundleData.files || []);
+      // Normalize existing files to ensure accurate duplicate detection
+      const normalizedExistingFiles = (bundleData.files || []).map((f: string) => {
+        try {
+          return normalizeFilePath(f, workspaceRoot);
+        } catch {
+          // If normalization fails, use the original path
+          return f;
+        }
+      });
+      const existingFiles = new Set(normalizedExistingFiles);
       const newFiles = validatedPaths.filter(p => !existingFiles.has(p));
 
       if (newFiles.length === 0) {
