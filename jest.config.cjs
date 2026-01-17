@@ -36,6 +36,7 @@ module.exports = {
         // Mocha tests - use suite() instead of describe()
         'integration/.*\\.test\\.ts',
         // Vitest tests - these files use vitest imports
+        '__tests__/sample\\.test\\.ts',  // Vitest-based sample test
         'planGenerator\\.test\\.ts',
         'livePreview\\.test\\.ts',
         'planMetadata\\.test\\.ts',
