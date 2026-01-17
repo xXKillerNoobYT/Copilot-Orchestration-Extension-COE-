@@ -369,10 +369,7 @@ class MetricsServiceTest extends TestCase
         $this->assertEquals('Complex error message', $event->context_value);
         $this->assertEquals($task->id, $event->task_id);
         $this->assertEquals($agent->id, $event->agent_id);
-        $this->assertJsonStringEqualsJsonString(
-            json_encode(['error_code' => 'ERR_001', 'severity' => 'high']),
-            $event->metadata
-        );
+        $this->assertEquals(['error_code' => 'ERR_001', 'severity' => 'high'], $event->metadata);
     }
 
     /**

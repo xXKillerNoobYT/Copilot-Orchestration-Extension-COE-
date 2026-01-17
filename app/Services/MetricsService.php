@@ -21,6 +21,7 @@ class MetricsService
      * Aggregate task metrics (counts, completion rate, cycle time).
      * 
      * @param string|null $timeRange Optional time range (e.g., '7d', '30d', '90d')
+     * @return array Aggregated task metrics including counts, rates, and timestamps
      */
     public function getTaskMetrics(?string $timeRange = null): array
     {
@@ -223,10 +224,10 @@ class MetricsService
      * Record an error event (simplified interface matching issue spec).
      * 
      * @param int $taskId
-     * @param array|string $error Error message or array with error details
+     * @param string|array $error Error message or array with error details
      * @return MetricsEvent
      */
-    public function recordError(int $taskId, array|string $error): MetricsEvent
+    public function recordError(int $taskId, string|array $error): MetricsEvent
     {
         // Handle both string and array error formats
         if (is_string($error)) {
