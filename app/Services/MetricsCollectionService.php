@@ -67,6 +67,93 @@ class MetricsCollectionService
     }
 
     /**
+     * Record task completion (Issue #60 requirement)
+     */
+    public function recordTaskCompletion(string $taskId, float $duration): void
+    {
+        $this->incrementCounter('tasks.completed');
+        $this->recordTiming('tasks.completion_duration', $duration);
+        $this->recordGauge('tasks.last_completion_time', time());
+        
+        // Also record task-specific metadata
+        Cache::put("task:{$taskId}:completed_at", now(), 86400);
+        Cache::put("task:{$taskId}:duration", $duration, 86400);
+    }
+
+    /**
+     * Record error (Issue #60 requirement)
+     */
+    public function recordError(string $taskId, array $error): void
+    {
+        $this->incrementCounter('tasks.errors.total');
+        $this->incrementCounter('tasks.errors.by_severity', 1, [
+            'severity' => $error['severity'] ?? 'unknown'
+        ]);
+        
+        // Store error details
+        $errorKey = "task:{$taskId}:errors";
+        $errors = Cache::get($errorKey, []);
+        $errors[] = [
+            'message' => $error['message'] ?? 'Unknown error',
+            'severity' => $error['severity'] ?? 'medium',
+            'timestamp' => now()->toISOString(),
+            'details' => $error['details'] ?? null,
+        ];
+        
+        // Keep last 100 errors per task
+        if (count($errors) > 100) {
+            $errors = array_slice($errors, -100);
+        }
+        
+        Cache::put($errorKey, $errors, 86400);
+    }
+
+    /**
+     * Get task metrics (Issue #60 requirement)
+     */
+    public function getTaskMetrics(string $timeRange = '24h'): array
+    {
+        $rangeSeconds = $this->parseTimeRange($timeRange);
+        $cutoffTime = time() - $rangeSeconds;
+        
+        return [
+            'total_tasks' => $this->getMetric('counter', 'tasks.total') ?? 0,
+            'completed_tasks' => $this->getMetric('counter', 'tasks.completed') ?? 0,
+            'total_errors' => $this->getMetric('counter', 'tasks.errors.total') ?? 0,
+            'avg_completion_time' => $this->calculateAverageTaskTime(),
+            'by_status' => $this->getTasksByStatus(),
+            'by_priority' => $this->getTasksByPriority(),
+            'time_range' => $timeRange,
+        ];
+    }
+
+    /**
+     * Get agent metrics (Issue #60 requirement)
+     */
+    public function getAgentMetrics(): array
+    {
+        return [
+            'total_agents' => $this->getMetric('counter', 'agents.total') ?? 0,
+            'average_workload' => $this->calculateAverageAgentWorkload(),
+            'agents_by_type' => $this->getAgentsByType(),
+            'utilization_percentage' => $this->calculateAgentUtilization(),
+        ];
+    }
+
+    /**
+     * Get error metrics (Issue #60 requirement)
+     */
+    public function getErrorMetrics(): array
+    {
+        return [
+            'total_errors' => $this->getMetric('counter', 'tasks.errors.total') ?? 0,
+            'errors_by_severity' => $this->getErrorsBySeverity(),
+            'error_rate' => $this->calculateTaskErrorRate(),
+            'recent_errors' => $this->getRecentErrors(10),
+        ];
+    }
+
+    /**
      * Record task metrics
      */
     public function recordTaskMetrics(string $taskId, array $metrics): void
@@ -377,6 +464,140 @@ class MetricsCollectionService
         $total = $success + $failure;
         
         return $total > 0 ? round(($success / $total) * 100, 2) : 0.0;
+    }
+
+    /**
+     * Calculate average task completion time
+     */
+    private function calculateAverageTaskTime(): float
+    {
+        $histogram = $this->getMetric('histogram', 'tasks.completion_duration') ?? null;
+        
+        if (!$histogram || $histogram['count'] === 0) {
+            return 0.0;
+        }
+        
+        return round($histogram['sum'] / $histogram['count'], 2);
+    }
+
+    /**
+     * Get tasks by priority
+     */
+    private function getTasksByPriority(): array
+    {
+        $priorities = ['critical', 'high', 'medium', 'low'];
+        $result = [];
+        
+        foreach ($priorities as $priority) {
+            $result[$priority] = $this->getMetric('counter', 'tasks.by_priority', ['priority' => $priority]) ?? 0;
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Get agents by type
+     */
+    private function getAgentsByType(): array
+    {
+        $types = ['planner', 'executor', 'tester', 'reviewer'];
+        $result = [];
+        
+        foreach ($types as $type) {
+            $result[$type] = $this->getMetric('counter', 'agents.by_type', ['type' => $type]) ?? 0;
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Calculate agent utilization percentage
+     */
+    private function calculateAgentUtilization(): float
+    {
+        $totalAgents = $this->getMetric('counter', 'agents.total') ?? 0;
+        
+        if ($totalAgents === 0) {
+            return 0.0;
+        }
+        
+        // Simplified: agents are considered utilized if they have > 0 tasks
+        $activeAgents = 0;
+        foreach (['planner', 'executor', 'tester', 'reviewer'] as $type) {
+            $workload = $this->getMetric('gauge', 'agents.workload', ['type' => $type]) ?? 0;
+            if ($workload > 0) {
+                $activeAgents++;
+            }
+        }
+        
+        return round(($activeAgents / max($totalAgents, 1)) * 100, 2);
+    }
+
+    /**
+     * Get errors by severity
+     */
+    private function getErrorsBySeverity(): array
+    {
+        $severities = ['critical', 'high', 'medium', 'low'];
+        $result = [];
+        
+        foreach ($severities as $severity) {
+            $result[$severity] = $this->getMetric('counter', 'tasks.errors.by_severity', ['severity' => $severity]) ?? 0;
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Calculate task error rate
+     */
+    private function calculateTaskErrorRate(): float
+    {
+        $totalTasks = $this->getMetric('counter', 'tasks.total') ?? 0;
+        $totalErrors = $this->getMetric('counter', 'tasks.errors.total') ?? 0;
+        
+        return $totalTasks > 0 ? round(($totalErrors / $totalTasks) * 100, 2) : 0.0;
+    }
+
+    /**
+     * Get recent errors
+     */
+    private function getRecentErrors(int $limit = 10): array
+    {
+        // Get all task error keys
+        $pattern = 'task:*:errors';
+        $keys = $this->getCacheKeys($pattern);
+        
+        $allErrors = [];
+        foreach ($keys as $key) {
+            $taskErrors = Cache::get($key, []);
+            foreach ($taskErrors as $error) {
+                $allErrors[] = $error;
+            }
+        }
+        
+        // Sort by timestamp descending
+        usort($allErrors, function($a, $b) {
+            return strcmp($b['timestamp'], $a['timestamp']);
+        });
+        
+        return array_slice($allErrors, 0, $limit);
+    }
+
+    /**
+     * Parse time range string to seconds
+     */
+    private function parseTimeRange(string $timeRange): int
+    {
+        $value = (int)substr($timeRange, 0, -1);
+        $unit = substr($timeRange, -1);
+        
+        return match($unit) {
+            'h' => $value * 3600,
+            'd' => $value * 86400,
+            'w' => $value * 604800,
+            default => 86400, // Default to 24 hours
+        };
     }
 
     /**
