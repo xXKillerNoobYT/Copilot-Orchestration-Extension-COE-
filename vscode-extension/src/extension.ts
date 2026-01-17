@@ -172,29 +172,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand('copilot-orchestrator.savePlan', async () => {
-      // Open Plan Builder panel - it handles save internally
-      PlanBuilderPanel.createOrShow(context.extensionUri);
-      vscode.window.showInformationMessage('Use the Save button in the Plan Builder panel to save your plan');
-    })
-  );
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand('copilot-orchestrator.loadPlan', async () => {
-      // Open Plan Builder panel - it handles load internally
-      PlanBuilderPanel.createOrShow(context.extensionUri);
-      vscode.window.showInformationMessage('Use the Load button in the Plan Builder panel to load a plan');
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('copilot-orchestrator.listPlans', async () => {
-      // Open Plan Builder panel which shows the list of plans
-      PlanBuilderPanel.createOrShow(context.extensionUri);
-      vscode.window.showInformationMessage('View and manage plans in the Plan Builder panel');
-    })
-  );
 
   // ============ Audit Dashboard Command ============
   context.subscriptions.push(
@@ -735,7 +713,6 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<vscode.TreeI
         [
           new ActionTreeItem('📐 Planning Phase', 'copilot-orchestrator.planningPhase', 'Define task scope and dependencies', 'pencil'),
           new ActionTreeItem('✏️ Open Plan Builder', 'copilot-orchestrator.openPlanBuilder', 'Interactive plan builder', 'pencil'),
-          new ActionTreeItem('📂 List Plans', 'copilot-orchestrator.listPlans', 'View all plans', 'list-unordered'),
           new ActionTreeItem('🧠 AI Development Planning', 'copilot-orchestrator.aiDevPlanning', 'Generate AI-driven development plan', 'lightbulb'),
           new ActionTreeItem('🔄 Detect Plan Drift', 'copilot-orchestrator.detectPlanDrift', 'Check for plan changes', 'issues'),
           new ActionTreeItem('🪄 Plan Adjustment Wizard', 'copilot-orchestrator.openPlanAdjustmentWizard', 'Adjust plan interactively', 'wand'),
