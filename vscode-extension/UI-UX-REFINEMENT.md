@@ -75,10 +75,12 @@ All panels use `vscode.ViewColumn` to open in the editor area, ensuring a consis
 ### New Command Registrations
 The following commands were added to the extension:
 - `copilot-orchestrator.openPlanBuilder` - Opens the interactive plan builder
-- `copilot-orchestrator.savePlan` - Saves the current plan
-- `copilot-orchestrator.loadPlan` - Loads a saved plan
-- `copilot-orchestrator.listPlans` - Lists all available plans
+- `copilot-orchestrator.savePlan` - Opens Plan Builder (save functionality is within the panel)
+- `copilot-orchestrator.loadPlan` - Opens Plan Builder (load functionality is within the panel)
+- `copilot-orchestrator.listPlans` - Opens Plan Builder (list functionality is within the panel)
 - `copilot-orchestrator.showAuditDashboard` - Opens the audit dashboard
+
+**Note:** The save, load, and list plan commands currently serve as quick access points to the Plan Builder panel, which provides the full functionality for managing plans. Users can perform save, load, and list operations within the panel's interface.
 
 ### Tree View Enhancements
 Added the following items to the Activity Bar tree view:
