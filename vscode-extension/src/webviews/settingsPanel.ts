@@ -461,7 +461,8 @@ export class SettingsPanel {
       <div class="form-group">
         <label for="baseUrl">Base URL</label>
         <input type="text" id="baseUrl" placeholder="http://localhost:1234" value="http://localhost:1234">
-        <div class="help-text">LM Studio default: http://localhost:1234</div>
+        <div class="help-text">⚠️ Local servers (LM Studio, Ollama) use HTTP, not HTTPS. Example: http://localhost:1234</div>
+        <div class="help-text">For production with HTTPS, set up a reverse proxy (nginx/caddy) with TLS certificates.</div>
       </div>
 
       <div class="form-group">
@@ -687,6 +688,35 @@ export class SettingsPanel {
       document.getElementById('endpointCompletions').textContent = \`\${baseUrl}/v1/completions\`;
       document.getElementById('endpointEmbeddings').textContent = \`\${baseUrl}/v1/embeddings\`;
       document.getElementById('endpointModels').textContent = \`\${baseUrl}/v1/models\`;
+      
+      // Validate protocol and show warning
+      checkProtocol(baseUrl);
+    }
+
+    // Check for HTTPS on local addresses
+    function isLocalHost(hostname) {
+      const lower = hostname.toLowerCase();
+      if (lower === 'localhost' || lower === 'localhost.localdomain' || hostname === '::1' || hostname === '[::1]') {
+        return true;
+      }
+      // Check for loopback (127.x.x.x)
+      if (/^127\\./.test(hostname)) return true;
+      // Check for private IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+      if (/^192\\.168\\./.test(hostname) || /^10\\./.test(hostname) || /^172\\.(1[6-9]|2[0-9]|3[0-1])\\./.test(hostname)) {
+        return true;
+      }
+      return false;
+    }
+
+    function checkProtocol(urlString) {
+      try {
+        const url = new URL(urlString);
+        if (url.protocol === 'https:' && isLocalHost(url.hostname)) {
+          showStatus('error', '⚠️ Warning: Local servers typically use HTTP, not HTTPS. Change protocol to http:// if you encounter connection errors.', 'connectionStatus');
+        }
+      } catch (e) {
+        // Invalid URL, ignore
+      }
     }
 
     // Update endpoints when base URL changes

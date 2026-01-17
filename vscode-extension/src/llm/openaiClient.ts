@@ -56,6 +56,24 @@ export function createOpenAIClient(config: LlmConfig): LlmClient {
         signal: controller.signal,
       })) as FetchResponse;
       return res;
+    } catch (error: any) {
+      // Enhance error messages for common issues
+      if (error.name === 'AbortError') {
+        throw new Error(`Request timeout after ${timeoutMs}ms. If using HTTPS with localhost/local IP, this may be a TLS handshake failure. Local LLM servers (LM Studio, Ollama) typically use HTTP. Try changing ${baseUrl} to use http:// instead of https://.`);
+      }
+      
+      // Check for TLS/SSL errors
+      if (error.message && (
+        error.message.includes('SSL') ||
+        error.message.includes('TLS') ||
+        error.message.includes('certificate') ||
+        error.message.includes('self-signed') ||
+        error.message.includes('CERT_')
+      )) {
+        throw new Error(`TLS/SSL error: ${error.message}. Local LLM servers use HTTP, not HTTPS. If you need HTTPS, set up a reverse proxy with valid certificates.`);
+      }
+      
+      throw error;
     } finally {
       clearTimeout(timeout);
     }
