@@ -1,0 +1,623 @@
+# Error Catalog
+**Complete reference for all audit-discovered errors**  
+**Date:** January 16, 2026  
+**Total Issues:** 11 (1 Critical, 5 High, 5 Medium)
+
+---
+
+## Issue #1: CRITICAL - Concurrent Task Status Updates Without Locking
+
+### Error Signatures
+```
+"Task status flickers between states"
+"GitHub issue status inconsistent with backend task state"
+"Agent update overwrote previous status"
+"Task stuck in intermediate state"
+```
+
+### Root Causes
+1. **No optimistic locking** in task status updates
+2. **No version field** to detect concurrent modifications
+3. **Last-write-wins semantics** on backend (no conflict detection)
+4. **No task lease/lock mechanism** during agent execution
+5. Multiple agents (Planner, Coder, Tester) can call `reportTaskStatus()` simultaneously without coordination
+
+### Diagnostic Steps
+
+**Check 1: Monitor Agent Activity**
+```
+Open Agent Mode panel → Watch task state transitions
+Expected: pending → in-progress → done (smooth)
+Problem: State flickers, jumps backward, or changes unexpectedly
+```
+
+**Check 2: Review Server Logs**
+```
+Check MCP server logs for concurrent POST requests to /mcp/reportTaskStatus
+Look for pattern: Multiple status updates within milliseconds
+Indicates race condition
+```
+
+**Check 3: Verify Agent Coordination**
+```
+Enable DEBUG logging: copilot-orchestrator.logging.level = DEBUG
+Look for: "[Agent] reportTaskStatus(..." messages
+Verify: Only one agent per task is updating status
+```
+
+### Recommended Fixes
+
+**Short-term (Workaround):**
+- Disable Agent Mode (use Classic mode)
+- Run agents sequentially (not concurrently)
+
+**Long-term (Fix):**
+1. Add `expectedVersion` field to status update payload
+2. Implement optimistic locking (compare-and-swap)
+3. Return HTTP 409 Conflict if version mismatch
+4. Add exponential backoff retry logic in client
+5. Document task ownership semantics
+
+### Implementation Reference
+- **File:** `vscode-extension/src/services/mcpClient.ts` (lines 123-133)
+- **Method:** `reportTaskStatus()`
+- **Backend:** MCP `/mcp/reportTaskStatus` endpoint
+
+---
+
+## Issue #2: HIGH - Hard-Coded LM Studio IP Address Not Portable
+
+### Error Signatures
+```
+"LLM service is unreachable when run on different network"
+"HTTP Error: connect ECONNREFUSED 192.168.137.7:1234"
+"Cannot reach LM Studio at configured address"
+"LLM endpoint returns Connection Refused"
+```
+
+### Root Causes
+1. **Hard-coded IP:** `http://192.168.137.7:1234/v1` (developer's home network)
+2. **IP specific to developer's setup** - not portable across machines
+3. **No documented override** for different environments
+4. **Default doesn't use localhost** (which would be portable)
+5. Inherited by all users; no obvious how to change
+
+### Diagnostic Steps
+
+**Check 1: Inspect Current Configuration**
+```
+Open Settings → Search "copilot-orchestrator.llm.baseUrl"
+Current value: _______________
+Is it a fixed IP? (192.168.x.x, 10.x.x.x, etc)
+```
+
+**Check 2: Test Connectivity**
+```bash
+curl -v http://192.168.137.7:1234/v1/models
+# Expected: 200 OK + model list
+# Actual error: Connection refused / Timeout
+```
+
+**Check 3: Check Environment**
+```bash
+# Is IP reachable from current machine?
+ping 192.168.137.7
+# If unreachable: Not on same network
+```
+
+### Recommended Fixes
+
+**Immediate (Workaround):**
+1. Change setting to local IP: `copilot-orchestrator.llm.baseUrl = http://localhost:1234/v1`
+2. Or IP of your network: `http://192.168.x.x:1234/v1`
+
+**Permanent (Fix):**
+1. Change default from `192.168.137.7` to `localhost`
+2. Add environment variable override: `COPILOT_LLM_BASE_URL`
+3. Document in README how to set remote IP
+4. Add validation warning if IP is APIPA (169.254.x.x)
+
+### Configuration Help
+See: `Docs/CONFIGURATION-REFERENCE.md` → `copilot-orchestrator.llm.baseUrl`
+
+### Implementation Reference
+- **File:** `vscode-extension/src/config/llmConfig.ts` (line 26)
+- **File:** `vscode-extension/src/transport/lmstudioProvider.ts` (line 13)
+
+---
+
+## Issue #3: HIGH - Extension Caches Stale LLM Config in globalState
+
+### Error Signatures
+```
+"LLM unreachable error after changing settings"
+"Settings changed but extension still uses old URL"
+"New configuration not taking effect"
+"Test panel works with new URL, but Agent Mode still uses old URL"
+"Extension must be restarted to pick up changes"
+```
+
+### Root Causes
+1. **globalState cache** not invalidated on config change
+2. **No onDidChangeConfiguration event listener**
+3. Cache read in `llmIPMonitor.ts` returns stale value
+4. Singleton created once with old config
+5. No refresh mechanism until extension reload
+
+### Diagnostic Steps
+
+**Check 1: Reproduce Stale Cache**
+1. Note current `copilot-orchestrator.llm.baseUrl` value
+2. Open Settings → Change to different URL
+3. Open test panel → Try new URL → ✅ Works
+4. Open Agent Mode → Try using agent → ❌ Still uses old URL?
+5. Reload VS Code: `Cmd/Ctrl+Shift+P` → "Reload Window" → ✅ Works
+
+**Check 2: Check Extension Logs**
+```
+Help → Toggle Developer Tools → Console tab
+Look for: Cache hit messages or old URL references
+```
+
+### Recommended Fixes
+
+**Immediate (Workaround):**
+- Restart VS Code after changing settings
+
+**Permanent (Fix):**
+1. Remove globalState caching or add TTL
+2. Listen to `vscode.workspace.onDidChangeConfiguration` event
+3. Clear/reload cache when config changes
+4. Test that settings take effect immediately
+
+### Implementation Reference
+- **File:** `vscode-extension/src/services/llmIPMonitor.ts` (line 339)
+- **Method/Field:** `globalState.get('llmConfig')`
+
+---
+
+## Issue #4: HIGH - Inconsistent MCP Endpoint Paths Cause 404s
+
+### Error Signatures
+```
+"MCP request failed: HTTP 404 Not Found"
+"Failed to save plan: plan endpoint not found"
+"Failed to load plan: endpoint not found"
+"MCP tool not found"
+"Some MCP operations work (nextTask), others fail (savePlan)"
+```
+
+### Root Causes
+1. **Mixed endpoint patterns:** `/mcp/nextTask` vs `/api/v1/mcp/savePlan`
+2. **Backend enforces one pattern** - half the endpoints return 404
+3. **Copy-paste errors** during development
+4. **No validation** that paths match backend schema
+
+### Diagnostic Steps
+
+**Check 1: Inspect Code Paths**
+- Look at `vscode-extension/src/services/mcpClient.ts`
+- Search for `fetchWithRetry` calls
+- Check prefix: Is it `/mcp/` or `/api/v1/mcp/`?
+
+**Check 2: Test MCP Endpoints**
+```bash
+# Test path 1
+curl -v http://localhost:8000/api/v1/mcp/nextTask
+
+# Test path 2
+curl -v http://localhost:8000/mcp/nextTask
+
+# One should return 404
+```
+
+**Check 3: Review Server Logs**
+```
+Check MCP server logs for 404 responses
+Note which paths are being hit
+```
+
+### Recommended Fixes
+
+**Short-term (Workaround):**
+- Identify which pattern backend uses
+- Update client to match backend schema
+- Either all `/api/v1/mcp/*` or all `/mcp/*`
+
+**Long-term (Fix):**
+1. Document canonical endpoint schema
+2. Update all client methods to use consistent pattern
+3. Add integration test for all endpoints
+4. Add path validation in client
+
+### Implementation Reference
+- **File:** `vscode-extension/src/services/mcpClient.ts` (lines 206-225)
+- **Methods:** `savePlan()`, `loadPlan()`, `listPlans()`, `reportTaskStatus()`, etc.
+
+---
+
+## Issue #5: HIGH - Agent Profile Mismatch in Context Bundle
+
+### Error Signatures
+```
+"Agent tool not found"
+"Cannot call tool XYZ with current agent profile"
+"Agent role changed; tool unavailable"
+"Agent assigned as Coder but executing as Reviewer"
+"Tool routing failure"
+```
+
+### Root Causes
+1. **Context bundle missing agent profile** information
+2. **No profile version/checksum** in bundle
+3. **Profile can change** between task assignment and execution
+4. **No validation** that runtime profile matches context
+5. Agent executes with wrong tools/capabilities
+
+### Diagnostic Steps
+
+**Check 1: Review Context Bundle**
+- Open Agent Mode panel
+- Export context bundle (if available)
+- Check: Does it include `agentProfile` field?
+- Check: Is there a `profileVersion`?
+
+**Check 2: Monitor Agent Execution**
+```
+Enable DEBUG logging
+Look for: Agent profile at task assignment vs execution
+Are they the same?
+```
+
+**Check 3: Tool Availability**
+```
+Check: Can agent call expected tools?
+Error messages: "tool not found"?
+```
+
+### Recommended Fixes
+
+1. Add `agentProfile` field to ContextBundle
+2. Add `profileVersion` to detect staleness
+3. Validate profile at execution time
+4. Log warning if profiles don't match
+5. Reject execution if profile mismatch
+
+### Implementation Reference
+- **File:** `vscode-extension/src/orchestratorPanel.ts` (ContextBundle interface, line 13-17)
+
+---
+
+## Issue #6: HIGH - No Validation for APIPA Addresses Blocking Connectivity
+
+### Error Signatures
+```
+"LLM service is unreachable. Configure IP address manually?"
+"Cannot connect to 169.254.x.x (APIPA address)"
+"Network configuration issue detected"
+"Address is not resolvable"
+```
+
+### Root Causes
+1. **Extension doesn't detect APIPA** (169.254.x.x range)
+2. **APIPA indicates DHCP failure** - address not routable
+3. **No user-friendly error message** explaining APIPA
+4. User unaware that address is not resolvable
+
+### Diagnostic Steps
+
+**Check 1: Inspect LLM Base URL**
+```
+Settings → copilot-orchestrator.llm.baseUrl
+Does it contain: 169.254.x.x?
+If YES: APIPA address detected
+```
+
+**Check 2: Network Check**
+```bash
+# On Windows
+ipconfig
+# On macOS/Linux
+ifconfig
+# Look for 169.254.x.x (Automatic Private IP)
+```
+
+**Check 3: DHCP Status**
+```
+Check if DHCP is working
+Is device getting correct IP from network?
+```
+
+### Recommended Fixes
+
+1. Add APIPA detection in URL validation
+2. Extract IP from URL and check if 169.254.*.*
+3. Provide user-friendly error: "Network IP is APIPA (169.254.x.x) indicating DHCP failure"
+4. Suggest: "Set static IP or use localhost"
+5. Add validation for reserved/private ranges
+
+### Implementation Reference
+- **File:** `vscode-extension/src/config/llmConfig.ts`
+- **Function:** `isValidBaseUrl()`
+
+---
+
+## Issue #7: MEDIUM - No HTTP vs HTTPS Mismatch Detection
+
+### Error Signatures
+```
+"Request timed out after 30000ms"
+"LLM endpoint unreachable"
+"Connection hangs indefinitely"
+"TLS handshake failed" (in server logs)
+"ERR_SSL_PROTOCOL_ERROR"
+```
+
+### Root Causes
+1. **Protocol validation missing** (no check for HTTPS on localhost)
+2. **Local servers (LM Studio, Ollama) run on HTTP**
+3. User mistakes HTTPS for localhost (causes TLS failure)
+4. **No clear error message** indicating protocol issue
+5. Test panel timeout doesn't mention TLS
+
+### Diagnostic Steps
+
+**Check 1: Inspect Configuration**
+```
+Settings → copilot-orchestrator.llm.baseUrl
+Is it: https://localhost:1234? (wrong)
+Or: https://192.168.168.x? (private network, wrong)
+Or: https://api.openai.com? (correct for remote)
+```
+
+**Check 2: Test Connection**
+```bash
+# This will fail with TLS error
+curl -v https://localhost:1234/v1/models
+
+# This will succeed
+curl -v http://localhost:1234/v1/models
+```
+
+**Check 3: Server Certificates**
+```
+For HTTPS endpoints, check if certificates are valid
+```
+
+### Recommended Fixes
+
+1. Add protocol validation: warn if HTTPS for localhost/private IPs
+2. Add UI hint: "LM Studio runs on HTTP (not HTTPS)"
+3. Improve timeout error messages to mention TLS issues
+4. Document reverse proxy setup if HTTPS needed
+
+### Implementation Reference
+- **File:** `vscode-extension/src/webviews/settingsPanel.ts`
+- **File:** `vscode-extension/src/llm/openaiClient.ts`
+
+---
+
+## Issue #8: MEDIUM - Context Files List Has No Size Cap
+
+### Error Signatures
+```
+"MCP request failed: Request timed out after 30000ms"
+"WebSocket message too large"
+"Memory exhaustion during context bundle update"
+"Cannot load context: too many files"
+```
+
+### Root Causes
+1. **No MAX_FILES_PER_BUNDLE constant**
+2. **File list unbounded** - can grow infinitely
+3. **No validation** on context file list size
+4. **No warning** when bundle exceeds threshold
+5. Large bundles cause timeouts or OOM
+
+### Diagnostic Steps
+
+**Check 1: Inspect Context Bundle Size**
+```
+Open Agent Mode → Create context bundle
+How many files? Check file list length
+Is it in hundreds/thousands?
+```
+
+**Check 2: Check MCP Request Size**
+```
+Enable network logging
+Measure size of context bundle requests
+Are they very large (> 1MB)?
+```
+
+**Check 3: Monitor Performance**
+```
+Create large context bundle
+Measure: response time, memory usage
+Does performance degrade?
+```
+
+### Recommended Fixes
+
+1. Add MAX_FILES_PER_BUNDLE constant (suggest: 100)
+2. Validate file list size in ContextBundle creation
+3. Log warning and truncate if exceeded
+4. Document recommended context size
+5. Add UI warning when approaching limit
+
+### Implementation Reference
+- **File:** `vscode-extension/src/orchestratorPanel.ts` (ContextBundle interface)
+
+---
+
+## Issue #9: MEDIUM - No Cache Invalidation on Settings Change
+
+### Error Signatures
+```
+"Setting changed but extension uses old value"
+"Configuration not taking effect"
+"MCP request failed: wrong endpoint"
+"Agent Mode still using old config"
+"Must reload extension to apply changes"
+```
+
+### Root Causes
+1. **No onDidChangeConfiguration listener** registered
+2. **Singleton instances created once** and never refreshed
+3. **Cache invalidation requires manual extension restart**
+4. Multiple components cache configuration independently
+
+### Diagnostic Steps
+
+**Check 1: Test Config Change**
+1. Note a configuration value
+2. Change it in settings panel
+3. Verify new value takes effect immediately
+4. If not: cache not invalidated
+
+**Check 2: Check Event Listeners**
+```
+Search code for: onDidChangeConfiguration
+Count how many listeners registered
+Are all singleton caches covered?
+```
+
+### Recommended Fixes
+
+1. Add `vscode.workspace.onDidChangeConfiguration` listener
+2. Invalidate MCPClient singleton on change
+3. Invalidate LLM config cache on change
+4. Re-initialize with new config
+5. Document that settings changes take effect immediately
+
+### Implementation Reference
+- **File:** `vscode-extension/src/services/mcpClient.ts` (getInstance method)
+- **File:** Multiple cache locations
+
+---
+
+## Issue #10: MEDIUM - No Validation of Context File Paths
+
+### Error Signatures
+```
+"Context file not found"
+"Invalid file path in context"
+"Cannot read context file"
+"File doesn't exist but no error logged during creation"
+```
+
+### Root Causes
+1. **File paths not validated** in ContextBundle
+2. **No file existence check** before adding
+3. **No path normalization** (relative vs absolute)
+4. Silent failure; hard to debug
+
+### Diagnostic Steps
+
+**Check 1: Create Context Bundle**
+1. Add files to context
+2. Include invalid path (non-existent file)
+3. Check: Does it warn/error immediately?
+4. Or: Silent acceptance?
+
+**Check 2: Inspect Context Bundle**
+```
+Does context bundle contain invalid paths?
+Can it detect corrupted bundles?
+```
+
+### Recommended Fixes
+
+1. Validate file paths using vscode.Uri.file()
+2. Check file existence before adding to bundle
+3. Log error if path is invalid
+4. Reject invalid paths
+5. Provide user-friendly error message
+
+### Implementation Reference
+- **File:** `vscode-extension/src/orchestratorPanel.ts` (ContextBundle interface)
+
+---
+
+## Issue #11: MEDIUM - Passive Memory Pruning Only on Overflow
+
+### Error Signatures
+```
+"Memory usage grows indefinitely"
+"Agent responses become less accurate over time"
+"Old irrelevant entries in context"
+"Performance degrades after many cycles"
+```
+
+### Root Causes
+1. **Memory entries pruned only on overflow** (reactive)
+2. **No TTL or staleness check** on entries
+3. **No active cleanup mechanism**
+4. Old entries remain indefinitely until limit hit
+5. Memory footprint increases linearly with cycles
+
+### Diagnostic Steps
+
+**Check 1: Monitor Memory Growth**
+```
+Enable DEBUG logging
+Run agent for many cycles
+Check: Memory.length grows linearly?
+Does it ever decrease (except on overflow)?
+```
+
+**Check 2: Check Memory Content**
+```
+Review memory entries
+Are they recent and relevant?
+Or old and stale?
+```
+
+**Check 3: Performance Impact**
+```
+Compare response time: cycle 1 vs cycle 100
+Does it degrade with more memory entries?
+```
+
+### Recommended Fixes
+
+1. Implement active memory cleanup (e.g., every N cycles)
+2. Add TTL/timestamp-based pruning
+3. Remove entries older than configurable duration
+4. Log when memory is cleaned
+5. Document memory management strategy
+
+### Implementation Reference
+- **File:** `vscode-extension/src/taskExecutor.ts` (lines 396-397)
+- **Method:** Memory pruning logic
+
+---
+
+## Error Quick Reference Table
+
+| # | Issue | Severity | Error Signature | Quick Fix |
+|---|-------|----------|-----------------|-----------|
+| 1 | Race Condition | CRITICAL | Status flickers | Disable Agent Mode |
+| 2 | Hard-coded IP | HIGH | Connection refused | Change to localhost |
+| 3 | Stale Cache | HIGH | Old config persists | Reload extension |
+| 4 | 404 Endpoints | HIGH | Not found error | Check path consistency |
+| 5 | Profile Mismatch | HIGH | Tool not found | Update context bundle |
+| 6 | APIPA Detection | HIGH | 169.254.x.x | Check DHCP |
+| 7 | Protocol Mismatch | MEDIUM | TLS handshake fails | Use HTTP for localhost |
+| 8 | File Size Cap | MEDIUM | Timeout | Limit context files |
+| 9 | Cache Invalidation | MEDIUM | Old config used | Reload extension |
+| 10 | Path Validation | MEDIUM | File not found | Check file paths |
+| 11 | Memory Pruning | MEDIUM | Memory grows | Active cleanup needed |
+
+---
+
+## Related Documentation
+
+- **Audit Steps:** `Docs/AUDIT-CONNECTIVITY-CHECKLIST.md`
+- **Configuration:** `Docs/CONFIGURATION-REFERENCE.md`
+- **MCP API:** `Docs/MCP-API-CONTRACTS.md`
+- **Create Issue:** Use `.github/ISSUE_TEMPLATE/audit-connectivity.md`
+
+---
+
+**End of Error Catalog**
