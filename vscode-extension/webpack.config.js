@@ -63,6 +63,9 @@ module.exports = [
       'extension.agentLoop.test': './src/extension.agentLoop.test.ts',
       // Integration test runner
       'integration/runTest': './src/integration/runTest.ts',
+      // GitHub sync test dependencies (test-time only, not in production bundle)
+      'github/webhookHandler': './src/github/webhookHandler.ts',
+      'services/githubSyncService': './src/services/githubSyncService.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -84,6 +87,17 @@ module.exports = [
     resolve: {
       extensions: ['.ts', '.js'],
     },
+    plugins: [
+      // Ignore dynamic imports in test files - they'll be resolved at runtime
+      new (require('webpack').IgnorePlugin)({
+        resourceRegExp: /^\.\/webhookHandler\.js$/,
+        contextRegExp: /github$/,
+      }),
+      new (require('webpack').IgnorePlugin)({
+        resourceRegExp: /^\.\.\/services\/githubSyncService\.js$/,
+        contextRegExp: /github$/,
+      }),
+    ],
     module: {
       rules: [
         {

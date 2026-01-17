@@ -84,8 +84,10 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 1: Parse GitHub webhook payload
   try {
-    const WebhookProcessor = (await import('../github/webhookHandler.js')).WebhookProcessor;
-    const parseIssueWebhook = (await import('../github/webhookHandler.js')).parseIssueWebhook;
+    // Use eval to bypass webpack's static analysis
+    const webhookModule = eval("require('./webhookHandler.js')");
+    const WebhookHandler = webhookModule.WebhookProcessor;
+    const parseIssueWebhook = webhookModule.parseIssueWebhook;
 
     const payload = {
       action: 'opened',
@@ -109,8 +111,9 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 2: Verify webhook signature
   try {
-    const WebhookProcessor = (await import('../github/webhookHandler.js')).WebhookProcessor;
-    const crypto = await import('crypto');
+    const webhookModule = eval("require('./webhookHandler.js')");
+    const WebhookProcessor = webhookModule.WebhookProcessor;
+    const crypto = require('crypto');
 
     const processor = new WebhookProcessor('test-secret');
     const payload = JSON.stringify({ test: 'data' });
@@ -133,7 +136,9 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 3: Create sync event from GitHub issue
   try {
-    const { createSyncEvent, parseIssueWebhook } = await import('../github/webhookHandler.js');
+    const webhookModule = eval("require('./webhookHandler.js')");
+    const createSyncEvent = webhookModule.createSyncEvent;
+    const parseIssueWebhook = webhookModule.parseIssueWebhook;
 
     const payload = {
       action: 'opened',
@@ -158,7 +163,8 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 4: Handle webhook events
   try {
-    const { WebhookProcessor } = await import('../github/webhookHandler.js');
+    const webhookModule = eval("require('./webhookHandler.js')");
+    const WebhookProcessor = webhookModule.WebhookProcessor;
 
     const processor = new WebhookProcessor('test-secret');
     let eventHandled = false;
@@ -175,7 +181,7 @@ async function runGitHubSyncTests(): Promise<void> {
       repository: { name: 'test-repo', owner: { login: 'owner' } },
     });
 
-    const crypto = await import('crypto');
+    const crypto = require('crypto');
     const hmac = crypto.createHmac('sha256', 'test-secret');
     hmac.update(payload);
     const signature = `sha256=${hmac.digest('hex')}`;
@@ -193,7 +199,8 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 5: Map task status to GitHub state
   try {
-    const { GitHubSyncService } = await import('../services/githubSyncService.js');
+    const syncServiceModule = eval("require('../services/githubSyncService.js')");
+    const GitHubSyncService = syncServiceModule.GitHubSyncService;
 
     // Create a mock service to test internal mapping
     const service = new GitHubSyncService({
@@ -216,7 +223,8 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 6: GitHub to task conversion
   try {
-    const { GitHubSyncService } = await import('../services/githubSyncService.js');
+    const syncServiceModule = eval("require('../services/githubSyncService.js')");
+    const GitHubSyncService = syncServiceModule.GitHubSyncService;
 
     setupMockFetch({});
 
@@ -246,7 +254,8 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 7: Sync log tracking
   try {
-    const { GitHubSyncService } = await import('../services/githubSyncService.js');
+    const syncServiceModule = eval("require('../services/githubSyncService.js')");
+    const GitHubSyncService = syncServiceModule.GitHubSyncService;
 
     setupMockFetch({});
 
@@ -279,7 +288,8 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 8: Full sync operation
   try {
-    const { GitHubSyncService } = await import('../services/githubSyncService.js');
+    const syncServiceModule = eval("require('../services/githubSyncService.js')");
+    const GitHubSyncService = syncServiceModule.GitHubSyncService;
 
     setupMockFetch({
       'https://api.github.com/repos/test/test/issues': {
