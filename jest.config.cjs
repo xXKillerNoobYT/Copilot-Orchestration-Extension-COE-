@@ -36,6 +36,7 @@ module.exports = {
         // Mocha tests - use suite() instead of describe()
         'integration/.*\\.test\\.ts',
         // Vitest tests - these files use vitest imports
+        '__tests__/sample\\.test\\.ts',  // Vitest-based sample test
         'planGenerator\\.test\\.ts',
         'livePreview\\.test\\.ts',
         'planMetadata\\.test\\.ts',
@@ -44,7 +45,8 @@ module.exports = {
         'planIntegration\\.test\\.ts',
         '__tests__/wizardStore\\.test\\.ts',
         '__tests__/integration/',
-        'components/preview/.*\\.test\\.ts',
+        // Preview tests converted to Jest - no longer excluded
+        // 'components/preview/.*\\.test\\.ts',
         'services/planPersistence\\.test\\.ts',
         'services/taskDecomposition\\.test\\.ts',
         'llm/promptCache\\.test\\.ts',
