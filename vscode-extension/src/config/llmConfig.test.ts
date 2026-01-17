@@ -87,6 +87,22 @@ describe('LLM Configuration', () => {
     expect(hasApipaWarning).toBe(true);
   });
 
+  test('should provide actionable error message for APIPA addresses', () => {
+    const config = readLlmConfig({
+      configuration: createMockConfig({
+        'llm.baseUrl': 'http://169.254.100.50:1234/v1',
+      }),
+    });
+
+    const apipaIssue = config.issues.find((issue) =>
+      issue.toLowerCase().includes('apipa')
+    );
+
+    expect(apipaIssue).toBeDefined();
+    expect(apipaIssue).toContain('DHCP failure');
+    expect(apipaIssue).toContain('static IP');
+  });
+
   test('should detect APIPA address at lower boundary (169.254.0.0)', () => {
     const config = readLlmConfig({
       configuration: createMockConfig({
