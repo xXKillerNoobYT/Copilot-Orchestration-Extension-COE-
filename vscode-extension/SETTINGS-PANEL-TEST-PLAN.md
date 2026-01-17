@@ -27,7 +27,7 @@ Replaced sequential input-box LLM configuration with a comprehensive tabbed webv
 
 ### 4. LM Studio-First Design
 
-- Default URL: <http://192.168.137.7:1234/v1>
+- Default URL: <http://localhost:1234/v1>
 - Optional API key (not required for LM Studio)
 - Supports local model hosting
 
@@ -60,7 +60,7 @@ Replaced sequential input-box LLM configuration with a comprehensive tabbed webv
 
 ### 4. Test Models Tab
 
-1. Ensure LM Studio is running on <http://192.168.137.7:1234>
+1. Ensure LM Studio is running on <http://localhost:1234>
 2. Click "Refresh Models" button
 3. Verify model list displays with:
    - Model ID

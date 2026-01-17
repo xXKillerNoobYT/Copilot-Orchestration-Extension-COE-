@@ -71,7 +71,7 @@ The extension supports OpenAI-compatible LLM endpoints including cloud providers
 1. **Open Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P`)
 2. **Type** "Configure LLM Settings"
 3. **Enter** the following when prompted:
-   - **Base URL**: OpenAI endpoint (default: `http://192.168.137.7:1234/v1` for LM Studio)
+   - **Base URL**: OpenAI endpoint (default: `http://localhost:1234/v1` for LM Studio)
    - **API Key**: Your API key (marked secret in settings)
    - **Default Model**: Model name (e.g., `gpt-4`, `gpt-4-turbo`, `neural-chat`)
    - **Temperature**: Randomness 0.0–2.0 (default: 0.7)
@@ -84,7 +84,7 @@ The extension supports OpenAI-compatible LLM endpoints including cloud providers
 2. Download a model (e.g., Neural Chat, Dolphin, Mistral)
 3. Start the local server (default: `http://localhost:1234`)
 4. Configure the extension:
-   - **Base URL**: `http://192.168.137.7:1234/v1`
+   - **Base URL**: `http://localhost:1234/v1`
    - **API Key**: `lm-studio` (dummy key, ignored locally)
    - **Model**: Name of downloaded model
 

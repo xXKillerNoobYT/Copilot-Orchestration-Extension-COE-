@@ -70,17 +70,17 @@ Verify: Only one agent per task is updating status
 ### Error Signatures
 ```
 "LLM service is unreachable when run on different network"
-"HTTP Error: connect ECONNREFUSED 192.168.137.7:1234"
+"HTTP Error: connect ECONNREFUSED localhost:1234"
 "Cannot reach LM Studio at configured address"
 "LLM endpoint returns Connection Refused"
 ```
 
 ### Root Causes
-1. **Hard-coded IP:** `http://192.168.137.7:1234/v1` (developer's home network)
-2. **IP specific to developer's setup** - not portable across machines
-3. **No documented override** for different environments
-4. **Default doesn't use localhost** (which would be portable)
-5. Inherited by all users; no obvious how to change
+1. **LM Studio not running** - Server not started on port 1234
+2. **Wrong port configuration** - LM Studio running on different port
+3. **Firewall blocking connection** - Local firewall rules preventing access
+4. **Model not loaded** - LM Studio running but no model loaded
+5. **Wrong base URL** - Incorrect endpoint configuration
 
 ### Diagnostic Steps
 
@@ -88,34 +88,48 @@ Verify: Only one agent per task is updating status
 ```
 Open Settings → Search "copilot-orchestrator.llm.baseUrl"
 Current value: _______________
-Is it a fixed IP? (192.168.x.x, 10.x.x.x, etc)
+Default: http://localhost:1234/v1
+Is it correct for your environment?
 ```
 
 **Check 2: Test Connectivity**
 ```bash
-curl -v http://192.168.137.7:1234/v1/models
+curl -v http://localhost:1234/v1/models
 # Expected: 200 OK + model list
 # Actual error: Connection refused / Timeout
 ```
 
 **Check 3: Check Environment**
 ```bash
-# Is IP reachable from current machine?
-ping 192.168.137.7
-# If unreachable: Not on same network
+# Is LM Studio running?
+# Check if port 1234 is listening
+netstat -an | grep 1234
+# Or on Windows:
+netstat -an | findstr 1234
 ```
 
 ### Recommended Fixes
 
 **Immediate (Workaround):**
-1. Change setting to local IP: `copilot-orchestrator.llm.baseUrl = http://localhost:1234/v1`
-2. Or IP of your network: `http://192.168.x.x:1234/v1`
+1. Ensure LM Studio is running with a model loaded
+2. Verify port 1234 is the correct port in LM Studio settings
+3. Check firewall settings allow localhost connections
+4. If using remote server, set `COPILOT_LLM_BASE_URL=http://your-server:1234/v1`
 
-**Permanent (Fix):**
-1. Change default from `192.168.137.7` to `localhost`
-2. Add environment variable override: `COPILOT_LLM_BASE_URL`
-3. Document in README how to set remote IP
-4. Add validation warning if IP is APIPA (169.254.x.x)
+**Configuration:**
+1. Default is now `localhost` (portable across all environments)
+2. Use environment variable for CI/CD: `export COPILOT_LLM_BASE_URL=http://server:1234/v1`
+3. For remote servers, update setting: `copilot-orchestrator.llm.baseUrl = http://remote-ip:1234/v1`
+4. APIPA addresses (169.254.x.x) will show a warning - reconfigure your network
+
+### Environment Variable Override
+```bash
+# Set environment variable (takes priority over settings)
+export COPILOT_LLM_BASE_URL="http://my-server:1234/v1"
+
+# Or add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
+echo 'export COPILOT_LLM_BASE_URL="http://my-server:1234/v1"' >> ~/.bashrc
+```
 
 ### Configuration Help
 See: `Docs/CONFIGURATION-REFERENCE.md` → `copilot-orchestrator.llm.baseUrl`
