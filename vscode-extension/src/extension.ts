@@ -19,20 +19,20 @@ import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 import { getLLMIPMonitor } from './services/llmIPMonitor';
-import { ConnectionMonitor, createConnectionStatusBarItem } from './services/connectionMonitor';
+import { ConnectionMonitor, createConnectionStatusBarItem, ConnectionState, showConnectionDetails } from './services/connectionMonitor';
 import { MCPClient } from './services/mcpClient';
 import { registerPlanAdjustmentCommands } from './commands/planAdjustmentCommands';
 
 export function activate(context: vscode.ExtensionContext) {
-    // Initialize LLM IP Monitor (Background service for LLM connectivity)
-    const llmIPMonitor = getLLMIPMonitor(context);
-    llmIPMonitor.start();
-    context.subscriptions.push({
-      dispose: () => llmIPMonitor.stop(),
-    });
+  // Initialize LLM IP Monitor (Background service for LLM connectivity)
+  const llmIPMonitor = getLLMIPMonitor(context);
+  llmIPMonitor.start();
+  context.subscriptions.push({
+    dispose: () => llmIPMonitor.stop(),
+  });
 
-    // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
-    new AutoAgentLoopCommand(context);
+  // Initialize auto agent loop command (Phase 7: Auto-Agent Switching)
+  new AutoAgentLoopCommand(context);
 
   // Start connection monitoring (Phase 3: MCP/WebSocket status badges)
   const connectionMonitor = ConnectionMonitor.getInstance();
@@ -41,33 +41,96 @@ export function activate(context: vscode.ExtensionContext) {
     dispose: () => connectionMonitor.dispose(),
   });
 
-  const llmStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 90);
-  // Create a status bar item on activation
-  const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-  statusBarItem.text = '$(rocket) Copilot Orchestrator';
-  statusBarItem.tooltip = 'Start Copilot Orchestrator';
-  statusBarItem.command = 'copilot-orchestrator.start';
-  statusBarItem.show();
-  context.subscriptions.push(statusBarItem);
-  llmStatusBar.command = 'copilot-orchestrator.configureLLM';
-  context.subscriptions.push(llmStatusBar);
+  // Unified Status Bar Item
+  const unifiedStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  unifiedStatusBar.command = 'copilot-orchestrator.showStatusMenu';
+  context.subscriptions.push(unifiedStatusBar);
 
+  // Status State
+  let orchestratorState = { text: '$(rocket)', tooltip: 'Orchestrator: Ready' };
+  let llmState = { text: '$(alert)', tooltip: 'LLM: Not Configured' };
+  let connectionState: ConnectionState = {
+    mcp: 'disconnected', websocket: 'disconnected',
+    lastMcpCheck: '', lastWsCheck: '', retryCount: 0
+  };
+
+  const updateUnifiedStatus = () => {
+    // LLM Icon
+    const llmIcon = llmState.text.includes('plug') ? '$(plug)' : '$(alert)';
+
+    // Connection Icons
+    const mcpIcon = connectionState.mcp === 'connected' ? '$(check)' :
+      connectionState.mcp === 'degraded' ? '$(warning)' : '$(error)';
+
+    unifiedStatusBar.text = `${orchestratorState.text} Orchestrator | ${llmIcon} LLM | ${mcpIcon} MCP`;
+
+    unifiedStatusBar.tooltip = new vscode.MarkdownString([
+      `**Orchestrator**: ${orchestratorState.tooltip}`,
+      `**LLM**: ${llmState.tooltip}`,
+      `**MCP**: ${connectionState.mcp}`,
+      `**WebSocket**: ${connectionState.websocket}`
+    ].join('\n\n'));
+
+    unifiedStatusBar.show();
+  };
+
+  const refreshLlmStatus = () => {
+    const state = readLlmConfig();
+    if (state.isConfigured) {
+      llmState = { text: '$(plug)', tooltip: 'LLM: Configured' };
+    } else {
+      llmState = { text: '$(alert)', tooltip: state.issues.join('; ') || 'Configure LLM settings' };
+    }
+    updateUnifiedStatus();
+  };
+
+  // Orchestrator Start Command
   const disposable = vscode.commands.registerCommand('copilot-orchestrator.start', () => {
-    statusBarItem.text = '$(sync~spin) Copilot Orchestrator';
+    orchestratorState = { text: '$(sync~spin)', tooltip: 'Orchestrator: Starting...' };
+    updateUnifiedStatus();
     vscode.window.showInformationMessage('Copilot Orchestrator started!');
     setTimeout(() => {
-      statusBarItem.text = '$(rocket) Copilot Orchestrator';
+      orchestratorState = { text: '$(rocket)', tooltip: 'Orchestrator: Running' };
+      updateUnifiedStatus();
     }, 1500);
   });
-
   context.subscriptions.push(disposable);
 
+  // Configure LLM Command
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.configureLLM', async () => {
       SettingsPanel.createOrShow(context.extensionUri);
-      refreshLlmStatus(llmStatusBar);
+      refreshLlmStatus();
     })
   );
+
+  // Show Status Menu Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showStatusMenu', async () => {
+      const items = [
+        { label: '$(rocket) Start Orchestrator', command: 'copilot-orchestrator.start' },
+        { label: '$(gear) Configure LLM', command: 'copilot-orchestrator.configureLLM' },
+        { label: '$(plug) Test LLM Connection', command: 'copilot-orchestrator.testConnection' },
+        { label: '$(server) Connection Details', command: 'copilot-orchestrator.showConnectionDetails' }
+      ];
+
+      const selection = await vscode.window.showQuickPick(items, { placeHolder: 'Orchestrator Status & Actions' });
+      if (selection) {
+        vscode.commands.executeCommand(selection.command);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showConnectionDetails', () => {
+      showConnectionDetails();
+    })
+  );
+
+  connectionMonitor.onDidChangeState(state => {
+    connectionState = state;
+    updateUnifiedStatus();
+  });
 
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showVisualVerification', async () => {
@@ -119,13 +182,13 @@ export function activate(context: vscode.ExtensionContext) {
       try {
         const config = WebSocketConfigManager.getConfig();
         const clientConfig = WebSocketConfigManager.toClientConfig();
-        
+
         vscode.window.showInformationMessage(
           `[WebSocket] Connecting to ${config.driver}...`
         );
-        
+
         const wsClient = await initializeWebSocketClient(clientConfig);
-        
+
         // Subscribe to common event channels
         wsClient.subscribe('mcp-events', 'task-status-updated', (data) => {
           vscode.window.showInformationMessage(
@@ -316,7 +379,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Command to show task graph visualization
   const graphDisposable = vscode.commands.registerCommand('copilot-orchestrator.showGraph', async () => {
     const tasks = treeDataProvider.getTasks();
-    
+
     if (tasks.length === 0) {
       vscode.window.showWarningMessage('No tasks found to visualize.');
       return;
@@ -332,7 +395,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Generate Mermaid diagram
     const mermaidDiagram = exportToMermaid(graph);
-    
+
     // Create and show document with Mermaid diagram
     const doc = await vscode.workspace.openTextDocument({
       content: mermaidDiagram,
@@ -346,7 +409,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Command to show task dependencies
   const depsDisposable = vscode.commands.registerCommand('copilot-orchestrator.showDependencies', async () => {
     const tasks = treeDataProvider.getTasks();
-    
+
     if (tasks.length === 0) {
       vscode.window.showWarningMessage('No tasks found.');
       return;
@@ -402,7 +465,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Command to show orchestrator panel
   const panelDisposable = vscode.commands.registerCommand('copilot-orchestrator.showPanel', async () => {
     const tasks = treeDataProvider.getTasks();
-    
+
     // Sample memory and context bundles (in real implementation, load from state/files)
     const sampleMemory: MemoryEntry[] = [
       { role: 'system', content: 'Orchestration system initialized', timestamp: new Date().toISOString() },
@@ -492,13 +555,13 @@ export function activate(context: vscode.ExtensionContext) {
     .catch((error) => vscode.window.showErrorMessage(`Failed to load tasks: ${error instanceof Error ? error.message : String(error)}`));
 
   // Initialize LLM status indicator and refresh on configuration changes
-  refreshLlmStatus(llmStatusBar);
+  refreshLlmStatus();
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('copilot-orchestrator.llm') || event.affectsConfiguration('copilot-orchestrator.taskRoots')) {
-        refreshLlmStatus(llmStatusBar);
+        refreshLlmStatus();
       }
-      
+
       // Handle MCP configuration changes - invalidate MCPClient singleton cache
       if (event.affectsConfiguration('copilot-orchestrator.mcp')) {
         console.log('[Extension] MCP configuration changed - invalidating MCPClient cache');
@@ -514,17 +577,7 @@ export function deactivate() {
   disposeWebSocketClient();
 }
 
-function refreshLlmStatus(statusBar: vscode.StatusBarItem) {
-  const state = readLlmConfig();
-  if (state.isConfigured) {
-    statusBar.text = '$(plug) LLM: Configured';
-    statusBar.tooltip = 'LLM settings are configured. Click to edit.';
-  } else {
-    statusBar.text = '$(alert) LLM: Missing config';
-    statusBar.tooltip = state.issues.join('; ') || 'Configure LLM settings';
-  }
-  statusBar.show();
-}
+
 
 class TaskTreeItem extends vscode.TreeItem {
   constructor(public readonly task: ParsedTask) {
@@ -585,7 +638,7 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<vscode.TreeI
   private tasks: ParsedTask[] = [];
   private taskSource: string = 'unknown';
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly context: vscode.ExtensionContext) { }
 
   getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
     return element;
@@ -656,9 +709,9 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<vscode.TreeI
       // Tasks Section
       const taskItems: vscode.TreeItem[] = [];
       if (!this.tasks.length) {
-        const source = this.taskSource === 'error' ? 'Failed to load tasks' : 
-                       this.taskSource === 'workspace' ? 'No workspace tasks found' :
-                       'No bundled tasks found';
+        const source = this.taskSource === 'error' ? 'Failed to load tasks' :
+          this.taskSource === 'workspace' ? 'No workspace tasks found' :
+            'No bundled tasks found';
         taskItems.push(new TaskTreeItem({
           id: 'no-tasks',
           title: 'No tasks found',

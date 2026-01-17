@@ -135,6 +135,11 @@
     },
     "commands": [
       {
+        "command": "copilot-orchestrator.showStatusMenu",
+        "title": "Copilot Orchestrator: Show Status Menu",
+        "category": "Copilot Orchestrator"
+      },
+      {
         "command": "copilot-orchestrator.start",
         "title": "Copilot Orchestrator: Start",
         "category": "Copilot Orchestrator"
