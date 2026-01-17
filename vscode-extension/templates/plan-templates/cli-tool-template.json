@@ -1,35 +1,195 @@
 {
-  "metadata": {
-    "id": "core-cli-tool",
-    "name": "Command-Line Tool",
-    "description": "Cross-platform CLI tool with commands, configuration, plugins, and comprehensive help system. Ideal for developer tools and automation.",
-    "category": "cli-tool",
-    "tags": ["cli", "command-line", "tool", "automation", "developer-tools"],
-    "author": "Copilot Orchestration Extension",
-    "version": "1.0.0",
-    "createdAt": "2026-01-12T00:00:00.000Z",
-    "updatedAt": "2026-01-12T00:00:00.000Z",
-    "isCore": true,
-    "icon": "terminal",
-    "estimatedDuration": "1-3 months",
-    "recommendedTeamSize": 2
-  },
-  "plan": {
-    "metadata": {"version": "1.0.0", "created_at": "2026-01-12T00:00:00.000Z", "updated_at": "2026-01-12T00:00:00.000Z", "author": "Template", "status": "draft", "name": "CLI Tool Project"},
-    "project": {"name": "My CLI Tool", "description": "A powerful command-line tool with plugins, configuration, and automation capabilities", "type": "cli", "status": "planning"},
-    "architecture": {"pattern": "Command Pattern", "description": "Command-based architecture with plugin system", "components": ["CLI Parser", "Command Registry", "Plugin System", "Configuration Manager", "Output Formatter"], "rationale": "Command pattern allows easy addition of new commands and plugins while keeping code organized"},
-    "features": [
-      {"id": "FEAT-001", "name": "Core Command Framework", "description": "Command parsing, routing, and execution", "priority": "critical", "status": "pending", "acceptance_criteria": ["Parse command-line arguments", "Route to command handlers", "Support flags and options", "Error handling"], "dependencies": [], "effort_estimate": 8},
-      {"id": "FEAT-002", "name": "Configuration System", "description": "Global and project-level configuration files", "priority": "high", "status": "pending", "acceptance_criteria": ["JSON/YAML config support", "Config validation", "Environment variables", "Config merge hierarchy"], "dependencies": [], "effort_estimate": 6},
-      {"id": "FEAT-003", "name": "Plugin System", "description": "Extensible plugin architecture for custom commands", "priority": "medium", "status": "pending", "acceptance_criteria": ["Plugin discovery", "Plugin loading/unloading", "Plugin API", "Plugin dependencies"], "dependencies": ["FEAT-001"], "effort_estimate": 10},
-      {"id": "FEAT-004", "name": "Help & Documentation", "description": "Comprehensive help system and man pages", "priority": "high", "status": "pending", "acceptance_criteria": ["--help flag", "Command-specific help", "Examples", "Man page generation"], "dependencies": ["FEAT-001"], "effort_estimate": 4}
-    ],
-    "timeline": {"start_date": "2026-02-01T00:00:00.000Z", "end_date": "2026-03-31T00:00:00.000Z", "milestones": [{"id": "M1", "name": "Beta Release", "target_date": "2026-03-15T00:00:00.000Z", "phase": "development", "completion_status": "pending", "dependencies": []}], "phases": [{"name": "Development", "start_date": "2026-02-01T00:00:00.000Z", "end_date": "2026-03-31T00:00:00.000Z"}]},
-    "team": {"members": [{"id": "ROLE-001", "role_name": "CLI Developer", "responsibilities": ["Command implementation", "Plugin system"], "skills": ["Node.js", "Commander.js", "Testing"], "agent_mapping": "Auto Zen", "availability": "full-time"}], "structure": "Agile", "communication_plan": "GitHub issues, PRs"},
-    "success_criteria": ["Cross-platform (Windows, Mac, Linux)", "Installation via npm/pip", "Complete documentation", "80%+ test coverage"],
-    "risks": [{"id": "RISK-001", "description": "Cross-platform compatibility issues", "probability": "medium", "impact": "medium", "mitigation": "Test on all platforms, use cross-platform libraries"}],
-    "assumptions": ["Users have Node.js/Python installed", "Terminal/shell access"],
-    "constraints": ["Must work on Windows, macOS, Linux", "Start time <1 second"]
-  },
-  "customizationHints": {"requiredCustomizations": ["project.name", "project.description"], "optionalCustomizations": [{"field": "features", "description": "Add domain-specific commands", "example": "Add deployment commands, build tools, code generators"}]}
+    "metadata": {
+        "id": "core-cli-tool",
+        "name": "Command-Line Tool",
+        "description": "Cross-platform CLI tool with commands, configuration, plugins, and comprehensive help system. Ideal for developer tools and automation.",
+        "category": "cli-tool",
+        "tags": [
+            "cli",
+            "command-line",
+            "tool",
+            "automation",
+            "developer-tools"
+        ],
+        "author": "Copilot Orchestration Extension",
+        "version": "1.0.0",
+        "createdAt": "2026-01-12T00:00:00.000Z",
+        "updatedAt": "2026-01-12T00:00:00.000Z",
+        "isCore": true,
+        "icon": "terminal",
+        "estimatedDuration": "1-3 months",
+        "recommendedTeamSize": 2
+    },
+    "plan": {
+        "metadata": {
+            "version": "1.0.0",
+            "created_at": "2026-01-12T00:00:00.000Z",
+            "updated_at": "2026-01-12T00:00:00.000Z",
+            "author": "Template",
+            "status": "draft",
+            "name": "CLI Tool Project"
+        },
+        "project": {
+            "name": "My CLI Tool",
+            "description": "A powerful command-line tool with plugins, configuration, and automation capabilities",
+            "type": "cli",
+            "status": "planning"
+        },
+        "architecture": {
+            "pattern": "Command Pattern",
+            "description": "Command-based architecture with plugin system",
+            "components": [
+                "CLI Parser",
+                "Command Registry",
+                "Plugin System",
+                "Configuration Manager",
+                "Output Formatter"
+            ],
+            "rationale": "Command pattern allows easy addition of new commands and plugins while keeping code organized"
+        },
+        "features": [
+            {
+                "id": "FEAT-001",
+                "name": "Core Command Framework",
+                "description": "Command parsing, routing, and execution",
+                "priority": "critical",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "Parse command-line arguments",
+                    "Route to command handlers",
+                    "Support flags and options",
+                    "Error handling"
+                ],
+                "dependencies": [],
+                "effort_estimate": 8
+            },
+            {
+                "id": "FEAT-002",
+                "name": "Configuration System",
+                "description": "Global and project-level configuration files",
+                "priority": "high",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "JSON/YAML config support",
+                    "Config validation",
+                    "Environment variables",
+                    "Config merge hierarchy"
+                ],
+                "dependencies": [],
+                "effort_estimate": 6
+            },
+            {
+                "id": "FEAT-003",
+                "name": "Plugin System",
+                "description": "Extensible plugin architecture for custom commands",
+                "priority": "medium",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "Plugin discovery",
+                    "Plugin loading/unloading",
+                    "Plugin API",
+                    "Plugin dependencies"
+                ],
+                "dependencies": [
+                    "FEAT-001"
+                ],
+                "effort_estimate": 10
+            },
+            {
+                "id": "FEAT-004",
+                "name": "Help & Documentation",
+                "description": "Comprehensive help system and man pages",
+                "priority": "high",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "--help flag",
+                    "Command-specific help",
+                    "Examples",
+                    "Man page generation"
+                ],
+                "dependencies": [
+                    "FEAT-001"
+                ],
+                "effort_estimate": 4
+            }
+        ],
+        "timeline": {
+            "start_date": "2026-02-01T00:00:00.000Z",
+            "end_date": "2026-03-31T00:00:00.000Z",
+            "milestones": [
+                {
+                    "id": "M1",
+                    "name": "Beta Release",
+                    "target_date": "2026-03-15T00:00:00.000Z",
+                    "phase": "development",
+                    "completion_status": "pending",
+                    "dependencies": []
+                }
+            ],
+            "phases": [
+                {
+                    "name": "Development",
+                    "start_date": "2026-02-01T00:00:00.000Z",
+                    "end_date": "2026-03-31T00:00:00.000Z"
+                }
+            ]
+        },
+        "team": {
+            "members": [
+                {
+                    "id": "ROLE-001",
+                    "role_name": "CLI Developer",
+                    "responsibilities": [
+                        "Command implementation",
+                        "Plugin system"
+                    ],
+                    "skills": [
+                        "Node.js",
+                        "Commander.js",
+                        "Testing"
+                    ],
+                    "agent_mapping": "Auto Zen",
+                    "availability": "full-time"
+                }
+            ],
+            "structure": "Agile",
+            "communication_plan": "GitHub issues, PRs"
+        },
+        "success_criteria": [
+            "Cross-platform (Windows, Mac, Linux)",
+            "Installation via npm/pip",
+            "Complete documentation",
+            "80%+ test coverage"
+        ],
+        "risks": [
+            {
+                "id": "RISK-001",
+                "description": "Cross-platform compatibility issues",
+                "probability": "medium",
+                "impact": "medium",
+                "mitigation": "Test on all platforms, use cross-platform libraries"
+            }
+        ],
+        "assumptions": [
+            "Users have Node.js/Python installed",
+            "Terminal/shell access"
+        ],
+        "constraints": [
+            "Must work on Windows, macOS, Linux",
+            "Start time <1 second"
+        ]
+    },
+    "customizationHints": {
+        "requiredCustomizations": [
+            "project.name",
+            "project.description"
+        ],
+        "optionalCustomizations": [
+            {
+                "field": "features",
+                "description": "Add domain-specific commands",
+                "example": "Add deployment commands, build tools, code generators"
+            }
+        ]
+    }
 }
