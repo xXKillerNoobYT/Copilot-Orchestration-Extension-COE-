@@ -63,6 +63,11 @@ module.exports = [
       'extension.agentLoop.test': './src/extension.agentLoop.test.ts',
       // Integration test runner
       'integration/runTest': './src/integration/runTest.ts',
+      // GitHub sync test dependencies (test-time only, not in production bundle)
+      // These are compiled as separate modules so githubSyncTest can load them at runtime
+      // They are also marked as 'externals' below so webpack doesn't bundle them into the test file
+      'github/webhookHandler': './src/github/webhookHandler.ts',
+      'services/githubSyncService': './src/services/githubSyncService.ts',
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -72,7 +77,10 @@ module.exports = [
     devtool: 'source-map',
     externals: {
       vscode: 'commonjs vscode',
-      mocha: 'commonjs mocha'
+      mocha: 'commonjs mocha',
+      // GitHub sync test dependencies - mark as external so they're not bundled in test files
+      './webhookHandler.js': 'commonjs ./webhookHandler.js',
+      '../services/githubSyncService.js': 'commonjs ../services/githubSyncService.js',
     },
     stats: {
       warnings: false,
