@@ -75,7 +75,7 @@ const handleStyleUpdate = (style: ComponentStyle) => {
               <div class="editor-column space-y-8">
                 <!-- Tab Navigation -->
                 <div class="border-b border-gray-200">
-                  <nav class="flex space-x-8" aria-label="Tabs">
+                  <nav class="flex space-x-8" aria-label="Tabs" role="tablist">
                     <button
                       @click="activeTab = 'theme'"
                       class="py-4 px-1 border-b-2 font-medium text-sm transition-colors"
@@ -83,6 +83,9 @@ const handleStyleUpdate = (style: ComponentStyle) => {
                         'border-blue-500 text-blue-600': activeTab === 'theme',
                         'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'theme',
                       }"
+                      role="tab"
+                      :aria-selected="activeTab === 'theme'"
+                      aria-controls="theme-panel"
                     >
                       🎨 Color Theme
                     </button>
@@ -93,6 +96,9 @@ const handleStyleUpdate = (style: ComponentStyle) => {
                         'border-blue-500 text-blue-600': activeTab === 'font',
                         'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'font',
                       }"
+                      role="tab"
+                      :aria-selected="activeTab === 'font'"
+                      aria-controls="font-panel"
                     >
                       🔤 Font Family
                     </button>
@@ -103,6 +109,9 @@ const handleStyleUpdate = (style: ComponentStyle) => {
                         'border-blue-500 text-blue-600': activeTab === 'style',
                         'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'style',
                       }"
+                      role="tab"
+                      :aria-selected="activeTab === 'style'"
+                      aria-controls="style-panel"
                     >
                       ✨ Component Style
                     </button>
@@ -111,21 +120,39 @@ const handleStyleUpdate = (style: ComponentStyle) => {
 
                 <!-- Tab Content -->
                 <div class="tab-content">
-                  <ColorThemePicker
+                  <div
                     v-show="activeTab === 'theme'"
-                    :selected-theme="selectedTheme"
-                    @update:selected-theme="handleThemeUpdate"
-                  />
-                  <FontSelector
+                    role="tabpanel"
+                    id="theme-panel"
+                    aria-labelledby="theme-tab"
+                  >
+                    <ColorThemePicker
+                      :selected-theme="selectedTheme"
+                      @update:selected-theme="handleThemeUpdate"
+                    />
+                  </div>
+                  <div
                     v-show="activeTab === 'font'"
-                    :selected-font="selectedFont"
-                    @update:selected-font="handleFontUpdate"
-                  />
-                  <ComponentStyleEditor
+                    role="tabpanel"
+                    id="font-panel"
+                    aria-labelledby="font-tab"
+                  >
+                    <FontSelector
+                      :selected-font="selectedFont"
+                      @update:selected-font="handleFontUpdate"
+                    />
+                  </div>
+                  <div
                     v-show="activeTab === 'style'"
-                    :style="componentStyle"
-                    @update:style="handleStyleUpdate"
-                  />
+                    role="tabpanel"
+                    id="style-panel"
+                    aria-labelledby="style-tab"
+                  >
+                    <ComponentStyleEditor
+                      :style="componentStyle"
+                      @update:style="handleStyleUpdate"
+                    />
+                  </div>
                 </div>
 
                 <!-- Current Selection Summary -->
@@ -156,23 +183,23 @@ const handleStyleUpdate = (style: ComponentStyle) => {
             <!-- Action Buttons -->
             <div class="mt-8 flex gap-4">
               <button
-                class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors"
-                @click="() => window.alert('Export functionality would be implemented here')"
-                title="Export design system (placeholder)"
+                class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow opacity-50 cursor-not-allowed"
+                disabled
+                title="Export design system (coming soon)"
               >
-                💾 Export Design System
+                📥 Export Design System
               </button>
               <button
-                class="px-6 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow hover:bg-gray-700 transition-colors"
-                @click="() => window.alert('Save functionality would be implemented here')"
-                title="Save configuration (placeholder)"
+                class="px-6 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow opacity-50 cursor-not-allowed"
+                disabled
+                title="Save configuration (coming soon)"
               >
                 💾 Save Configuration
               </button>
               <button
-                class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                @click="() => window.alert('Reset functionality would be implemented here')"
-                title="Reset to defaults (placeholder)"
+                class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg opacity-50 cursor-not-allowed"
+                disabled
+                title="Reset to defaults (coming soon)"
               >
                 🔄 Reset to Defaults
               </button>

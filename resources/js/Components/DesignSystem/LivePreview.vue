@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import type { ColorTheme, FontOption, ComponentStyle, PageSection } from '@/types/designSystem';
 
 const props = defineProps<{
@@ -21,8 +21,11 @@ const pageSections = ref<PageSection[]>([
   { id: 'testimonials', title: 'Testimonials', content: 'What our customers say', visible: true },
   { id: 'team', title: 'Team', content: 'Meet the team', visible: true },
   { id: 'contact', title: 'Contact', content: 'Get in touch with us', visible: true },
-  { id: 'footer', title: 'Footer', content: `© ${new Date().getFullYear()} Your Company`, visible: true },
+  { id: 'footer', title: 'Footer', content: '', visible: true },
 ]);
+
+// Computed property for footer text with dynamic year
+const footerText = computed(() => `© ${new Date().getFullYear()} Your Company`);
 
 // Compute CSS variables from theme
 const cssVariables = computed(() => ({
@@ -45,15 +48,15 @@ const shadowClass = computed(() => {
 // Watch for changes and measure update latency (must be <500ms)
 watch(
   () => [props.theme, props.font, props.style],
-  () => {
+  async () => {
     const startTime = performance.now();
     
-    // Use requestAnimationFrame for smooth updates
-    requestAnimationFrame(() => {
-      const endTime = performance.now();
-      updateLatency.value = Math.round(endTime - startTime);
-      lastUpdateTime.value = Date.now();
-    });
+    // Wait for Vue to update the DOM
+    await nextTick();
+    
+    const endTime = performance.now();
+    updateLatency.value = Math.round(endTime - startTime);
+    lastUpdateTime.value = Date.now();
   },
   { deep: true }
 );
@@ -210,7 +213,11 @@ watch(
               {{ pageSections[6].title }}
             </h2>
             <form class="max-w-md">
+              <label for="contact-email" class="block text-sm font-medium mb-2" :style="{ color: 'var(--color-text)', fontFamily: 'var(--font-family)' }">
+                Email Address
+              </label>
               <input
+                id="contact-email"
                 type="email"
                 placeholder="Your email"
                 :class="shadowClass"
@@ -249,7 +256,7 @@ watch(
             }"
           >
             <p :style="{ fontFamily: 'var(--font-family)' }" class="text-center text-sm">
-              {{ pageSections[7].content }}
+              {{ footerText }}
             </p>
           </section>
         </div>
@@ -269,8 +276,10 @@ watch(
             'bg-gray-100 text-gray-500 border border-gray-300': !section.visible,
           }"
           @click="section.visible = !section.visible"
+          :aria-pressed="section.visible"
+          :aria-label="`${section.visible ? 'Hide' : 'Show'} ${section.title} section`"
         >
-          {{ section.visible ? '✓' : '○' }} {{ section.title }}
+          <span aria-hidden="true">{{ section.visible ? '✓' : '○' }}</span> {{ section.title }}
         </button>
       </div>
     </div>

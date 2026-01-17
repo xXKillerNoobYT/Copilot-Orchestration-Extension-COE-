@@ -45,20 +45,22 @@ const selectFont = (font: FontOption) => {
     <p class="text-sm text-gray-600 mb-4">Choose from 3 carefully selected fonts</p>
     
     <div class="space-y-3">
-      <div
+      <button
         v-for="font in fontOptions"
         :key="font.id"
-        class="font-option cursor-pointer border-2 rounded-lg p-4 transition-all duration-200 hover:shadow-md"
+        class="font-option cursor-pointer border-2 rounded-lg p-4 transition-all duration-200 hover:shadow-md w-full text-left"
         :class="{
           'border-blue-500 ring-2 ring-blue-200 bg-blue-50': currentFont.id === font.id,
           'border-gray-200 hover:border-gray-300 bg-white': currentFont.id !== font.id,
         }"
         @click="selectFont(font)"
+        :aria-label="`Select ${font.name} font family`"
+        :aria-pressed="currentFont.id === font.id"
       >
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-3">
-            <span v-if="currentFont.id === font.id" class="text-blue-500 text-xl">●</span>
-            <span v-else class="text-gray-300 text-xl">○</span>
+            <span v-if="currentFont.id === font.id" class="text-blue-500 text-xl" aria-hidden="true">●</span>
+            <span v-else class="text-gray-300 text-xl" aria-hidden="true">○</span>
             <h4 class="font-medium text-gray-900">{{ font.name }}</h4>
           </div>
           <span v-if="currentFont.id === font.id" class="text-xs text-blue-600 font-semibold">SELECTED</span>
@@ -81,7 +83,7 @@ const selectFont = (font: FontOption) => {
             Weights: {{ font.weights.join(', ') }}
           </div>
         </div>
-      </div>
+      </button>
     </div>
   </div>
 </template>
