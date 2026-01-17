@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 class MetricsService
 {
     /**
+<<<<<<< HEAD
      * Aggregate task metrics (counts, completion rate, cycle time).
      * 
      * @param string $range Time range filter (e.g., '7d', '30d', '24h'). Default '7d'
@@ -33,10 +34,40 @@ class MetricsService
         $pending = $statusCounts->get('pending', 0);
         $blocked = $statusCounts->get('blocked', 0);
         $failed = $statusCounts->get('failed', 0);
+=======
+     * Default time range in days for metrics analysis.
+     * Provides a good balance between recent trends and statistical significance.
+     */
+    private const DEFAULT_TIME_RANGE_DAYS = 30;
+
+    /**
+     * Aggregate task metrics (counts, completion rate, cycle time).
+     * 
+     * @param string|null $timeRange Optional time range (e.g., '7d', '30d', '90d')
+     * @return array Aggregated task metrics including counts, rates, and timestamps
+     */
+    public function getTaskMetrics(?string $timeRange = null): array
+    {
+        $query = Task::query();
+        
+        // Apply time range filter if provided
+        if ($timeRange) {
+            $days = $this->parseTimeRangeToDays($timeRange);
+            $query->where('created_at', '>=', now()->subDays($days));
+        }
+
+        $totalTasks = (clone $query)->count();
+        $completed = (clone $query)->where('status', 'completed')->count();
+        $inProgress = (clone $query)->where('status', 'in_progress')->count();
+        $pending = (clone $query)->where('status', 'pending')->count();
+        $blocked = (clone $query)->where('status', 'blocked')->count();
+        $failed = (clone $query)->where('status', 'failed')->count();
+>>>>>>> origin/copilot/add-metrics-service
 
         $completionRate = $totalTasks > 0 ? round(($completed / $totalTasks) * 100, 2) : 0;
 
-        $cycleTimes = Task::whereNotNull('started_at')
+        $cycleTimes = (clone $query)
+            ->whereNotNull('started_at')
             ->whereNotNull('completed_at')
             ->where('created_at', '>=', $cutoffDate)
             ->get()
@@ -61,8 +92,12 @@ class MetricsService
             'completionRate' => $completionRate,
             'averageCycleSeconds' => $avgCycleSeconds,
             'averageCycleDisplay' => $avgCycleHuman,
+<<<<<<< HEAD
             'timeRange' => $range,
             'startDate' => $cutoffDate->toIso8601String(),
+=======
+            'timeRange' => $timeRange,
+>>>>>>> origin/copilot/add-metrics-service
             'lastUpdated' => now()->toIso8601String(),
         ];
     }
@@ -306,7 +341,42 @@ class MetricsService
     }
 
     /**
-     * Record an error event.
+     * Record an error event (simplified interface matching issue spec).
+     * 
+     * @param int $taskId
+     * @param string|array $error Error message or array with error details
+     * @return MetricsEvent
+     */
+    public function recordError(int $taskId, string|array $error): MetricsEvent
+    {
+        // Handle both string and array error formats
+        if (is_string($error)) {
+            $errorMessage = $error;
+            $metadata = null;
+            $agentId = null;
+            $userId = null;
+            $projectId = null;
+        } else {
+            $errorMessage = $error['message'] ?? 'Unknown error';
+            // Only store explicit metadata field to avoid recursive structures
+            $metadata = $error['metadata'] ?? null;
+            $agentId = $error['agent_id'] ?? null;
+            $userId = $error['user_id'] ?? null;
+            $projectId = $error['project_id'] ?? null;
+        }
+
+        return $this->recordErrorEvent(
+            $errorMessage,
+            $taskId,
+            $agentId,
+            $userId,
+            $projectId,
+            $metadata
+        );
+    }
+
+    /**
+     * Record an error event (detailed interface).
      * 
      * @param string $errorMessage
      * @param int|null $taskId
@@ -565,6 +635,7 @@ class MetricsService
         return MetricsEvent::where('recorded_at', '<', now()->subDays($retentionDays))
             ->delete();
     }
+<<<<<<< HEAD
     
     /**
      * Parse time range string to Carbon date.
@@ -593,5 +664,23 @@ class MetricsService
             'm' => now()->subMonths($value),
             default => now()->subDays(7),
         };
+=======
+
+    /**
+     * Parse time range string to number of days.
+     * 
+     * @param string $timeRange Format: '7d', '30d', '90d', etc.
+     * @return int Number of days
+     */
+    private function parseTimeRangeToDays(string $timeRange): int
+    {
+        // Match patterns like '7d', '30d', '90d'
+        if (preg_match('/^(\d+)d$/', $timeRange, $matches)) {
+            return (int) $matches[1];
+        }
+
+        // Return default if format not recognized
+        return self::DEFAULT_TIME_RANGE_DAYS;
+>>>>>>> origin/copilot/add-metrics-service
     }
 }
