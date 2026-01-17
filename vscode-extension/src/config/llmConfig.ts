@@ -44,7 +44,7 @@ export function readLlmConfig(options?: { configuration?: ConfigLike }): LlmConf
   // Check for environment variable override first
   const envBaseUrl = process.env.COPILOT_LLM_BASE_URL;
   const configBaseUrl = configuration?.get<string>('copilot-orchestrator.llm.baseUrl', DEFAULTS.baseUrl) ?? DEFAULTS.baseUrl;
-  const baseUrl = envBaseUrl || configBaseUrl;
+  const baseUrl = envBaseUrl !== undefined && envBaseUrl !== null ? envBaseUrl : configBaseUrl;
 
   const apiKey = configuration?.get<string>('copilot-orchestrator.llm.apiKey', DEFAULTS.apiKey) ?? DEFAULTS.apiKey;
   const defaultModel = configuration?.get<string>('copilot-orchestrator.llm.defaultModel', DEFAULTS.defaultModel) ?? DEFAULTS.defaultModel;
@@ -156,7 +156,8 @@ function isApipaAddress(url: string): boolean {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;
     // Check for APIPA address range 169.254.0.0/16
-    const apipaPattern = /^169\.254\.\d{1,3}\.\d{1,3}$/;
+    const apipaPattern =
+      /^169\.254\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
     return apipaPattern.test(hostname);
   } catch {
     return false;

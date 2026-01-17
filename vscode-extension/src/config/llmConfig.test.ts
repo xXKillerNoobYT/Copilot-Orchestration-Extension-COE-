@@ -61,6 +61,18 @@ describe('LLM Configuration', () => {
     expect(config.config.baseUrl).toBe('http://env-server:9000/v1');
   });
 
+  test('should allow empty string environment variable to override config', () => {
+    process.env.COPILOT_LLM_BASE_URL = '';
+
+    const config = readLlmConfig({
+      configuration: createMockConfig({
+        'llm.baseUrl': 'http://config-server:7000/v1',
+      }),
+    });
+
+    expect(config.config.baseUrl).toBe('');
+  });
+
   test('should detect APIPA addresses (169.254.x.x)', () => {
     const config = readLlmConfig({
       configuration: createMockConfig({
@@ -73,6 +85,76 @@ describe('LLM Configuration', () => {
     );
 
     expect(hasApipaWarning).toBe(true);
+  });
+
+  test('should detect APIPA address at lower boundary (169.254.0.0)', () => {
+    const config = readLlmConfig({
+      configuration: createMockConfig({
+        'llm.baseUrl': 'http://169.254.0.0:1234/v1',
+      }),
+    });
+
+    const hasApipaWarning = config.issues.some((issue) =>
+      issue.toLowerCase().includes('apipa')
+    );
+
+    expect(hasApipaWarning).toBe(true);
+  });
+
+  test('should detect APIPA address at upper boundary (169.254.255.255)', () => {
+    const config = readLlmConfig({
+      configuration: createMockConfig({
+        'llm.baseUrl': 'http://169.254.255.255:1234/v1',
+      }),
+    });
+
+    const hasApipaWarning = config.issues.some((issue) =>
+      issue.toLowerCase().includes('apipa')
+    );
+
+    expect(hasApipaWarning).toBe(true);
+  });
+
+  test('should not detect invalid APIPA-like addresses (169.255.x.x)', () => {
+    const config = readLlmConfig({
+      configuration: createMockConfig({
+        'llm.baseUrl': 'http://169.255.100.50:1234/v1',
+      }),
+    });
+
+    const hasApipaWarning = config.issues.some((issue) =>
+      issue.toLowerCase().includes('apipa')
+    );
+
+    expect(hasApipaWarning).toBe(false);
+  });
+
+  test('should not detect invalid APIPA-like addresses (168.254.x.x)', () => {
+    const config = readLlmConfig({
+      configuration: createMockConfig({
+        'llm.baseUrl': 'http://168.254.100.50:1234/v1',
+      }),
+    });
+
+    const hasApipaWarning = config.issues.some((issue) =>
+      issue.toLowerCase().includes('apipa')
+    );
+
+    expect(hasApipaWarning).toBe(false);
+  });
+
+  test('should not detect addresses with invalid octets > 255', () => {
+    const config = readLlmConfig({
+      configuration: createMockConfig({
+        'llm.baseUrl': 'http://169.254.999.999:1234/v1',
+      }),
+    });
+
+    const hasApipaWarning = config.issues.some((issue) =>
+      issue.toLowerCase().includes('apipa')
+    );
+
+    expect(hasApipaWarning).toBe(false);
   });
 
   test('should not flag non-APIPA addresses', () => {
