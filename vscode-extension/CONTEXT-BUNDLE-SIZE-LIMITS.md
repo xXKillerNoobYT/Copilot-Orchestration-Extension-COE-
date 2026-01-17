@@ -8,6 +8,16 @@ Context bundles in the Copilot Orchestration Extension have size limits to preve
 
 - **Maximum Files Per Bundle**: 100 files (`MAX_FILES_PER_BUNDLE`)
 - **Warning Threshold**: 80 files (80% of maximum)
+- **Enforcement**: Non-blocking validation - bundles exceeding limits trigger warnings/errors but are not prevented from opening or being used
+
+## Implementation Design
+
+The validation approach is **non-blocking** rather than **truncating**. When a bundle exceeds the file limit:
+- Users receive clear error messages explaining the risk
+- The bundle still opens/operates to allow manual inspection
+- Users can manually fix oversized bundles by removing files or splitting into multiple bundles
+
+This design choice prioritizes user control and visibility over automatic truncation, which could silently drop important context files.
 
 ## Rationale
 
@@ -37,7 +47,9 @@ When you open a context bundle file, the extension checks its size:
 
 - **Under 80 files**: No warning, bundle opens normally
 - **80-100 files**: Warning message displayed, bundle still opens
-- **Over 100 files**: Error message displayed, bundle may have issues
+- **Over 100 files**: Error message displayed, but bundle still opens and may have issues
+
+**Note**: Validation is non-blocking. Bundles are never prevented from opening, but users receive clear warnings about potential performance issues. This allows manual inspection and correction of oversized bundles rather than automatic truncation.
 
 ### 2. When Inspecting a Bundle
 
@@ -45,7 +57,7 @@ When you inspect a bundle from the orchestrator panel:
 
 - **Under 80 files**: Information message only
 - **80-100 files**: Warning about approaching the limit
-- **Over 100 files**: Strong warning about exceeding the limit
+- **Over 100 files**: Error message about exceeding the limit
 
 ## Error Messages
 
@@ -116,10 +128,13 @@ If you have existing bundles exceeding the limit:
     "src/auth/logout.ts",
     "src/models/User.ts",
     "tests/auth/login.test.ts",
-    ...
+    "tests/auth/register.test.ts",
+    "tests/auth/logout.test.ts"
   ]
 }
 ```
+
+**Note**: Context bundles require explicit file paths. Glob patterns (e.g., `src/**/*.ts`) are not currently supported.
 
 ### Oversized Bundle (150 files) - Should Split
 ```json
@@ -127,33 +142,52 @@ If you have existing bundles exceeding the limit:
   "id": "entire-app-context",  // ❌ Too broad
   "name": "All Application Files",
   "files": [
-    "src/**/*.ts",  // ❌ Over 100 files
-    ...
+    "src/components/Header.ts",
+    "src/components/Footer.ts",
+    "src/services/AuthService.ts",
+    "src/services/UserService.ts",
+    // ... 146 more explicit file paths ❌ Over 100 files
   ]
 }
 ```
 
 ### Better Approach - Split into Multiple Bundles
 ```json
-// Bundle 1: Frontend (60 files)
+// Bundle 1: Frontend Components (60 files)
 {
   "id": "frontend-context",
   "name": "Frontend Components",
-  "files": ["src/components/**/*.ts", ...]
+  "files": [
+    "src/components/Header.ts",
+    "src/components/Footer.ts",
+    "src/components/Navigation.ts",
+    "src/components/Button.ts"
+    // ... 56 more explicit file paths
+  ]
 }
 
-// Bundle 2: Backend (55 files)
+// Bundle 2: Backend Services (55 files)
 {
   "id": "backend-context",
   "name": "Backend Services",
-  "files": ["src/services/**/*.ts", ...]
+  "files": [
+    "src/services/AuthService.ts",
+    "src/services/UserService.ts",
+    "src/services/DataService.ts"
+    // ... 52 more explicit file paths
+  ]
 }
 
-// Bundle 3: Tests (35 files)
+// Bundle 3: Test Files (35 files)
 {
   "id": "test-context",
   "name": "Test Files",
-  "files": ["tests/**/*.test.ts", ...]
+  "files": [
+    "tests/components/Header.test.ts",
+    "tests/components/Footer.test.ts",
+    "tests/services/AuthService.test.ts"
+    // ... 32 more explicit file paths
+  ]
 }
 ```
 

@@ -180,22 +180,23 @@ export class TaskInteractionAPI {
       }
 
       // Validate bundle file list size
-      if (bundle && bundle.files && Array.isArray(bundle.files)) {
+      if (bundle) {
         const validation = validateContextBundleSize(bundle.files);
+        const fileCount = Array.isArray(bundle.files) ? bundle.files.length : undefined;
         if (!validation.isValid && validation.error) {
           vscode.window.showErrorMessage(
             `Context Bundle Size Limit Exceeded: ${validation.error}`
           );
           console.error('Context bundle size validation failed:', {
             bundlePath,
-            fileCount: bundle.files.length,
+            fileCount,
             limit: MAX_FILES_PER_BUNDLE
           });
         } else if (validation.warning) {
           vscode.window.showWarningMessage(validation.warning);
           console.warn('Context bundle size warning:', {
             bundlePath,
-            fileCount: bundle.files.length,
+            fileCount,
             limit: MAX_FILES_PER_BUNDLE
           });
         }

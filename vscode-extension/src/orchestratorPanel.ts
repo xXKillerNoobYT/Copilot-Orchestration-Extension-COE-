@@ -25,7 +25,7 @@ export const BUNDLE_WARNING_THRESHOLD = 0.8;
 export interface ContextBundle {
   id: string;
   name: string;
-  files: string[];  // Limited to MAX_FILES_PER_BUNDLE (100) items
+  files: string[];  // Validated against MAX_FILES_PER_BUNDLE (100) limit at runtime
   description?: string;
   metadata?: Record<string, unknown>;
   agentProfile?: {
@@ -253,10 +253,10 @@ export class OrchestratorPanelProvider {
       const fileCount = bundle.files.length;
       const message = `Inspecting bundle: ${bundle.name} (${fileCount} files)`;
       
-      // Warn if approaching or exceeding limit
+      // Enforce and communicate hard limit consistently with taskInteractionAPI
       if (fileCount > MAX_FILES_PER_BUNDLE) {
-        vscode.window.showWarningMessage(
-          `${message}\n\n⚠️ WARNING: Bundle exceeds recommended limit of ${MAX_FILES_PER_BUNDLE} files. ` +
+        vscode.window.showErrorMessage(
+          `${message}\n\n⚠️ ERROR: Bundle exceeds the maximum supported limit of ${MAX_FILES_PER_BUNDLE} files. ` +
           `Large bundles may cause performance issues or timeouts.`
         );
       } else if (fileCount > MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) {
