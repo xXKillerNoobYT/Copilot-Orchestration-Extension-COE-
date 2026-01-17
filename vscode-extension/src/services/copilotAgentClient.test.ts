@@ -182,6 +182,9 @@ describe('CopilotAgentClient', () => {
         priority: 'high',
         dependencies: [],
         assignees: [],
+        labels: [],
+        subtasks: [],
+        rawFrontMatter: {},
       };
 
       const mockPayload: PromptPayload = {
@@ -216,10 +219,14 @@ describe('CopilotAgentClient', () => {
       const mockTask: ParsedTask = {
         id: 'TASK-004',
         title: 'Write tests',
+        description: '',
         status: 'pending',
         priority: 'medium',
         dependencies: [],
         assignees: [],
+        labels: [],
+        subtasks: [],
+        rawFrontMatter: {},
       };
 
       const mockPayload: PromptPayload = {
@@ -253,10 +260,13 @@ describe('CopilotAgentClient', () => {
         id: 'TASK-005',
         title: 'Refactor authentication module',
         description: 'Improve code structure and security',
-        status: 'in-progress',
+        status: 'in_progress',
         priority: 'critical',
         dependencies: ['TASK-001', 'TASK-002'],
-        assignees: ['agent-code'],
+        assignees: ['coder'],
+        labels: [],
+        subtasks: [],
+        rawFrontMatter: {},
       };
 
       const mockPayload: PromptPayload = {
