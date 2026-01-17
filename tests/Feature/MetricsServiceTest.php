@@ -328,4 +328,98 @@ class MetricsServiceTest extends TestCase
         $this->assertEquals(1, MetricsEvent::byMetricName('task_duration_seconds')->count());
         $this->assertEquals(2, MetricsEvent::lastNDays(30)->count());
     }
+
+    /**
+     * Test recordError method with string error.
+     */
+    public function test_record_error_with_string(): void
+    {
+        $task = Task::factory()->create();
+        
+        $event = $this->metricsService->recordError(
+            $task->id,
+            'Simple error message'
+        );
+
+        $this->assertEquals('error_occurred', $event->event_type);
+        $this->assertEquals('error_count', $event->metric_name);
+        $this->assertEquals('Simple error message', $event->context_value);
+        $this->assertEquals($task->id, $event->task_id);
+        $this->assertNull($event->metadata);
+    }
+
+    /**
+     * Test recordError method with array error.
+     */
+    public function test_record_error_with_array(): void
+    {
+        $task = Task::factory()->create();
+        $agent = Agent::factory()->create();
+        
+        $event = $this->metricsService->recordError(
+            $task->id,
+            [
+                'message' => 'Complex error message',
+                'agent_id' => $agent->id,
+                'metadata' => ['error_code' => 'ERR_001', 'severity' => 'high']
+            ]
+        );
+
+        $this->assertEquals('error_occurred', $event->event_type);
+        $this->assertEquals('Complex error message', $event->context_value);
+        $this->assertEquals($task->id, $event->task_id);
+        $this->assertEquals($agent->id, $event->agent_id);
+        $this->assertJsonStringEqualsJsonString(
+            json_encode(['error_code' => 'ERR_001', 'severity' => 'high']),
+            $event->metadata
+        );
+    }
+
+    /**
+     * Test getTaskMetrics with time range filter.
+     */
+    public function test_task_metrics_with_time_range(): void
+    {
+        // Create recent tasks (within 7 days)
+        Task::factory()->count(5)->create([
+            'status' => 'completed',
+            'created_at' => now()->subDays(3)
+        ]);
+
+        // Create old tasks (beyond 7 days)
+        Task::factory()->count(10)->create([
+            'status' => 'completed',
+            'created_at' => now()->subDays(15)
+        ]);
+
+        // Test with 7-day time range
+        $metrics = $this->metricsService->getTaskMetrics('7d');
+
+        $this->assertEquals(5, $metrics['counts']['total']);
+        $this->assertEquals(5, $metrics['counts']['completed']);
+        $this->assertEquals('7d', $metrics['timeRange']);
+    }
+
+    /**
+     * Test getTaskMetrics without time range (all tasks).
+     */
+    public function test_task_metrics_without_time_range(): void
+    {
+        Task::factory()->count(5)->create([
+            'status' => 'completed',
+            'created_at' => now()->subDays(3)
+        ]);
+
+        Task::factory()->count(10)->create([
+            'status' => 'completed',
+            'created_at' => now()->subDays(15)
+        ]);
+
+        // Test without time range (should get all tasks)
+        $metrics = $this->metricsService->getTaskMetrics();
+
+        $this->assertEquals(15, $metrics['counts']['total']);
+        $this->assertEquals(15, $metrics['counts']['completed']);
+        $this->assertNull($metrics['timeRange']);
+    }
 }

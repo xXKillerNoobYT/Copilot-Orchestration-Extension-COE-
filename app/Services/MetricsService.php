@@ -13,19 +13,30 @@ class MetricsService
 {
     /**
      * Aggregate task metrics (counts, completion rate, cycle time).
+     * 
+     * @param string|null $timeRange Optional time range (e.g., '7d', '30d', '90d')
      */
-    public function getTaskMetrics(): array
+    public function getTaskMetrics(?string $timeRange = null): array
     {
-        $totalTasks = Task::count();
-        $completed = Task::where('status', 'completed')->count();
-        $inProgress = Task::where('status', 'in_progress')->count();
-        $pending = Task::where('status', 'pending')->count();
-        $blocked = Task::where('status', 'blocked')->count();
-        $failed = Task::where('status', 'failed')->count();
+        $query = Task::query();
+        
+        // Apply time range filter if provided
+        if ($timeRange) {
+            $days = $this->parseTimeRangeToDays($timeRange);
+            $query->where('created_at', '>=', now()->subDays($days));
+        }
+
+        $totalTasks = (clone $query)->count();
+        $completed = (clone $query)->where('status', 'completed')->count();
+        $inProgress = (clone $query)->where('status', 'in_progress')->count();
+        $pending = (clone $query)->where('status', 'pending')->count();
+        $blocked = (clone $query)->where('status', 'blocked')->count();
+        $failed = (clone $query)->where('status', 'failed')->count();
 
         $completionRate = $totalTasks > 0 ? round(($completed / $totalTasks) * 100, 2) : 0;
 
-        $cycleTimes = Task::whereNotNull('started_at')
+        $cycleTimes = (clone $query)
+            ->whereNotNull('started_at')
             ->whereNotNull('completed_at')
             ->get()
             ->map(function (Task $task) {
@@ -49,6 +60,7 @@ class MetricsService
             'completionRate' => $completionRate,
             'averageCycleSeconds' => $avgCycleSeconds,
             'averageCycleDisplay' => $avgCycleHuman,
+            'timeRange' => $timeRange,
             'lastUpdated' => now()->toIso8601String(),
         ];
     }
@@ -202,7 +214,41 @@ class MetricsService
     }
 
     /**
-     * Record an error event.
+     * Record an error event (simplified interface matching issue spec).
+     * 
+     * @param int $taskId
+     * @param array|string $error Error message or array with error details
+     * @return MetricsEvent
+     */
+    public function recordError(int $taskId, array|string $error): MetricsEvent
+    {
+        // Handle both string and array error formats
+        if (is_string($error)) {
+            $errorMessage = $error;
+            $metadata = null;
+            $agentId = null;
+            $userId = null;
+            $projectId = null;
+        } else {
+            $errorMessage = $error['message'] ?? 'Unknown error';
+            $metadata = $error['metadata'] ?? $error;
+            $agentId = $error['agent_id'] ?? null;
+            $userId = $error['user_id'] ?? null;
+            $projectId = $error['project_id'] ?? null;
+        }
+
+        return $this->recordErrorEvent(
+            $errorMessage,
+            $taskId,
+            $agentId,
+            $userId,
+            $projectId,
+            $metadata
+        );
+    }
+
+    /**
+     * Record an error event (detailed interface).
      * 
      * @param string $errorMessage
      * @param int|null $taskId
@@ -460,5 +506,22 @@ class MetricsService
     {
         return MetricsEvent::where('recorded_at', '<', now()->subDays($retentionDays))
             ->delete();
+    }
+
+    /**
+     * Parse time range string to number of days.
+     * 
+     * @param string $timeRange Format: '7d', '30d', '90d', etc.
+     * @return int Number of days
+     */
+    private function parseTimeRangeToDays(string $timeRange): int
+    {
+        // Match patterns like '7d', '30d', '90d'
+        if (preg_match('/^(\d+)d$/', $timeRange, $matches)) {
+            return (int) $matches[1];
+        }
+
+        // Default to 30 days if format not recognized
+        return 30;
     }
 }
