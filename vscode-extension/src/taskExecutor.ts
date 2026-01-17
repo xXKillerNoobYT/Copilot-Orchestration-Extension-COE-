@@ -295,7 +295,8 @@ export class TaskExecutor {
       try {
         console.log('[TaskExecutor] Using GitHub Copilot Agent Mode API');
         
-        // Ensure the client is authenticated and registered
+        // Always verify authentication before executing tasks
+        // This handles token expiration, network issues, and session invalidation
         if (!this.copilotAgentClient.isConnected()) {
           const authenticated = await this.copilotAgentClient.authenticate();
           if (!authenticated) {
@@ -314,6 +315,14 @@ export class TaskExecutor {
 
           if (!registered) {
             console.warn('[TaskExecutor] GitHub Copilot Agent registration failed, falling back to simulated response');
+            return this.generateSimulatedResponse(payload);
+          }
+        } else {
+          // Even if connected, verify authentication is still valid by re-authenticating
+          // This catches token expiration and network issues
+          const stillAuthenticated = await this.copilotAgentClient.authenticate();
+          if (!stillAuthenticated) {
+            console.warn('[TaskExecutor] GitHub Copilot Agent Mode re-authentication failed, falling back to simulated response');
             return this.generateSimulatedResponse(payload);
           }
         }

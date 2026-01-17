@@ -111,12 +111,14 @@ describe('CopilotAgentClient', () => {
 
   describe('Agent Discovery', () => {
     test('should discover available agents in mock mode', async () => {
-      const agents = await client.discoverAgents();
-      expect(agents).toBeDefined();
-      expect(agents.length).toBeGreaterThan(0);
+      const result = await client.discoverAgents();
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(result.agents).toBeDefined();
+      expect(result.agents.length).toBeGreaterThan(0);
       
       // Check that mock agents have required properties
-      agents.forEach(agent => {
+      result.agents.forEach(agent => {
         expect(agent).toHaveProperty('agentId');
         expect(agent).toHaveProperty('name');
         expect(agent).toHaveProperty('role');
@@ -125,12 +127,28 @@ describe('CopilotAgentClient', () => {
     });
 
     test('should return different agent types', async () => {
-      const agents = await client.discoverAgents();
-      const roles = agents.map(a => a.role);
+      const result = await client.discoverAgents();
+      expect(result.success).toBe(true);
+      const roles = result.agents.map(a => a.role);
       
       expect(roles).toContain('code');
       expect(roles).toContain('testing');
       expect(roles).toContain('review');
+    });
+
+    test('should return error information on failure', async () => {
+      const errorClient = new CopilotAgentClient({ mockMode: false });
+      
+      // Mock fetch to fail
+      (errorClient as any).fetch = async () => {
+        throw new Error('Network error');
+      };
+
+      const result = await errorClient.discoverAgents();
+      expect(result.success).toBe(false);
+      expect(result.agents).toHaveLength(0);
+      expect(result.error).toBeDefined();
+      expect(result.error).toContain('Network error');
     });
   });
 

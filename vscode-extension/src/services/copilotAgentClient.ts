@@ -82,6 +82,15 @@ export interface AgentExecutionResponse {
   error?: string;
 }
 
+export interface AgentDiscoveryResult {
+  /** Whether discovery was successful */
+  success: boolean;
+  /** List of discovered agents */
+  agents: AgentRegistration[];
+  /** Error message if failed */
+  error?: string;
+}
+
 /**
  * GitHub Copilot Agent Mode API Client
  * 
@@ -95,6 +104,8 @@ export class CopilotAgentClient {
   private readonly config: Required<CopilotAgentConfig>;
   private registered: boolean = false;
   private currentAgentId: string | null = null;
+  private registeredAgents: Set<string> = new Set(); // Track registered agent IDs
+  private authenticationValid: boolean = false; // Track authentication validity
 
   constructor(config?: CopilotAgentConfig) {
     // Load configuration from VS Code settings
@@ -115,6 +126,7 @@ export class CopilotAgentClient {
   async authenticate(): Promise<boolean> {
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Authentication successful');
+      this.authenticationValid = true;
       return true;
     }
 
@@ -129,9 +141,12 @@ export class CopilotAgentClient {
         token: this.config.authToken,
       });
 
-      return response.valid === true;
+      const isValid = response.valid === true;
+      this.authenticationValid = isValid;
+      return isValid;
     } catch (error) {
       console.error('[CopilotAgentClient] Authentication failed:', error);
+      this.authenticationValid = false;
       return false;
     }
   }
@@ -142,10 +157,17 @@ export class CopilotAgentClient {
    * @returns Promise<boolean> - true if registration successful
    */
   async registerAgent(registration: AgentRegistration): Promise<boolean> {
+    // Check if agent is already registered
+    if (this.registeredAgents.has(registration.agentId)) {
+      console.log('[CopilotAgentClient] Agent already registered:', registration.agentId);
+      return true;
+    }
+
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Registered agent', registration.name);
       this.registered = true;
       this.currentAgentId = registration.agentId;
+      this.registeredAgents.add(registration.agentId);
       return true;
     }
 
@@ -156,6 +178,7 @@ export class CopilotAgentClient {
       if (response.success) {
         this.registered = true;
         this.currentAgentId = registration.agentId;
+        this.registeredAgents.add(registration.agentId);
         return true;
       }
       
@@ -233,40 +256,50 @@ export class CopilotAgentClient {
 
   /**
    * Discover available agents
-   * @returns Promise<AgentRegistration[]> - List of available agents
+   * @returns Promise<AgentDiscoveryResult> - Discovery result with agents or error
    */
-  async discoverAgents(): Promise<AgentRegistration[]> {
+  async discoverAgents(): Promise<AgentDiscoveryResult> {
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Returning mock agents');
-      return [
-        {
-          agentId: 'copilot-code-agent',
-          name: 'Code Agent',
-          role: 'code',
-          capabilities: ['code-generation', 'code-review', 'refactoring'],
-        },
-        {
-          agentId: 'copilot-test-agent',
-          name: 'Test Agent',
-          role: 'testing',
-          capabilities: ['test-generation', 'test-execution', 'coverage-analysis'],
-        },
-        {
-          agentId: 'copilot-review-agent',
-          name: 'Review Agent',
-          role: 'review',
-          capabilities: ['code-review', 'security-analysis', 'best-practices'],
-        },
-      ];
+      return {
+        success: true,
+        agents: [
+          {
+            agentId: 'copilot-code-agent',
+            name: 'Code Agent',
+            role: 'code',
+            capabilities: ['code-generation', 'code-review', 'refactoring'],
+          },
+          {
+            agentId: 'copilot-test-agent',
+            name: 'Test Agent',
+            role: 'testing',
+            capabilities: ['test-generation', 'test-execution', 'coverage-analysis'],
+          },
+          {
+            agentId: 'copilot-review-agent',
+            name: 'Review Agent',
+            role: 'review',
+            capabilities: ['code-review', 'security-analysis', 'best-practices'],
+          },
+        ],
+      };
     }
 
     try {
       // TODO: Implement real agent discovery
       const response = await this.fetch('/agents/discover', 'GET');
-      return response.agents as AgentRegistration[];
+      return {
+        success: true,
+        agents: response.agents as AgentRegistration[],
+      };
     } catch (error) {
       console.error('[CopilotAgentClient] Agent discovery failed:', error);
-      return [];
+      return {
+        success: false,
+        agents: [],
+        error: (error as Error).message,
+      };
     }
   }
 
@@ -311,8 +344,19 @@ export class CopilotAgentClient {
       }
 
       return await response.json() as Record<string, any>;
-    } catch (error) {
+    } catch (error: unknown) {
       clearTimeout(timeoutId);
+      
+      // Check if error is an AbortError (timeout)
+      const err = error as any;
+      const isAbortError = err && (err.name === 'AbortError' || err.code === 'ABORT_ERR');
+      
+      if (isAbortError) {
+        const timeoutMs = this.config.timeout;
+        const timeoutMsg = typeof timeoutMs === 'number' ? ` after ${timeoutMs}ms` : '';
+        throw new Error(`Request to ${endpoint} timed out${timeoutMsg}`);
+      }
+      
       throw error;
     }
   }
