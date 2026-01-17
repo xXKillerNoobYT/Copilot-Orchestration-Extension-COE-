@@ -44,7 +44,8 @@ module.exports = {
         'planIntegration\\.test\\.ts',
         '__tests__/wizardStore\\.test\\.ts',
         '__tests__/integration/',
-        'components/preview/.*\\.test\\.ts',
+        // Preview tests converted to Jest - no longer excluded
+        // 'components/preview/.*\\.test\\.ts',
         'services/planPersistence\\.test\\.ts',
         'services/taskDecomposition\\.test\\.ts',
         'llm/promptCache\\.test\\.ts',
