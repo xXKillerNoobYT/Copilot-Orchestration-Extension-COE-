@@ -20,6 +20,7 @@ import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 import { getLLMIPMonitor } from './services/llmIPMonitor';
 import { ConnectionMonitor, createConnectionStatusBarItem } from './services/connectionMonitor';
+import { MCPClient } from './services/mcpClient';
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize LLM IP Monitor (Background service for LLM connectivity)
@@ -492,6 +493,13 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('copilot-orchestrator.llm') || event.affectsConfiguration('copilot-orchestrator.taskRoots')) {
         refreshLlmStatus(llmStatusBar);
+      }
+      
+      // Handle MCP configuration changes - invalidate MCPClient singleton cache
+      if (event.affectsConfiguration('copilot-orchestrator.mcp')) {
+        console.log('[Extension] MCP configuration changed - invalidating MCPClient cache');
+        MCPClient.invalidateInstance();
+        // Note: New configuration will be applied on next MCP request
       }
     })
   );

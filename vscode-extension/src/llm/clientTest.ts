@@ -57,7 +57,7 @@ const mockPayload: PromptPayload = {
   context: {
     files: [{ path: '/src/test.ts', content: 'const test = true;', truncated: false }],
   },
-  memory: [{ role: 'user', content: 'Previous message' }],
+  memory: [{ role: 'user', content: 'Previous message', timestamp: new Date().toISOString() }],
   messages: [
     { role: 'system', content: 'You are a helpful code generator.' },
     { role: 'user', content: 'Generate a simple function.' },

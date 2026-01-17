@@ -62,7 +62,13 @@ export function readLlmConfig(options?: { configuration?: ConfigLike }): LlmConf
 
   // Warn about APIPA addresses (169.254.x.x)
   if (isApipaAddress(baseUrlTrimmed)) {
-    issues.push('Warning: APIPA address (169.254.x.x) detected. This may indicate network configuration issues.');
+    issues.push('Network IP is APIPA (169.254.x.x) indicating DHCP failure. Please configure a static IP address or restart DHCP service.');
+  }
+
+  // Warn about HTTPS on local addresses
+  const protocolWarning = validateProtocol(baseUrlTrimmed);
+  if (protocolWarning) {
+    issues.push(protocolWarning);
   }
 
   const normalizedTemperature = normalizeTemperature(temperatureRaw, issues);
@@ -161,5 +167,65 @@ function isApipaAddress(url: string): boolean {
     return apipaPattern.test(hostname);
   } catch {
     return false;
+  }
+}
+
+/**
+ * Check if hostname is a local address (localhost, 127.0.0.1, or private IP ranges)
+ */
+export function isLocalHost(hostname: string): boolean {
+  if (!hostname) return false;
+  
+  const lower = hostname.toLowerCase();
+  
+  // Check for localhost variants
+  if (lower === 'localhost' || lower === 'localhost.localdomain') {
+    return true;
+  }
+  
+  // Check for 127.x.x.x (loopback)
+  if (/^127\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostname)) {
+    return true;
+  }
+  
+  // Check for ::1 (IPv6 loopback)
+  if (hostname === '::1' || hostname === '[::1]') {
+    return true;
+  }
+  
+  // Check for private IP ranges (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+  if (/^192\.168\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostname)) {
+    return true;
+  }
+  
+  if (/^10\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostname)) {
+    return true;
+  }
+  
+  if (/^172\.(?:1[6-9]|2[0-9]|3[0-1])\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostname)) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Validate protocol choice for the given URL
+ * Returns a warning message if HTTPS is used with local addresses
+ */
+export function validateProtocol(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
+    const protocol = urlObj.protocol;
+    
+    // Warn if using HTTPS with local addresses
+    if (protocol === 'https:' && isLocalHost(hostname)) {
+      return 'Local LLM servers (LM Studio, Ollama) typically use HTTP, not HTTPS. If you see connection errors, try changing the protocol to http://. For production use with HTTPS, set up a reverse proxy (nginx, caddy) with TLS certificates.';
+    }
+    
+    return null;
+  } catch {
+    return null;
   }
 }

@@ -87,6 +87,22 @@ describe('LLM Configuration', () => {
     expect(hasApipaWarning).toBe(true);
   });
 
+  test('should provide actionable error message for APIPA addresses', () => {
+    const config = readLlmConfig({
+      configuration: createMockConfig({
+        'llm.baseUrl': 'http://169.254.100.50:1234/v1',
+      }),
+    });
+
+    const apipaIssue = config.issues.find((issue) =>
+      issue.toLowerCase().includes('apipa')
+    );
+
+    expect(apipaIssue).toBeDefined();
+    expect(apipaIssue).toContain('DHCP failure');
+    expect(apipaIssue).toContain('static IP');
+  });
+
   test('should detect APIPA address at lower boundary (169.254.0.0)', () => {
     const config = readLlmConfig({
       configuration: createMockConfig({
@@ -194,6 +210,96 @@ describe('LLM Configuration', () => {
 
     test('should reject empty strings', () => {
       expect(isValidBaseUrl('')).toBe(false);
+    });
+  });
+
+  describe('Protocol validation', () => {
+    test('should warn when HTTPS is used with localhost', () => {
+      const config = readLlmConfig({
+        configuration: createMockConfig({
+          'llm.baseUrl': 'https://localhost:1234/v1',
+        }),
+      });
+
+      const hasProtocolWarning = config.issues.some((issue) =>
+        issue.toLowerCase().includes('local llm servers')
+      );
+
+      expect(hasProtocolWarning).toBe(true);
+      expect(config.issues.some(issue => issue.includes('reverse proxy'))).toBe(true);
+    });
+
+    test('should warn when HTTPS is used with 127.0.0.1', () => {
+      const config = readLlmConfig({
+        configuration: createMockConfig({
+          'llm.baseUrl': 'https://127.0.0.1:1234/v1',
+        }),
+      });
+
+      const hasProtocolWarning = config.issues.some((issue) =>
+        issue.toLowerCase().includes('local llm servers')
+      );
+
+      expect(hasProtocolWarning).toBe(true);
+    });
+
+    test('should warn when HTTPS is used with private IP (192.168.x.x)', () => {
+      const config = readLlmConfig({
+        configuration: createMockConfig({
+          'llm.baseUrl': 'https://192.168.1.100:1234/v1',
+        }),
+      });
+
+      const hasProtocolWarning = config.issues.some((issue) =>
+        issue.toLowerCase().includes('local llm servers')
+      );
+
+      expect(hasProtocolWarning).toBe(true);
+    });
+
+    test('should not warn when HTTP is used with localhost', () => {
+      const config = readLlmConfig({
+        configuration: createMockConfig({
+          'llm.baseUrl': 'http://localhost:1234/v1',
+        }),
+      });
+
+      const hasProtocolWarning = config.issues.some((issue) =>
+        issue.toLowerCase().includes('local llm servers')
+      );
+
+      expect(hasProtocolWarning).toBe(false);
+    });
+
+    test('should not warn when HTTPS is used with public domain', () => {
+      const config = readLlmConfig({
+        configuration: createMockConfig({
+          'llm.baseUrl': 'https://api.openai.com/v1',
+        }),
+      });
+
+      const hasProtocolWarning = config.issues.some((issue) =>
+        issue.toLowerCase().includes('local llm servers')
+      );
+
+      expect(hasProtocolWarning).toBe(false);
+    });
+
+    test('should provide actionable guidance for HTTPS on localhost', () => {
+      const config = readLlmConfig({
+        configuration: createMockConfig({
+          'llm.baseUrl': 'https://localhost:1234/v1',
+        }),
+      });
+
+      const protocolIssue = config.issues.find((issue) =>
+        issue.toLowerCase().includes('local llm servers')
+      );
+
+      expect(protocolIssue).toBeDefined();
+      expect(protocolIssue).toContain('HTTP');
+      expect(protocolIssue).toContain('reverse proxy');
+      expect(protocolIssue).toContain('TLS certificates');
     });
   });
 });

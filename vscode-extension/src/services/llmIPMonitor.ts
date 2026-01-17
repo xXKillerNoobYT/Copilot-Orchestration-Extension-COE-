@@ -36,8 +36,11 @@ export class LLMIPMonitor {
   private readonly CHECK_INTERVAL_MS = 30000; // 30 seconds
   private readonly TIMEOUT_MS = 5000; // 5 second timeout
   private outputChannel: vscode.OutputChannel;
+  private context: vscode.ExtensionContext;
+  private configChangeDebounceTimer: NodeJS.Timeout | null = null;
 
   constructor(context: vscode.ExtensionContext) {
+    this.context = context;
     this.outputChannel = vscode.window.createOutputChannel('LLM Monitor');
     
     // Load config
@@ -56,6 +59,15 @@ export class LLMIPMonitor {
 
     // Register commands
     this.registerCommands();
+
+    // Listen for configuration changes
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration('copilot-orchestrator.llm')) {
+          this.onConfigurationChanged();
+        }
+      })
+    );
   }
 
   /**
@@ -82,6 +94,10 @@ export class LLMIPMonitor {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
+    }
+    if (this.configChangeDebounceTimer) {
+      clearTimeout(this.configChangeDebounceTimer);
+      this.configChangeDebounceTimer = null;
     }
     this.log('🛑 LLM IP Monitor stopped');
     this.statusBarItem.hide();
@@ -350,8 +366,84 @@ export class LLMIPMonitor {
    * Save configuration to extension storage
    */
   private saveConfig(): void {
-    // Would need context to save, so this is a placeholder
+    this.context.globalState.update('llmConfig', this.config);
     this.log(`💾 Config saved: ${this.config.host}:${this.config.port}`);
+  }
+
+  /**
+   * Handle VS Code configuration changes
+   */
+  private onConfigurationChanged(): void {
+    this.log('🔄 Configuration change detected - invalidating cache');
+    
+    // Debounce configuration changes to prevent rapid re-checks
+    if (this.configChangeDebounceTimer) {
+      clearTimeout(this.configChangeDebounceTimer);
+    }
+    
+    this.configChangeDebounceTimer = setTimeout(() => {
+      this.applyConfigurationChange();
+      this.configChangeDebounceTimer = null;
+    }, 500); // 500ms debounce
+  }
+
+  /**
+   * Apply configuration changes (called after debounce)
+   */
+  private applyConfigurationChange(): void {
+    // Clear cached configuration from globalState
+    this.context.globalState.update('llmConfig', undefined);
+    this.log('🗑️ Cache cleared from globalState');
+    
+    // Reload configuration from VS Code settings
+    const updated = this.updateConfigFromSettings();
+    if (updated) {
+      this.log(`📝 Config reloaded from settings: ${this.config.host}:${this.config.port}`);
+      
+      // Persist the freshly loaded configuration back to globalState
+      this.saveConfig();
+      
+      // Re-check connectivity with new settings asynchronously, log any errors
+      void this.checkLLMConnectivity().catch(error => {
+        this.log(`⚠️ Error during connectivity check after config change: ${error}`);
+      });
+    }
+  }
+
+  /**
+   * Update configuration from VS Code settings
+   * Merges baseUrl setting with existing config, preserving other properties
+   * Returns true if configuration was successfully updated
+   */
+  private updateConfigFromSettings(): boolean {
+    const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator.llm');
+    const baseUrl = vsConfig.get<string>('baseUrl');
+    
+    if (baseUrl) {
+      try {
+        const url = new URL(baseUrl);
+        const newHost = url.hostname;
+        const newPort = url.port ? parseInt(url.port, 10) : this.DEFAULT_PORT;
+
+        const prevHost = this.config.host;
+        const prevPort = this.config.port;
+
+        this.config.host = newHost;
+        this.config.port = newPort;
+
+        // If the target LLM endpoint changed, invalidate stale health metadata
+        if (prevHost !== newHost || prevPort !== newPort) {
+          this.config.lastCheckedAt = undefined;
+          this.config.isHealthy = undefined;
+        }
+        
+        return true;
+      } catch (error) {
+        this.log(`⚠️ Failed to parse baseUrl: ${error}`);
+        return false;
+      }
+    }
+    return false;
   }
 
   /**

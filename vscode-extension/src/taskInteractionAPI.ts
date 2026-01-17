@@ -1,6 +1,46 @@
 import * as vscode from 'vscode';
 import { ParsedTask } from './taskParser';
 import { TaskStatusParser } from './taskStatusParser';
+import { defaultAgentProfileLoader, AgentProfile } from './agentProfiles';
+import { MAX_FILES_PER_BUNDLE, BUNDLE_WARNING_THRESHOLD } from './orchestratorPanel';
+
+/**
+ * Validates a context bundle's file list size.
+ * @param files Array of file paths in the bundle
+ * @returns Validation result object containing:
+ *   - isValid: true if bundle is within limit, false if it exceeds MAX_FILES_PER_BUNDLE
+ *   - warning: optional message when bundle approaches threshold (>80% of limit)
+ *   - error: optional message when bundle exceeds the maximum limit
+ */
+export function validateContextBundleSize(files: string[]): { isValid: boolean; warning?: string; error?: string } {
+  // Guard against invalid input
+  if (!files || !Array.isArray(files)) {
+    return {
+      isValid: false,
+      error: 'Invalid context bundle: files must be an array'
+    };
+  }
+
+  const fileCount = files.length;
+  
+  if (fileCount > MAX_FILES_PER_BUNDLE) {
+    return {
+      isValid: false,
+      error: `Context bundle exceeds maximum file limit. Bundle has ${fileCount} files but limit is ${MAX_FILES_PER_BUNDLE}. ` +
+             `Large bundles can cause memory issues, WebSocket truncation, or MCP timeouts.`
+    };
+  }
+  
+  if (fileCount > MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) {
+    return {
+      isValid: true,
+      warning: `Context bundle is approaching the limit (${fileCount}/${MAX_FILES_PER_BUNDLE} files). ` +
+               `Consider splitting into multiple bundles to avoid performance issues.`
+    };
+  }
+  
+  return { isValid: true };
+}
 
 /**
  * TaskInteractionAPI: Bridge between .task.md files and the main orchestrator workflow
@@ -123,6 +163,55 @@ export class TaskInteractionAPI {
     try {
       const uri = vscode.Uri.file(bundlePath);
       const document = await vscode.workspace.openTextDocument(uri);
+      
+      // Validate agent profile if bundle contains profile information
+      const bundleContent = document.getText();
+      let bundle: any;
+
+      // First, handle JSON parsing errors explicitly
+      try {
+        bundle = JSON.parse(bundleContent);
+      } catch (parseError) {
+        // JSON parsing errors indicate a corrupted bundle file rather than just a missing/invalid profile
+        console.warn('Failed to parse context bundle JSON:', parseError);
+        vscode.window.showWarningMessage(
+          'The context bundle file appears to be corrupted (invalid JSON). The file will still be opened.'
+        );
+      }
+
+      // Validate bundle file list size
+      if (bundle) {
+        const validation = validateContextBundleSize(bundle.files);
+        const fileCount = Array.isArray(bundle.files) ? bundle.files.length : undefined;
+        if (!validation.isValid && validation.error) {
+          vscode.window.showErrorMessage(
+            `Context Bundle Size Limit Exceeded: ${validation.error}`
+          );
+          console.error('Context bundle size validation failed:', {
+            bundlePath,
+            fileCount,
+            limit: MAX_FILES_PER_BUNDLE
+          });
+        } else if (validation.warning) {
+          vscode.window.showWarningMessage(validation.warning);
+          console.warn('Context bundle size warning:', {
+            bundlePath,
+            fileCount,
+            limit: MAX_FILES_PER_BUNDLE
+          });
+        }
+      }
+
+      // Then, handle agent profile validation errors separately
+      if (bundle && bundle.agentProfile && bundle.profileVersion) {
+        try {
+          await this.validateAgentProfile(bundle.agentProfile, bundle.profileVersion);
+        } catch (validationError) {
+          // Log validation error but still open the bundle
+          console.warn('Context bundle profile validation failed:', validationError);
+        }
+      }
+      
       await vscode.window.showTextDocument(document);
     } catch (error) {
       vscode.window.showErrorMessage(
@@ -155,6 +244,30 @@ export class TaskInteractionAPI {
         return; // User cancelled
       }
 
+      // Load agent profile for the first assignee (if any)
+      let agentProfileSnapshot;
+      let profileVersion;
+      if (result.task.assignees && result.task.assignees.length > 0) {
+        try {
+          const primaryAgent = result.task.assignees[0];
+          const profile = await defaultAgentProfileLoader.loadProfile(primaryAgent);
+          if (profile) {
+            // Capture essential profile information
+            agentProfileSnapshot = {
+              name: profile.name,
+              role: profile.role,
+              version: profile.version,
+              capabilities: this.extractCapabilities(profile),
+            };
+            // Create a version hash based on profile content
+            profileVersion = this.generateProfileVersion(profile);
+          }
+        } catch (error) {
+          // Log but don't fail if profile loading fails
+          console.warn('Failed to load agent profile for context bundle:', error);
+        }
+      }
+
       // Create context bundle file structure
       const contextDir = `context/${bundleName}`;
       const bundleFile = `${contextDir}/bundle.json`;
@@ -167,6 +280,8 @@ export class TaskInteractionAPI {
         files: [],
         notes: `Context bundle for task: ${result.task.title}`,
         version: 1,
+        agentProfile: agentProfileSnapshot,
+        profileVersion,
       };
 
       // Create bundle file
@@ -404,6 +519,136 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
   private extractIssueNumber(url: string): string | null {
     const match = url.match(/\/issues\/(\d+)/);
     return match ? match[1] : null;
+  }
+
+  /**
+   * Extract capabilities from agent profile
+   */
+  private extractCapabilities(profile: AgentProfile): string[] {
+    const capabilities: string[] = [];
+    
+    // Extract from tool permissions
+    if (profile.tool_permissions) {
+      Object.entries(profile.tool_permissions).forEach(([key, value]) => {
+        if (value === true) {
+          capabilities.push(key);
+        }
+      });
+    }
+    
+    // Add role as a capability
+    if (profile.role) {
+      capabilities.push(`role:${profile.role}`);
+    }
+    
+    return capabilities;
+  }
+
+  /**
+   * Generate a profile version identifier based on profile content
+   */
+  private generateProfileVersion(profile: AgentProfile): string {
+    // Create a deterministic version string from key profile properties
+    const versionData = {
+      name: profile.name,
+      role: profile.role,
+      version: profile.version,
+      permissions: profile.tool_permissions,
+      constraints: profile.execution_constraints,
+    };
+    
+    // Ensure deterministic serialization by sorting object keys
+    const versionString = this.deterministicStringify(versionData);
+    let hash = 0;
+    for (let i = 0; i < versionString.length; i++) {
+      const char = versionString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    return `${profile.version}.${Math.abs(hash).toString(16)}`;
+  }
+
+  /**
+   * Deterministic JSON stringification with sorted keys
+   */
+  private deterministicStringify(obj: any): string {
+    if (obj === null || obj === undefined) {
+      return JSON.stringify(obj);
+    }
+    
+    if (typeof obj !== 'object') {
+      return JSON.stringify(obj);
+    }
+    
+    if (Array.isArray(obj)) {
+      return '[' + obj.map(item => this.deterministicStringify(item)).join(',') + ']';
+    }
+    
+    // Sort object keys for deterministic ordering
+    const sortedKeys = Object.keys(obj).sort();
+    const pairs = sortedKeys.map(key => {
+      const value = this.deterministicStringify(obj[key]);
+      return `"${key}":${value}`;
+    });
+    
+    return '{' + pairs.join(',') + '}';
+  }
+
+  /**
+   * Validate agent profile against current runtime profile
+   */
+  private async validateAgentProfile(
+    bundleProfile: { name: string; role: string; version: number; capabilities?: string[] },
+    bundleProfileVersion: string
+  ): Promise<void> {
+    try {
+      // Load current profile for the same agent
+      const currentProfile = await defaultAgentProfileLoader.loadProfile(bundleProfile.name);
+      
+      if (!currentProfile) {
+        vscode.window.showWarningMessage(
+          `Agent profile '${bundleProfile.name}' not found. Context bundle may be stale.`
+        );
+        return;
+      }
+      
+      // Generate current profile version
+      const currentProfileVersion = this.generateProfileVersion(currentProfile);
+      
+      // Check if profiles match
+      if (bundleProfileVersion !== currentProfileVersion) {
+        vscode.window.showWarningMessage(
+          `Agent profile '${bundleProfile.name}' has changed since context bundle creation. ` +
+          `Expected version: ${bundleProfileVersion}, Current version: ${currentProfileVersion}. ` +
+          `Tools and capabilities may differ from when this context was created.`
+        );
+        
+        // Log detailed mismatch information
+        console.warn('Agent profile mismatch detected:', {
+          bundleProfile: bundleProfile,
+          bundleVersion: bundleProfileVersion,
+          currentVersion: currentProfileVersion,
+          currentRole: currentProfile.role,
+          bundleRole: bundleProfile.role,
+        });
+      }
+      
+      // Check role mismatch even if version matches
+      if (bundleProfile.role !== currentProfile.role) {
+        vscode.window.showErrorMessage(
+          `Critical: Agent role mismatch! Context bundle expects '${bundleProfile.role}' ` +
+          `but current profile has role '${currentProfile.role}'. ` +
+          `Execution may fail due to incompatible capabilities.`
+        );
+      }
+      
+    } catch (error) {
+      console.error('Failed to validate agent profile:', error);
+      vscode.window.showWarningMessage(
+        `Failed to validate agent profile: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   /**
