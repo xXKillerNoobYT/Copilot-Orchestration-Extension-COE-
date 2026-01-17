@@ -171,6 +171,7 @@ describe('AiAssistanceService', () => {
       service.dispose();
 
       expect(service['debounceTimers'].size).toBe(0);
+      expect(service['debounceResolvers'].size).toBe(0);
     });
   });
 
