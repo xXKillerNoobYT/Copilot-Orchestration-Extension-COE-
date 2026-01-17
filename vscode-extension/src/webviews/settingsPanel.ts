@@ -230,7 +230,7 @@ export class SettingsPanel {
     this._panel.webview.postMessage({
       command: 'settingsLoaded',
       config: {
-        baseUrl: config.get<string>('llm.baseUrl', 'http://192.168.137.7:1234'),
+        baseUrl: config.get<string>('llm.baseUrl', 'http://localhost:1234'),
         apiKey: config.get<string>('llm.apiKey', ''),
         model: config.get<string>('llm.defaultModel', 'gpt-3.5-turbo'),
         temperature: config.get<number>('llm.temperature', 0.7),
