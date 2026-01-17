@@ -533,4 +533,28 @@ describe('TemplateService', () => {
       expect(() => getTemplateService()).toThrow('Extension path required');
     });
   });
+
+  describe('Cache Management', () => {
+    it('should clear template cache', async () => {
+      // Load a template to populate cache
+      const template1 = await service.loadTemplate('core-web-app');
+      expect(template1).toBeDefined();
+      
+      // Verify it's cached by loading again (should be same instance)
+      const template2 = await service.loadTemplate('core-web-app');
+      expect(template1).toBe(template2);
+      
+      // Clear the cache
+      service.clearCache();
+      
+      // Load again - should be a new instance (not from cache)
+      const template3 = await service.loadTemplate('core-web-app');
+      expect(template3).toBeDefined();
+      expect(template3).not.toBe(template1); // Different instance due to cache clear
+      
+      // Verify the content is still correct
+      expect(template3.metadata.id).toBe('core-web-app');
+      expect(template3.metadata.name).toBe('Full-Stack Web Application');
+    });
+  });
 });
