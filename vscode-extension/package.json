@@ -308,8 +308,10 @@
     "demo": "npm run compile && node dist/taskGraphDemo.js"
   },
   "dependencies": {
+    "@types/jspdf": "^2.0.0",
     "chart.js": "^4.5.1",
     "graphlib": "^2.1.8",
+    "jspdf": "^4.0.0",
     "laravel-echo": "^2.3.0",
     "pusher-js": "^8.4.0",
     "socket.io-client": "^4.7.0",
