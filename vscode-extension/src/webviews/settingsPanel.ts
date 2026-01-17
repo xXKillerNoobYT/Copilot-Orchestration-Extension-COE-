@@ -135,36 +135,35 @@ export class SettingsPanel {
 
   private async _testConnection(config: any) {
     try {
-      const url = this._buildApiUrl(config.baseUrl, 'chat/completions');
-      const response = await this._fetchWithTimeout(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}),
-        },
-        body: JSON.stringify({
-          model: config.model,
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 5,
-        }),
-      }, 10000);
+      // Import required modules for backend connection testing
+      const { ProviderFactory } = await import('../transport/transportManager');
+      
+      // Create a provider instance using the config from the webview
+      const provider = ProviderFactory.createProvider('lmstudio', {
+        name: 'LM Studio',
+        baseUrl: config.baseUrl,
+        apiKey: config.apiKey || undefined,
+        defaultModel: config.model,
+        timeout: 30000,
+      });
 
-      if (!response.ok) {
+      // Use the provider's built-in testConnection method
+      // This runs in the extension host context, avoiding webview CSP restrictions
+      const connected = await provider.testConnection();
+
+      if (connected) {
+        this._panel.webview.postMessage({
+          command: 'connectionTestResult',
+          success: true,
+          message: 'Connection successful! Model responded.',
+        });
+      } else {
         this._panel.webview.postMessage({
           command: 'connectionTestResult',
           success: false,
-          message: `HTTP ${response.status}: ${response.statusText} (URL: ${url}). If this is a remote LM Studio host, enable external connections and confirm port 1234 is reachable.`,
+          message: `Connection test failed. Please verify:\n1. LLM server is running at ${config.baseUrl}\n2. Model "${config.model}" is loaded\n3. Server is accessible from this machine\n4. If remote server, external API access is enabled`,
         });
-        return;
       }
-
-      const data = await response.json();
-      this._panel.webview.postMessage({
-        command: 'connectionTestResult',
-        success: true,
-        message: 'Connection successful! Model responded.',
-        data: data,
-      });
     } catch (error) {
       this._panel.webview.postMessage({
         command: 'connectionTestResult',
