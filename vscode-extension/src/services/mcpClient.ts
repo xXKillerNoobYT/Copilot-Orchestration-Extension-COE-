@@ -124,6 +124,17 @@ export class MCPClient {
   }
 
   /**
+   * Invalidate the singleton instance and reinitialize with new configuration.
+   * This should be called when configuration changes to ensure the client uses updated settings.
+   */
+  static invalidateInstance(): void {
+    if (MCPClient.instance) {
+      console.log('[MCPClient] Invalidating cached instance due to configuration change');
+      MCPClient.instance = undefined as any;
+    }
+  }
+
+  /**
    * GET /api/v1/mcp/nextTask
    * Fetch next ready task from queue with plan context
    */
