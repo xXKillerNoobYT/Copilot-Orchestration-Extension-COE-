@@ -214,18 +214,17 @@ class MetricsService
         foreach ($keywords as $keyword) {
             $escaped = preg_quote($keyword, '/');
 
-            // 1. Keyword at the very start, followed by a common delimiter or whitespace
-            $patternStart = '/^' . $escaped . '\b[\s:\-\]]/i';
+            // Combine all patterns with alternation for better performance
+            $combinedPattern = '/(?:' .
+                // 1. Keyword at the very start, followed by a common delimiter or whitespace
+                '^' . $escaped . '\b[\s:\-\\\]]' . '|' .
+                // 2. Keyword inside square brackets, e.g. "[critical]"
+                '\[' . $escaped . '\]' . '|' .
+                // 3. In a severity label, e.g. "severity: critical"
+                '\bseverity\s*[:=\-]\s*' . $escaped . '\b' .
+                ')/i';
 
-            // 2. Keyword inside square brackets, e.g. "[critical]"
-            $patternBracket = '/\[' . $escaped . '\]/i';
-
-            // 3. In a severity label, e.g. "severity: critical"
-            $patternLabel = '/\bseverity\s*[:=\-]\s*' . $escaped . '\b/i';
-
-            if (preg_match($patternStart, $message) === 1 ||
-                preg_match($patternBracket, $message) === 1 ||
-                preg_match($patternLabel, $message) === 1) {
+            if (preg_match($combinedPattern, $message) === 1) {
                 return true;
             }
         }
