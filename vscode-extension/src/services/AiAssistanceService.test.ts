@@ -126,10 +126,6 @@ describe('AiAssistanceService', () => {
         wizardState: {},
       };
 
-      // Fire 3 requests rapidly with a short debounce time
-      const promise1 = service.getSuggestionsDebounced(request, 50);
-      const promise2 = service.getSuggestionsDebounced(request, 50);
-      const promise3 = service.getSuggestionsDebounced(request, 50);
       // Fire 3 requests rapidly with very short debounce (1ms for testing)
       const promise1 = service.getSuggestionsDebounced(request, 1);
       const promise2 = service.getSuggestionsDebounced(request, 1);
@@ -138,25 +134,21 @@ describe('AiAssistanceService', () => {
       // Wait for all promises to resolve
       const results = await Promise.all([promise1, promise2, promise3]);
 
+      // All should resolve with the same data
+      expect(results[0]).toEqual(results[1]);
+      expect(results[1]).toEqual(results[2]);
+
       // Verify all promises got the same result and have suggestions
-      results.forEach((result, index) => {
+      results.forEach((result) => {
         expect(result.suggestions).toBeDefined();
         expect(Array.isArray(result.suggestions)).toBe(true);
         expect(result.suggestions.length).toBeGreaterThan(0);
         expect(result.suggestions[0].suggestion).toBe('Test answer');
       });
-      
-      // Only one call should be made after debounce
-      // Wait for all promises to resolve
-      const results = await Promise.all([promise1, promise2, promise3]);
-
-      // All should resolve with the same data
-      expect(results[0]).toEqual(results[1]);
-      expect(results[1]).toEqual(results[2]);
 
       // Only one call should be made after debounce (last one)
       expect(mockMCPClient.askQuestion).toHaveBeenCalledTimes(1);
-    }, 5000);
+    });
   });
 
   describe('logAcceptedSuggestion', () => {
