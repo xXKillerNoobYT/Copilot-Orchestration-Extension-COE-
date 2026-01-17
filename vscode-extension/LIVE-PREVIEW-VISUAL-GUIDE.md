@@ -47,20 +47,20 @@
 
 ### Preview OFF
 ```
-Grid: [Questions - 100%]
+Grid: [Questions - flexible width]
 Toggle: 👁️ Preview OFF (gray)
 ```
 
 ### Preview ON (Default)
 ```
-Grid: [Questions - 60%] [Preview - 40%]
+Grid: [Questions - flexible width] [Preview - 400px fixed]
 Toggle: 👁️ Preview ON (highlighted)
 Render Time: Displayed in preview header
 ```
 
 ### Preview + AI Assistant
 ```
-Grid: [Questions - 40%] [Preview - 40%] [AI - 20%]
+Grid: [Questions - flexible width] [Preview - 400px fixed] [AI - 350px fixed]
 Toggles: 👁️ Preview ON | 💡 AI ON
 ```
 
@@ -207,33 +207,36 @@ Score: 50/100 → Red    (Needs Work)
 
 ## Responsive Behavior
 
-### Wide Screen (>1200px)
+The current implementation uses a fixed-width grid layout with CSS Grid. The main content area uses `1fr` (flexible width) to take up remaining space, while the preview panel and AI assistant have fixed widths:
+
+- **Preview panel:** 400px fixed width
+- **AI assistant:** 350px fixed width  
+- **Main content:** Flexible width (`1fr`)
+
+### Layout Variations
 ```
-[Questions 40%] [Preview 40%] [AI 20%]
-All panels visible side-by-side
+Preview OFF:
+  grid-template-columns: auto (no grid, flexbox)
+
+Preview ON:
+  grid-template-columns: 1fr 400px
+  
+Preview + AI Assistant:
+  grid-template-columns: 1fr 400px 350px
 ```
 
-### Medium Screen (800-1200px)
-```
-[Questions 60%] [Preview 40%]
-AI assistant toggles to overlay
-```
-
-### Narrow Screen (<800px)
-```
-[Questions 100%]
-Preview in accordion/tabs
-AI assistant in modal
-```
+**Note:** Additional responsive breakpoints for narrow screens are not currently implemented.
 
 ## Keyboard Shortcuts
 
+Currently implemented shortcuts:
+
 ```
 Ctrl/Cmd + S  → Save wizard state
-Ctrl/Cmd + P  → Toggle preview
-Ctrl/Cmd + A  → Toggle AI assistant
-Escape        → Close panels
+Shift + Tab   → Go to previous step
 ```
+
+**Note:** Additional shortcuts for toggling preview (Ctrl/Cmd + P), AI assistant (Ctrl/Cmd + A), and closing panels (Escape) are not currently implemented.
 
 ## State Transitions
 
