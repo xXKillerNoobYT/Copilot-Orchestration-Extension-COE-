@@ -124,10 +124,13 @@ describe('AiAssistanceService', () => {
       // Wait for all promises to resolve
       const results = await Promise.all([promise1, promise2, promise3]);
 
-      // Verify all promises got the same result
-      expect(results[0].suggestions[0].suggestion).toBe('Test answer');
-      expect(results[1].suggestions[0].suggestion).toBe('Test answer');
-      expect(results[2].suggestions[0].suggestion).toBe('Test answer');
+      // Verify all promises got the same result and have suggestions
+      results.forEach((result, index) => {
+        expect(result.suggestions).toBeDefined();
+        expect(Array.isArray(result.suggestions)).toBe(true);
+        expect(result.suggestions.length).toBeGreaterThan(0);
+        expect(result.suggestions[0].suggestion).toBe('Test answer');
+      });
       
       // Only one call should be made after debounce
       expect(mockMCPClient.askQuestion).toHaveBeenCalledTimes(1);
