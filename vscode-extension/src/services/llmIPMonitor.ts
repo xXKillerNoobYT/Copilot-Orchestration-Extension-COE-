@@ -36,8 +36,10 @@ export class LLMIPMonitor {
   private readonly CHECK_INTERVAL_MS = 30000; // 30 seconds
   private readonly TIMEOUT_MS = 5000; // 5 second timeout
   private outputChannel: vscode.OutputChannel;
+  private context: vscode.ExtensionContext;
 
   constructor(context: vscode.ExtensionContext) {
+    this.context = context;
     this.outputChannel = vscode.window.createOutputChannel('LLM Monitor');
     
     // Load config
@@ -56,6 +58,15 @@ export class LLMIPMonitor {
 
     // Register commands
     this.registerCommands();
+
+    // Listen for configuration changes
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration('copilot-orchestrator.llm')) {
+          this.onConfigurationChanged();
+        }
+      })
+    );
   }
 
   /**
@@ -350,8 +361,38 @@ export class LLMIPMonitor {
    * Save configuration to extension storage
    */
   private saveConfig(): void {
-    // Would need context to save, so this is a placeholder
+    this.context.globalState.update('llmConfig', this.config);
     this.log(`💾 Config saved: ${this.config.host}:${this.config.port}`);
+  }
+
+  /**
+   * Handle VS Code configuration changes
+   */
+  private onConfigurationChanged(): void {
+    this.log('🔄 Configuration change detected - invalidating cache');
+    
+    // Clear cached configuration from globalState
+    this.context.globalState.update('llmConfig', undefined);
+    this.log('🗑️ Cache cleared from globalState');
+    
+    // Reload configuration from VS Code settings
+    const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator.llm');
+    const baseUrl = vsConfig.get<string>('baseUrl');
+    
+    if (baseUrl) {
+      try {
+        const url = new URL(baseUrl);
+        this.config.host = url.hostname;
+        this.config.port = url.port ? parseInt(url.port, 10) : this.DEFAULT_PORT;
+        this.config.lastKnownIP = url.hostname;
+        this.log(`📝 Config reloaded from settings: ${this.config.host}:${this.config.port}`);
+        
+        // Re-check connectivity with new settings
+        this.checkLLMConnectivity();
+      } catch (error) {
+        this.log(`⚠️ Failed to parse baseUrl: ${error}`);
+      }
+    }
   }
 
   /**
