@@ -126,16 +126,28 @@ export class TaskInteractionAPI {
       const document = await vscode.workspace.openTextDocument(uri);
       
       // Validate agent profile if bundle contains profile information
+      const bundleContent = document.getText();
+      let bundle: any;
+
+      // First, handle JSON parsing errors explicitly
       try {
-        const bundleContent = document.getText();
-        const bundle = JSON.parse(bundleContent);
-        
-        if (bundle.agentProfile && bundle.profileVersion) {
+        bundle = JSON.parse(bundleContent);
+      } catch (parseError) {
+        // JSON parsing errors indicate a corrupted bundle file rather than just a missing/invalid profile
+        console.warn('Failed to parse context bundle JSON:', parseError);
+        vscode.window.showWarningMessage(
+          'The context bundle file appears to be corrupted (invalid JSON). The file will still be opened.'
+        );
+      }
+
+      // Then, handle agent profile validation errors separately
+      if (bundle && bundle.agentProfile && bundle.profileVersion) {
+        try {
           await this.validateAgentProfile(bundle.agentProfile, bundle.profileVersion);
+        } catch (validationError) {
+          // Log validation error but still open the bundle
+          console.warn('Context bundle profile validation failed:', validationError);
         }
-      } catch (validationError) {
-        // Log validation error but still open the bundle
-        console.warn('Context bundle profile validation failed:', validationError);
       }
       
       await vscode.window.showTextDocument(document);
@@ -483,8 +495,8 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
       constraints: profile.execution_constraints,
     };
     
-    // Simple hash-like identifier (in production, use a proper hash function)
-    const versionString = JSON.stringify(versionData);
+    // Ensure deterministic serialization by sorting object keys
+    const versionString = this.deterministicStringify(versionData);
     let hash = 0;
     for (let i = 0; i < versionString.length; i++) {
       const char = versionString.charCodeAt(i);
@@ -493,6 +505,32 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
     }
     
     return `${profile.version}.${Math.abs(hash).toString(16)}`;
+  }
+
+  /**
+   * Deterministic JSON stringification with sorted keys
+   */
+  private deterministicStringify(obj: any): string {
+    if (obj === null || obj === undefined) {
+      return JSON.stringify(obj);
+    }
+    
+    if (typeof obj !== 'object') {
+      return JSON.stringify(obj);
+    }
+    
+    if (Array.isArray(obj)) {
+      return '[' + obj.map(item => this.deterministicStringify(item)).join(',') + ']';
+    }
+    
+    // Sort object keys for deterministic ordering
+    const sortedKeys = Object.keys(obj).sort();
+    const pairs = sortedKeys.map(key => {
+      const value = this.deterministicStringify(obj[key]);
+      return `"${key}":${value}`;
+    });
+    
+    return '{' + pairs.join(',') + '}';
   }
 
   /**

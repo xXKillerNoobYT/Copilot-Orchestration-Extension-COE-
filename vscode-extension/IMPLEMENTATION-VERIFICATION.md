@@ -139,8 +139,8 @@ const sampleBundles: ContextBundle[] = [
 
 #### Profile Version Hash
 **Current Implementation:**
-- Simple hash function using bit shifting
-- Deterministic output
+- Hash function using sorted object keys + bit shifting
+- Deterministic output across all JavaScript environments
 - Fast computation
 - Collision-resistant for practical use
 

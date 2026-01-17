@@ -173,17 +173,6 @@ Task description`,
 
   describe('Profile Validation', () => {
     it('should warn when profile version has changed', async () => {
-      const originalProfile: AgentProfile = {
-        name: 'TestCoder',
-        role: 'coder',
-        version: 1,
-        tool_permissions: {
-          read_files: true,
-        },
-        execution_constraints: {},
-        prompt_templates: {},
-      };
-
       const updatedProfile: AgentProfile = {
         name: 'TestCoder',
         role: 'coder',

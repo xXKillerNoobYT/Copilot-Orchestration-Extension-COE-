@@ -37,7 +37,7 @@ export interface ContextBundle {
   - `role`: Agent role (e.g., "coder", "reviewer")
   - `version`: Agent profile version number
   - `capabilities`: Array of capabilities extracted from tool permissions
-- `profileVersion`: Deterministic hash of profile content for staleness detection
+- `profileVersion`: Hash of profile content for staleness detection (deterministic with sorted keys)
 
 ### 2. Profile Capture During Bundle Creation
 When creating a context bundle for a task:
@@ -191,8 +191,9 @@ Comprehensive test coverage includes:
 ## Implementation Notes
 
 ### Hash Algorithm
-The profile version uses a simple hash of profile content:
-- Deterministic (same profile = same hash)
+The profile version uses a deterministic hash of profile content:
+- Deterministic (same profile = same hash across all environments)
+- Uses sorted object keys to ensure consistent serialization
 - Fast computation
 - Collision-resistant for practical use
 - Can be upgraded to cryptographic hash if needed
