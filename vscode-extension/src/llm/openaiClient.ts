@@ -1,4 +1,4 @@
-import { LlmConfig, redactSecret } from '../config/llmConfig';
+import { LlmConfig, redactSecret, validateProtocol } from '../config/llmConfig';
 
 type HeadersInit = Record<string, string>;
 type FetchResponse = {
@@ -59,7 +59,12 @@ export function createOpenAIClient(config: LlmConfig): LlmClient {
     } catch (error: any) {
       // Enhance error messages for common issues
       if (error.name === 'AbortError') {
-        throw new Error(`Request timeout after ${timeoutMs}ms. If using HTTPS with localhost/local IP, this may be a TLS handshake failure. Local LLM servers (LM Studio, Ollama) typically use HTTP. Try changing ${baseUrl} to use http:// instead of https://.`);
+        // Check if this might be a protocol mismatch issue
+        const protocolWarning = validateProtocol(baseUrl);
+        if (protocolWarning) {
+          throw new Error(`Request timeout after ${timeoutMs}ms. ${protocolWarning}`);
+        }
+        throw new Error(`Request timeout after ${timeoutMs}ms. Check that the server is running and reachable at ${baseUrl}.`);
       }
       
       // Check for TLS/SSL errors

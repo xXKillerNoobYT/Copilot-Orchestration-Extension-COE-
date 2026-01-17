@@ -699,10 +699,18 @@ export class SettingsPanel {
       if (lower === 'localhost' || lower === 'localhost.localdomain' || hostname === '::1' || hostname === '[::1]') {
         return true;
       }
-      // Check for loopback (127.x.x.x)
-      if (/^127\\./.test(hostname)) return true;
-      // Check for private IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-      if (/^192\\.168\\./.test(hostname) || /^10\\./.test(hostname) || /^172\\.(1[6-9]|2[0-9]|3[0-1])\\./.test(hostname)) {
+      // Check for loopback (127.x.x.x) - validate full IP format
+      if (/^127\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostname)) {
+        return true;
+      }
+      // Check for private IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x) - validate full IP format
+      if (/^192\.168\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostname)) {
+        return true;
+      }
+      if (/^10\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostname)) {
+        return true;
+      }
+      if (/^172\.(?:1[6-9]|2[0-9]|3[0-1])\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostname)) {
         return true;
       }
       return false;
