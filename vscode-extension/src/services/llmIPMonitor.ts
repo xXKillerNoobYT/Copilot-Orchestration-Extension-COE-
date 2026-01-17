@@ -396,29 +396,47 @@ export class LLMIPMonitor {
     this.log('🗑️ Cache cleared from globalState');
     
     // Reload configuration from VS Code settings
-    const updated = this.loadConfigFromSettings();
+    const updated = this.updateConfigFromSettings();
     if (updated) {
       this.log(`📝 Config reloaded from settings: ${this.config.host}:${this.config.port}`);
       
-      // Re-check connectivity with new settings asynchronously
-      void this.checkLLMConnectivity();
+      // Persist the freshly loaded configuration back to globalState
+      this.saveConfig();
+      
+      // Re-check connectivity with new settings asynchronously, log any errors
+      void this.checkLLMConnectivity().catch(error => {
+        this.log(`⚠️ Error during connectivity check after config change: ${error}`);
+      });
     }
   }
 
   /**
-   * Load configuration from VS Code settings
-   * Returns true if configuration was successfully loaded
+   * Update configuration from VS Code settings
+   * Merges baseUrl setting with existing config, preserving other properties
+   * Returns true if configuration was successfully updated
    */
-  private loadConfigFromSettings(): boolean {
+  private updateConfigFromSettings(): boolean {
     const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator.llm');
     const baseUrl = vsConfig.get<string>('baseUrl');
     
     if (baseUrl) {
       try {
         const url = new URL(baseUrl);
-        this.config.host = url.hostname;
-        this.config.port = url.port ? parseInt(url.port, 10) : this.DEFAULT_PORT;
-        this.config.lastKnownIP = url.hostname;
+        const newHost = url.hostname;
+        const newPort = url.port ? parseInt(url.port, 10) : this.DEFAULT_PORT;
+
+        const prevHost = this.config.host;
+        const prevPort = this.config.port;
+
+        this.config.host = newHost;
+        this.config.port = newPort;
+
+        // If the target LLM endpoint changed, invalidate stale health metadata
+        if (prevHost !== newHost || prevPort !== newPort) {
+          this.config.lastCheckedAt = undefined;
+          this.config.isHealthy = undefined;
+        }
+        
         return true;
       } catch (error) {
         this.log(`⚠️ Failed to parse baseUrl: ${error}`);
