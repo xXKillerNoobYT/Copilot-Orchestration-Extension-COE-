@@ -4,7 +4,7 @@
  */
 
 import { validateContextBundleSize } from './taskInteractionAPI';
-import { MAX_FILES_PER_BUNDLE } from './orchestratorPanel';
+import { MAX_FILES_PER_BUNDLE, BUNDLE_WARNING_THRESHOLD } from './orchestratorPanel';
 
 describe('TaskInteractionAPI - Context Bundle Size Validation', () => {
   describe('validateContextBundleSize', () => {
@@ -17,8 +17,8 @@ describe('TaskInteractionAPI - Context Bundle Size Validation', () => {
       expect(result.error).toBeUndefined();
     });
 
-    it('should warn when bundle approaches 80% of limit', () => {
-      const fileCount = Math.ceil(MAX_FILES_PER_BUNDLE * 0.81);
+    it('should warn when bundle approaches warning threshold', () => {
+      const fileCount = Math.ceil(MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) + 1;
       const files = Array.from({ length: fileCount }, (_, i) => `file${i}.ts`);
       const result = validateContextBundleSize(files);
       
@@ -71,8 +71,8 @@ describe('TaskInteractionAPI - Context Bundle Size Validation', () => {
       // May have warning since it's at the limit
     });
 
-    it('should accept bundle just below the 80% warning threshold', () => {
-      const fileCount = Math.floor(MAX_FILES_PER_BUNDLE * 0.79);
+    it('should accept bundle just below the warning threshold', () => {
+      const fileCount = Math.floor(MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD);
       const files = Array.from({ length: fileCount }, (_, i) => `file${i}.ts`);
       const result = validateContextBundleSize(files);
       
@@ -92,6 +92,19 @@ describe('TaskInteractionAPI - Context Bundle Size Validation', () => {
 
     it('should be 100 as specified in the issue', () => {
       expect(MAX_FILES_PER_BUNDLE).toBe(100);
+    });
+  });
+
+  describe('BUNDLE_WARNING_THRESHOLD constant', () => {
+    it('should be defined and be a reasonable threshold', () => {
+      expect(BUNDLE_WARNING_THRESHOLD).toBeDefined();
+      expect(typeof BUNDLE_WARNING_THRESHOLD).toBe('number');
+      expect(BUNDLE_WARNING_THRESHOLD).toBeGreaterThan(0);
+      expect(BUNDLE_WARNING_THRESHOLD).toBeLessThan(1);
+    });
+
+    it('should be 0.8 (80%) as implemented', () => {
+      expect(BUNDLE_WARNING_THRESHOLD).toBe(0.8);
     });
   });
 });

@@ -2,12 +2,15 @@ import * as vscode from 'vscode';
 import { ParsedTask } from './taskParser';
 import { TaskStatusParser } from './taskStatusParser';
 import { defaultAgentProfileLoader, AgentProfile } from './agentProfiles';
-import { MAX_FILES_PER_BUNDLE } from './orchestratorPanel';
+import { MAX_FILES_PER_BUNDLE, BUNDLE_WARNING_THRESHOLD } from './orchestratorPanel';
 
 /**
  * Validates a context bundle's file list size.
  * @param files Array of file paths in the bundle
- * @returns Validation result with isValid flag and optional warning message
+ * @returns Validation result object containing:
+ *   - isValid: true if bundle is within limit, false if it exceeds MAX_FILES_PER_BUNDLE
+ *   - warning: optional message when bundle approaches threshold (>80% of limit)
+ *   - error: optional message when bundle exceeds the maximum limit
  */
 export function validateContextBundleSize(files: string[]): { isValid: boolean; warning?: string; error?: string } {
   const fileCount = files.length;
@@ -20,7 +23,7 @@ export function validateContextBundleSize(files: string[]): { isValid: boolean; 
     };
   }
   
-  if (fileCount > MAX_FILES_PER_BUNDLE * 0.8) {
+  if (fileCount > MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) {
     return {
       isValid: true,
       warning: `Context bundle is approaching the limit (${fileCount}/${MAX_FILES_PER_BUNDLE} files). ` +

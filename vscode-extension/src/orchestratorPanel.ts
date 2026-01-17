@@ -16,6 +16,12 @@ export interface MemoryEntry {
  */
 export const MAX_FILES_PER_BUNDLE = 100;
 
+/**
+ * Threshold ratio for warning about context bundle size (0.8 = 80% of maximum).
+ * When a bundle reaches this threshold, users receive a warning to consider splitting it.
+ */
+export const BUNDLE_WARNING_THRESHOLD = 0.8;
+
 export interface ContextBundle {
   id: string;
   name: string;
@@ -253,7 +259,7 @@ export class OrchestratorPanelProvider {
           `${message}\n\n⚠️ WARNING: Bundle exceeds recommended limit of ${MAX_FILES_PER_BUNDLE} files. ` +
           `Large bundles may cause performance issues or timeouts.`
         );
-      } else if (fileCount > MAX_FILES_PER_BUNDLE * 0.8) {
+      } else if (fileCount > MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) {
         vscode.window.showWarningMessage(
           `${message}\n\n⚠️ Bundle is approaching the recommended limit of ${MAX_FILES_PER_BUNDLE} files.`
         );
