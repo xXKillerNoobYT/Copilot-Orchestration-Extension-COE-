@@ -61,8 +61,9 @@ module.exports = {
     'services/planPersistence\\.test\\.ts',
     'services/taskDecomposition\\.test\\.ts',
     // Preview tests converted to Jest - no longer excluded
+    // // Preview tests ENABLED for Issue #56
     // 'components/preview/PreviewEngine\\.test\\.ts',
-    // 'components/preview/WizardStateObserver\\.test\\.ts',
+    // // 'components/preview/WizardStateObserver\\.test\\.ts',
     'copilotDispatcher\\.test\\.ts',
     'panels/visualVerificationPanel\\.test\\.ts',
     'panels/planAdjustmentWizard\\.test\\.ts',
