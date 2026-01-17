@@ -499,12 +499,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (event.affectsConfiguration('copilot-orchestrator.mcp')) {
         console.log('[Extension] MCP configuration changed - invalidating MCPClient cache');
         MCPClient.invalidateInstance();
-        
-        // Notify user that configuration has been applied
-        vscode.window.showInformationMessage(
-          'MCP configuration updated. New settings will be used for all future requests.',
-          'OK'
-        );
+        // Note: New configuration will be applied on next MCP request
       }
     })
   );

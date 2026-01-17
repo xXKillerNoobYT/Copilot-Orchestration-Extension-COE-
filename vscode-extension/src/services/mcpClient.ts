@@ -93,7 +93,7 @@ export class MCPClient {
   private baseUrl: string;
   private authToken?: string;
   private timeout: number = 10000;
-  private static instance: MCPClient;
+  private static instance: MCPClient | undefined;
   private circuitBreaker: CircuitBreaker;
 
   private constructor(config: MCPConfig) {
@@ -130,7 +130,7 @@ export class MCPClient {
   static invalidateInstance(): void {
     if (MCPClient.instance) {
       console.log('[MCPClient] Invalidating cached instance due to configuration change');
-      MCPClient.instance = undefined as any;
+      MCPClient.instance = undefined;
     }
   }
 
