@@ -16,6 +16,7 @@ import { SettingsPanel } from './webviews/settingsPanel';
 import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
 import { PlanBuilderPanel } from './panels/planBuilderPanel';
+import { AuditDashboardPanel } from './panels/auditDashboardPanel';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 import { getLLMIPMonitor } from './services/llmIPMonitor';
@@ -164,6 +165,22 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // ============ Plan Builder Commands ============
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.openPlanBuilder', async () => {
+      PlanBuilderPanel.createOrShow(context.extensionUri);
+    })
+  );
+
+
+
+  // ============ Audit Dashboard Command ============
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
+      AuditDashboardPanel.createOrShow(context.extensionUri);
+    })
+  );
+
   // ============ WebSocket Broadcasting (Code Master Section 11.8-11.9) ============
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.configureWebSocket', async () => {
@@ -242,14 +259,6 @@ export function activate(context: vscode.ExtensionContext) {
       await executeLlmCommand();
     })
   );
-
-  // Audit Dashboard (TODO: Implement auditDashboardPanel)
-  // context.subscriptions.push(
-  //   vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
-  //     const { AuditDashboardPanel } = await import('./panels/auditDashboardPanel.js');
-  //     AuditDashboardPanel.createOrShow(context.extensionUri);
-  //   })
-  // );
 
   // ============ .task.md File Support (CodeLens, Watcher, Syntax) ============
   // Initialize CodeLens provider for .task.md files
@@ -678,6 +687,8 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<vscode.TreeI
           new ActionTreeItem('🔧 Configure LLM', 'copilot-orchestrator.configureLLM', 'Set up LLM provider', 'settings-gear'),
           new ActionTreeItem('🔌 Test LLM Connection', 'copilot-orchestrator.testConnection', 'Verify LLM connectivity', 'plug'),
           new ActionTreeItem('🎯 Execute LLM Task', 'copilot-orchestrator.executeLLM', 'Run LLM prompt', 'play-circle'),
+          new ActionTreeItem('📡 Configure WebSocket', 'copilot-orchestrator.configureWebSocket', 'Set up WebSocket connection', 'server'),
+          new ActionTreeItem('🔗 Connection Details', 'copilot-orchestrator.showConnectionDetails', 'View connection status', 'info'),
         ],
         'gear'
       ));
@@ -689,6 +700,8 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<vscode.TreeI
           new ActionTreeItem('📊 Show Task Graph', 'copilot-orchestrator.showGraph', 'Visualize task dependencies', 'graph'),
           new ActionTreeItem('🔗 Show Dependencies', 'copilot-orchestrator.showDependencies', 'View dependency tree', 'references'),
           new ActionTreeItem('🎛️ Open Orchestrator Panel', 'copilot-orchestrator.showPanel', 'Full orchestrator dashboard', 'dashboard'),
+          new ActionTreeItem('👁️ Visual Verification', 'copilot-orchestrator.showVisualVerification', 'Visual verification panel', 'eye'),
+          new ActionTreeItem('📋 Audit Dashboard', 'copilot-orchestrator.showAuditDashboard', 'View audit dashboard', 'report'),
           new ActionTreeItem('🔄 Refresh Tasks', 'copilot-orchestrator.refreshTasks', 'Reload tasks from disk', 'refresh'),
         ],
         'tools'
@@ -699,7 +712,10 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<vscode.TreeI
         '🗂️ Planning & Workflow',
         [
           new ActionTreeItem('📐 Planning Phase', 'copilot-orchestrator.planningPhase', 'Define task scope and dependencies', 'pencil'),
+          new ActionTreeItem('✏️ Open Plan Builder', 'copilot-orchestrator.openPlanBuilder', 'Interactive plan builder', 'pencil'),
           new ActionTreeItem('🧠 AI Development Planning', 'copilot-orchestrator.aiDevPlanning', 'Generate AI-driven development plan', 'lightbulb'),
+          new ActionTreeItem('🔄 Detect Plan Drift', 'copilot-orchestrator.detectPlanDrift', 'Check for plan changes', 'issues'),
+          new ActionTreeItem('🪄 Plan Adjustment Wizard', 'copilot-orchestrator.openPlanAdjustmentWizard', 'Adjust plan interactively', 'wand'),
           new ActionTreeItem('🎯 Guidance & Execution', 'copilot-orchestrator.guidanceExecution', 'Guide AI through implementation', 'rocket'),
           new ActionTreeItem('✅ Review & Completion', 'copilot-orchestrator.reviewCompletion', 'Review and mark tasks complete', 'check'),
         ],
