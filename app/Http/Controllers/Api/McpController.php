@@ -267,11 +267,13 @@ class McpController extends Controller
                 $task = Task::findOrFail($validated['taskId']);
             } else {
                 // No version check - backward compatibility
+                // Still use atomic increment to prevent race conditions
                 $task = Task::findOrFail($validated['taskId']);
                 $task->update([
                     'status' => $newStatus,
-                    'version' => $task->version + 1,
+                    'version' => DB::raw('version + 1'),
                 ]);
+                $task->refresh(); // Reload to get the incremented version
             }
 
             // Log implementation details
