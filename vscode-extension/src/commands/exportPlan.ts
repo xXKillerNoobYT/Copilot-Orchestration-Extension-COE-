@@ -10,11 +10,8 @@
 
 import * as vscode from 'vscode';
 import { PlanExporter, PlanData, ExportFormat } from '../planBuilder/exporters/planExporter';
-import { MultiFormatExporter } from '../exporters/multiFormatExporter';
-import { generateMarkdown } from '../exporters/markdownExporter';
-import type { PlanJSON } from '../planBuilder/planGenerator';
 
-const EXPORT_FORMATS: { label: string; value: ExportFormat | 'enhanced-markdown' | 'pdf-advanced' | 'figma' | 'openapi'; description: string }[] = [
+const EXPORT_FORMATS: { label: string; value: ExportFormat; description: string }[] = [
   {
     label: '$(file-code) JSON',
     value: 'json',
@@ -26,29 +23,9 @@ const EXPORT_FORMATS: { label: string; value: ExportFormat | 'enhanced-markdown'
     description: 'Formatted README with sections and task lists',
   },
   {
-    label: '$(note) Enhanced Markdown',
-    value: 'enhanced-markdown',
-    description: 'Professional Markdown with TOC, cover page, and diagrams',
-  },
-  {
     label: '$(file-pdf) PDF Ready (HTML)',
     value: 'pdf',
     description: 'HTML file ready for browser printing to PDF',
-  },
-  {
-    label: '$(file-pdf) PDF Advanced',
-    value: 'pdf-advanced',
-    description: 'Generated PDF with charts and professional layout',
-  },
-  {
-    label: '$(paintcan) Figma Export',
-    value: 'figma',
-    description: 'Design system specifications for Figma',
-  },
-  {
-    label: '$(symbol-interface) OpenAPI Specification',
-    value: 'openapi',
-    description: 'OpenAPI 3.0 compatible API documentation',
   },
   {
     label: '$(octoface) GitHub Issues',
@@ -108,48 +85,11 @@ export async function exportPlanCommand(): Promise<void> {
         try {
           progress.report({ increment: 50 });
           
-          let exportPath: string;
-
-          // Handle new export formats
-          if (format === 'enhanced-markdown') {
-            // Use enhanced markdown exporter
-            const planJSON = await getPlanJSONData();
-            if (!planJSON) {
-              throw new Error('Failed to get plan data for enhanced markdown export');
-            }
-            const markdown = generateMarkdown(planJSON);
-            const filename = `${planJSON.metadata.name}_enhanced.md`.replace(/[<>:"|?*\/\\]/g, '_');
-            exportPath = require('path').join(outputPath, filename);
-            require('fs').writeFileSync(exportPath, markdown, 'utf-8');
-          } else if (format === 'pdf-advanced') {
-            // Use PDF exporter with jsPDF
-            const planJSON = await getPlanJSONData();
-            if (!planJSON) {
-              throw new Error('Failed to get plan data for PDF export');
-            }
-            exportPath = await MultiFormatExporter.exportToPDF(planJSON, outputPath);
-          } else if (format === 'figma') {
-            // Use Figma exporter
-            const planJSON = await getPlanJSONData();
-            if (!planJSON) {
-              throw new Error('Failed to get plan data for Figma export');
-            }
-            exportPath = MultiFormatExporter.exportToFigma(planJSON, outputPath);
-          } else if (format === 'openapi') {
-            // Use OpenAPI exporter
-            const planJSON = await getPlanJSONData();
-            if (!planJSON) {
-              throw new Error('Failed to get plan data for OpenAPI export');
-            }
-            exportPath = MultiFormatExporter.exportToOpenAPI(planJSON, outputPath);
-          } else {
-            // Use original PlanExporter for other formats
-            exportPath = await PlanExporter.exportPlan(
-              planData,
-              format as ExportFormat,
-              outputPath
-            );
-          }
+          const exportPath = await PlanExporter.exportPlan(
+            planData,
+            format,
+            outputPath
+          );
           
           progress.report({ increment: 50 });
           
@@ -187,7 +127,7 @@ export async function exportPlanCommand(): Promise<void> {
 /**
  * Show format selection QuickPick
  */
-async function showFormatPicker(): Promise<ExportFormat | 'enhanced-markdown' | 'pdf-advanced' | 'figma' | 'openapi' | undefined> {
+async function showFormatPicker(): Promise<ExportFormat | undefined> {
   const selected = await vscode.window.showQuickPick(
     EXPORT_FORMATS.map((fmt) => ({
       label: fmt.label,
@@ -201,7 +141,7 @@ async function showFormatPicker(): Promise<ExportFormat | 'enhanced-markdown' | 
     }
   );
 
-  return selected?.detail as ExportFormat | 'enhanced-markdown' | 'pdf-advanced' | 'figma' | 'openapi' | undefined;
+  return selected?.detail as ExportFormat | undefined;
 }
 
 /**
@@ -248,39 +188,6 @@ async function getPlanData(): Promise<PlanData | null> {
       });
     } catch {
       // Fall through to sample plan
-    }
-  }
-
-  // Return null to prompt user
-  return null;
-}
-
-/**
- * Get PlanJSON data from Plan Builder panel
- */
-async function getPlanJSONData(): Promise<PlanJSON | null> {
-  // Try to get from Plan Builder if available
-  const { PlanBuilderPanel } = await import('../panels/planBuilderPanel.js').catch(() => ({ PlanBuilderPanel: null }));
-  
-  if (PlanBuilderPanel && (PlanBuilderPanel as any).currentPanel) {
-    try {
-      // Request plan JSON data from webview
-      return new Promise((resolve) => {
-        const timeout = setTimeout(() => resolve(null), 5000);
-        
-        (PlanBuilderPanel as any).currentPanel._panel.webview.onDidReceiveMessage((message: any) => {
-          if (message.type === 'planJSONData') {
-            clearTimeout(timeout);
-            resolve(message.data);
-          }
-        });
-
-        (PlanBuilderPanel as any).currentPanel._panel.webview.postMessage({
-          type: 'getPlanJSONData',
-        });
-      });
-    } catch {
-      // Fall through
     }
   }
 
