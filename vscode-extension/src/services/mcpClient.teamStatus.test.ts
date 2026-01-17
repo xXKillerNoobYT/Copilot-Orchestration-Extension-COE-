@@ -1,6 +1,6 @@
 /**
  * Tests for MCPClient.getTeamsStatus()
- * Focus: Team state refresh functionality from MCP /api/teams/status endpoint
+ * Focus: Team state refresh functionality from MCP /api/v1/teams/status endpoint
  */
 
 import { MCPClient } from './mcpClient';
@@ -21,8 +21,8 @@ describe('MCPClient - getTeamsStatus()', () => {
     jest.spyOn(MCPClient, 'getInstance').mockReturnValue(mockMCPClient);
   });
 
-  describe('/api/teams/status endpoint', () => {
-    it('should call /api/teams/status endpoint', async () => {
+  describe('/api/v1/teams/status endpoint', () => {
+    it('should call /api/v1/teams/status endpoint', async () => {
       // Arrange
       const mockResponse = {
         planning: {
