@@ -109,8 +109,8 @@ export class SettingsPanel {
         return;
       }
 
-  const data = await response.json() as { data?: any[] };
-  const models = data.data || [];
+      const data = await response.json() as { data?: any[] };
+      const models = data.data || [];
 
       this._panel.webview.postMessage({
         command: 'modelsLoaded',
@@ -746,14 +746,27 @@ export class SettingsPanel {
         teams: ['planning', 'answer', 'decomposition', 'verification'],
       });
 
-      // Fetch team status from MCP (would call actual MCP endpoint in production)
-      // For now, simulate the refresh with current orchestrator state
-      const teamState = await this.orchestratorManager.getTeamState();
+      // Fetch team status from MCP server
+      const mcpClient = (await import('../services/mcpClient')).MCPClient.getInstance();
+      const teamState = await mcpClient.getTeamsStatus();
+
+      // Update orchestrator manager with fresh data
+      if (teamState && typeof teamState === 'object' && 'teams' in teamState) {
+        const teams = teamState.teams as Record<string, any>;
+        for (const [teamName, status] of Object.entries(teams)) {
+          if (teamName in this.orchestratorManager.getState().teamStatuses) {
+            this.orchestratorManager.updateTeamStatus(
+              teamName as 'planning' | 'answer' | 'decomposition' | 'verification',
+              status
+            );
+          }
+        }
+      }
 
       // Update webview with fresh data
       this._panel.webview.postMessage({
         command: 'orchestrator:teamStateUpdated',
-        teamState,
+        teamState: this.orchestratorManager.getState().teamStatuses,
         timestamp: new Date().toISOString(),
       });
 
@@ -762,7 +775,7 @@ export class SettingsPanel {
       vscode.window.showErrorMessage(
         `Failed to refresh team state: ${error instanceof Error ? error.message : String(error)}`
       );
-      
+
       this._panel.webview.postMessage({
         command: 'orchestrator:refreshError',
         error: error instanceof Error ? error.message : String(error),
@@ -779,7 +792,7 @@ export class SettingsPanel {
 
       // Get active plan from orchestrator
       const activePlan = this.orchestratorManager.getActivePlan();
-      
+
       if (!activePlan) {
         vscode.window.showWarningMessage('No active plan selected');
         return;
@@ -802,7 +815,7 @@ export class SettingsPanel {
       vscode.window.showErrorMessage(
         `Failed to run impact analysis: ${error instanceof Error ? error.message : String(error)}`
       );
-      
+
       this._panel.webview.postMessage({
         command: 'orchestrator:analysisError',
         error: error instanceof Error ? error.message : String(error),

@@ -32,9 +32,9 @@ export class MCPClient {
   private constructor(config: MCPConfig) {
     this.baseUrl = config.baseUrl;
     this.timeout = config.timeout ?? 10000;
-    this.circuitBreaker = new CircuitBreaker({ 
-      failureThreshold: 5, 
-      resetTimeout: 60000 
+    this.circuitBreaker = new CircuitBreaker({
+      failureThreshold: 5,
+      resetTimeout: 60000
     });
   }
 
@@ -96,6 +96,14 @@ export class MCPClient {
     createTask?: boolean;
   }): Promise<any> {
     return this.fetch(`${this.baseUrl}/mcp/reportObservation`, 'POST', data);
+  }
+
+  /**
+   * GET /api/teams/status
+   * Fetch current status of all agent teams from MCP server
+   */
+  async getTeamsStatus(): Promise<any> {
+    return this.fetchWithRetry(`${this.baseUrl}/api/teams/status`, 'GET');
   }
 
   /**
@@ -272,7 +280,7 @@ export class MCPWebSocketListener {
     if (emitter) {
       return emitter.event(handler);
     }
-    return { dispose: () => {} };
+    return { dispose: () => { } };
   }
 
   /**
