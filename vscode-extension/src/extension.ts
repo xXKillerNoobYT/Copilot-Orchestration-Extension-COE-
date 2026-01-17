@@ -21,6 +21,7 @@ import { initializeWebSocketClient, disposeWebSocketClient } from './services/we
 import { getLLMIPMonitor } from './services/llmIPMonitor';
 import { ConnectionMonitor, createConnectionStatusBarItem } from './services/connectionMonitor';
 import { MCPClient } from './services/mcpClient';
+import { registerPlanAdjustmentCommands } from './commands/planAdjustmentCommands';
 
 export function activate(context: vscode.ExtensionContext) {
     // Initialize LLM IP Monitor (Background service for LLM connectivity)
@@ -79,6 +80,9 @@ export function activate(context: vscode.ExtensionContext) {
       });
     })
   );
+
+  // ============ Plan Adjustment Commands (EPIC-008) ============
+  registerPlanAdjustmentCommands(context);
 
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.openPlanAdjustmentWizard', async () => {
