@@ -101,15 +101,15 @@ describe('MCP Endpoint Path Consistency', () => {
     it('all MCP endpoints should start with BASE path', () => {
       const basePrefix = MCP_ENDPOINTS.BASE;
       
-      expect(MCP_ENDPOINTS.NEXT_TASK).toStartWith(basePrefix);
-      expect(MCP_ENDPOINTS.REPORT_TASK_STATUS).toStartWith(basePrefix);
-      expect(MCP_ENDPOINTS.REPORT_OBSERVATION).toStartWith(basePrefix);
-      expect(MCP_ENDPOINTS.REPORT_TEST_FAILURE).toStartWith(basePrefix);
-      expect(MCP_ENDPOINTS.REPORT_VERIFICATION_RESULT).toStartWith(basePrefix);
-      expect(MCP_ENDPOINTS.ASK_QUESTION).toStartWith(basePrefix);
-      expect(MCP_ENDPOINTS.SAVE_PLAN).toStartWith(basePrefix);
-      expect(MCP_ENDPOINTS.LOAD_PLAN).toStartWith(basePrefix);
-      expect(MCP_ENDPOINTS.LIST_PLANS).toStartWith(basePrefix);
+      expect(MCP_ENDPOINTS.NEXT_TASK.startsWith(basePrefix)).toBe(true);
+      expect(MCP_ENDPOINTS.REPORT_TASK_STATUS.startsWith(basePrefix)).toBe(true);
+      expect(MCP_ENDPOINTS.REPORT_OBSERVATION.startsWith(basePrefix)).toBe(true);
+      expect(MCP_ENDPOINTS.REPORT_TEST_FAILURE.startsWith(basePrefix)).toBe(true);
+      expect(MCP_ENDPOINTS.REPORT_VERIFICATION_RESULT.startsWith(basePrefix)).toBe(true);
+      expect(MCP_ENDPOINTS.ASK_QUESTION.startsWith(basePrefix)).toBe(true);
+      expect(MCP_ENDPOINTS.SAVE_PLAN.startsWith(basePrefix)).toBe(true);
+      expect(MCP_ENDPOINTS.LOAD_PLAN.startsWith(basePrefix)).toBe(true);
+      expect(MCP_ENDPOINTS.LIST_PLANS.startsWith(basePrefix)).toBe(true);
     });
   });
 
