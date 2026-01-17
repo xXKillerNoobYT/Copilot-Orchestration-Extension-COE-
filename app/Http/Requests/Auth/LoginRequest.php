@@ -44,7 +44,13 @@ class LoginRequest extends FormRequest
             'password.required' => 'Password is required.',
         ];
     }
-}
+
+    /**
+     * Attempt to authenticate the request's credentials.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 

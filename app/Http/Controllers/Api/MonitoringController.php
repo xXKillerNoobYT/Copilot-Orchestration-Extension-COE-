@@ -281,6 +281,27 @@ class MonitoringController
     }
 
     /**
+     * Get task executions
+     * 
+     * GET /monitoring/executions
+     */
+    public function executions(Request $request): JsonResponse
+    {
+        $limit = $request->input('limit', 50);
+        
+        $executions = \App\Models\TaskExecution::with(['task', 'agent'])
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $executions,
+            'count' => $executions->count(),
+        ]);
+    }
+
+    /**
      * Dashboard data
      * 
      * GET /monitoring/dashboard

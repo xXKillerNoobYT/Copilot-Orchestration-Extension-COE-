@@ -289,6 +289,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/monitoring/logs/statistics', [MonitoringController::class, 'logStatistics'])
         ->name('api.monitoring.logStatistics');
     
+    // Executions
+    Route::get('/monitoring/executions', [MonitoringController::class, 'executions'])
+        ->name('api.monitoring.executions');
+    
     // Dashboard
     Route::get('/monitoring/dashboard', [MonitoringController::class, 'dashboard'])
         ->name('api.monitoring.dashboard');
