@@ -15,6 +15,9 @@ describe('AiAssistanceService', () => {
   let mockMCPClient: jest.Mocked<MCPClient>;
 
   beforeEach(() => {
+    // Reset the singleton instance before each test
+    (MCPClient as any).resetInstance();
+    
     // Create a mock MCPClient instance
     mockMCPClient = {
       askQuestion: jest.fn(),
@@ -25,6 +28,7 @@ describe('AiAssistanceService', () => {
     (MCPClient.getInstance as jest.Mock).mockReturnValue(mockMCPClient);
 
     service = new AiAssistanceService();
+    mockMCPClient = MCPClient.getInstance() as jest.Mocked<MCPClient>;
   });
 
   afterEach(() => {
@@ -122,11 +126,27 @@ describe('AiAssistanceService', () => {
         wizardState: {},
       };
 
+      // Fire 3 requests rapidly with a short debounce time
+      const promise1 = service.getSuggestionsDebounced(request, 50);
+      const promise2 = service.getSuggestionsDebounced(request, 50);
+      const promise3 = service.getSuggestionsDebounced(request, 50);
       // Fire 3 requests rapidly with very short debounce (1ms for testing)
       const promise1 = service.getSuggestionsDebounced(request, 1);
       const promise2 = service.getSuggestionsDebounced(request, 1);
       const promise3 = service.getSuggestionsDebounced(request, 1);
 
+      // Wait for all promises to resolve
+      const results = await Promise.all([promise1, promise2, promise3]);
+
+      // Verify all promises got the same result and have suggestions
+      results.forEach((result, index) => {
+        expect(result.suggestions).toBeDefined();
+        expect(Array.isArray(result.suggestions)).toBe(true);
+        expect(result.suggestions.length).toBeGreaterThan(0);
+        expect(result.suggestions[0].suggestion).toBe('Test answer');
+      });
+      
+      // Only one call should be made after debounce
       // Wait for all promises to resolve
       const results = await Promise.all([promise1, promise2, promise3]);
 
@@ -136,7 +156,7 @@ describe('AiAssistanceService', () => {
 
       // Only one call should be made after debounce (last one)
       expect(mockMCPClient.askQuestion).toHaveBeenCalledTimes(1);
-    });
+    }, 5000);
   });
 
   describe('logAcceptedSuggestion', () => {
@@ -176,6 +196,7 @@ describe('AiAssistanceService', () => {
       service.dispose();
 
       expect(service['debounceTimers'].size).toBe(0);
+      expect(service['debounceResolvers'].size).toBe(0);
     });
   });
 

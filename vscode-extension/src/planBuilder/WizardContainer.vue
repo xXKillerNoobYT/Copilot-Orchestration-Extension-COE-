@@ -1,5 +1,5 @@
 <template>
-  <div class="wizard-container" :class="{ 'with-assistant': showAssistant }">
+  <div class="wizard-container" :class="{ 'with-assistant': showAssistant, 'with-preview': showPreview }">
     <!-- Template Selector Modal -->
     <TemplateSelector
       v-if="showTemplateSelector"
@@ -29,6 +29,13 @@
           📋 Use Template
         </button>
         <button 
+          class="toggle-preview-btn"
+          @click="togglePreview"
+          :title="showPreview ? 'Hide Live Preview' : 'Show Live Preview'"
+        >
+          👁️ Preview {{ showPreview ? 'ON' : 'OFF' }}
+        </button>
+        <button 
           class="toggle-assistant-btn"
           @click="toggleAssistant"
           :title="showAssistant ? 'Hide AI Assistant' : 'Show AI Assistant'"
@@ -56,6 +63,17 @@
           />
         </div>
       </transition>
+
+      <!-- Live Preview Side Panel -->
+      <PreviewContainer
+        v-if="showPreview"
+        :wizard-state="wizardState"
+        :auto-refresh="true"
+        :show-feedback="true"
+        :max-render-time-ms="500"
+        @render-complete="handlePreviewRenderComplete"
+        @render-error="handlePreviewRenderError"
+      />
 
       <!-- AI Assistant Side Panel -->
       <ContextualAssistant
@@ -122,8 +140,10 @@ import { useWizardStore } from './wizardStore';
 import { PlanMetadataManager } from './planMetadata';
 import { AiAssistanceService, type AiSuggestion } from './aiAssistanceService';
 import ContextualAssistant from './ContextualAssistant.vue';
+import PreviewContainer from '../components/preview/PreviewContainer.vue';
 import TemplateSelector from './components/TemplateSelector.vue';
 import { getTemplateService } from './services/TemplateService';
+import type { WizardState, PreviewRenderResult } from '../components/preview/PreviewEngine';
 
 // Props
 interface Props {
@@ -159,6 +179,11 @@ const aiSuggestions = ref<AiSuggestion[]>([]);
 const aiService = new AiAssistanceService({ debounceMs: 1000, enableLogging: true });
 const aiAcceptanceRate = computed(() => aiService.getAcceptanceRate());
 const aiSuggestionCount = computed(() => aiService.getSuggestionHistory().length);
+
+// Live Preview state
+const showPreview = ref(true); // Default to ON for live preview
+const previewRenderTime = ref<number>(0);
+const previewErrors = ref<string[]>([]);
 
 // Question definitions (would typically come from config)
 const questions = ref([
@@ -202,6 +227,14 @@ const progressPercentage = computed(() => {
   const currentIndex = wizardStore.currentPageIndex;
   return Math.round(((currentIndex + 1) / totalPages) * 100);
 });
+
+// Convert wizard store state to WizardState format for PreviewContainer
+const wizardState = computed<WizardState>(() => ({
+  currentStep: currentStep.value,
+  answers: wizardStore.answers,
+  validationErrors: validationErrors.value,
+  isComplete: currentStep.value === totalSteps.value - 1
+}));
 
 const canProceedToNext = computed(() => {
   return !validationErrors.value[currentStep.value]?.length;
@@ -260,6 +293,30 @@ const toggleAssistant = () => {
   if (showAssistant.value && aiSuggestions.value.length === 0) {
     generateAiSuggestions();
   }
+};
+
+// Live Preview methods
+const togglePreview = () => {
+  showPreview.value = !showPreview.value;
+};
+
+const handlePreviewRenderComplete = (result: PreviewRenderResult) => {
+  previewRenderTime.value = result.renderTimeMs;
+  
+  // Log performance metrics
+  if (result.renderTimeMs > 500) {
+    console.warn(`[WizardContainer] Preview render time exceeded 500ms: ${result.renderTimeMs}ms`);
+  }
+  
+  // Check for warnings
+  if (result.warnings.length > 0) {
+    console.warn('[WizardContainer] Preview warnings:', result.warnings);
+  }
+};
+
+const handlePreviewRenderError = (error: Error) => {
+  console.error('[WizardContainer] Preview render error:', error);
+  previewErrors.value.push(error.message);
 };
 
 const generateAiSuggestions = () => {
@@ -536,6 +593,7 @@ watch(() => wizardStore.currentPageIndex, () => {
   gap: 8px;
 }
 
+.toggle-preview-btn,
 .toggle-assistant-btn {
   padding: 6px 12px;
   background: var(--vscode-button-background);
@@ -548,6 +606,7 @@ watch(() => wizardStore.currentPageIndex, () => {
   transition: background 0.2s;
 }
 
+.toggle-preview-btn:hover,
 .toggle-assistant-btn:hover {
   background: var(--vscode-button-hoverBackground);
 }
@@ -635,6 +694,16 @@ watch(() => wizardStore.currentPageIndex, () => {
 .wizard-container.with-assistant .wizard-content {
   display: grid;
   grid-template-columns: 1fr 350px;
+}
+
+.wizard-container.with-preview .wizard-content {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+}
+
+.wizard-container.with-assistant.with-preview .wizard-content {
+  display: grid;
+  grid-template-columns: 1fr 400px 350px;
 }
 
 .step-content {
