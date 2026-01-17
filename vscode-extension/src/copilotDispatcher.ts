@@ -8,7 +8,7 @@ export type MemoryRole = 'user' | 'assistant' | 'system';
 export interface MemoryEntry {
   role: MemoryRole;
   content: string;
-  timestamp?: string;
+  timestamp: string; // ISO 8601 timestamp when entry was created
 }
 
 export interface ContextFile {
