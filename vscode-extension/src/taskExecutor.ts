@@ -4,6 +4,7 @@ import { ParsedTask } from './taskParser';
 import { TaskGraphGenerator, TaskGraph } from './taskGraphGenerator';
 import { CopilotDispatcher, MemoryEntry, PromptPayload } from './copilotDispatcher';
 import { defaultAgentProfileLoader } from './agentProfiles';
+import { CopilotAgentClient, AgentExecutionRequest } from './services/copilotAgentClient';
 
 export interface TaskExecutionResult {
   taskId: string;
@@ -33,6 +34,8 @@ export interface TaskExecutorOptions {
   memoryTTLMinutes?: number; // Remove entries older than N minutes (default: 30)
   enableVerification?: boolean;
   llmHandler?: LLMHandler;
+  copilotAgentClient?: CopilotAgentClient;
+  useCopilotAgentMode?: boolean; // Enable GitHub Copilot Agent Mode API integration
 }
 
 export interface LLMHandler {
@@ -49,6 +52,8 @@ export class TaskExecutor {
   private readonly enableVerification: boolean;
   private readonly dispatcher: CopilotDispatcher;
   private readonly llmHandler?: LLMHandler;
+  private readonly copilotAgentClient?: CopilotAgentClient;
+  private readonly useCopilotAgentMode: boolean;
   
   private tasks: ParsedTask[] = [];
   private taskGraph: TaskGraph | null = null;
@@ -65,6 +70,8 @@ export class TaskExecutor {
     this.memoryTTLMinutes = TaskExecutor.validatePositiveNumber(options?.memoryTTLMinutes, 30);
     this.enableVerification = options?.enableVerification ?? true;
     this.llmHandler = options?.llmHandler;
+    this.copilotAgentClient = options?.copilotAgentClient;
+    this.useCopilotAgentMode = options?.useCopilotAgentMode ?? false;
     
     this.dispatcher = new CopilotDispatcher({
       tasksDir: this.tasksDir,
@@ -269,11 +276,89 @@ export class TaskExecutor {
   }
 
   /**
-   * Execute prompt using Copilot Agent API (stub implementation)
+   * Extract agent capabilities from tool permissions
+   */
+  private extractAgentCapabilities(toolPermissions?: Record<string, unknown>): string[] {
+    if (!toolPermissions) {
+      return [];
+    }
+    return Object.keys(toolPermissions).filter(key => toolPermissions[key] === true);
+  }
+
+  /**
+   * Execute prompt using Copilot Agent API
+   * Integrates with GitHub Copilot Agent Mode API when enabled
    */
   private async executeCopilotAgent(payload: PromptPayload): Promise<string> {
-    // TODO: Integrate with actual GitHub Copilot Agent Mode API
-    // For now, return a simulated response
+    // Use GitHub Copilot Agent Mode API if enabled and client is available
+    if (this.useCopilotAgentMode && this.copilotAgentClient) {
+      try {
+        console.log('[TaskExecutor] Using GitHub Copilot Agent Mode API');
+        
+        // Always verify authentication before executing tasks
+        // This handles token expiration, network issues, and session invalidation
+        if (!this.copilotAgentClient.isConnected()) {
+          const authenticated = await this.copilotAgentClient.authenticate();
+          if (!authenticated) {
+            console.warn('[TaskExecutor] GitHub Copilot Agent Mode authentication failed, falling back to simulated response');
+            return this.generateSimulatedResponse(payload);
+          }
+
+          // Register the agent if not already registered
+          const capabilities = this.extractAgentCapabilities(payload.agent.tool_permissions);
+          const registered = await this.copilotAgentClient.registerAgent({
+            agentId: `orchestrator-${payload.agent.name}`,
+            name: payload.agent.name,
+            role: payload.agent.role,
+            capabilities,
+          });
+
+          if (!registered) {
+            console.warn('[TaskExecutor] GitHub Copilot Agent registration failed, falling back to simulated response');
+            return this.generateSimulatedResponse(payload);
+          }
+        } else {
+          // Even if connected, verify authentication is still valid by re-authenticating
+          // This catches token expiration and network issues
+          const stillAuthenticated = await this.copilotAgentClient.authenticate();
+          if (!stillAuthenticated) {
+            console.warn('[TaskExecutor] GitHub Copilot Agent Mode re-authentication failed, falling back to simulated response');
+            return this.generateSimulatedResponse(payload);
+          }
+        }
+
+        // Execute the task via Agent Mode API
+        const request: AgentExecutionRequest = {
+          requestId: `req-${payload.taskId}-${Date.now()}`,
+          agentId: `orchestrator-${payload.agent.name}`,
+          payload,
+        };
+
+        const response = await this.copilotAgentClient.executeTask(request);
+
+        if (response.success) {
+          console.log(`[TaskExecutor] GitHub Copilot Agent execution successful, output length: ${response.output.length} chars`);
+          return response.output;
+        } else {
+          console.error('[TaskExecutor] GitHub Copilot Agent execution failed:', response.error);
+          console.warn('[TaskExecutor] Falling back to simulated response');
+          return this.generateSimulatedResponse(payload);
+        }
+      } catch (error) {
+        console.error('[TaskExecutor] Error using GitHub Copilot Agent Mode API:', error);
+        console.warn('[TaskExecutor] Falling back to simulated response');
+        return this.generateSimulatedResponse(payload);
+      }
+    }
+
+    // Fall back to simulated response when Agent Mode is not enabled
+    return this.generateSimulatedResponse(payload);
+  }
+
+  /**
+   * Generate a simulated response (fallback when Agent Mode API is not available)
+   */
+  private generateSimulatedResponse(payload: PromptPayload): string {
     console.warn('Using simulated Copilot response (no real API integration)');
     
     return `# Simulated Copilot Response for Task: ${payload.taskId}
