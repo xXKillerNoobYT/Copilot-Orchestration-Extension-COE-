@@ -109,53 +109,6 @@ describe('PlanAdjustmentService', () => {
 
   describe('Adjustment Generation', () => {
     it('should generate suggestions for detected drift', async () => {
-      const mockDrift = {
-        hasDrift: true,
-        metrics: {
-          scopeDrift: {
-            plannedFeatures: 2,
-            actualFeatures: 3,
-            featuresAdded: ['FEAT-003'],
-            featuresRemoved: [],
-            featuresModified: [],
-            driftPercentage: 50,
-          },
-          timelineDrift: {
-            plannedStartDate: new Date('2026-01-01'),
-            actualStartDate: new Date('2026-01-01'),
-            plannedEndDate: new Date('2026-02-01'),
-            projectedEndDate: new Date('2026-02-15'),
-            daysBehindSchedule: 14,
-            daysAheadSchedule: 0,
-            milestonesAtRisk: [],
-          },
-          effortDrift: {
-            totalPlannedHours: 20,
-            totalActualHours: 30,
-            varianceHours: 10,
-            variancePercentage: 50,
-            overestimatedFeatures: [],
-            underestimatedFeatures: ['FEAT-001'],
-            accuracyScore: 50,
-          },
-          dependencyDrift: {
-            newBlockers: [],
-            resolvedBlockers: [],
-            circularDependenciesDetected: [],
-            dependencyViolations: [],
-          },
-          priorityDrift: {
-            priorityChanges: [],
-            criticalPathChanges: false,
-          },
-          overallDriftScore: 35,
-          driftSeverity: 'medium' as const,
-        },
-        recommendations: ['Update timeline', 'Add missing features'],
-        suggestedActions: [],
-        timestamp: new Date(),
-      };
-
       // Service should generate suggestions based on drift
       const result = await service.adjustPlan('test-plan.json', { autoApply: false });
       

@@ -16,8 +16,6 @@ import type { PlanJSON } from '../planBuilder/planGenerator';
 describe('Plan Adjustment Workflow Integration', () => {
   let service: ReturnType<typeof getPlanAdjustmentService>;
   let persistenceService: ReturnType<typeof getPlanPersistenceService>;
-  
-  const testPlanFilename = 'test-integration-plan.json';
 
   beforeAll(async () => {
     service = getPlanAdjustmentService();
@@ -209,7 +207,6 @@ describe('Plan Adjustment Workflow Integration', () => {
     });
 
     it('should suggest effort reestimation for inaccurate estimates', () => {
-      const underestimatedFeatures = ['FEAT-001', 'FEAT-002'];
       const adjustmentFactor = 1.3; // 30% increase
       
       const suggestion = {

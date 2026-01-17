@@ -10,7 +10,6 @@
 
 import * as vscode from 'vscode';
 import { getPlanAdjustmentService } from '../services/planAdjustmentService';
-import { PlanAdjustmentWizard } from '../panels/planAdjustmentWizard';
 import { getPlanPersistenceService } from '../services/planPersistence';
 
 /**

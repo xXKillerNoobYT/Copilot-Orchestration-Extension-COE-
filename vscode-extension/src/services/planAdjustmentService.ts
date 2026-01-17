@@ -185,7 +185,7 @@ export class PlanAdjustmentService {
       let backupPath: string | undefined;
 
       if (options.autoApply) {
-        for (const suggestion of suggestions.filter(s => s.changes)) {
+        for (const suggestion of suggestions.filter(s => !!s.changes)) {
           const result = await this.applyAdjustment(planFilename, suggestion, {
             ...options,
             notifyUser: false, // We'll notify once at the end
@@ -245,7 +245,8 @@ export class PlanAdjustmentService {
         featureId: feature.id,
         status: this.mapFeatureStatus(feature.status),
         estimatedHours: feature.effort_estimate || 0,
-        actualHours: feature.effort_estimate ? feature.effort_estimate * (0.8 + Math.random() * 0.4) : 0,
+        // Use deterministic mock actual hours to keep tests stable
+        actualHours: feature.effort_estimate ?? 0,
       };
 
       executionData.push(taskData);
@@ -266,7 +267,17 @@ export class PlanAdjustmentService {
       'failed': 'failed',
     };
 
-    return statusMap[status] || 'pending';
+    const mappedStatus = statusMap[status];
+
+    if (!mappedStatus) {
+      // Surface potential data inconsistencies while preserving existing fallback behavior
+      console.warn(
+        `[PlanAdjustmentService] Unmapped feature status '${status}', defaulting to 'pending'.`
+      );
+      return 'pending';
+    }
+
+    return mappedStatus;
   }
 
   /**
