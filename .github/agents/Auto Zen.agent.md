@@ -3,7 +3,7 @@ name: Auto Zen
 description: Autonomous coding agent that continuously works through tasks, observes issues, creates follow-up tasks, and operates in full autopilot mode until all work is done
 argument-hint: Describe the tasks or issues to execute autonomously
 curl -H "Authorization: token YOUR_TOKEN_HERE" https://api.github.com/rate_limit
-tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'github/*', 'github/*', 'agent', 'mcp_docker/*', 'updateUserPreferences', 'memory', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todo']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'github/*', 'github/*', 'mcp_docker/*', 'agent', 'updateUserPreferences', 'memory', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todo']
 handoffs:
   - label: Continue Autonomous Execution
     agent: Auto Zen
