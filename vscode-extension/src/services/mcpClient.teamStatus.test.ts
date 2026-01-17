@@ -1,14 +1,14 @@
 /**
- * Tests for SettingsPanel
- * Focus: Team state refresh functionality from MCP
+ * Tests for MCPClient.getTeamsStatus()
+ * Focus: Team state refresh functionality from MCP /api/teams/status endpoint
  */
 
-import { MCPClient } from '../services/mcpClient';
+import { MCPClient } from './mcpClient';
 
 // Mock MCPClient
-jest.mock('../services/mcpClient');
+jest.mock('./mcpClient');
 
-describe('MCPClient - Team State Refresh', () => {
+describe('MCPClient - getTeamsStatus()', () => {
   let mockMCPClient: jest.Mocked<MCPClient>;
 
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('MCPClient - Team State Refresh', () => {
     jest.spyOn(MCPClient, 'getInstance').mockReturnValue(mockMCPClient);
   });
 
-  describe('getTeamsStatus endpoint', () => {
+  describe('/api/teams/status endpoint', () => {
     it('should call /api/teams/status endpoint', async () => {
       // Arrange
       const mockResponse = {
