@@ -157,19 +157,19 @@ const handleStyleUpdate = (style: ComponentStyle) => {
             <div class="mt-8 flex gap-4">
               <button
                 class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors"
-                @click="() => alert('Export functionality would be implemented here')"
+                @click="() => window.alert('Export functionality would be implemented here')"
               >
                 💾 Export Design System
               </button>
               <button
                 class="px-6 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow hover:bg-gray-700 transition-colors"
-                @click="() => alert('Save functionality would be implemented here')"
+                @click="() => window.alert('Save functionality would be implemented here')"
               >
                 💾 Save Configuration
               </button>
               <button
                 class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                @click="() => alert('Reset functionality would be implemented here')"
+                @click="() => window.alert('Reset functionality would be implemented here')"
               >
                 🔄 Reset to Defaults
               </button>
