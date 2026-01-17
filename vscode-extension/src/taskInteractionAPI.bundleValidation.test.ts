@@ -17,6 +17,31 @@ describe('TaskInteractionAPI - Context Bundle Size Validation', () => {
       expect(result.error).toBeUndefined();
     });
 
+    it('should handle null input gracefully', () => {
+      const result = validateContextBundleSize(null as any);
+      
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error).toContain('Invalid context bundle');
+      expect(result.error).toContain('must be an array');
+    });
+
+    it('should handle undefined input gracefully', () => {
+      const result = validateContextBundleSize(undefined as any);
+      
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error).toContain('Invalid context bundle');
+    });
+
+    it('should handle non-array input gracefully', () => {
+      const result = validateContextBundleSize('not an array' as any);
+      
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error).toContain('must be an array');
+    });
+
     it('should warn when bundle approaches warning threshold', () => {
       const fileCount = Math.ceil(MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) + 1;
       const files = Array.from({ length: fileCount }, (_, i) => `file${i}.ts`);

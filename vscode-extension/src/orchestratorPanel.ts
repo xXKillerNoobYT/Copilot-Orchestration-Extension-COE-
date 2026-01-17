@@ -25,7 +25,7 @@ export const BUNDLE_WARNING_THRESHOLD = 0.8;
 export interface ContextBundle {
   id: string;
   name: string;
-  files: string[];  // Limited to MAX_FILES_PER_BUNDLE items
+  files: string[];  // Limited to MAX_FILES_PER_BUNDLE (100) items
   description?: string;
   metadata?: Record<string, unknown>;
   agentProfile?: {

@@ -13,6 +13,14 @@ import { MAX_FILES_PER_BUNDLE, BUNDLE_WARNING_THRESHOLD } from './orchestratorPa
  *   - error: optional message when bundle exceeds the maximum limit
  */
 export function validateContextBundleSize(files: string[]): { isValid: boolean; warning?: string; error?: string } {
+  // Guard against invalid input
+  if (!files || !Array.isArray(files)) {
+    return {
+      isValid: false,
+      error: 'Invalid context bundle: files must be an array'
+    };
+  }
+
   const fileCount = files.length;
   
   if (fileCount > MAX_FILES_PER_BUNDLE) {
