@@ -13,17 +13,27 @@ use Illuminate\Support\Collection;
 class MetricsService
 {
     /**
-<<<<<<< HEAD
-     * Aggregate task metrics (counts, completion rate, cycle time).
-     * 
-     * @param string $range Time range filter (e.g., '7d', '30d', '24h'). Default '7d'
+     * Default time range in days for metrics analysis.
+     * Provides a good balance between recent trends and statistical significance.
      */
-    public function getTaskMetrics(string $range = '7d'): array
+    private const DEFAULT_TIME_RANGE_DAYS = 30;
+
+    /**
+     * Aggregate task metrics (counts, completion rate, cycle time).
+     *
+     * @param string|null $timeRange Optional time range (e.g., '7d', '30d', '24h', '1w'). Defaults to 30d when null/invalid.
+     */
+    public function getTaskMetrics(?string $timeRange = null): array
     {
-        $cutoffDate = $this->parseTimeRange($range);
-        
-        // Use single query with groupBy for better performance
-        $statusCounts = Task::where('created_at', '>=', $cutoffDate)
+        // Resolve cutoff date using provided range or default window
+        $cutoffDate = $timeRange
+            ? $this->parseTimeRange($timeRange)
+            : now()->subDays(self::DEFAULT_TIME_RANGE_DAYS);
+
+        // Use a single filtered query for status counts
+        $baseQuery = Task::where('created_at', '>=', $cutoffDate);
+
+        $statusCounts = (clone $baseQuery)
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status');
@@ -34,42 +44,12 @@ class MetricsService
         $pending = $statusCounts->get('pending', 0);
         $blocked = $statusCounts->get('blocked', 0);
         $failed = $statusCounts->get('failed', 0);
-=======
-     * Default time range in days for metrics analysis.
-     * Provides a good balance between recent trends and statistical significance.
-     */
-    private const DEFAULT_TIME_RANGE_DAYS = 30;
-
-    /**
-     * Aggregate task metrics (counts, completion rate, cycle time).
-     * 
-     * @param string|null $timeRange Optional time range (e.g., '7d', '30d', '90d')
-     * @return array Aggregated task metrics including counts, rates, and timestamps
-     */
-    public function getTaskMetrics(?string $timeRange = null): array
-    {
-        $query = Task::query();
-        
-        // Apply time range filter if provided
-        if ($timeRange) {
-            $days = $this->parseTimeRangeToDays($timeRange);
-            $query->where('created_at', '>=', now()->subDays($days));
-        }
-
-        $totalTasks = (clone $query)->count();
-        $completed = (clone $query)->where('status', 'completed')->count();
-        $inProgress = (clone $query)->where('status', 'in_progress')->count();
-        $pending = (clone $query)->where('status', 'pending')->count();
-        $blocked = (clone $query)->where('status', 'blocked')->count();
-        $failed = (clone $query)->where('status', 'failed')->count();
->>>>>>> origin/copilot/add-metrics-service
 
         $completionRate = $totalTasks > 0 ? round(($completed / $totalTasks) * 100, 2) : 0;
 
-        $cycleTimes = (clone $query)
+        $cycleTimes = (clone $baseQuery)
             ->whereNotNull('started_at')
             ->whereNotNull('completed_at')
-            ->where('created_at', '>=', $cutoffDate)
             ->get()
             ->map(function (Task $task) {
                 return $task->completed_at->diffInSeconds($task->started_at);
@@ -92,12 +72,8 @@ class MetricsService
             'completionRate' => $completionRate,
             'averageCycleSeconds' => $avgCycleSeconds,
             'averageCycleDisplay' => $avgCycleHuman,
-<<<<<<< HEAD
-            'timeRange' => $range,
+            'timeRange' => $timeRange ?? (self::DEFAULT_TIME_RANGE_DAYS . 'd'),
             'startDate' => $cutoffDate->toIso8601String(),
-=======
-            'timeRange' => $timeRange,
->>>>>>> origin/copilot/add-metrics-service
             'lastUpdated' => now()->toIso8601String(),
         ];
     }
@@ -635,52 +611,30 @@ class MetricsService
         return MetricsEvent::where('recorded_at', '<', now()->subDays($retentionDays))
             ->delete();
     }
-<<<<<<< HEAD
-    
     /**
      * Parse time range string to Carbon date.
-     * 
+     * Supports hours, days, weeks, and months. Falls back to default window on invalid input.
+     *
      * @param string $range Time range (e.g., '7d', '30d', '24h', '1w')
-     * @return \Carbon\Carbon
      */
     private function parseTimeRange(string $range): Carbon
     {
         // Extract numeric value and unit
         preg_match('/^(\d+)([hdwm])$/', $range, $matches);
-        
-        // Check for 3 matches: full match + 2 capture groups (value and unit)
+
         if (count($matches) !== 3) {
-            // Default to 7 days if invalid format
-            return now()->subDays(7);
+            return now()->subDays(self::DEFAULT_TIME_RANGE_DAYS);
         }
-        
-        $value = (int)$matches[1];
+
+        $value = (int) $matches[1];
         $unit = $matches[2];
-        
-        return match($unit) {
+
+        return match ($unit) {
             'h' => now()->subHours($value),
             'd' => now()->subDays($value),
             'w' => now()->subWeeks($value),
             'm' => now()->subMonths($value),
-            default => now()->subDays(7),
+            default => now()->subDays(self::DEFAULT_TIME_RANGE_DAYS),
         };
-=======
-
-    /**
-     * Parse time range string to number of days.
-     * 
-     * @param string $timeRange Format: '7d', '30d', '90d', etc.
-     * @return int Number of days
-     */
-    private function parseTimeRangeToDays(string $timeRange): int
-    {
-        // Match patterns like '7d', '30d', '90d'
-        if (preg_match('/^(\d+)d$/', $timeRange, $matches)) {
-            return (int) $matches[1];
-        }
-
-        // Return default if format not recognized
-        return self::DEFAULT_TIME_RANGE_DAYS;
->>>>>>> origin/copilot/add-metrics-service
     }
 }
