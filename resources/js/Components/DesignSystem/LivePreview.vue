@@ -21,7 +21,7 @@ const pageSections = ref<PageSection[]>([
   { id: 'testimonials', title: 'Testimonials', content: 'What our customers say', visible: true },
   { id: 'team', title: 'Team', content: 'Meet the team', visible: true },
   { id: 'contact', title: 'Contact', content: 'Get in touch with us', visible: true },
-  { id: 'footer', title: 'Footer', content: '© 2026 Your Company', visible: true },
+  { id: 'footer', title: 'Footer', content: `© ${new Date().getFullYear()} Your Company`, visible: true },
 ]);
 
 // Compute CSS variables from theme
@@ -71,8 +71,8 @@ watch(
           {{ updateLatency }}ms
         </span>
         <span class="ml-1">update time</span>
-        <span v-if="updateLatency < 500" class="ml-2 text-green-600">✓ &lt;500ms</span>
-        <span v-else class="ml-2 text-red-600">⚠ ≥500ms</span>
+        <span v-if="updateLatency < 500" class="ml-2 text-green-600">✓ &lt;500ms (Good)</span>
+        <span v-else class="ml-2 text-red-600">⚠ ≥500ms (Slow)</span>
       </div>
     </div>
 
