@@ -23,6 +23,50 @@ export interface MCPConfig {
   timeout?: number;
 }
 
+/**
+ * Team-specific metrics for different orchestrator teams
+ */
+export interface PlanningMetrics {
+  tasksCreated?: number;
+  planVersion?: string;
+}
+
+export interface AnswerMetrics {
+  questionsAnswered?: number;
+}
+
+export interface DecompositionMetrics {
+  subtasksCreated?: number;
+  avgTaskSize?: number;
+}
+
+export interface VerificationMetrics {
+  tasksVerified?: number;
+  pendingVisual?: number;
+}
+
+/**
+ * Base team status structure
+ */
+export interface BaseTeamStatus {
+  name: string;
+  status: 'idle' | 'working' | 'blocked' | 'error';
+  currentTask?: string;
+  tasksCompleted: number;
+  activeTaskCount: number;
+  lastActivity?: string;
+}
+
+/**
+ * Team status response from MCP /api/teams/status endpoint
+ */
+export interface TeamStatusResponse {
+  planning: BaseTeamStatus & { metrics?: PlanningMetrics };
+  answer: BaseTeamStatus & { metrics?: AnswerMetrics };
+  decomposition: BaseTeamStatus & { metrics?: DecompositionMetrics };
+  verification: BaseTeamStatus & { metrics?: VerificationMetrics };
+}
+
 export class MCPClient {
   private baseUrl: string;
   private timeout: number = 10000;
@@ -173,6 +217,15 @@ export class MCPClient {
     if (limit) params.append('limit', limit.toString());
 
     const url = `${this.baseUrl}/api/v1/mcp/listPlans${params.size ? '?' + params : ''}`;
+    return this.fetchWithRetry(url, 'GET');
+  }
+
+  /**
+   * GET /api/teams/status
+   * Get current team state with latest metrics
+   */
+  async getTeamsStatus(): Promise<TeamStatusResponse> {
+    const url = `${this.baseUrl}/api/teams/status`;
     return this.fetchWithRetry(url, 'GET');
   }
 

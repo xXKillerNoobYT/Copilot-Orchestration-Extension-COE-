@@ -19,6 +19,7 @@ export interface TeamStatus {
   tasksCompleted: number;
   activeTaskCount: number;
   lastActivity?: string;
+  metrics?: Record<string, any>;
 }
 
 export interface OrchestratorState {
