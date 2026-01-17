@@ -15,6 +15,9 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
   let configurationChangeListener: ((event: vscode.ConfigurationChangeEvent) => void) | null = null;
 
   beforeEach(() => {
+    // Use fake timers for debounce testing
+    jest.useFakeTimers();
+    
     // Reset mocks
     jest.clearAllMocks();
     mockGlobalState = new Map();
@@ -34,17 +37,7 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
         }),
       },
       subscriptions: {
-        push: jest.fn((disposable: any) => {
-          // Capture the configuration change listener
-          if (disposable && typeof disposable === 'function') {
-            // This is the workspace.onDidChangeConfiguration callback
-            const listener = disposable;
-            // Store it so we can trigger it in tests
-            if (!configurationChangeListener) {
-              configurationChangeListener = listener;
-            }
-          }
-        }),
+        push: jest.fn(),
       },
     };
 
@@ -85,6 +78,11 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
     (vscode.commands.registerCommand as jest.Mock).mockReturnValue({ dispose: jest.fn() });
   });
 
+  afterEach(() => {
+    // Restore real timers
+    jest.useRealTimers();
+  });
+
   test('should store context and subscribe to configuration changes', () => {
     const monitor = new LLMIPMonitor(mockContext);
 
@@ -118,6 +116,9 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
       } as any;
 
       configurationChangeListener(mockEvent);
+      
+      // Fast-forward debounce timer
+      jest.advanceTimersByTime(500);
     }
 
     // Verify cache was cleared
