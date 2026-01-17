@@ -14,6 +14,9 @@
     "hiroyannnn.vscode-github-issues-sync"
   ],
   "main": "./dist/extension.js",
+  "bin": {
+    "copilot-orchestrator-mcp": "./dist/mcp-server/index.js"
+  },
   "contributes": {
     "languages": [
       {
@@ -136,6 +139,24 @@
           ],
           "markdownDescription": "Folders (relative to the workspace) to search for *.task.md files. First existing folder is used.",
           "scope": "resource"
+        },
+        "copilot-orchestrator.toolRegistry.path": {
+          "type": "string",
+          "default": ".github/copilot-tools.json",
+          "markdownDescription": "Path to tool registry file (compatible with GitHub Copilot global MCP tool list format).",
+          "scope": "resource"
+        },
+        "copilot-orchestrator.mcp.localServerEnabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable local MCP server for extension-only tools (task status, feedback, etc.).",
+          "scope": "window"
+        },
+        "copilot-orchestrator.mcp.dockerGatewayEnabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable Docker MCP gateway for 3rd-party authenticated tools.",
+          "scope": "window"
         }
       }
     },
@@ -197,6 +218,24 @@
         "command": "copilot-orchestrator.linkGitHubIssue",
         "title": "Link GitHub Issue",
         "category": "Task File"
+      },
+      {
+        "command": "copilot-orchestrator.copyMCPServerPath",
+        "title": "Copilot Orchestrator: Copy MCP Server Path",
+        "category": "Copilot Orchestrator",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "copilot-orchestrator.generateMCPConfig",
+        "title": "Copilot Orchestrator: Generate MCP Config for Coding Agent",
+        "category": "Copilot Orchestrator",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "copilot-orchestrator.testMCPServer",
+        "title": "Copilot Orchestrator: Test MCP Server",
+        "category": "Copilot Orchestrator",
+        "icon": "$(debug-start)"
       },
       {
         "command": "copilot-orchestrator.openGitHubIssue",
@@ -308,8 +347,9 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "webpack --mode production --stats=errors-only && npm run build:vue",
+    "compile": "webpack --mode production --stats=errors-only && npm run build:vue && npm run build:mcp",
     "build:vue": "vite build",
+    "build:mcp": "tsc -p src/mcp-server/tsconfig.json",
     "watch": "webpack --watch --mode development --stats=errors-warnings",
     "lint": "echo 'no lint configured'",
     "test": "npm run compile && node dist/taskGraphTest.js && node dist/llmConfigTest.js && node dist/llmClientTest.js && node dist/workspace/tasksSourceTest.js && node dist/commands/executeLLMTest.js && node dist/github/githubSyncTest.js && node dist/panels/llmResponsePanelTest.js && node dist/llm/transportTest.js && node dist/transport/transportTest.js",
@@ -325,6 +365,7 @@
     "demo": "npm run compile && node dist/taskGraphDemo.js"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
     "chart.js": "^4.5.1",
     "graphlib": "^2.1.8",
     "laravel-echo": "^2.3.0",

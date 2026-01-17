@@ -22,7 +22,10 @@ import { initializeWebSocketClient, disposeWebSocketClient } from './services/we
 import { getLLMIPMonitor } from './services/llmIPMonitor';
 import { ConnectionMonitor, createConnectionStatusBarItem, ConnectionState, showConnectionDetails } from './services/connectionMonitor';
 import { MCPClient } from './services/mcpClient';
+import { MCPRouter } from './services/mcpRouter';
+import { ToolSelector } from './services/toolSelector';
 import { registerPlanAdjustmentCommands } from './commands/planAdjustmentCommands';
+import { registerMCPConfigCommands } from './commands/mcpConfigCommands';
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize LLM IP Monitor (Background service for LLM connectivity)
@@ -51,8 +54,13 @@ export function activate(context: vscode.ExtensionContext) {
   let orchestratorState = { text: '$(rocket)', tooltip: 'Orchestrator: Ready' };
   let llmState = { text: '$(alert)', tooltip: 'LLM: Not Configured' };
   let connectionState: ConnectionState = {
-    mcp: 'disconnected', websocket: 'disconnected',
-    lastMcpCheck: '', lastWsCheck: '', retryCount: 0
+    mcp: 'disconnected',
+    websocket: 'disconnected',
+    docker: 'disconnected',
+    lastMcpCheck: '',
+    lastWsCheck: '',
+    lastDockerCheck: '',
+    retryCount: 0
   };
 
   const updateUnifiedStatus = () => {
@@ -63,13 +71,17 @@ export function activate(context: vscode.ExtensionContext) {
     const mcpIcon = connectionState.mcp === 'connected' ? '$(check)' :
       connectionState.mcp === 'degraded' ? '$(warning)' : '$(error)';
 
-    unifiedStatusBar.text = `${orchestratorState.text} Orchestrator | ${llmIcon} LLM | ${mcpIcon} MCP`;
+    const dockerIcon = connectionState.docker === 'connected' ? '$(check)' :
+      connectionState.docker === 'degraded' ? '$(warning)' : '$(error)';
+
+    unifiedStatusBar.text = `${orchestratorState.text} Orchestrator | ${llmIcon} LLM | ${mcpIcon} MCP | ${dockerIcon} Docker`;
 
     unifiedStatusBar.tooltip = new vscode.MarkdownString([
       `**Orchestrator**: ${orchestratorState.tooltip}`,
       `**LLM**: ${llmState.tooltip}`,
       `**MCP**: ${connectionState.mcp}`,
-      `**WebSocket**: ${connectionState.websocket}`
+      `**WebSocket**: ${connectionState.websocket}`,
+      `**Docker Gateway**: ${connectionState.docker}${connectionState.dockerAuthRequired ? ' (Auth Required)' : ''}`
     ].join('\n\n'));
 
     unifiedStatusBar.show();
@@ -147,6 +159,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   // ============ Plan Adjustment Commands (EPIC-008) ============
   registerPlanAdjustmentCommands(context);
+
+  // ============ MCP Config Commands ============
+  registerMCPConfigCommands(context);
 
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.openPlanAdjustmentWizard', async () => {

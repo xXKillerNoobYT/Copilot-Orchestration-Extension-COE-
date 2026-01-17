@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Laravel App
@@ -73,10 +73,35 @@ services:
     networks:
       - copilot_network
 
+  # Docker MCP Toolkit Gateway for 3rd-party authenticated tools
+  # Note: MCP Gateway uses stdio transport, not HTTP
+  # Agents connect via: docker mcp gateway run (stdio)
+  # This service pre-installs common MCP servers from Docker's catalog
+  mcp-gateway:
+    image: docker:latest
+    container_name: copilot_mcp_gateway
+    restart: unless-stopped
+    working_dir: /workspace
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/workspace
+      - mcp_config:/root/.docker/mcp
+    networks:
+      - copilot_network
+    environment:
+      - DOCKER_MCP_ENABLED=true
+    # MCP Gateway runs on-demand via stdio, not as a background service
+    # Agents invoke: docker exec copilot_mcp_gateway docker mcp gateway run
+    command: sleep infinity
+
 networks:
   copilot_network:
     driver: bridge
 
 volumes:
+  mcp_tools:
+    driver: local
+  mcp_config:
+    driver: local
   mysql_data:
     driver: local

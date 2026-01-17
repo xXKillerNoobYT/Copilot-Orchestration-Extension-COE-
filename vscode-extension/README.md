@@ -1,6 +1,28 @@
 # Copilot Orchestrator - VS Code Extension
 
-A foundational VS Code extension scaffold for Copilot Orchestration with advanced task parsing, dependency resolution, and graph visualization capabilities.
+A foundational VS Code extension scaffold for Copilot Orchestration with advanced task parsing, dependency resolution, graph visualization, and **Model Context Protocol (MCP) integration** for GitHub Copilot coding agent.
+
+## 📚 MCP Documentation (NEW!)
+
+This extension now provides MCP tools for GitHub Copilot's coding agent. **Start here:**
+
+- 📖 **[OFFICIAL-MCP-REFERENCE.md](./OFFICIAL-MCP-REFERENCE.md)** - Complete reference with all official URLs
+- 🤖 **[GITHUB-COPILOT-AGENT-SETUP.md](./GITHUB-COPILOT-AGENT-SETUP.md)** - Setup for coding agent (REQUIRED)
+- 🏗️ **[MCP-ARCHITECTURE-SUMMARY.md](./MCP-ARCHITECTURE-SUMMARY.md)** - Architecture overview
+- 🐳 **[DOCKER-MCP-INTEGRATION.md](./DOCKER-MCP-INTEGRATION.md)** - Docker MCP for internal agents
+- ⚡ **[DOCKER-MCP-QUICK-START.md](./DOCKER-MCP-QUICK-START.md)** - 5-minute quick start
+
+**Quick Setup for Coding Agent:**
+```bash
+# 1. Generate MCP config
+Command Palette → "Copilot Orchestrator: Generate MCP Config for Coding Agent"
+
+# 2. Add to .github/copilot-mcp.json and commit
+git add .github/copilot-mcp.json
+git push
+```
+
+---
 
 ## Features
 

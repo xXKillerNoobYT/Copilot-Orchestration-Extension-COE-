@@ -1,0 +1,88 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/tool-registry.json",
+  "version": "1.0.0",
+  "description": "Tool registry for Copilot Orchestrator Extension - compatible with GitHub Copilot global MCP tool list format",
+  "tools": [
+    {
+      "name": "copilot_orchestrator_get_task_status",
+      "provider": "local",
+      "server": "copilot-orchestrator-mcp",
+      "description": "Get current status of a specific task by ID or GitHub issue number",
+      "category": "orchestration",
+      "tags": ["task-management", "read-only", "local"],
+      "enabled": true
+    },
+    {
+      "name": "copilot_orchestrator_list_active_tasks",
+      "provider": "local",
+      "server": "copilot-orchestrator-mcp",
+      "description": "List all active tasks with filtering by status, priority, or assignee",
+      "category": "orchestration",
+      "tags": ["task-management", "read-only", "local"],
+      "enabled": true
+    },
+    {
+      "name": "copilot_orchestrator_get_agent_state",
+      "provider": "local",
+      "server": "copilot-orchestrator-mcp",
+      "description": "Get current state of agent orchestration system",
+      "category": "orchestration",
+      "tags": ["agent-management", "read-only", "local"],
+      "enabled": true
+    },
+    {
+      "name": "copilot_orchestrator_report_observation",
+      "provider": "local",
+      "server": "copilot-orchestrator-mcp",
+      "description": "Report discovery, issue, risk, or optimization opportunity",
+      "category": "feedback",
+      "tags": ["observation", "issue-tracking", "local"],
+      "enabled": true
+    },
+    {
+      "name": "copilot_orchestrator_request_verification",
+      "provider": "local",
+      "server": "copilot-orchestrator-mcp",
+      "description": "Request human verification for UI/UX or functional changes",
+      "category": "verification",
+      "tags": ["verification", "human-in-loop", "local"],
+      "enabled": true
+    },
+    {
+      "name": "copilot_orchestrator_ask_user_question",
+      "provider": "local",
+      "server": "copilot-orchestrator-mcp",
+      "description": "Ask user a question about requirements or design decisions",
+      "category": "feedback",
+      "tags": ["user-interaction", "human-in-loop", "local"],
+      "enabled": true
+    },
+    {
+      "name": "copilot_orchestrator_get_workspace_config",
+      "provider": "local",
+      "server": "copilot-orchestrator-mcp",
+      "description": "Get workspace configuration including task roots and agent profiles",
+      "category": "configuration",
+      "tags": ["config", "read-only", "local"],
+      "enabled": true
+    }
+  ],
+  "preInstalledTools": {
+    "docker-gateway": [
+      "@modelcontextprotocol/server-github",
+      "@modelcontextprotocol/server-filesystem",
+      "@modelcontextprotocol/server-shell"
+    ],
+    "description": "Tools pre-installed in Docker MCP gateway. Additional tools can be dynamically installed via npm/pip."
+  },
+  "dynamicInstallation": {
+    "enabled": true,
+    "allowedPackageManagers": ["npm", "pip"],
+    "installationStrategy": "on-demand",
+    "description": "LLM can request dynamic tool installation through Docker gateway"
+  },
+  "toolRouting": {
+    "precedence": ["local", "docker", "github-copilot-default"],
+    "description": "Local tools take precedence over Docker tools when overlap exists"
+  }
+}
