@@ -6,6 +6,7 @@ use App\Models\Agent;
 use App\Models\MetricsEvent;
 use App\Models\Task;
 use App\Models\TaskExecution;
+use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Illuminate\Support\Collection;
 
@@ -13,20 +14,31 @@ class MetricsService
 {
     /**
      * Aggregate task metrics (counts, completion rate, cycle time).
+     * 
+     * @param string $range Time range filter (e.g., '7d', '30d', '24h'). Default '7d'
      */
-    public function getTaskMetrics(): array
+    public function getTaskMetrics(string $range = '7d'): array
     {
-        $totalTasks = Task::count();
-        $completed = Task::where('status', 'completed')->count();
-        $inProgress = Task::where('status', 'in_progress')->count();
-        $pending = Task::where('status', 'pending')->count();
-        $blocked = Task::where('status', 'blocked')->count();
-        $failed = Task::where('status', 'failed')->count();
+        $cutoffDate = $this->parseTimeRange($range);
+        
+        // Use single query with groupBy for better performance
+        $statusCounts = Task::where('created_at', '>=', $cutoffDate)
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $totalTasks = $statusCounts->sum();
+        $completed = $statusCounts->get('completed', 0);
+        $inProgress = $statusCounts->get('in_progress', 0);
+        $pending = $statusCounts->get('pending', 0);
+        $blocked = $statusCounts->get('blocked', 0);
+        $failed = $statusCounts->get('failed', 0);
 
         $completionRate = $totalTasks > 0 ? round(($completed / $totalTasks) * 100, 2) : 0;
 
         $cycleTimes = Task::whereNotNull('started_at')
             ->whereNotNull('completed_at')
+            ->where('created_at', '>=', $cutoffDate)
             ->get()
             ->map(function (Task $task) {
                 return $task->completed_at->diffInSeconds($task->started_at);
@@ -49,6 +61,8 @@ class MetricsService
             'completionRate' => $completionRate,
             'averageCycleSeconds' => $avgCycleSeconds,
             'averageCycleDisplay' => $avgCycleHuman,
+            'timeRange' => $range,
+            'startDate' => $cutoffDate->toIso8601String(),
             'lastUpdated' => now()->toIso8601String(),
         ];
     }
@@ -95,8 +109,11 @@ class MetricsService
 
     /**
      * Aggregate failure metrics for executions.
+     * 
+     * @param int $limit Maximum number of recent errors to return
+     * @param string|null $severity Filter by severity level (critical, high, medium, low)
      */
-    public function getErrorMetrics(int $limit = 10): array
+    public function getErrorMetrics(int $limit = 10, ?string $severity = null): array
     {
         $totalExecutions = TaskExecution::count();
         $failedExecutions = TaskExecution::failed()->count();
@@ -104,8 +121,24 @@ class MetricsService
             ? round(($failedExecutions / $totalExecutions) * 100, 2)
             : 0;
 
-        $recentErrors = TaskExecution::failed()
-            ->latest('completed_at')
+        $errorQuery = TaskExecution::failed()
+            ->latest('completed_at');
+        
+        // Apply severity filter if provided using proper parameter binding
+        // Note: This currently infers severity from the error_message content
+        // If there's a dedicated severity (or structured metadata) column, update this logic
+        if ($severity) {
+            // Validate severity input against allowed values
+            $validSeverities = ['critical', 'high', 'medium', 'low'];
+            $sanitizedSeverity = strtolower(trim($severity));
+            
+            if (in_array($sanitizedSeverity, $validSeverities)) {
+                // Use parameter binding and let SQL apply the wildcard pattern
+                $errorQuery->whereRaw("error_message LIKE CONCAT('%', ?, '%')", [$sanitizedSeverity]);
+            }
+        }
+        
+        $recentErrors = $errorQuery
             ->take($limit)
             ->get()
             ->map(function (TaskExecution $execution) {
@@ -113,11 +146,12 @@ class MetricsService
                     'task_id' => $execution->task_id,
                     'agent_id' => $execution->agent_id,
                     'message' => $execution->error_message,
+                    'severity' => $this->extractSeverity($execution->error_message),
                     'completed_at' => optional($execution->completed_at)->toIso8601String(),
                 ];
             });
 
-        return [
+        $result = [
             'failures' => [
                 'total_executions' => $totalExecutions,
                 'failed_executions' => $failedExecutions,
@@ -126,6 +160,76 @@ class MetricsService
             'recent_errors' => $recentErrors,
             'lastUpdated' => now()->toIso8601String(),
         ];
+        
+        if ($severity) {
+            $result['filtered_by_severity'] = $severity;
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Extract severity from error message.
+     * 
+     * @param string|null $message
+     * @return string
+     */
+    private function extractSeverity(?string $message): string
+    {
+        if (!$message) {
+            return 'medium';
+        }
+        
+        $normalized = strtolower(trim($message));
+
+        // Match explicit severity indicators like:
+        // - "critical: disk failure"
+        // - "[high] CPU usage"
+        // - "severity: low"
+        if ($this->matchesSeverity($normalized, ['critical', 'fatal'])) {
+            return 'critical';
+        }
+
+        if ($this->matchesSeverity($normalized, ['high', 'severe'])) {
+            return 'high';
+        }
+
+        if ($this->matchesSeverity($normalized, ['low', 'minor'])) {
+            return 'low';
+        }
+
+        return 'medium';
+    }
+
+    /**
+     * Check if the message contains any of the given severity keywords
+     * in a structured way (e.g., at the start, in brackets, or in a "severity:" clause).
+     *
+     * @param string $message
+     * @param array<string> $keywords
+     * @return bool
+     */
+    private function matchesSeverity(string $message, array $keywords): bool
+    {
+        foreach ($keywords as $keyword) {
+            $escaped = preg_quote($keyword, '/');
+
+            // Combine all patterns with alternation for better performance
+            $combinedPattern = '/(?:' .
+                // 1. Keyword at the very start, followed by a common delimiter or whitespace
+                '^' . $escaped . '\b[\s:\-\\\]]' . '|' .
+                // 2. Keyword inside square brackets, e.g. "[critical]"
+                '\[' . $escaped . '\]' . '|' .
+                // 3. In a severity label, e.g. "severity: critical"
+                '\bseverity\s*[:=\-]\s*' . $escaped . '\b' .
+                ')/i';
+
+            if (preg_match($combinedPattern, $message) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function formatTopAgent(Collection $executionsByAgent): ?array
@@ -460,5 +564,34 @@ class MetricsService
     {
         return MetricsEvent::where('recorded_at', '<', now()->subDays($retentionDays))
             ->delete();
+    }
+    
+    /**
+     * Parse time range string to Carbon date.
+     * 
+     * @param string $range Time range (e.g., '7d', '30d', '24h', '1w')
+     * @return \Carbon\Carbon
+     */
+    private function parseTimeRange(string $range): Carbon
+    {
+        // Extract numeric value and unit
+        preg_match('/^(\d+)([hdwm])$/', $range, $matches);
+        
+        // Check for 3 matches: full match + 2 capture groups (value and unit)
+        if (count($matches) !== 3) {
+            // Default to 7 days if invalid format
+            return now()->subDays(7);
+        }
+        
+        $value = (int)$matches[1];
+        $unit = $matches[2];
+        
+        return match($unit) {
+            'h' => now()->subHours($value),
+            'd' => now()->subDays($value),
+            'w' => now()->subWeeks($value),
+            'm' => now()->subMonths($value),
+            default => now()->subDays(7),
+        };
     }
 }
