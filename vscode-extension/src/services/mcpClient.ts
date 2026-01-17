@@ -106,6 +106,37 @@ export class MCPClient {
     });
   }
 
+  /**
+   * POST /api/v1/mcp/reportObservation
+   * Log observations, discoveries, or issues
+   */
+  async reportObservation(data: {
+    taskId: string;
+    type: 'discovery' | 'issue' | 'risk' | 'optimization';
+    message: string;
+    severity?: string;
+    suggestedAction?: string;
+    createTask?: boolean;
+  }): Promise<any> {
+    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_OBSERVATION}`, 'POST', data);
+  }
+
+  /**
+   * POST /api/v1/mcp/reportVerificationResult
+   * Report visual/manual verification results
+   */
+  async reportVerificationResult(data: {
+    verificationTaskId: string;
+    originalTaskId: string;
+    status: 'passed' | 'failed' | 'partial';
+    checklist?: any[];
+    issuesFound?: any[];
+    followUpTasks?: any[];
+    notes?: string;
+  }): Promise<any> {
+    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_VERIFICATION_RESULT}`, 'POST', data);
+  }
+
   static initialize(config: MCPConfig): MCPClient {
     MCPClient.instance = new MCPClient(config);
     return MCPClient.instance;
@@ -308,7 +339,7 @@ export class MCPClient {
       const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timeoutId);
 
-            if (!response.ok) {
+      if (!response.ok) {
         // Try to parse error response body for detailed error info
         let errorData: any;
         try {
@@ -317,7 +348,7 @@ export class MCPClient {
           // If JSON parsing fails, use default error
           errorData = { message: response.statusText };
         }
-        
+
         // Create enhanced error object with status and details
         const error: any = new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
         error.status = response.status;
