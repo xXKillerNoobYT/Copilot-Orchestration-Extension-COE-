@@ -24,3 +24,4 @@ _ZENTASKS/tasks.json
 _ZENTASKS/sync_metadata.json
 _ZENTASKS/.env
 _ZENTASKS/__pycache__/
+vendor/
