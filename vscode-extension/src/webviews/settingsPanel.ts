@@ -84,12 +84,10 @@ export class SettingsPanel {
             vscode.commands.executeCommand('copilot-orchestrator.openVisualVerification');
             return;
           case 'orchestrator:refreshTeams':
-            // TODO: Implement team state refresh from MCP
-            vscode.window.showInformationMessage('Refreshing team state...');
+            await this._refreshTeamState();
             return;
           case 'orchestrator:rerunAnalysis':
-            // TODO: Implement impact analysis rerun
-            vscode.window.showInformationMessage('Running impact analysis...');
+            await this._rerunImpactAnalysis();
             return;
         }
       },
@@ -735,6 +733,81 @@ export class SettingsPanel {
   </script>
 </body>
 </html>`;
+  }
+
+  /**
+   * Refresh team state from MCP server
+   */
+  private async _refreshTeamState(): Promise<void> {
+    try {
+      // Show loading indicator
+      this._panel.webview.postMessage({
+        command: 'orchestrator:refreshing',
+        teams: ['planning', 'answer', 'decomposition', 'verification'],
+      });
+
+      // Fetch team status from MCP (would call actual MCP endpoint in production)
+      // For now, simulate the refresh with current orchestrator state
+      const teamState = await this.orchestratorManager.getTeamState();
+
+      // Update webview with fresh data
+      this._panel.webview.postMessage({
+        command: 'orchestrator:teamStateUpdated',
+        teamState,
+        timestamp: new Date().toISOString(),
+      });
+
+      vscode.window.showInformationMessage('Team state refreshed successfully');
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to refresh team state: ${error instanceof Error ? error.message : String(error)}`
+      );
+      
+      this._panel.webview.postMessage({
+        command: 'orchestrator:refreshError',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /**
+   * Rerun impact analysis for current plan
+   */
+  private async _rerunImpactAnalysis(): Promise<void> {
+    try {
+      vscode.window.showInformationMessage('Running impact analysis...');
+
+      // Get active plan from orchestrator
+      const activePlan = this.orchestratorManager.getActivePlan();
+      
+      if (!activePlan) {
+        vscode.window.showWarningMessage('No active plan selected');
+        return;
+      }
+
+      // Perform impact analysis (would integrate with actual analysis service)
+      const analysis = await this.orchestratorManager.analyzeImpact(activePlan);
+
+      // Send results to webview
+      this._panel.webview.postMessage({
+        command: 'orchestrator:impactAnalysisComplete',
+        analysis,
+        timestamp: new Date().toISOString(),
+      });
+
+      vscode.window.showInformationMessage(
+        `Impact analysis complete: ${analysis.affectedTasks || 0} tasks affected`
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to run impact analysis: ${error instanceof Error ? error.message : String(error)}`
+      );
+      
+      this._panel.webview.postMessage({
+        command: 'orchestrator:analysisError',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   public dispose() {

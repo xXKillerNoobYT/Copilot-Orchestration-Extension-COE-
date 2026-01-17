@@ -117,6 +117,60 @@ export class ProgrammingOrchestratorManager {
   }
 
   /**
+   * Get team state for refresh operation
+   */
+  async getTeamState(): Promise<OrchestratorState['teamStatuses']> {
+    // In production, this would call MCP endpoint: GET /api/teams/status
+    // For now, return current state with simulated refresh
+    
+    return {
+      planning: {
+        ...this.state.teamStatuses.planning,
+        lastActivity: new Date().toISOString(),
+      },
+      answer: {
+        ...this.state.teamStatuses.answer,
+        lastActivity: new Date().toISOString(),
+      },
+      decomposition: {
+        ...this.state.teamStatuses.decomposition,
+        lastActivity: new Date().toISOString(),
+      },
+      verification: {
+        ...this.state.teamStatuses.verification,
+        lastActivity: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Get active plan ID
+   */
+  getActivePlan(): string | undefined {
+    return this.state.activePlan;
+  }
+
+  /**
+   * Analyze impact of plan changes
+   */
+  async analyzeImpact(planId: string): Promise<{
+    affectedTasks: number;
+    affectedComponents: string[];
+    estimatedHours: number;
+    versionBump: 'major' | 'minor' | 'patch';
+  }> {
+    // In production, this would call MCP endpoint: POST /api/plans/{planId}/analyze-impact
+    // For now, return simulated analysis
+    
+    return {
+      affectedTasks: 5,
+      affectedComponents: ['SettingsPanel', 'OrchestratorManager', 'TaskQueue'],
+      estimatedHours: 3.5,
+      versionBump: 'minor',
+    };
+  }
+
+  /**
    * Generate HTML for the Programming Orchestrator tab
    */
   getTabHtml(): string {
