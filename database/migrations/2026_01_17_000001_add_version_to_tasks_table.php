@@ -12,8 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tasks', function (Blueprint $table) {
+            // Add version column for optimistic locking
+            // No index needed - version is only checked with id (primary key)
             $table->unsignedInteger('version')->default(0)->after('status');
-            $table->index('version');
         });
     }
 
@@ -23,7 +24,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tasks', function (Blueprint $table) {
-            $table->dropIndex(['version']);
             $table->dropColumn('version');
         });
     }

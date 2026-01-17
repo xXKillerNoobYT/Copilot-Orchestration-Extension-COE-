@@ -128,6 +128,9 @@ export class MCPClient {
    * Report task completion and progress
    * Supports optimistic locking with expectedVersion parameter
    * Will retry with exponential backoff on version conflicts (409)
+   * 
+   * @param data Task status update data
+   * @param maxAttempts Maximum number of attempts (1 initial + retries, default 3)
    */
   async reportTaskStatus(data: {
     taskId: string;
@@ -140,30 +143,34 @@ export class MCPClient {
     acceptanceCriteriaVerification?: any[];
     observations?: string[];
     followUpTasks?: any[];
-  }, maxRetries: number = 3): Promise<any> {
+  }, maxAttempts: number = 3): Promise<any> {
     let attempt = 0;
     
-    while (attempt < maxRetries) {
+    while (attempt < maxAttempts) {
       try {
         return await this.fetchWithRetry(`${this.baseUrl}/mcp/reportTaskStatus`, 'POST', data);
       } catch (error: any) {
-        // Check if it's a version conflict (409)
-        if (error.status === 409 && (error.error === 'version_conflict' || !error.error)) {
+        // Check if it's a version conflict (409) - only retry if error is explicitly version_conflict
+        if (error.status === 409 && error.error === 'version_conflict') {
           attempt++;
           
-          if (attempt >= maxRetries) {
-            throw new Error(`Task status update failed after ${maxRetries} attempts due to version conflicts. ${error.message || ''}`);
+          if (attempt >= maxAttempts) {
+            throw new Error(`Task status update failed after ${maxAttempts} attempts due to version conflicts. ${error.message || ''}`);
           }
           
           // Exponential backoff: 1s, 2s, 4s (capped at 5s)
-          const backoffMs = Math.min(1000 * Math.pow(2, attempt), 5000);
+          // Fixed formula: 2^(attempt-1) to get 1s → 2s → 4s
+          const backoffMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
           await new Promise(resolve => setTimeout(resolve, backoffMs));
           
           // Fetch latest task version for retry
           try {
             const taskData = await this.getTaskById(data.taskId);
-            if (taskData?.task) {
+            if (taskData?.task?.version !== undefined) {
               data.expectedVersion = taskData.task.version;
+            } else {
+              const message = `Failed to fetch latest version for task ${data.taskId}: unexpected response format`;
+              throw new Error(message);
             }
           } catch (fetchError) {
             // If we can't fetch latest version, throw the original error
@@ -176,7 +183,9 @@ export class MCPClient {
       }
     }
     
-    throw new Error('Max retry attempts exceeded for task status update');
+    // TypeScript requires a return statement here, though this is unreachable
+    // The loop always exits via return or throw
+    throw new Error('Unexpected error in retry loop');
   }
 
   /**
@@ -310,7 +319,7 @@ export class MCPClient {
 
       if (!response.ok) {
         // Try to parse error response body for detailed error info
-        let errorData;
+        let errorData: any;
         try {
           errorData = await response.json();
         } catch (e) {

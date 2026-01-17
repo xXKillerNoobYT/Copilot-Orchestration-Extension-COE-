@@ -110,7 +110,7 @@ describe('MCPClient - Optimistic Locking', () => {
       jest.useRealTimers();
     });
 
-    it('should throw error after max retries on persistent conflicts', async () => {
+    it('should throw error after max attempts on persistent conflicts', async () => {
       jest.useFakeTimers();
 
       const conflictResponse = {
@@ -159,7 +159,7 @@ describe('MCPClient - Optimistic Locking', () => {
         taskId: 'task-123',
         status: 'done',
         expectedVersion: 1,
-      }, 3); // max 3 retries
+      }, 3); // max 3 attempts
 
       await jest.runAllTimersAsync();
 
@@ -194,7 +194,6 @@ describe('MCPClient - Optimistic Locking', () => {
 
     it('should handle version conflicts with correct backoff timing', async () => {
       jest.useFakeTimers();
-      const startTime = Date.now();
 
       const conflictResponse = {
         success: false,
@@ -235,7 +234,7 @@ describe('MCPClient - Optimistic Locking', () => {
         expectedVersion: 1,
       });
 
-      // Should wait ~1000ms for first retry (2^0 * 1000)
+      // Should wait ~1000ms for first retry (2^(1-1) * 1000 = 2^0 * 1000 = 1000ms)
       await jest.advanceTimersByTimeAsync(1000);
       await resultPromise;
 

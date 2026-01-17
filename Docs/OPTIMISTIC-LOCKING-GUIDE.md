@@ -19,7 +19,7 @@ $table->unsignedInteger('version')->default(0);
 
 1. **Fetch Task**: Agent retrieves task from `GET /mcp/nextTask`, which includes the current `version`
 2. **Update with Version**: Agent submits status update with `expectedVersion` parameter
-3. **Compare-and-Swap**: Backend compares `expectedVersion` with current `version`
+3. **Atomic Compare-and-Swap**: Backend compares `expectedVersion` with current `version` in a single atomic query
    - **Match**: Update succeeds, version increments
    - **Mismatch**: Returns HTTP 409 Conflict
 4. **Retry on Conflict**: Client automatically retries with latest version
@@ -28,27 +28,30 @@ $table->unsignedInteger('version')->default(0);
 
 ```php
 // McpController.php - reportTaskStatus
-$task = Task::findOrFail($validated['taskId']);
-
-// Optimistic locking check
+// Atomic compare-and-swap prevents race conditions
 if (isset($validated['expectedVersion'])) {
-    if ($task->version !== $validated['expectedVersion']) {
+    $affected = Task::where('id', $validated['taskId'])
+        ->where('version', $validated['expectedVersion'])
+        ->update([
+            'status' => $newStatus,
+            'version' => DB::raw('version + 1'),
+        ]);
+
+    if ($affected === 0) {
+        // Re-fetch to distinguish "not found" from "version conflict"
+        $task = Task::find($validated['taskId']);
+        if (!$task) {
+            return response()->json(['success' => false, 'message' => 'Task not found'], 404);
+        }
+        
         return response()->json([
             'success' => false,
             'error' => 'version_conflict',
-            'message' => 'Task was modified by another agent. Please retry with the latest version.',
             'currentVersion' => $task->version,
             'expectedVersion' => $validated['expectedVersion'],
-            'currentStatus' => $task->status,
         ], 409);
     }
 }
-
-// Update with version increment
-$task->update([
-    'status' => $newStatus,
-    'version' => $task->version + 1,
-]);
 ```
 
 ### Client Implementation (TypeScript)
@@ -60,29 +63,31 @@ async reportTaskStatus(data: {
   status: string;
   expectedVersion?: number;
   // ... other fields
-}, maxRetries: number = 3): Promise<any> {
+}, maxAttempts: number = 3): Promise<any> {
   let attempt = 0;
   
-  while (attempt < maxRetries) {
+  while (attempt < maxAttempts) {
     try {
       return await this.fetchWithRetry(/* ... */);
     } catch (error: any) {
-      // Handle 409 version conflict
+      // Handle 409 version conflict - strict check for version_conflict error
       if (error.status === 409 && error.error === 'version_conflict') {
         attempt++;
         
-        if (attempt >= maxRetries) {
-          throw new Error(`Task status update failed after ${maxRetries} attempts`);
+        if (attempt >= maxAttempts) {
+          throw new Error(`Task status update failed after ${maxAttempts} attempts`);
         }
         
-        // Exponential backoff: 1s, 2s, 4s (capped at 5s)
+        // Exponential backoff: 1s, 2s, 4s (formula: 2^(attempt-1))
         const backoffMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         
-        // Fetch latest task version
-        const taskData = await this.getNextTask();
-        if (taskData?.task?.taskId === data.taskId) {
+        // Fetch latest task version using getTaskById
+        const taskData = await this.getTaskById(data.taskId);
+        if (taskData?.task?.version !== undefined) {
           data.expectedVersion = taskData.task.version;
+        } else {
+          throw new Error('Failed to fetch latest version: unexpected response format');
         }
       } else {
         throw error; // Non-conflict errors thrown immediately
@@ -119,9 +124,9 @@ await mcpClient.reportTaskStatus({
 The client will:
 1. Detect 409 Conflict response
 2. Wait with exponential backoff (1s → 2s → 4s)
-3. Fetch latest task version
+3. Fetch latest task version using `getTaskById`
 4. Retry update with new version
-5. Repeat up to `maxRetries` times (default: 3)
+5. Repeat up to `maxAttempts` times (default: 3)
 
 ### Backward Compatibility
 
@@ -146,16 +151,16 @@ await mcpClient.reportTaskStatus({
   "success": false,
   "error": "version_conflict",
   "message": "Task was modified by another agent. Please retry with the latest version.",
-  "currentVersion": 3,
-  "expectedVersion": 2,
-  "currentStatus": "in_progress"
+  "currentVersion": 5,
+  "expectedVersion": 3,
+  "currentStatus": "blocked"
 }
 ```
 
 **Client Behavior:**
 - Automatically retries with exponential backoff
 - Fetches latest task state before retry
-- Throws error after max retries exceeded
+- Throws error after max attempts exceeded
 
 ### Other Errors
 
@@ -168,9 +173,8 @@ Non-conflict errors (404, 422, 500) are **not retried** and thrown immediately.
 | 1       | 0ms           | 0ms             |
 | 2       | 1000ms        | 1000ms          |
 | 3       | 2000ms        | 3000ms          |
-| 4       | 4000ms (capped at 5000ms) | 7000ms |
 
-**Default max retries:** 3 attempts  
+**Default max attempts:** 3 (1 initial + 2 retries)  
 **Maximum backoff:** 5000ms (5 seconds)
 
 ## Testing
@@ -196,7 +200,7 @@ npm test mcpClient.optimisticLocking.test.ts
 Tests cover:
 - Version inclusion in request payload
 - Retry logic with exponential backoff
-- Max retry limit enforcement
+- Max attempt limit enforcement
 - Error parsing for version conflicts
 - Backward compatibility
 
@@ -227,7 +231,7 @@ Check logs for version conflict errors:
 
 - **Conflict rate**: 409 responses / total status updates
 - **Retry success rate**: Successful retries / total conflicts
-- **Retry exhaustion**: Failed updates after max retries
+- **Retry exhaustion**: Failed updates after max attempts
 
 High conflict rates may indicate:
 - Too many agents working on same task
@@ -237,11 +241,11 @@ High conflict rates may indicate:
 ## Best Practices
 
 1. **Always include `expectedVersion`** when updating task status
-2. **Don't manually set version** - let the backend increment it
+2. **Don't manually set version** - let the backend increment it atomically
 3. **Monitor conflict rates** to detect coordination issues
-4. **Configure `maxRetries`** based on agent workload:
-   - High concurrency → more retries
-   - Low concurrency → fewer retries (faster failure)
+4. **Configure `maxAttempts`** based on agent workload:
+   - High concurrency → more attempts
+   - Low concurrency → fewer attempts (faster failure)
 5. **Log retry attempts** for debugging and monitoring
 
 ## FAQ
@@ -260,17 +264,17 @@ High conflict rates may indicate:
 
 ### Q: Does version checking affect performance?
 
-**A:** Minimal impact. The version comparison is a simple integer check before the database update. The retry logic only activates on conflicts, which should be rare in well-coordinated systems.
+**A:** Minimal impact. The version comparison happens in a single atomic database query. The retry logic only activates on conflicts, which should be rare in well-coordinated systems.
 
-### Q: Can I increase max retries?
+### Q: Can I increase max attempts?
 
-**A:** Yes, pass `maxRetries` parameter:
+**A:** Yes, pass `maxAttempts` parameter:
 ```typescript
-await mcpClient.reportTaskStatus(data, 5); // 5 retries instead of 3
+await mcpClient.reportTaskStatus(data, 5); // 5 attempts instead of 3
 ```
 
 ## Related Documentation
 
-- [MCP API Contracts](../Docs/MCP-API-CONTRACTS.md)
-- [Task Orchestration](../Docs/PROJECT-RUNBOOK.md)
-- [Error Handling](../vscode-extension/src/utils/errorHandler.ts)
+- [Implementation Summary](../OPTIMISTIC-LOCKING-IMPLEMENTATION-SUMMARY.md)
+- [MCP API Contracts](MCP-API-CONTRACTS.md)
+- [Task Orchestration](PROJECT-RUNBOOK.md)

@@ -18,6 +18,7 @@ use App\Events\VerificationCompleted;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 /**
  * MCP Server Controller
@@ -228,12 +229,30 @@ class McpController extends Controller
                 'followUpTasks' => 'nullable|array',
             ]);
 
-            // Find task
-            $task = Task::findOrFail($validated['taskId']);
+            // Normalize 'done' → 'completed'
+            $newStatus = $validated['status'] === 'done' ? 'completed' : $validated['status'];
             
-            // Optimistic locking: check version if provided
+            // Optimistic locking: atomic compare-and-swap
             if (isset($validated['expectedVersion'])) {
-                if ($task->version !== $validated['expectedVersion']) {
+                // Atomic update with WHERE clause to prevent race condition
+                $affected = Task::where('id', $validated['taskId'])
+                    ->where('version', $validated['expectedVersion'])
+                    ->update([
+                        'status' => $newStatus,
+                        'version' => DB::raw('version + 1'),
+                    ]);
+
+                if ($affected === 0) {
+                    // Re-fetch to distinguish between "not found" and "version conflict"
+                    $task = Task::find($validated['taskId']);
+                    if (!$task) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Task not found',
+                        ], 404);
+                    }
+                    
+                    // Version conflict
                     return response()->json([
                         'success' => false,
                         'error' => 'version_conflict',
@@ -243,14 +262,19 @@ class McpController extends Controller
                         'currentStatus' => $task->status,
                     ], 409);
                 }
+                
+                // Fetch updated task to get new version
+                $task = Task::findOrFail($validated['taskId']);
+            } else {
+                // No version check - backward compatibility
+                // Still use atomic increment to prevent race conditions
+                $task = Task::findOrFail($validated['taskId']);
+                $task->update([
+                    'status' => $newStatus,
+                    'version' => DB::raw('version + 1'),
+                ]);
+                $task->refresh(); // Reload to get the incremented version
             }
-
-            // Update task with version increment (normalize 'done' → 'completed')
-            $newStatus = $validated['status'] === 'done' ? 'completed' : $validated['status'];
-            $task->update([
-                'status' => $newStatus,
-                'version' => $task->version + 1,
-            ]);
 
             // Log implementation details
             Log::info('Task status reported', [
