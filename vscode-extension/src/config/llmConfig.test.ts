@@ -18,58 +18,38 @@ function createMockConfig(values: Record<string, any>): MockConfiguration {
   };
 }
 
-function runTests(): void {
-  let passCount = 0;
-  let failCount = 0;
+describe('LLM Configuration', () => {
+  // Save and restore environment variable
+  const originalEnv = process.env.COPILOT_LLM_BASE_URL;
 
-  // Test 1: Default baseUrl should be localhost
-  try {
+  afterEach(() => {
+    // Restore original environment
+    if (originalEnv !== undefined) {
+      process.env.COPILOT_LLM_BASE_URL = originalEnv;
+    } else {
+      delete process.env.COPILOT_LLM_BASE_URL;
+    }
+  });
+
+  test('should use localhost as default baseUrl', () => {
     const config = readLlmConfig({
       configuration: createMockConfig({}),
     });
 
-    console.assert(
-      config.config.baseUrl === 'http://localhost:1234/v1',
-      'Default baseUrl should be localhost'
-    );
-    console.log('[✓] Test 1: Default baseUrl is localhost');
-    passCount++;
-  } catch (error) {
-    console.error(`[✗] Test 1: ${error instanceof Error ? error.message : String(error)}`);
-    failCount++;
-  }
+    expect(config.config.baseUrl).toBe('http://localhost:1234/v1');
+  });
 
-  // Test 2: Environment variable override
-  try {
-    const originalEnv = process.env.COPILOT_LLM_BASE_URL;
+  test('should allow environment variable override', () => {
     process.env.COPILOT_LLM_BASE_URL = 'http://remote-server:8080/v1';
 
     const config = readLlmConfig({
       configuration: createMockConfig({}),
     });
 
-    console.assert(
-      config.config.baseUrl === 'http://remote-server:8080/v1',
-      'Environment variable should override default'
-    );
+    expect(config.config.baseUrl).toBe('http://remote-server:8080/v1');
+  });
 
-    // Restore original env
-    if (originalEnv !== undefined) {
-      process.env.COPILOT_LLM_BASE_URL = originalEnv;
-    } else {
-      delete process.env.COPILOT_LLM_BASE_URL;
-    }
-
-    console.log('[✓] Test 2: Environment variable override works');
-    passCount++;
-  } catch (error) {
-    console.error(`[✗] Test 2: ${error instanceof Error ? error.message : String(error)}`);
-    failCount++;
-  }
-
-  // Test 3: Environment variable takes precedence over config
-  try {
-    const originalEnv = process.env.COPILOT_LLM_BASE_URL;
+  test('environment variable should take precedence over config', () => {
     process.env.COPILOT_LLM_BASE_URL = 'http://env-server:9000/v1';
 
     const config = readLlmConfig({
@@ -78,27 +58,10 @@ function runTests(): void {
       }),
     });
 
-    console.assert(
-      config.config.baseUrl === 'http://env-server:9000/v1',
-      'Environment variable should take precedence over config'
-    );
+    expect(config.config.baseUrl).toBe('http://env-server:9000/v1');
+  });
 
-    // Restore original env
-    if (originalEnv !== undefined) {
-      process.env.COPILOT_LLM_BASE_URL = originalEnv;
-    } else {
-      delete process.env.COPILOT_LLM_BASE_URL;
-    }
-
-    console.log('[✓] Test 3: Environment variable has highest priority');
-    passCount++;
-  } catch (error) {
-    console.error(`[✗] Test 3: ${error instanceof Error ? error.message : String(error)}`);
-    failCount++;
-  }
-
-  // Test 4: APIPA address detection (169.254.x.x)
-  try {
+  test('should detect APIPA addresses (169.254.x.x)', () => {
     const config = readLlmConfig({
       configuration: createMockConfig({
         'llm.baseUrl': 'http://169.254.100.50:1234/v1',
@@ -109,16 +72,10 @@ function runTests(): void {
       issue.toLowerCase().includes('apipa')
     );
 
-    console.assert(hasApipaWarning, 'APIPA address should generate warning');
-    console.log('[✓] Test 4: APIPA address detection works');
-    passCount++;
-  } catch (error) {
-    console.error(`[✗] Test 4: ${error instanceof Error ? error.message : String(error)}`);
-    failCount++;
-  }
+    expect(hasApipaWarning).toBe(true);
+  });
 
-  // Test 5: Non-APIPA addresses should not trigger warning
-  try {
+  test('should not flag non-APIPA addresses', () => {
     const config = readLlmConfig({
       configuration: createMockConfig({
         'llm.baseUrl': 'http://localhost:1234/v1',
@@ -129,63 +86,33 @@ function runTests(): void {
       issue.toLowerCase().includes('apipa')
     );
 
-    console.assert(!hasApipaWarning, 'Non-APIPA address should not generate APIPA warning');
-    console.log('[✓] Test 5: Non-APIPA addresses pass validation');
-    passCount++;
-  } catch (error) {
-    console.error(`[✗] Test 5: ${error instanceof Error ? error.message : String(error)}`);
-    failCount++;
-  }
+    expect(hasApipaWarning).toBe(false);
+  });
 
-  // Test 6: Valid URL detection
-  try {
-    console.assert(isValidBaseUrl('http://localhost:1234/v1'), 'localhost should be valid');
-    console.assert(isValidBaseUrl('https://api.openai.com/v1'), 'https URL should be valid');
-    console.assert(isValidBaseUrl('http://192.168.1.100:8080/v1'), 'IP address should be valid');
-    console.assert(!isValidBaseUrl('ftp://server.com'), 'ftp should be invalid');
-    console.assert(!isValidBaseUrl('not-a-url'), 'invalid string should be invalid');
-
-    console.log('[✓] Test 6: URL validation works correctly');
-    passCount++;
-  } catch (error) {
-    console.error(`[✗] Test 6: ${error instanceof Error ? error.message : String(error)}`);
-    failCount++;
-  }
-
-  // Test 7: Clean up environment variable after tests
-  try {
-    delete process.env.COPILOT_LLM_BASE_URL;
-
-    const config = readLlmConfig({
-      configuration: createMockConfig({}),
+  describe('URL validation', () => {
+    test('should validate http URLs', () => {
+      expect(isValidBaseUrl('http://localhost:1234/v1')).toBe(true);
     });
 
-    console.assert(
-      config.config.baseUrl === 'http://localhost:1234/v1',
-      'Should use default when env var is not set'
-    );
+    test('should validate https URLs', () => {
+      expect(isValidBaseUrl('https://api.openai.com/v1')).toBe(true);
+    });
 
-    console.log('[✓] Test 7: Environment cleanup works');
-    passCount++;
-  } catch (error) {
-    console.error(`[✗] Test 7: ${error instanceof Error ? error.message : String(error)}`);
-    failCount++;
-  }
+    test('should validate IP addresses', () => {
+      expect(isValidBaseUrl('http://192.168.1.100:8080/v1')).toBe(true);
+    });
 
-  // Summary
-  console.log('\n=== LLM Config Test Summary ===');
-  console.log(`Passed: ${passCount}`);
-  console.log(`Failed: ${failCount}`);
-  console.log(`Total: ${passCount + failCount}`);
+    test('should reject ftp URLs', () => {
+      expect(isValidBaseUrl('ftp://server.com')).toBe(false);
+    });
 
-  if (failCount > 0) {
-    process.exit(1);
-  }
-}
+    test('should reject invalid strings', () => {
+      expect(isValidBaseUrl('not-a-url')).toBe(false);
+    });
 
-// Run tests if executed directly
-if (require.main === module) {
-  runTests();
-}
+    test('should reject empty strings', () => {
+      expect(isValidBaseUrl('')).toBe(false);
+    });
+  });
+});
 
-export { runTests };
