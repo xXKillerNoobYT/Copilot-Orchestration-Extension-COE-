@@ -7,11 +7,18 @@ import axios from 'axios';
 // Props
 interface Props {
     projectId?: string;
+    refreshInterval?: number;
+    executionLogLimit?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    projectId: 'default'
+    projectId: 'default',
+    refreshInterval: 10000, // 10 seconds
+    executionLogLimit: 50
 });
+
+// Constants
+const ID_TRUNCATE_LENGTH = 8;
 
 // Types
 interface Agent {
@@ -87,16 +94,24 @@ const blockedTasks = computed(() => tasks.value.filter(t => t.status === 'blocke
 const activeAgents = computed(() => agents.value.filter(a => a.is_active));
 
 // Methods
+let abortController: AbortController | null = null;
+
 async function fetchData() {
     try {
+        // Cancel previous request if still pending
+        if (abortController) {
+            abortController.abort();
+        }
+        
+        abortController = new AbortController();
         loading.value = true;
         error.value = null;
 
         const [agentsRes, tasksRes, metricsRes, executionsRes] = await Promise.all([
-            axios.get('/api/v1/agents'),
-            axios.get(`/api/v1/projects/${props.projectId}/tasks`),
-            axios.get('/api/v1/metrics/health'),
-            axios.get('/api/v1/monitoring/executions?limit=50')
+            axios.get('/api/v1/agents', { signal: abortController.signal }),
+            axios.get(`/api/v1/projects/${props.projectId}/tasks`, { signal: abortController.signal }),
+            axios.get('/api/v1/metrics/health', { signal: abortController.signal }),
+            axios.get(`/api/v1/monitoring/executions?limit=${props.executionLogLimit}`, { signal: abortController.signal })
         ]);
 
         agents.value = agentsRes.data.data || [];
@@ -104,10 +119,14 @@ async function fetchData() {
         metrics.value = metricsRes.data;
         executionLogs.value = executionsRes.data.data || [];
     } catch (err: any) {
+        if (err.name === 'CanceledError') {
+            return; // Request was cancelled, ignore
+        }
         error.value = err.message || 'Failed to fetch dashboard data';
         console.error('Dashboard fetch error:', err);
     } finally {
         loading.value = false;
+        abortController = null;
     }
 }
 
@@ -151,8 +170,20 @@ function onDragEnd() {
     draggedTask.value = null;
 }
 
-function formatDate(date: string) {
-    return new Date(date).toLocaleString();
+function formatDate(date: string): string {
+    try {
+        const dateObj = new Date(date);
+        if (isNaN(dateObj.getTime())) {
+            return 'Invalid date';
+        }
+        return dateObj.toLocaleString();
+    } catch (err) {
+        return 'Invalid date';
+    }
+}
+
+function truncateId(id: string): string {
+    return id.substring(0, ID_TRUNCATE_LENGTH) + '...';
 }
 
 function getStatusColor(status: string) {
@@ -184,11 +215,17 @@ let pollInterval: number | undefined;
 
 onMounted(() => {
     fetchData();
-    // Poll every 10 seconds
-    pollInterval = window.setInterval(fetchData, 10000);
+    // Use configurable refresh interval
+    pollInterval = window.setInterval(fetchData, props.refreshInterval);
 });
 
 onUnmounted(() => {
+    // Cancel any pending requests
+    if (abortController) {
+        abortController.abort();
+    }
+    
+    // Clear polling interval
     if (pollInterval) {
         clearInterval(pollInterval);
     }
@@ -402,8 +439,8 @@ onUnmounted(() => {
                                         {{ log.status }}
                                     </span>
                                     <span class="text-gray-300 flex-1">
-                                        Task: {{ log.task_id.substring(0, 8) }}... 
-                                        Agent: {{ log.agent_id.substring(0, 8) }}...
+                                        Task: {{ truncateId(log.task_id) }} 
+                                        Agent: {{ truncateId(log.agent_id) }}
                                         <span v-if="log.error_message" class="text-red-400">
                                             Error: {{ log.error_message }}
                                         </span>

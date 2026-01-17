@@ -287,10 +287,17 @@ class MonitoringController
      */
     public function executions(Request $request): JsonResponse
     {
-        $limit = $request->input('limit', 50);
+        $validated = $request->validate([
+            'limit' => 'integer|min:1|max:100',
+            'offset' => 'integer|min:0',
+        ]);
+        
+        $limit = $validated['limit'] ?? 50;
+        $offset = $validated['offset'] ?? 0;
         
         $executions = \App\Models\TaskExecution::with(['task', 'agent'])
             ->orderBy('created_at', 'desc')
+            ->skip($offset)
             ->limit($limit)
             ->get();
         
@@ -298,6 +305,11 @@ class MonitoringController
             'success' => true,
             'data' => $executions,
             'count' => $executions->count(),
+            'pagination' => [
+                'limit' => $limit,
+                'offset' => $offset,
+                'has_more' => $executions->count() === $limit,
+            ],
         ]);
     }
 
