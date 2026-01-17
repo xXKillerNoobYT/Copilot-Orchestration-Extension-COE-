@@ -34,6 +34,7 @@ export interface AiAssistanceResponse {
 export class AiAssistanceService {
   private mcpClient: MCPClient;
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
+  private debounceResolvers: Map<string, ((value: AiAssistanceResponse) => void)[]> = new Map();
 
   constructor() {
     this.mcpClient = MCPClient.getInstance();
@@ -85,6 +86,11 @@ export class AiAssistanceService {
     const key = `${request.currentPage}-${request.currentQuestion}`;
 
     return new Promise((resolve) => {
+      // Store the resolve callback for this request
+      const resolvers = this.debounceResolvers.get(key) || [];
+      resolvers.push(resolve);
+      this.debounceResolvers.set(key, resolvers);
+
       // Clear existing timer for this key
       const existingTimer = this.debounceTimers.get(key);
       if (existingTimer) {
@@ -94,8 +100,13 @@ export class AiAssistanceService {
       // Set new timer
       const timer = setTimeout(async () => {
         this.debounceTimers.delete(key);
+        const pendingResolvers = this.debounceResolvers.get(key) || [];
+        this.debounceResolvers.delete(key);
+        
         const suggestions = await this.getSuggestions(request);
-        resolve(suggestions);
+        
+        // Resolve all pending promises with the same result
+        pendingResolvers.forEach(r => r(suggestions));
       }, debounceMs);
 
       this.debounceTimers.set(key, timer);
@@ -207,6 +218,7 @@ export class AiAssistanceService {
       clearTimeout(timer);
     }
     this.debounceTimers.clear();
+    this.debounceResolvers.clear();
   }
 }
 
