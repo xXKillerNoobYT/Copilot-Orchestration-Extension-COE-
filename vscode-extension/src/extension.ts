@@ -16,6 +16,7 @@ import { SettingsPanel } from './webviews/settingsPanel';
 import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
 import { PlanBuilderPanel } from './panels/planBuilderPanel';
+import { AuditDashboardPanel } from './panels/auditDashboardPanel';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 import { getLLMIPMonitor } from './services/llmIPMonitor';
@@ -173,29 +174,31 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.savePlan', async () => {
-      vscode.window.showInformationMessage('Save Plan functionality - use Plan Builder panel');
+      // Open Plan Builder panel - it handles save internally
       PlanBuilderPanel.createOrShow(context.extensionUri);
+      vscode.window.showInformationMessage('Use the Save button in the Plan Builder panel to save your plan');
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.loadPlan', async () => {
-      vscode.window.showInformationMessage('Load Plan functionality - use Plan Builder panel');
+      // Open Plan Builder panel - it handles load internally
       PlanBuilderPanel.createOrShow(context.extensionUri);
+      vscode.window.showInformationMessage('Use the Load button in the Plan Builder panel to load a plan');
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.listPlans', async () => {
-      vscode.window.showInformationMessage('List Plans functionality - use Plan Builder panel');
+      // Open Plan Builder panel which shows the list of plans
       PlanBuilderPanel.createOrShow(context.extensionUri);
+      vscode.window.showInformationMessage('View and manage plans in the Plan Builder panel');
     })
   );
 
   // ============ Audit Dashboard Command ============
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
-      const { AuditDashboardPanel } = await import('./panels/auditDashboardPanel');
       AuditDashboardPanel.createOrShow(context.extensionUri);
     })
   );
