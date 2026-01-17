@@ -35,7 +35,7 @@ public function recordTaskCompletion(
 - Returns MetricsEvent model instance
 
 #### 2. `recordError(taskId, error)` ✅
-**Location**: `app/Services/MetricsService.php:223-252`
+**Location**: `app/Services/MetricsService.php:223-256`
 
 ```php
 public function recordError(int $taskId, array|string $error): MetricsEvent
@@ -49,7 +49,7 @@ public function recordError(int $taskId, array|string $error): MetricsEvent
 - Returns MetricsEvent model instance
 
 #### 3. `getTaskMetrics(timeRange)` ✅
-**Location**: `app/Services/MetricsService.php:19-66`
+**Location**: `app/Services/MetricsService.php:20-73`
 
 ```php
 public function getTaskMetrics(?string $timeRange = null): array
@@ -151,7 +151,7 @@ public function getErrorMetrics(int $limit = 10): array
 
 #### Test File: `tests/Feature/MetricsServiceTest.php`
 
-**Tests Implemented** (17 total):
+**Tests Implemented** (18 total):
 1. ✅ `test_record_task_completion` - Verify task completion recording
 2. ✅ `test_record_task_start` - Verify task start recording
 3. ✅ `test_record_error_event` - Verify error event recording with metadata
@@ -207,7 +207,7 @@ Per the original issue test strategy:
 #### Basic Task Completion
 ```php
 $metricsService = app(MetricsService::class);
-$metricsService->recordTaskCompletion(taskId: 123, duration: 145.5);
+$metricsService->recordTaskCompletion(taskId: 123, durationSeconds: 145.5);
 ```
 
 #### Recording Errors
