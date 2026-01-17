@@ -84,8 +84,8 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 1: Parse GitHub webhook payload
   try {
-    const WebhookProcessor = (await import('../github/webhookHandler')).WebhookProcessor;
-    const parseIssueWebhook = (await import('../github/webhookHandler')).parseIssueWebhook;
+    const WebhookProcessor = (await import('../github/webhookHandler.js')).WebhookProcessor;
+    const parseIssueWebhook = (await import('../github/webhookHandler.js')).parseIssueWebhook;
 
     const payload = {
       action: 'opened',
@@ -109,7 +109,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 2: Verify webhook signature
   try {
-    const WebhookProcessor = (await import('../github/webhookHandler')).WebhookProcessor;
+    const WebhookProcessor = (await import('../github/webhookHandler.js')).WebhookProcessor;
     const crypto = await import('crypto');
 
     const processor = new WebhookProcessor('test-secret');
@@ -133,7 +133,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 3: Create sync event from GitHub issue
   try {
-    const { createSyncEvent, parseIssueWebhook } = await import('../github/webhookHandler');
+    const { createSyncEvent, parseIssueWebhook } = await import('../github/webhookHandler.js');
 
     const payload = {
       action: 'opened',
@@ -158,12 +158,12 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 4: Handle webhook events
   try {
-    const { WebhookProcessor } = await import('../github/webhookHandler');
+    const { WebhookProcessor } = await import('../github/webhookHandler.js');
 
     const processor = new WebhookProcessor('test-secret');
     let eventHandled = false;
 
-    processor.onEvent('issue', async (event) => {
+    processor.onEvent('issue', async (event: any) => {
       eventHandled = true;
       console.assert(event.type === 'issue', 'Event type should be issue');
       console.assert(event.action === 'opened', 'Action should be opened');
@@ -193,7 +193,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 5: Map task status to GitHub state
   try {
-    const { GitHubSyncService } = await import('../services/githubSyncService');
+    const { GitHubSyncService } = await import('../services/githubSyncService.js');
 
     // Create a mock service to test internal mapping
     const service = new GitHubSyncService({
@@ -216,7 +216,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 6: GitHub to task conversion
   try {
-    const { GitHubSyncService } = await import('../services/githubSyncService');
+    const { GitHubSyncService } = await import('../services/githubSyncService.js');
 
     setupMockFetch({});
 
@@ -246,7 +246,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 7: Sync log tracking
   try {
-    const { GitHubSyncService } = await import('../services/githubSyncService');
+    const { GitHubSyncService } = await import('../services/githubSyncService.js');
 
     setupMockFetch({});
 
@@ -279,7 +279,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 8: Full sync operation
   try {
-    const { GitHubSyncService } = await import('../services/githubSyncService');
+    const { GitHubSyncService } = await import('../services/githubSyncService.js');
 
     setupMockFetch({
       'https://api.github.com/repos/test/test/issues': {

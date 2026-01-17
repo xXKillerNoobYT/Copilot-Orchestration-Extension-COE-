@@ -167,7 +167,7 @@ async function showDirectoryPicker(): Promise<string | undefined> {
  */
 async function getPlanData(): Promise<PlanData | null> {
   // Try to get from Plan Builder if available
-  const { PlanBuilderPanel } = await import('../panels/planBuilderPanel').catch(() => ({ PlanBuilderPanel: null }));
+  const { PlanBuilderPanel } = await import('../panels/planBuilderPanel.js').catch(() => ({ PlanBuilderPanel: null }));
   
   if (PlanBuilderPanel && (PlanBuilderPanel as any).currentPanel) {
     try {
