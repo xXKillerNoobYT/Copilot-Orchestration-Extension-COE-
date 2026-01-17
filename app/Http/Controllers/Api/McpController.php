@@ -111,6 +111,7 @@ class McpController extends Controller
                 'priority' => $task->priority,
                 'type' => $task->task_type,
                 'status' => $task->status,
+                'version' => $task->version ?? 0,
                 'details' => [
                     'acceptanceCriteria' => $enriched['acceptanceCriteria'] ?? [],
                     'dependencies' => $enriched['dependencies'] ?? [],
@@ -156,6 +157,47 @@ class McpController extends Controller
     }
 
     /**
+     * GET /mcp/task/{taskId}
+     * 
+     * Fetch a specific task by ID with current version.
+     * Used by clients for version conflict retry.
+     * 
+     * Response: { success, task: { taskId, version, status, ... } }
+     */
+    public function getTaskById(string $taskId): JsonResponse
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            
+            $taskPayload = [
+                'taskId' => $task->id,
+                'title' => $task->name,
+                'description' => $task->description,
+                'priority' => $task->priority,
+                'type' => $task->task_type,
+                'status' => $task->status,
+                'version' => $task->version ?? 0,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'task' => $taskPayload,
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Task not found',
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('MCP getTaskById error', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * POST /mcp/reportTaskStatus
      * 
      * Report task completion status with implementation details.
@@ -176,6 +218,7 @@ class McpController extends Controller
             $validated = $request->validate([
                 'taskId' => 'required',
                 'status' => 'required|string|in:in_progress,done,blocked,failed',
+                'expectedVersion' => 'nullable|integer|min:0',
                 'progressPercent' => 'nullable|integer|min:0|max:100',
                 'notes' => 'nullable|string',
                 'filesChanged' => 'nullable|array',
@@ -185,17 +228,35 @@ class McpController extends Controller
                 'followUpTasks' => 'nullable|array',
             ]);
 
-            // Update task in database (normalize 'done' → 'completed')
+            // Find task
             $task = Task::findOrFail($validated['taskId']);
+            
+            // Optimistic locking: check version if provided
+            if (isset($validated['expectedVersion'])) {
+                if ($task->version !== $validated['expectedVersion']) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'version_conflict',
+                        'message' => 'Task was modified by another agent. Please retry with the latest version.',
+                        'currentVersion' => $task->version,
+                        'expectedVersion' => $validated['expectedVersion'],
+                        'currentStatus' => $task->status,
+                    ], 409);
+                }
+            }
+
+            // Update task with version increment (normalize 'done' → 'completed')
             $newStatus = $validated['status'] === 'done' ? 'completed' : $validated['status'];
             $task->update([
                 'status' => $newStatus,
+                'version' => $task->version + 1,
             ]);
 
             // Log implementation details
             Log::info('Task status reported', [
                 'taskId' => $validated['taskId'],
                 'status' => $validated['status'],
+                'version' => $task->version,
                 'filesChanged' => $validated['filesChanged'] ?? [],
             ]);
 
@@ -203,6 +264,7 @@ class McpController extends Controller
                 'success' => true,
                 'taskId' => $task->id,
                 'status' => $validated['status'],
+                'version' => $task->version,
                 'message' => 'Task status updated',
             ];
 
