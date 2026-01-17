@@ -13,6 +13,12 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { MetricsService } from '../services/metricsService';
+import { 
+  generateTimeLabels, 
+  generateSampleCompletionData, 
+  generateSampleAgentData, 
+  generateSampleSeverityData 
+} from './metricsChartUtils';
 
 describe('MetricsDashboard Component', () => {
   let mockService: MetricsService;
@@ -132,7 +138,7 @@ describe('MetricsDashboard Component', () => {
     it('should generate time labels for 24h range', () => {
       const labels = generateTimeLabels('24h');
       expect(labels).toHaveLength(24);
-      expect(labels[0]).toMatch(/\d+:00/);
+      expect(labels[0]).toMatch(/\d{2}:\d{2}/);
     });
 
     it('should generate time labels for 7d range', () => {
@@ -145,16 +151,19 @@ describe('MetricsDashboard Component', () => {
       expect(labels).toHaveLength(30);
     });
 
-    it('should generate sample completion data', () => {
-      const data = generateSampleCompletionData(100, 24);
-      expect(data).toHaveLength(24);
-      expect(data[data.length - 1]).toBeLessThanOrEqual(100);
+    it('should generate deterministic completion data', () => {
+      const data1 = generateSampleCompletionData(100, 24);
+      const data2 = generateSampleCompletionData(100, 24);
+      expect(data1).toEqual(data2);
+      expect(data1).toHaveLength(24);
     });
 
-    it('should generate sample agent data', () => {
-      const data = generateSampleAgentData(100);
-      expect(data).toHaveLength(5);
-      const sum = data.reduce((a, b) => a + b, 0);
+    it('should generate deterministic agent data', () => {
+      const data1 = generateSampleAgentData(100);
+      const data2 = generateSampleAgentData(100);
+      expect(data1).toEqual(data2);
+      expect(data1).toHaveLength(5);
+      const sum = data1.reduce((a, b) => a + b, 0);
       expect(sum).toBe(100);
     });
 
@@ -185,60 +194,3 @@ describe('MetricsDashboard Component', () => {
     });
   });
 });
-
-// Helper functions (copied from component for testing)
-function generateTimeLabels(range: '24h' | '7d' | '30d'): string[] {
-  const now = new Date();
-  const labels: string[] = [];
-  
-  if (range === '24h') {
-    for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-      labels.push(time.getHours() + ':00');
-    }
-  } else if (range === '7d') {
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
-    }
-  } else {
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-    }
-  }
-  
-  return labels;
-}
-
-function generateSampleCompletionData(total: number, count: number): number[] {
-  const data: number[] = [];
-  const increment = total / count;
-  for (let i = 0; i < count; i++) {
-    data.push(Math.floor(increment * i + Math.random() * increment));
-  }
-  return data;
-}
-
-function generateSampleAgentData(totalExecutions: number): number[] {
-  const data: number[] = [];
-  let remaining = totalExecutions;
-  for (let i = 0; i < 4; i++) {
-    const value = Math.floor(Math.random() * (remaining / 2));
-    data.push(value);
-    remaining -= value;
-  }
-  data.push(remaining);
-  return data;
-}
-
-function generateSampleSeverityData(totalErrors: number): number[] {
-  if (totalErrors === 0) return [0, 0, 0, 0];
-  
-  const critical = Math.floor(totalErrors * 0.1);
-  const high = Math.floor(totalErrors * 0.2);
-  const medium = Math.floor(totalErrors * 0.4);
-  const low = totalErrors - critical - high - medium;
-  
-  return [critical, high, medium, low];
-}

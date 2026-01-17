@@ -22,6 +22,12 @@
       </div>
     </header>
 
+    <div v-if="errorMessage" class="error-banner">
+      <span class="error-icon">⚠️</span>
+      <span>{{ errorMessage }}</span>
+      <button class="dismiss-btn" @click="errorMessage = null">✕</button>
+    </div>
+
     <section class="cards">
       <div class="card">
         <div class="card-header">
@@ -176,12 +182,17 @@
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import Chart from 'chart.js/auto';
 import { createMetricsService, type AgentMetricsResponse, type ErrorMetricsResponse, type TaskMetricsResponse } from '../services/metricsService';
+import { 
+  generateTimeLabels, 
+  generateSampleCompletionData, 
+  generateSampleAgentData, 
+  generateSampleSeverityData,
+  type TimeRange
+} from './metricsChartUtils';
 
 interface Props {
   baseUrl: string;
 }
-
-type TimeRange = '24h' | '7d' | '30d';
 
 const props = defineProps<Props>();
 const service = createMetricsService(props.baseUrl);
@@ -190,6 +201,8 @@ const selectedRange = ref<TimeRange>('24h');
 const taskMetrics = ref<TaskMetricsResponse | null>(null);
 const agentMetrics = ref<AgentMetricsResponse | null>(null);
 const errorMetrics = ref<ErrorMetricsResponse | null>(null);
+const errorMessage = ref<string | null>(null);
+const consecutiveErrors = ref(0);
 
 const completionCanvas = ref<HTMLCanvasElement | null>(null);
 const utilizationCanvas = ref<HTMLCanvasElement | null>(null);
@@ -224,8 +237,21 @@ async function refreshAll() {
     taskMetrics.value = t;
     agentMetrics.value = a;
     errorMetrics.value = e;
+    errorMessage.value = null;
+    consecutiveErrors.value = 0;
 
     renderCharts();
+  } catch (error) {
+    consecutiveErrors.value++;
+    const err = error as Error;
+    errorMessage.value = `Failed to load metrics: ${err.message}`;
+    
+    // Stop auto-refresh after 3 consecutive failures
+    if (consecutiveErrors.value >= 3 && autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+      errorMessage.value += ' (Auto-refresh disabled due to repeated failures)';
+    }
   } finally {
     loading.value = false;
   }
@@ -301,8 +327,10 @@ function renderAgentUtilizationChart() {
   if (utilizationCanvas.value && agentMetrics.value) {
     utilizationChart?.destroy();
     
-    // Generate sample agent utilization data
-    const agentNames = ['Agent-1', 'Agent-2', 'Agent-3', 'Agent-4', 'Agent-5'];
+    // Generate sample agent utilization data.
+    // NOTE: These labels and values are placeholders for visualization only.
+    // Replace with real per-agent execution metrics once the backend exposes them.
+    const agentNames = ['Sample Agent 1', 'Sample Agent 2', 'Sample Agent 3', 'Sample Agent 4', 'Sample Agent 5'];
     const executionCounts = generateSampleAgentData(agentMetrics.value.counts.total_executions);
     
     utilizationChart = new Chart(utilizationCanvas.value, {
@@ -383,63 +411,6 @@ function renderStatusMixChart() {
     });
   }
 }
-
-// Helper functions to generate sample data
-function generateTimeLabels(range: TimeRange): string[] {
-  const now = new Date();
-  const labels: string[] = [];
-  
-  if (range === '24h') {
-    for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-      labels.push(time.getHours() + ':00');
-    }
-  } else if (range === '7d') {
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
-    }
-  } else {
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-    }
-  }
-  
-  return labels;
-}
-
-function generateSampleCompletionData(total: number, count: number): number[] {
-  const data: number[] = [];
-  const increment = total / count;
-  for (let i = 0; i < count; i++) {
-    data.push(Math.floor(increment * i + Math.random() * increment));
-  }
-  return data;
-}
-
-function generateSampleAgentData(totalExecutions: number): number[] {
-  const data: number[] = [];
-  let remaining = totalExecutions;
-  for (let i = 0; i < 4; i++) {
-    const value = Math.floor(Math.random() * (remaining / 2));
-    data.push(value);
-    remaining -= value;
-  }
-  data.push(remaining);
-  return data;
-}
-
-function generateSampleSeverityData(totalErrors: number): number[] {
-  if (totalErrors === 0) return [0, 0, 0, 0];
-  
-  const critical = Math.floor(totalErrors * 0.1);
-  const high = Math.floor(totalErrors * 0.2);
-  const medium = Math.floor(totalErrors * 0.4);
-  const low = totalErrors - critical - high - medium;
-  
-  return [critical, high, medium, low];
-}
 </script>
 
 <style scoped>
@@ -462,6 +433,35 @@ function generateSampleSeverityData(totalErrors: number): number[] {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 4px;
+  color: var(--vscode-inputValidation-errorForeground);
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+.dismiss-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--vscode-inputValidation-errorForeground);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+}
+
+.dismiss-btn:hover {
+  opacity: 0.8;
 }
 
 .time-range-selector {
