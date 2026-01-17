@@ -8,6 +8,15 @@ import { ProgrammingOrchestratorManager } from './programmingOrchestratorTab';
 import { MCPClient } from '../services/mcpClient';
 import { ProviderFactory } from '../transport/transportManager';
 
+/**
+ * Configuration for connection testing
+ */
+interface ConnectionConfig {
+  baseUrl: string;
+  apiKey?: string;
+  model: string;
+}
+
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
@@ -134,7 +143,7 @@ export class SettingsPanel {
     }
   }
 
-  private async _testConnection(config: any) {
+  private async _testConnection(config: ConnectionConfig) {
     try {
       // Create a provider instance using the config from the webview
       // This runs in the extension host context, avoiding webview CSP restrictions
