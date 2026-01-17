@@ -3,7 +3,7 @@
  * Ensures that connection testing uses extension backend instead of webview fetch
  */
 
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
 describe('Settings Panel Test Connection', () => {
   it('should test connection using extension backend, not webview fetch', async () => {

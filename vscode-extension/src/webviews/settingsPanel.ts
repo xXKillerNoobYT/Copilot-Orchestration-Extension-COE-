@@ -150,7 +150,7 @@ export class SettingsPanel {
       const provider = ProviderFactory.createProvider('lmstudio', {
         name: 'LM Studio',
         baseUrl: config.baseUrl,
-        apiKey: config.apiKey || undefined,
+        apiKey: config.apiKey,
         defaultModel: config.model,
         // Note: testConnection() uses its own timeout (3000ms), so this is only for other operations
       });
