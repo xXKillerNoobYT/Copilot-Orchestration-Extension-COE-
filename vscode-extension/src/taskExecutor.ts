@@ -29,6 +29,8 @@ export interface TaskExecutorOptions {
   workspaceRoot?: string;
   outputDir?: string;
   memoryLimit?: number;
+  memoryCleanupInterval?: number; // Clean memory every N cycles (default: 10)
+  memoryTTLMinutes?: number; // Remove entries older than N minutes (default: 30)
   enableVerification?: boolean;
   llmHandler?: LLMHandler;
 }
@@ -42,6 +44,8 @@ export class TaskExecutor {
   private readonly workspaceRoot: string;
   private readonly outputDir: string;
   private readonly memoryLimit: number;
+  private readonly memoryCleanupInterval: number;
+  private readonly memoryTTLMinutes: number;
   private readonly enableVerification: boolean;
   private readonly dispatcher: CopilotDispatcher;
   private readonly llmHandler?: LLMHandler;
@@ -50,12 +54,15 @@ export class TaskExecutor {
   private taskGraph: TaskGraph | null = null;
   private memory: MemoryEntry[] = [];
   private executionHistory: TaskExecutionResult[] = [];
+  private cycleCount: number = 0; // Track execution cycles for periodic cleanup
 
   constructor(options?: TaskExecutorOptions) {
     this.workspaceRoot = options?.workspaceRoot ?? process.cwd();
     this.tasksDir = options?.tasksDir ?? path.join(this.workspaceRoot, '_ZENTASKS');
     this.outputDir = options?.outputDir ?? path.join(this.workspaceRoot, '.orchestrator-output');
     this.memoryLimit = options?.memoryLimit ?? 50;
+    this.memoryCleanupInterval = options?.memoryCleanupInterval ?? 10; // Default: every 10 cycles
+    this.memoryTTLMinutes = options?.memoryTTLMinutes ?? 30; // Default: 30 minutes TTL
     this.enableVerification = options?.enableVerification ?? true;
     this.llmHandler = options?.llmHandler;
     
@@ -383,6 +390,53 @@ Return "PASS" or "FAIL" with explanation.
   }
 
   /**
+   * Prune memory entries based on TTL (Time To Live)
+   * Removes entries older than the configured TTL
+   */
+  private pruneMemoryByTTL(): void {
+    const now = Date.now();
+    const ttlMs = this.memoryTTLMinutes * 60 * 1000;
+    const initialCount = this.memory.length;
+    
+    this.memory = this.memory.filter(entry => {
+      const entryTime = new Date(entry.timestamp).getTime();
+      const age = now - entryTime;
+      return age < ttlMs;
+    });
+    
+    const pruned = initialCount - this.memory.length;
+    if (pruned > 0) {
+      console.log(`[MemoryCleanup] Pruned ${pruned} entries older than ${this.memoryTTLMinutes} minutes (TTL-based)`);
+    }
+  }
+
+  /**
+   * Perform periodic memory cleanup
+   * Called every N cycles to actively manage memory
+   */
+  private performPeriodicMemoryCleanup(): void {
+    this.cycleCount++;
+    
+    // Perform cleanup every N cycles
+    if (this.cycleCount % this.memoryCleanupInterval === 0) {
+      console.log(`[MemoryCleanup] Performing periodic cleanup at cycle ${this.cycleCount}`);
+      const initialCount = this.memory.length;
+      
+      // First, prune by TTL
+      this.pruneMemoryByTTL();
+      
+      // Then, enforce memory limit as fallback
+      if (this.memory.length > this.memoryLimit) {
+        this.memory = this.memory.slice(-this.memoryLimit);
+        console.log(`[MemoryCleanup] Enforced memory limit: ${this.memoryLimit} entries (overflow protection)`);
+      }
+      
+      const finalCount = this.memory.length;
+      console.log(`[MemoryCleanup] Memory cleanup complete: ${initialCount} → ${finalCount} entries`);
+    }
+  }
+
+  /**
    * Add entry to memory with limit enforcement
    */
   private addToMemory(role: 'user' | 'assistant' | 'system', content: string): void {
@@ -392,9 +446,13 @@ Return "PASS" or "FAIL" with explanation.
       timestamp: new Date().toISOString(),
     });
 
-    // Enforce memory limit
+    // Perform periodic cleanup (active strategy)
+    this.performPeriodicMemoryCleanup();
+
+    // Fallback overflow protection (passive strategy)
     if (this.memory.length > this.memoryLimit) {
       this.memory = this.memory.slice(-this.memoryLimit);
+      console.log(`[MemoryCleanup] Emergency overflow protection triggered: kept last ${this.memoryLimit} entries`);
     }
   }
 
@@ -417,6 +475,12 @@ Return "PASS" or "FAIL" with explanation.
       ready,
       executionHistory: this.executionHistory.length,
       memoryEntries: this.memory.length,
+      cycleCount: this.cycleCount,
+      memoryConfig: {
+        limit: this.memoryLimit,
+        cleanupInterval: this.memoryCleanupInterval,
+        ttlMinutes: this.memoryTTLMinutes,
+      },
     };
   }
 

@@ -309,8 +309,8 @@ function testMetadataPreservation() {
       ],
     },
     memory: [
-      { role: 'user', content: 'Previous discussion' },
-      { role: 'assistant', content: 'Previous response' },
+      { role: 'user', content: 'Previous discussion', timestamp: new Date().toISOString() },
+      { role: 'assistant', content: 'Previous response', timestamp: new Date().toISOString() },
     ],
     messages: [
       { role: 'system', content: 'You design systems.' },
