@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { ParsedTask } from './taskParser';
 import { TaskStatusParser } from './taskStatusParser';
 import { defaultAgentProfileLoader, AgentProfile } from './agentProfiles';
+import { validateFilePath, validateAndFilterFilePaths, normalizeFilePath } from './utils/pathValidation';
 import { MAX_FILES_PER_BUNDLE, BUNDLE_WARNING_THRESHOLD } from './orchestratorPanel';
 
 /**
@@ -22,23 +23,23 @@ export function validateContextBundleSize(files: string[]): { isValid: boolean; 
   }
 
   const fileCount = files.length;
-  
+
   if (fileCount > MAX_FILES_PER_BUNDLE) {
     return {
       isValid: false,
       error: `Context bundle exceeds maximum file limit. Bundle has ${fileCount} files but limit is ${MAX_FILES_PER_BUNDLE}. ` +
-             `Large bundles can cause memory issues, WebSocket truncation, or MCP timeouts.`
+        `Large bundles can cause memory issues, WebSocket truncation, or MCP timeouts.`
     };
   }
-  
+
   if (fileCount > MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) {
     return {
       isValid: true,
       warning: `Context bundle is approaching the limit (${fileCount}/${MAX_FILES_PER_BUNDLE} files). ` +
-               `Consider splitting into multiple bundles to avoid performance issues.`
+        `Consider splitting into multiple bundles to avoid performance issues.`
     };
   }
-  
+
   return { isValid: true };
 }
 
@@ -163,7 +164,7 @@ export class TaskInteractionAPI {
     try {
       const uri = vscode.Uri.file(bundlePath);
       const document = await vscode.workspace.openTextDocument(uri);
-      
+
       // Validate agent profile if bundle contains profile information
       const bundleContent = document.getText();
       let bundle: any;
@@ -211,7 +212,7 @@ export class TaskInteractionAPI {
           console.warn('Context bundle profile validation failed:', validationError);
         }
       }
-      
+
       await vscode.window.showTextDocument(document);
     } catch (error) {
       vscode.window.showErrorMessage(
@@ -318,6 +319,107 @@ export class TaskInteractionAPI {
         `Failed to create context bundle: ${error instanceof Error ? error.message : String(error)}`
       );
     }
+  }
+
+  /**
+   * Add files to an existing context bundle with validation
+   * Validates file paths before adding them to the bundle
+   */
+  async addFilesToContextBundle(bundlePath: string, filePaths: string[]): Promise<void> {
+    try {
+      // Read existing bundle
+      const uri = vscode.Uri.file(bundlePath);
+      const content = await vscode.workspace.fs.readFile(uri);
+      const bundleData = JSON.parse(new TextDecoder().decode(content));
+
+      // Get workspace root for path normalization
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+      // Validate and filter file paths
+      const validatedPaths = await validateAndFilterFilePaths(filePaths, {
+        checkExists: true,
+        workspaceRoot,
+        throwOnInvalid: false,
+        logInvalid: true,
+      });
+
+      if (validatedPaths.length === 0) {
+        vscode.window.showWarningMessage(
+          'No valid file paths to add. All paths were invalid or files do not exist.'
+        );
+        return;
+      }
+
+      // Add validated paths to bundle (avoid duplicates)
+      // Normalize existing files to ensure accurate duplicate detection
+      const normalizedExistingFiles = (bundleData.files || []).map((f: string) => {
+        try {
+          return normalizeFilePath(f, workspaceRoot);
+        } catch {
+          // If normalization fails, use the original path
+          return f;
+        }
+      });
+      const existingFiles = new Set(normalizedExistingFiles);
+      const newFiles = validatedPaths.filter(p => !existingFiles.has(p));
+
+      if (newFiles.length === 0) {
+        vscode.window.showInformationMessage('All files already exist in the bundle.');
+        return;
+      }
+
+      bundleData.files = [...(bundleData.files || []), ...newFiles];
+      bundleData.updatedAt = new Date().toISOString();
+
+      // Write updated bundle
+      await vscode.workspace.fs.writeFile(
+        uri,
+        new TextEncoder().encode(JSON.stringify(bundleData, null, 2))
+      );
+
+      const invalidCount = filePaths.length - validatedPaths.length;
+      const message = invalidCount > 0
+        ? `Added ${newFiles.length} file(s) to bundle. ${invalidCount} invalid path(s) were skipped.`
+        : `Added ${newFiles.length} file(s) to context bundle.`;
+
+      vscode.window.showInformationMessage(message);
+
+      // Emit event
+      this.eventEmitter.fire({
+        type: 'contextBundleModified',
+        taskId: bundleData.taskId || '',
+        taskUri: bundleData.taskId ? vscode.Uri.file(bundleData.taskId) : uri,
+        bundlePath,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to add files to context bundle: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  /**
+   * Validate a single file path for context bundle inclusion
+   * Returns validation result with detailed error information
+   */
+  async validateContextFilePath(filePath: string): Promise<{
+    valid: boolean;
+    normalizedPath?: string;
+    errorMessage?: string;
+  }> {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+    const result = await validateFilePath(filePath, {
+      checkExists: true,
+      workspaceRoot,
+    });
+
+    return {
+      valid: result.valid,
+      normalizedPath: result.normalizedPath,
+      errorMessage: result.error?.message,
+    };
   }
 
   /**
@@ -526,7 +628,7 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
    */
   private extractCapabilities(profile: AgentProfile): string[] {
     const capabilities: string[] = [];
-    
+
     // Extract from tool permissions
     if (profile.tool_permissions) {
       Object.entries(profile.tool_permissions).forEach(([key, value]) => {
@@ -535,12 +637,12 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
         }
       });
     }
-    
+
     // Add role as a capability
     if (profile.role) {
       capabilities.push(`role:${profile.role}`);
     }
-    
+
     return capabilities;
   }
 
@@ -556,7 +658,7 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
       permissions: profile.tool_permissions,
       constraints: profile.execution_constraints,
     };
-    
+
     // Ensure deterministic serialization by sorting object keys
     const versionString = this.deterministicStringify(versionData);
     let hash = 0;
@@ -565,7 +667,7 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
-    
+
     return `${profile.version}.${Math.abs(hash).toString(16)}`;
   }
 
@@ -576,22 +678,22 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
     if (obj === null || obj === undefined) {
       return JSON.stringify(obj);
     }
-    
+
     if (typeof obj !== 'object') {
       return JSON.stringify(obj);
     }
-    
+
     if (Array.isArray(obj)) {
       return '[' + obj.map(item => this.deterministicStringify(item)).join(',') + ']';
     }
-    
+
     // Sort object keys for deterministic ordering
     const sortedKeys = Object.keys(obj).sort();
     const pairs = sortedKeys.map(key => {
       const value = this.deterministicStringify(obj[key]);
       return `"${key}":${value}`;
     });
-    
+
     return '{' + pairs.join(',') + '}';
   }
 
@@ -605,17 +707,17 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
     try {
       // Load current profile for the same agent
       const currentProfile = await defaultAgentProfileLoader.loadProfile(bundleProfile.name);
-      
+
       if (!currentProfile) {
         vscode.window.showWarningMessage(
           `Agent profile '${bundleProfile.name}' not found. Context bundle may be stale.`
         );
         return;
       }
-      
+
       // Generate current profile version
       const currentProfileVersion = this.generateProfileVersion(currentProfile);
-      
+
       // Check if profiles match
       if (bundleProfileVersion !== currentProfileVersion) {
         vscode.window.showWarningMessage(
@@ -623,7 +725,7 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
           `Expected version: ${bundleProfileVersion}, Current version: ${currentProfileVersion}. ` +
           `Tools and capabilities may differ from when this context was created.`
         );
-        
+
         // Log detailed mismatch information
         console.warn('Agent profile mismatch detected:', {
           bundleProfile: bundleProfile,
@@ -633,7 +735,7 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
           bundleRole: bundleProfile.role,
         });
       }
-      
+
       // Check role mismatch even if version matches
       if (bundleProfile.role !== currentProfile.role) {
         vscode.window.showErrorMessage(
@@ -642,7 +744,7 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
           `Execution may fail due to incompatible capabilities.`
         );
       }
-      
+
     } catch (error) {
       console.error('Failed to validate agent profile:', error);
       vscode.window.showWarningMessage(
@@ -664,11 +766,12 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
  */
 export interface TaskInteractionEvent {
   type:
-    | 'executeTask'
-    | 'statusChanged'
-    | 'contextBundleCreated'
-    | 'gitHubLinked'
-    | 'dependenciesChanged';
+  | 'executeTask'
+  | 'statusChanged'
+  | 'contextBundleCreated'
+  | 'contextBundleModified'
+  | 'gitHubLinked'
+  | 'dependenciesChanged';
   taskId: string;
   taskUri: vscode.Uri;
   task?: ParsedTask;

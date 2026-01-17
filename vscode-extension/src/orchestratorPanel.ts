@@ -7,7 +7,7 @@ import { AgentProfile, defaultAgentProfileLoader } from './agentProfiles';
 export interface MemoryEntry {
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: string; // ISO 8601 timestamp when entry was created
+  timestamp?: string; // ISO 8601 timestamp when entry was created
 }
 
 /**
@@ -25,7 +25,9 @@ export const BUNDLE_WARNING_THRESHOLD = 0.8;
 export interface ContextBundle {
   id: string;
   name: string;
-  files: string[];  // Validated against MAX_FILES_PER_BUNDLE (100) limit at runtime
+  // File paths must be validated before being added to this array.
+  // At runtime, these are also checked against MAX_FILES_PER_BUNDLE to prevent oversized bundles.
+  files: string[];
   description?: string;
   metadata?: Record<string, unknown>;
   agentProfile?: {
@@ -42,7 +44,7 @@ export class OrchestratorPanelProvider {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
-  
+
   private tasks: ParsedTask[] = [];
   private taskGraph: TaskGraph | null = null;
   private agents: AgentProfile[] = [];
@@ -252,7 +254,7 @@ export class OrchestratorPanelProvider {
     if (bundle) {
       const fileCount = bundle.files.length;
       const message = `Inspecting bundle: ${bundle.name} (${fileCount} files)`;
-      
+
       // Enforce and communicate hard limit consistently with taskInteractionAPI
       if (fileCount > MAX_FILES_PER_BUNDLE) {
         vscode.window.showErrorMessage(
@@ -357,10 +359,10 @@ export class OrchestratorPanelProvider {
 
     const graphData = this.taskGraph
       ? {
-          executionOrder: this.taskGraph.executionOrder,
-          cycles: this.taskGraph.cycles,
-          mermaid: exportToMermaid(this.taskGraph),
-        }
+        executionOrder: this.taskGraph.executionOrder,
+        cycles: this.taskGraph.cycles,
+        mermaid: exportToMermaid(this.taskGraph),
+      }
       : null;
 
     const contextBundlesData = this.contextBundles.map(bundle => ({
