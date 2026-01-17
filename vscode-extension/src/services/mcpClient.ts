@@ -93,7 +93,7 @@ export class MCPClient {
   private baseUrl: string;
   private authToken?: string;
   private timeout: number = 10000;
-  private static instance: MCPClient;
+  private static instance: MCPClient | undefined;
   private circuitBreaker: CircuitBreaker;
 
   private constructor(config: MCPConfig) {
@@ -121,6 +121,24 @@ export class MCPClient {
       MCPClient.instance = new MCPClient({ baseUrl, authToken });
     }
     return MCPClient.instance;
+  }
+
+  /**
+   * Invalidate the singleton instance.
+   * The next call to getInstance() will create a new instance using the updated configuration.
+   *
+   * This should be called when configuration changes to ensure the client uses updated settings.
+   *
+   * NOTE: Calling this method discards the existing CircuitBreaker instance along with any
+   * accumulated failure state (e.g., open/half-open state and counters). The next call to
+   * {@link MCPClient.getInstance} will create a new MCPClient with a fresh CircuitBreaker
+   * in the "closed" state. This effectively resets circuit breaker protection on config change.
+   */
+  static invalidateInstance(): void {
+    if (MCPClient.instance) {
+      console.log('[MCPClient] Invalidating cached instance and resetting circuit breaker due to configuration change');
+      MCPClient.instance = undefined;
+    }
   }
 
   /**

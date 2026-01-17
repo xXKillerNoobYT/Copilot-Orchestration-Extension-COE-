@@ -7,15 +7,26 @@ import { AgentProfile, defaultAgentProfileLoader } from './agentProfiles';
 export interface MemoryEntry {
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp?: string;
+  timestamp?: string; // ISO 8601 timestamp when entry was created
 }
+
+/**
+ * Maximum number of files allowed per context bundle.
+ * Prevents unbounded growth that can cause memory issues, WebSocket truncation, or MCP timeouts.
+ */
+export const MAX_FILES_PER_BUNDLE = 100;
+
+/**
+ * Threshold ratio for warning about context bundle size (0.8 = 80% of maximum).
+ * When a bundle reaches this threshold, users receive a warning to consider splitting it.
+ */
+export const BUNDLE_WARNING_THRESHOLD = 0.8;
 
 export interface ContextBundle {
   id: string;
   name: string;
-  // File paths must be validated before being added to this array
-  // Use validateFilePath() or validateAndFilterFilePaths() from utils/pathValidation
-  // to ensure paths are valid URIs and files exist
+  // File paths must be validated before being added to this array.
+  // At runtime, these are also checked against MAX_FILES_PER_BUNDLE to prevent oversized bundles.
   files: string[];
   description?: string;
   metadata?: Record<string, unknown>;
@@ -33,7 +44,7 @@ export class OrchestratorPanelProvider {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
-  
+
   private tasks: ParsedTask[] = [];
   private taskGraph: TaskGraph | null = null;
   private agents: AgentProfile[] = [];
@@ -241,7 +252,22 @@ export class OrchestratorPanelProvider {
   private handleBundleInspection(bundleId: string) {
     const bundle = this.contextBundles.find(b => b.id === bundleId);
     if (bundle) {
-      vscode.window.showInformationMessage(`Inspecting bundle: ${bundle.name} (${bundle.files.length} files)`);
+      const fileCount = bundle.files.length;
+      const message = `Inspecting bundle: ${bundle.name} (${fileCount} files)`;
+
+      // Enforce and communicate hard limit consistently with taskInteractionAPI
+      if (fileCount > MAX_FILES_PER_BUNDLE) {
+        vscode.window.showErrorMessage(
+          `${message}\n\n⚠️ ERROR: Bundle exceeds the maximum supported limit of ${MAX_FILES_PER_BUNDLE} files. ` +
+          `Large bundles may cause performance issues or timeouts.`
+        );
+      } else if (fileCount > MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) {
+        vscode.window.showWarningMessage(
+          `${message}\n\n⚠️ Bundle is approaching the recommended limit of ${MAX_FILES_PER_BUNDLE} files.`
+        );
+      } else {
+        vscode.window.showInformationMessage(message);
+      }
       // Future: Open bundle viewer or show file list
     }
   }
@@ -333,10 +359,10 @@ export class OrchestratorPanelProvider {
 
     const graphData = this.taskGraph
       ? {
-          executionOrder: this.taskGraph.executionOrder,
-          cycles: this.taskGraph.cycles,
-          mermaid: exportToMermaid(this.taskGraph),
-        }
+        executionOrder: this.taskGraph.executionOrder,
+        cycles: this.taskGraph.cycles,
+        mermaid: exportToMermaid(this.taskGraph),
+      }
       : null;
 
     const contextBundlesData = this.contextBundles.map(bundle => ({

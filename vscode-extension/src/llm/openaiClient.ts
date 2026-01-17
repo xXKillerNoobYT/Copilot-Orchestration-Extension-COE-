@@ -1,4 +1,4 @@
-import { LlmConfig, redactSecret } from '../config/llmConfig';
+import { LlmConfig, redactSecret, validateProtocol } from '../config/llmConfig';
 
 type HeadersInit = Record<string, string>;
 type FetchResponse = {
@@ -56,6 +56,29 @@ export function createOpenAIClient(config: LlmConfig): LlmClient {
         signal: controller.signal,
       })) as FetchResponse;
       return res;
+    } catch (error: any) {
+      // Enhance error messages for common issues
+      if (error.name === 'AbortError') {
+        // Check if this might be a protocol mismatch issue
+        const protocolWarning = validateProtocol(baseUrl);
+        if (protocolWarning) {
+          throw new Error(`Request timeout after ${timeoutMs}ms. ${protocolWarning}`);
+        }
+        throw new Error(`Request timeout after ${timeoutMs}ms. Check that the server is running and reachable at ${baseUrl}.`);
+      }
+      
+      // Check for TLS/SSL errors
+      if (error.message && (
+        error.message.includes('SSL') ||
+        error.message.includes('TLS') ||
+        error.message.includes('certificate') ||
+        error.message.includes('self-signed') ||
+        error.message.includes('CERT_')
+      )) {
+        throw new Error(`TLS/SSL error: ${error.message}. Local LLM servers use HTTP, not HTTPS. If you need HTTPS, set up a reverse proxy with valid certificates.`);
+      }
+      
+      throw error;
     } finally {
       clearTimeout(timeout);
     }
