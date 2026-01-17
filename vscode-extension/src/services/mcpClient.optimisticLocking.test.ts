@@ -13,7 +13,7 @@ describe('MCPClient - Optimistic Locking', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mcpClient = MCPClient.getInstance({ baseUrl: 'http://localhost:8000' });
+    mcpClient = MCPClient.getInstance();
   });
 
   describe('reportTaskStatus with version conflicts', () => {

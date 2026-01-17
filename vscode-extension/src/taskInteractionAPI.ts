@@ -315,9 +315,9 @@ export class TaskInteractionAPI {
 
       // Emit event
       this.eventEmitter.fire({
-        type: 'contextBundleCreated', // Reusing event type for simplicity
+        type: 'contextBundleModified',
         taskId: bundleData.taskId || '',
-        taskUri: vscode.Uri.file(bundleData.taskId || ''),
+        taskUri: bundleData.taskId ? vscode.Uri.file(bundleData.taskId) : uri,
         bundlePath,
         timestamp: new Date(),
       });
@@ -698,6 +698,7 @@ export interface TaskInteractionEvent {
     | 'executeTask'
     | 'statusChanged'
     | 'contextBundleCreated'
+    | 'contextBundleModified'
     | 'gitHubLinked'
     | 'dependenciesChanged';
   taskId: string;

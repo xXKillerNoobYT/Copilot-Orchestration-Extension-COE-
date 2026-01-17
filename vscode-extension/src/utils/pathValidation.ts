@@ -157,7 +157,8 @@ export function normalizeFilePath(filePath: string, workspaceRoot?: string): str
   }
 
   // Handle vscode.Uri objects
-  if (typeof filePath === 'object' && 'fsPath' in filePath) {
+  if (filePath && typeof filePath === 'object' && 'fsPath' in filePath && 'scheme' in filePath) {
+    // More robust check for Uri-like object
     return (filePath as vscode.Uri).fsPath;
   }
 
@@ -174,7 +175,7 @@ export function normalizeFilePath(filePath: string, workspaceRoot?: string): str
 }
 
 /**
- * Validate multiple file paths
+ * Validate multiple file paths concurrently
  * 
  * @param filePaths Array of file paths to validate
  * @param options Validation options
@@ -184,14 +185,10 @@ export async function validateFilePaths(
   filePaths: string[],
   options: { checkExists?: boolean; workspaceRoot?: string } = {}
 ): Promise<PathValidationResult[]> {
-  const results: PathValidationResult[] = [];
-  
-  for (const filePath of filePaths) {
-    const result = await validateFilePath(filePath, options);
-    results.push(result);
-  }
-  
-  return results;
+  // Validate all paths concurrently for better performance
+  return Promise.all(
+    filePaths.map(filePath => validateFilePath(filePath, options))
+  );
 }
 
 /**
