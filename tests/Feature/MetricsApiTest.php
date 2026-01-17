@@ -15,10 +15,11 @@ class MetricsApiTest extends TestCase
 
     public function test_tasks_metrics_endpoint_returns_counts(): void
     {
-        Task::factory()->create(['status' => 'pending']);
-        Task::factory()->create(['status' => 'in_progress']);
+        Task::factory()->create(['status' => 'pending', 'created_at' => Carbon::now()->subDays(5)]);
+        Task::factory()->create(['status' => 'in_progress', 'created_at' => Carbon::now()->subDays(3)]);
         Task::factory()->create([
             'status' => 'completed',
+            'created_at' => Carbon::now()->subDays(2),
             'started_at' => Carbon::now()->subHours(2),
             'completed_at' => Carbon::now()->subHour(),
         ]);
@@ -37,8 +38,28 @@ class MetricsApiTest extends TestCase
             'completionRate',
             'averageCycleSeconds',
             'averageCycleDisplay',
+            'timeRange',
+            'startDate',
             'lastUpdated',
         ]);
+    }
+    
+    public function test_tasks_metrics_endpoint_supports_time_range_filter(): void
+    {
+        // Create tasks outside the range
+        Task::factory()->create(['status' => 'completed', 'created_at' => Carbon::now()->subDays(10)]);
+        Task::factory()->create(['status' => 'completed', 'created_at' => Carbon::now()->subDays(8)]);
+        
+        // Create tasks within the range (last 7 days)
+        Task::factory()->create(['status' => 'completed', 'created_at' => Carbon::now()->subDays(5)]);
+        Task::factory()->create(['status' => 'pending', 'created_at' => Carbon::now()->subDays(2)]);
+
+        $response = $this->getJson('/api/v1/metrics/tasks?range=7d');
+
+        $response->assertOk();
+        $response->assertJsonPath('counts.total', 2);
+        $response->assertJsonPath('counts.completed', 1);
+        $response->assertJsonPath('timeRange', '7d');
     }
 
     public function test_agent_metrics_endpoint_returns_utilization(): void
@@ -98,5 +119,51 @@ class MetricsApiTest extends TestCase
             'lastUpdated',
         ]);
         $this->assertStringContainsString('LLM timeout', $response->getContent());
+    }
+    
+    public function test_error_metrics_endpoint_supports_severity_filter(): void
+    {
+        $agent = Agent::factory()->create(['is_active' => true]);
+        $task1 = Task::factory()->create();
+        $task2 = Task::factory()->create();
+        $task3 = Task::factory()->create();
+
+        // Create errors with different severity levels
+        TaskExecution::create([
+            'task_id' => $task1->id,
+            'agent_id' => $agent->id,
+            'execution_number' => 1,
+            'status' => 'failed',
+            'error_message' => 'Critical: Database connection failed',
+            'completed_at' => Carbon::now()->subMinutes(5),
+            'created_at' => Carbon::now()->subMinutes(10),
+        ]);
+        
+        TaskExecution::create([
+            'task_id' => $task2->id,
+            'agent_id' => $agent->id,
+            'execution_number' => 1,
+            'status' => 'failed',
+            'error_message' => 'High: API rate limit exceeded',
+            'completed_at' => Carbon::now()->subMinutes(3),
+            'created_at' => Carbon::now()->subMinutes(8),
+        ]);
+        
+        TaskExecution::create([
+            'task_id' => $task3->id,
+            'agent_id' => $agent->id,
+            'execution_number' => 1,
+            'status' => 'failed',
+            'error_message' => 'Low: Minor validation warning',
+            'completed_at' => Carbon::now()->subMinutes(1),
+            'created_at' => Carbon::now()->subMinutes(6),
+        ]);
+
+        $response = $this->getJson('/api/v1/metrics/errors?severity=high');
+
+        $response->assertOk();
+        $response->assertJsonPath('filtered_by_severity', 'high');
+        $this->assertStringContainsString('High:', $response->getContent());
+        $this->assertStringNotContainsString('Low:', $response->getContent());
     }
 }

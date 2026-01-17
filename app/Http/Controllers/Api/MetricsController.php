@@ -14,7 +14,8 @@ class MetricsController extends Controller
 
     public function tasks(): JsonResponse
     {
-        return response()->json($this->metricsService->getTaskMetrics());
+        $range = request()->query('range', '7d');
+        return response()->json($this->metricsService->getTaskMetrics($range));
     }
 
     public function agents(): JsonResponse
@@ -24,7 +25,9 @@ class MetricsController extends Controller
 
     public function errors(): JsonResponse
     {
-        return response()->json($this->metricsService->getErrorMetrics());
+        $severity = request()->query('severity');
+        $limit = request()->query('limit', 10);
+        return response()->json($this->metricsService->getErrorMetrics((int)$limit, $severity));
     }
 
     /**
