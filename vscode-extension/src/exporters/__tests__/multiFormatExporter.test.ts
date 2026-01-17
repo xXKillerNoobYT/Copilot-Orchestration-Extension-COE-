@@ -156,7 +156,7 @@ describe('MultiFormatExporter', () => {
       const filepath = await MultiFormatExporter.exportToPDF(testPlan, tempDir);
       
       expect(fs.existsSync(filepath)).toBe(true);
-      expect(filepath).not.toMatch(/[<>:"|?*\/\\]/);
+      expect(path.basename(filepath)).not.toMatch(/[<>:"|?*\/\\]/);
     });
   });
 

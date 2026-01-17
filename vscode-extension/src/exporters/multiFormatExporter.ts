@@ -637,6 +637,6 @@ export class MultiFormatExporter {
    * Sanitize filename for file system compatibility
    */
   private static sanitizeFilename(filename: string): string {
-    return filename.replace(/[<>:"|?*\/\\]/g, '_').substring(0, 255);
+    return filename.replace(/[<>:"|?*\/\\\s]/g, '_').substring(0, 255);
   }
 }
