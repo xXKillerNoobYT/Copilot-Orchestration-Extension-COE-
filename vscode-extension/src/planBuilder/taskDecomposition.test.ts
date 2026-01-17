@@ -467,7 +467,15 @@ async function runTests() {
   if (failed === 0) {
     console.log('✓ All tests passed!');
   }
+  
+  return { passed, failed };
 }
 
-// Run tests
-runTests().catch(console.error);
+// Jest test wrapper
+describe('Task Decomposition Integration Tests', () => {
+  it('should pass all decomposition tests', async () => {
+    const result = await runTests();
+    expect(result.failed).toBe(0);
+    expect(result.passed).toBeGreaterThan(0);
+  }, 30000); // 30 second timeout for comprehensive tests
+});

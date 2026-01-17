@@ -51,7 +51,8 @@ module.exports = {
     'planBuilder/__tests__/wizardStore\\.test\\.ts',
     'planBuilder/wizardContainer\\.test\\.ts',
     'planBuilder/questionFramework\\.test\\.ts',
-    'planBuilder/taskDecomposition\\.test\\.ts',
+    // taskDecomposition tests ENABLED for Issue #66
+    // 'planBuilder/taskDecomposition\\.test\\.ts',
     'planBuilder/planMetadata\\.test\\.ts',
     'planBuilder/planGenerator\\.test\\.ts',
     'planBuilder/planIntegration\\.test\\.ts',
@@ -59,7 +60,7 @@ module.exports = {
     'planBuilder/designHandoff\\.test\\.ts',
     'planBuilder/aiAssistanceService\\.test\\.ts',
     'services/planPersistence\\.test\\.ts',
-    'services/taskDecomposition\\.test\\.ts',
+    // 'services/taskDecomposition\\.test\\.ts',
     // Preview tests converted to Jest - no longer excluded
     // // Preview tests ENABLED for Issue #56
     // 'components/preview/PreviewEngine\\.test\\.ts',

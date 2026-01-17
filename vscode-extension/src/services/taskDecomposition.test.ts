@@ -13,7 +13,7 @@
  * Target: 80%+ code coverage
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import {
   TaskDecompositionEngine,
   createDecompositionEngine,
