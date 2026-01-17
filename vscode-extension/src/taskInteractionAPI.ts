@@ -368,6 +368,21 @@ export class TaskInteractionAPI {
         return;
       }
 
+      // Enforce MAX_FILES_PER_BUNDLE limit before writing
+      const currentFileCount = (bundleData.files || []).length;
+      const newTotalCount = currentFileCount + newFiles.length;
+
+      if (newTotalCount > MAX_FILES_PER_BUNDLE) {
+        const allowedCount = MAX_FILES_PER_BUNDLE - currentFileCount;
+        vscode.window.showErrorMessage(
+          `Cannot add ${newFiles.length} file(s). Bundle currently has ${currentFileCount} files, ` +
+          `and the maximum is ${MAX_FILES_PER_BUNDLE}. ` +
+          `You can add up to ${allowedCount} more file(s). ` +
+          `Large bundles can cause memory issues, WebSocket truncation, or MCP timeouts.`
+        );
+        return;
+      }
+
       bundleData.files = [...(bundleData.files || []), ...newFiles];
       bundleData.updatedAt = new Date().toISOString();
 
@@ -378,11 +393,19 @@ export class TaskInteractionAPI {
       );
 
       const invalidCount = filePaths.length - validatedPaths.length;
-      const message = invalidCount > 0
+      let message = invalidCount > 0
         ? `Added ${newFiles.length} file(s) to bundle. ${invalidCount} invalid path(s) were skipped.`
         : `Added ${newFiles.length} file(s) to context bundle.`;
 
-      vscode.window.showInformationMessage(message);
+      // Warn if approaching or at threshold
+      if (newTotalCount > MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) {
+        message += ` Bundle now has ${newTotalCount}/${MAX_FILES_PER_BUNDLE} files.`;
+        vscode.window.showWarningMessage(
+          message + ' Consider splitting into multiple bundles to avoid performance issues.'
+        );
+      } else {
+        vscode.window.showInformationMessage(message);
+      }
 
       // Emit event
       this.eventEmitter.fire({
