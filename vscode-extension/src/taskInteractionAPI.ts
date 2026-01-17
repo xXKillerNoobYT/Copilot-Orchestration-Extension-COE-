@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ParsedTask } from './taskParser';
 import { TaskStatusParser } from './taskStatusParser';
+import { defaultAgentProfileLoader, AgentProfile } from './agentProfiles';
 
 /**
  * TaskInteractionAPI: Bridge between .task.md files and the main orchestrator workflow
@@ -123,6 +124,20 @@ export class TaskInteractionAPI {
     try {
       const uri = vscode.Uri.file(bundlePath);
       const document = await vscode.workspace.openTextDocument(uri);
+      
+      // Validate agent profile if bundle contains profile information
+      try {
+        const bundleContent = document.getText();
+        const bundle = JSON.parse(bundleContent);
+        
+        if (bundle.agentProfile && bundle.profileVersion) {
+          await this.validateAgentProfile(bundle.agentProfile, bundle.profileVersion);
+        }
+      } catch (validationError) {
+        // Log validation error but still open the bundle
+        console.warn('Context bundle profile validation failed:', validationError);
+      }
+      
       await vscode.window.showTextDocument(document);
     } catch (error) {
       vscode.window.showErrorMessage(
@@ -155,6 +170,30 @@ export class TaskInteractionAPI {
         return; // User cancelled
       }
 
+      // Load agent profile for the first assignee (if any)
+      let agentProfileSnapshot;
+      let profileVersion;
+      if (result.task.assignees && result.task.assignees.length > 0) {
+        try {
+          const primaryAgent = result.task.assignees[0];
+          const profile = await defaultAgentProfileLoader.loadProfile(primaryAgent);
+          if (profile) {
+            // Capture essential profile information
+            agentProfileSnapshot = {
+              name: profile.name,
+              role: profile.role,
+              version: profile.version,
+              capabilities: this.extractCapabilities(profile),
+            };
+            // Create a version hash based on profile content
+            profileVersion = this.generateProfileVersion(profile);
+          }
+        } catch (error) {
+          // Log but don't fail if profile loading fails
+          console.warn('Failed to load agent profile for context bundle:', error);
+        }
+      }
+
       // Create context bundle file structure
       const contextDir = `context/${bundleName}`;
       const bundleFile = `${contextDir}/bundle.json`;
@@ -167,6 +206,8 @@ export class TaskInteractionAPI {
         files: [],
         notes: `Context bundle for task: ${result.task.title}`,
         version: 1,
+        agentProfile: agentProfileSnapshot,
+        profileVersion,
       };
 
       // Create bundle file
@@ -404,6 +445,110 @@ ${task.context_bundle ? `Context Bundle: ${task.context_bundle}` : ''}
   private extractIssueNumber(url: string): string | null {
     const match = url.match(/\/issues\/(\d+)/);
     return match ? match[1] : null;
+  }
+
+  /**
+   * Extract capabilities from agent profile
+   */
+  private extractCapabilities(profile: AgentProfile): string[] {
+    const capabilities: string[] = [];
+    
+    // Extract from tool permissions
+    if (profile.tool_permissions) {
+      Object.entries(profile.tool_permissions).forEach(([key, value]) => {
+        if (value === true) {
+          capabilities.push(key);
+        }
+      });
+    }
+    
+    // Add role as a capability
+    if (profile.role) {
+      capabilities.push(`role:${profile.role}`);
+    }
+    
+    return capabilities;
+  }
+
+  /**
+   * Generate a profile version identifier based on profile content
+   */
+  private generateProfileVersion(profile: AgentProfile): string {
+    // Create a deterministic version string from key profile properties
+    const versionData = {
+      name: profile.name,
+      role: profile.role,
+      version: profile.version,
+      permissions: profile.tool_permissions,
+      constraints: profile.execution_constraints,
+    };
+    
+    // Simple hash-like identifier (in production, use a proper hash function)
+    const versionString = JSON.stringify(versionData);
+    let hash = 0;
+    for (let i = 0; i < versionString.length; i++) {
+      const char = versionString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    return `${profile.version}.${Math.abs(hash).toString(16)}`;
+  }
+
+  /**
+   * Validate agent profile against current runtime profile
+   */
+  private async validateAgentProfile(
+    bundleProfile: { name: string; role: string; version: number; capabilities?: string[] },
+    bundleProfileVersion: string
+  ): Promise<void> {
+    try {
+      // Load current profile for the same agent
+      const currentProfile = await defaultAgentProfileLoader.loadProfile(bundleProfile.name);
+      
+      if (!currentProfile) {
+        vscode.window.showWarningMessage(
+          `Agent profile '${bundleProfile.name}' not found. Context bundle may be stale.`
+        );
+        return;
+      }
+      
+      // Generate current profile version
+      const currentProfileVersion = this.generateProfileVersion(currentProfile);
+      
+      // Check if profiles match
+      if (bundleProfileVersion !== currentProfileVersion) {
+        vscode.window.showWarningMessage(
+          `Agent profile '${bundleProfile.name}' has changed since context bundle creation. ` +
+          `Expected version: ${bundleProfileVersion}, Current version: ${currentProfileVersion}. ` +
+          `Tools and capabilities may differ from when this context was created.`
+        );
+        
+        // Log detailed mismatch information
+        console.warn('Agent profile mismatch detected:', {
+          bundleProfile: bundleProfile,
+          bundleVersion: bundleProfileVersion,
+          currentVersion: currentProfileVersion,
+          currentRole: currentProfile.role,
+          bundleRole: bundleProfile.role,
+        });
+      }
+      
+      // Check role mismatch even if version matches
+      if (bundleProfile.role !== currentProfile.role) {
+        vscode.window.showErrorMessage(
+          `Critical: Agent role mismatch! Context bundle expects '${bundleProfile.role}' ` +
+          `but current profile has role '${currentProfile.role}'. ` +
+          `Execution may fail due to incompatible capabilities.`
+        );
+      }
+      
+    } catch (error) {
+      console.error('Failed to validate agent profile:', error);
+      vscode.window.showWarningMessage(
+        `Failed to validate agent profile: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   /**
