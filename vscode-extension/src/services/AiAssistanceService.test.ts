@@ -106,16 +106,8 @@ describe('AiAssistanceService', () => {
   });
 
   describe('getSuggestionsDebounced', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
-    // TODO: Fix debounce test - currently times out due to timer handling
-    it.skip('should debounce multiple rapid calls', async () => {
+    // Fixed: Use real timers with short delay instead of fake timers to avoid async promise issues
+    it('should debounce multiple rapid calls', async () => {
       const mockResponse = {
         success: true,
         answer: 'Test answer',
@@ -130,16 +122,19 @@ describe('AiAssistanceService', () => {
         wizardState: {},
       };
 
-      // Fire 3 requests rapidly
-      const promise1 = service.getSuggestionsDebounced(request, 100);
-      const promise2 = service.getSuggestionsDebounced(request, 100);
-      const promise3 = service.getSuggestionsDebounced(request, 100);
+      // Fire 3 requests rapidly with very short debounce (1ms for testing)
+      const promise1 = service.getSuggestionsDebounced(request, 1);
+      const promise2 = service.getSuggestionsDebounced(request, 1);
+      const promise3 = service.getSuggestionsDebounced(request, 1);
 
-      jest.runAllTimers();
+      // Wait for all promises to resolve
+      const results = await Promise.all([promise1, promise2, promise3]);
 
-      await Promise.all([promise1, promise2, promise3]);
+      // All should resolve with the same data
+      expect(results[0]).toEqual(results[1]);
+      expect(results[1]).toEqual(results[2]);
 
-      // Only one call should be made after debounce
+      // Only one call should be made after debounce (last one)
       expect(mockMCPClient.askQuestion).toHaveBeenCalledTimes(1);
     });
   });

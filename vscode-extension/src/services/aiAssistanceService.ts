@@ -34,6 +34,7 @@ export interface AiAssistanceResponse {
 export class AiAssistanceService {
   private mcpClient: MCPClient;
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
+  private pendingResolvers: Map<string, Array<(value: AiAssistanceResponse) => void>> = new Map();
 
   constructor() {
     this.mcpClient = MCPClient.getInstance();
@@ -74,6 +75,9 @@ export class AiAssistanceService {
   /**
    * Get suggestions with debouncing to avoid excessive API calls
    * 
+   * All rapid calls with the same key will be resolved with the same result
+   * when the debounce timer fires.
+   * 
    * @param request Assistance request
    * @param debounceMs Debounce delay in milliseconds (default: 1000ms)
    * @returns Promise that resolves when debounced
@@ -85,6 +89,11 @@ export class AiAssistanceService {
     const key = `${request.currentPage}-${request.currentQuestion}`;
 
     return new Promise((resolve) => {
+      // Add this resolver to the pending list
+      const resolvers = this.pendingResolvers.get(key) || [];
+      resolvers.push(resolve);
+      this.pendingResolvers.set(key, resolvers);
+
       // Clear existing timer for this key
       const existingTimer = this.debounceTimers.get(key);
       if (existingTimer) {
@@ -94,8 +103,16 @@ export class AiAssistanceService {
       // Set new timer
       const timer = setTimeout(async () => {
         this.debounceTimers.delete(key);
+        
+        // Get all pending resolvers for this key
+        const pendingResolvers = this.pendingResolvers.get(key) || [];
+        this.pendingResolvers.delete(key);
+        
+        // Get suggestions once
         const suggestions = await this.getSuggestions(request);
-        resolve(suggestions);
+        
+        // Resolve all pending promises with the same result
+        pendingResolvers.forEach(resolver => resolver(suggestions));
       }, debounceMs);
 
       this.debounceTimers.set(key, timer);
@@ -200,13 +217,14 @@ export class AiAssistanceService {
   }
 
   /**
-   * Clean up debounce timers
+   * Clean up debounce timers and pending resolvers
    */
   dispose(): void {
     for (const timer of this.debounceTimers.values()) {
       clearTimeout(timer);
     }
     this.debounceTimers.clear();
+    this.pendingResolvers.clear();
   }
 }
 
