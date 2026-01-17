@@ -274,7 +274,7 @@ sequenceDiagram
 sequenceDiagram
     User->>UI: Save Plan
     UI->>MCPClient: savePlan(wizardState)
-    MCPClient->>Laravel: POST /mcp/savePlan
+    MCPClient->>Laravel: POST /api/v1/mcp/savePlan
     Laravel->>DB: INSERT INTO plans
     DB-->>Laravel: Plan ID
     Laravel-->>MCPClient: { success, plan }
@@ -283,7 +283,7 @@ sequenceDiagram
 
     User->>UI: Load Plan
     UI->>MCPClient: listPlans()
-    MCPClient->>Laravel: GET /mcp/listPlans
+    MCPClient->>Laravel: GET /api/v1/mcp/listPlans
     Laravel->>DB: SELECT * FROM plans
     DB-->>Laravel: Plans
     Laravel-->>MCPClient: { plans }
@@ -291,7 +291,7 @@ sequenceDiagram
     UI-->>User: Picker
     User->>UI: Select plan
     UI->>MCPClient: loadPlan(id)
-    MCPClient->>Laravel: GET /mcp/loadPlan/:id
+    MCPClient->>Laravel: GET /api/v1/mcp/loadPlan/:id
     Laravel->>DB: SELECT * WHERE id
     DB-->>Laravel: Plan
     Laravel-->>MCPClient: { plan }

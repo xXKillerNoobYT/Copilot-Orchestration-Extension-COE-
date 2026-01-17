@@ -502,7 +502,7 @@ export class PlanPersistenceService {
       const config = vscode.workspace.getConfiguration('copilotOrchestration');
       const backendUrl = config.get<string>('mcpServerUrl') || 'http://localhost:8000';
 
-      const url = `${backendUrl}/api/mcp/plans/${planId}/decompose`;
+      const url = `${backendUrl}/api/v1/mcp/plans/${planId}/decompose`;
       
       // Prepare request body
       const requestBody = {

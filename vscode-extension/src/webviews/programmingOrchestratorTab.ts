@@ -121,7 +121,7 @@ export class ProgrammingOrchestratorManager {
    * Get team state for refresh operation
    */
   async getTeamState(): Promise<OrchestratorState['teamStatuses']> {
-    // In production, this would call MCP endpoint: GET /api/teams/status
+    // In production, this would call MCP endpoint: GET /api/v1/teams/status
     // For now, return current state with simulated refresh
     
     return {

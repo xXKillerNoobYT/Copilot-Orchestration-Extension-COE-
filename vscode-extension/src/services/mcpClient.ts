@@ -3,20 +3,41 @@
  * Provides access to MCP server endpoints from VS Code extension
  * 
  * Reference: Code Master notebook, Section 11.7 - MCP Endpoints
+ * All MCP endpoints use the canonical path pattern: /api/v1/mcp/*
+ * 
  * Endpoints:
- * - GET /mcp/nextTask
- * - POST /mcp/reportTaskStatus
- * - POST /mcp/reportObservation
- * - POST /mcp/reportTestFailure
- * - POST /mcp/reportVerificationResult
- * - POST /mcp/askQuestion
- * - POST /mcp/savePlan
- * - GET /mcp/loadPlan/:id
- * - GET /mcp/listPlans
+ * - GET /api/v1/mcp/nextTask
+ * - POST /api/v1/mcp/reportTaskStatus
+ * - POST /api/v1/mcp/reportObservation
+ * - POST /api/v1/mcp/reportTestFailure
+ * - POST /api/v1/mcp/reportVerificationResult
+ * - POST /api/v1/mcp/askQuestion
+ * - POST /api/v1/mcp/savePlan
+ * - GET /api/v1/mcp/loadPlan/:id
+ * - GET /api/v1/mcp/listPlans
+ * - POST /api/v1/mcp/plans/:id/decompose
  */
 
 import * as vscode from 'vscode';
 import { retryWithBackoff, withTimeout, CircuitBreaker, showErrorMessage, logError, createRetryHandler } from '../utils/errorHandler';
+
+/**
+ * Centralized MCP endpoint paths
+ * Ensures consistent path patterns across all MCP operations
+ */
+const MCP_ENDPOINTS = {
+  BASE: '/api/v1/mcp',
+  NEXT_TASK: '/api/v1/mcp/nextTask',
+  REPORT_TASK_STATUS: '/api/v1/mcp/reportTaskStatus',
+  REPORT_OBSERVATION: '/api/v1/mcp/reportObservation',
+  REPORT_TEST_FAILURE: '/api/v1/mcp/reportTestFailure',
+  REPORT_VERIFICATION_RESULT: '/api/v1/mcp/reportVerificationResult',
+  ASK_QUESTION: '/api/v1/mcp/askQuestion',
+  SAVE_PLAN: '/api/v1/mcp/savePlan',
+  LOAD_PLAN: '/api/v1/mcp/loadPlan',
+  LIST_PLANS: '/api/v1/mcp/listPlans',
+  TEAMS_STATUS: '/api/v1/teams/status',
+} as const;
 
 export interface MCPConfig {
   baseUrl: string;
@@ -103,7 +124,7 @@ export class MCPClient {
   }
 
   /**
-   * GET /mcp/nextTask
+   * GET /api/v1/mcp/nextTask
    * Fetch next ready task from queue with plan context
    */
   async getNextTask(filter?: string, priority?: string): Promise<any> {
@@ -111,7 +132,7 @@ export class MCPClient {
     if (filter) params.append('filter', filter);
     if (priority) params.append('priority', priority);
 
-    const url = `${this.baseUrl}/mcp/nextTask${params.size ? '?' + params : ''}`;
+    const url = `${this.baseUrl}${MCP_ENDPOINTS.NEXT_TASK}${params.size ? '?' + params : ''}`;
     return this.fetchWithRetry(url, 'GET');
   }
 
@@ -189,7 +210,7 @@ export class MCPClient {
   }
 
   /**
-   * POST /mcp/reportObservation
+   * POST /api/v1/mcp/reportObservation
    * Log observations, discoveries, or issues
    */
   async reportObservation(data: {
@@ -200,11 +221,11 @@ export class MCPClient {
     suggestedAction?: string;
     createTask?: boolean;
   }): Promise<any> {
-    return this.fetch(`${this.baseUrl}/mcp/reportObservation`, 'POST', data);
+    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_OBSERVATION}`, 'POST', data);
   }
 
   /**
-   * POST /mcp/reportTestFailure
+   * POST /api/v1/mcp/reportTestFailure
    * Report test failures and block task
    */
   async reportTestFailure(data: {
@@ -214,11 +235,11 @@ export class MCPClient {
     stackTrace?: string;
     failureType?: 'assertion' | 'timeout' | 'error' | 'other';
   }): Promise<any> {
-    return this.fetch(`${this.baseUrl}/mcp/reportTestFailure`, 'POST', data);
+    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_TEST_FAILURE}`, 'POST', data);
   }
 
   /**
-   * POST /mcp/reportVerificationResult
+   * POST /api/v1/mcp/reportVerificationResult
    * Report visual/manual verification results
    */
   async reportVerificationResult(data: {
@@ -230,11 +251,11 @@ export class MCPClient {
     followUpTasks?: any[];
     notes?: string;
   }): Promise<any> {
-    return this.fetch(`${this.baseUrl}/mcp/reportVerificationResult`, 'POST', data);
+    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_VERIFICATION_RESULT}`, 'POST', data);
   }
 
   /**
-   * POST /mcp/askQuestion
+   * POST /api/v1/mcp/askQuestion
    * Ask contextual questions with plan/code context
    */
   async askQuestion(data: {
@@ -243,11 +264,11 @@ export class MCPClient {
     planSection?: string;
     context?: any;
   }): Promise<any> {
-    return this.fetchWithRetry(`${this.baseUrl}/mcp/askQuestion`, 'POST', data);
+    return this.fetchWithRetry(`${this.baseUrl}${MCP_ENDPOINTS.ASK_QUESTION}`, 'POST', data);
   }
 
   /**
-   * POST /mcp/savePlan
+   * POST /api/v1/mcp/savePlan
    * Save wizard state and project plan
    */
   async savePlan(data: {
@@ -257,19 +278,19 @@ export class MCPClient {
     metadata?: Record<string, unknown>;
     status?: 'draft' | 'active' | 'archived';
   }): Promise<any> {
-    return this.fetchWithRetry(`${this.baseUrl}/api/v1/mcp/savePlan`, 'POST', data);
+    return this.fetchWithRetry(`${this.baseUrl}${MCP_ENDPOINTS.SAVE_PLAN}`, 'POST', data);
   }
 
   /**
-   * GET /mcp/loadPlan/:id
+   * GET /api/v1/mcp/loadPlan/:id
    * Load saved plan by ID
    */
   async loadPlan(id: number): Promise<any> {
-    return this.fetchWithRetry(`${this.baseUrl}/api/v1/mcp/loadPlan/${id}`, 'GET');
+    return this.fetchWithRetry(`${this.baseUrl}${MCP_ENDPOINTS.LOAD_PLAN}/${id}`, 'GET');
   }
 
   /**
-   * GET /mcp/listPlans
+   * GET /api/v1/mcp/listPlans
    * List all saved plans
    */
   async listPlans(status?: string, limit?: number): Promise<any> {
@@ -277,16 +298,16 @@ export class MCPClient {
     if (status) params.append('status', status);
     if (limit) params.append('limit', limit.toString());
 
-    const url = `${this.baseUrl}/api/v1/mcp/listPlans${params.size ? '?' + params : ''}`;
+    const url = `${this.baseUrl}${MCP_ENDPOINTS.LIST_PLANS}${params.size ? '?' + params : ''}`;
     return this.fetchWithRetry(url, 'GET');
   }
 
   /**
-   * GET /api/teams/status
+   * GET /api/v1/teams/status
    * Get current team state with latest metrics
    */
   async getTeamsStatus(): Promise<TeamStatusResponse> {
-    const url = `${this.baseUrl}/api/teams/status`;
+    const url = `${this.baseUrl}${MCP_ENDPOINTS.TEAMS_STATUS}`;
     return this.fetchWithRetry(url, 'GET');
   }
 
@@ -377,6 +398,11 @@ export class MCPClient {
     this.timeout = timeout;
   }
 }
+
+/**
+ * Export MCP endpoint paths for testing and external use
+ */
+export { MCP_ENDPOINTS };
 
 /**
  * WebSocket Events Listener
