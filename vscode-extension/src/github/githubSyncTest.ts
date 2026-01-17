@@ -1,5 +1,15 @@
 /**
  * Test suite for GitHub synchronization
+ * 
+ * NOTE: This test file uses eval("require(...)") instead of regular require() or import()
+ * to load the webhookHandler and githubSyncService modules at runtime. This is necessary
+ * because webpack aggressively processes all module imports/requires at build time, even
+ * dynamic ones, and replaces them with bundled code or error-throwing stubs when it can't
+ * resolve them. By using eval(), we bypass webpack's static analysis and ensure the modules
+ * are loaded at runtime from their compiled locations in dist/.
+ * 
+ * The required modules (webhookHandler.js and githubSyncService.js) are compiled as separate
+ * webpack entry points in the tools bundle (see webpack.config.js) so they exist at runtime.
  */
 
 // Import types for test fixtures

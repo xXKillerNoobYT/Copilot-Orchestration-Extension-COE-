@@ -64,6 +64,8 @@ module.exports = [
       // Integration test runner
       'integration/runTest': './src/integration/runTest.ts',
       // GitHub sync test dependencies (test-time only, not in production bundle)
+      // These are compiled as separate modules so githubSyncTest can load them at runtime using eval("require(...)")
+      // This approach is necessary because webpack aggressively processes all require/import statements at build time
       'github/webhookHandler': './src/github/webhookHandler.ts',
       'services/githubSyncService': './src/services/githubSyncService.ts',
     },
