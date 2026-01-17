@@ -16,6 +16,13 @@ export interface ContextBundle {
   files: string[];
   description?: string;
   metadata?: Record<string, unknown>;
+  agentProfile?: {
+    name: string;
+    role: string;
+    version: number;
+    capabilities?: string[];
+  };
+  profileVersion?: string;
 }
 
 export class OrchestratorPanelProvider {
