@@ -29,6 +29,16 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('/orchestrator', function () {
+    // Default to 'default' project or use environment variable if set
+    $defaultProjectId = env('DEFAULT_PROJECT_ID', 'default');
+    $projectId = request()->input('project', $defaultProjectId);
+    
+    return Inertia::render('OrchestratorDashboard', [
+        'projectId' => $projectId
+    ]);
+})->middleware(['auth', 'verified'])->name('orchestrator');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
