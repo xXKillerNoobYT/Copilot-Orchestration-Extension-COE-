@@ -183,7 +183,8 @@ export class MCPClient {
       }
     }
     
-    // This should be unreachable, but TypeScript requires a return
+    // TypeScript requires a return statement here, though this is unreachable
+    // The loop always exits via return or throw
     throw new Error('Unexpected error in retry loop');
   }
 
