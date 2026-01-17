@@ -62,7 +62,7 @@ export function readLlmConfig(options?: { configuration?: ConfigLike }): LlmConf
 
   // Warn about APIPA addresses (169.254.x.x)
   if (isApipaAddress(baseUrlTrimmed)) {
-    issues.push('Warning: APIPA address (169.254.x.x) detected. This may indicate network configuration issues.');
+    issues.push('Network IP is APIPA (169.254.x.x) indicating DHCP failure. Please configure a static IP address or restart DHCP service.');
   }
 
   const normalizedTemperature = normalizeTemperature(temperatureRaw, issues);
