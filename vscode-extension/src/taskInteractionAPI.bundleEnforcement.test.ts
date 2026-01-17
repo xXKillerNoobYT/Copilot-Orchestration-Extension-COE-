@@ -42,6 +42,7 @@ describe('TaskInteractionAPI - Context Bundle Size Enforcement', () => {
     (vscode.Uri as any).file = jest.fn((filePath: string) => ({ 
       fsPath: filePath,
       scheme: 'file',
+      toString: () => `file://${filePath}`,
     }));
 
     (vscode.workspace as any).workspaceFolders = [{
@@ -50,12 +51,12 @@ describe('TaskInteractionAPI - Context Bundle Size Enforcement', () => {
       index: 0,
     }];
 
-    // Mock normalizeFilePath to return the input (simplified for tests)
+    // Mock normalizeFilePath to match actual behavior (normalize path separators)
     (normalizeFilePath as jest.Mock).mockImplementation((filePath: string | vscode.Uri) => {
       if (typeof filePath === 'string') {
-        return filePath;
+        return path.normalize(filePath);
       }
-      return (filePath as any).fsPath;
+      return path.normalize((filePath as any).fsPath);
     });
   });
 

@@ -398,7 +398,8 @@ export class TaskInteractionAPI {
         : `Added ${newFiles.length} file(s) to context bundle.`;
 
       // Warn if approaching or at threshold
-      if (newTotalCount > MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD) {
+      // Use Math.floor to avoid floating point precision issues
+      if (newTotalCount > Math.floor(MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD)) {
         message += ` Bundle now has ${newTotalCount}/${MAX_FILES_PER_BUNDLE} files.`;
         vscode.window.showWarningMessage(
           message + ' Consider splitting into multiple bundles to avoid performance issues.'
