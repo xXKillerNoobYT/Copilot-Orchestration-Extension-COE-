@@ -311,7 +311,6 @@
     "@types/jspdf": "^2.0.0",
     "chart.js": "^4.5.1",
     "graphlib": "^2.1.8",
-    "html2canvas": "^1.4.1",
     "jspdf": "^4.0.0",
     "laravel-echo": "^2.3.0",
     "pusher-js": "^8.4.0",

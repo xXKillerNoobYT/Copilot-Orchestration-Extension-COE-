@@ -12,7 +12,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { PlanJSON } from '../planBuilder/planGenerator';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 
 export type MultiFormatExportType = 'pdf' | 'figma' | 'openapi';
 
@@ -295,8 +294,9 @@ export class MultiFormatExporter {
       );
     }
 
-    // Save PDF
-    doc.save(filepath);
+    // Save PDF to file using Node.js fs
+    const pdfOutput = doc.output('arraybuffer');
+    fs.writeFileSync(filepath, Buffer.from(pdfOutput));
     return filepath;
   }
 
@@ -635,8 +635,12 @@ export class MultiFormatExporter {
 
   /**
    * Sanitize filename for file system compatibility
+   * Replaces problematic characters with safe alternatives while maintaining readability
    */
   private static sanitizeFilename(filename: string): string {
-    return filename.replace(/[<>:"|?*\/\\\s]/g, '_').substring(0, 255);
+    return filename
+      .replace(/[<>:"|?*\/\\]/g, '_')  // Replace forbidden characters with underscores
+      .replace(/\s+/g, '-')             // Replace spaces with hyphens for readability
+      .substring(0, 255);
   }
 }

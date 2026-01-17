@@ -141,7 +141,7 @@ describe('MultiFormatExporter', () => {
     it('should include plan name in PDF filename', async () => {
       const filepath = await MultiFormatExporter.exportToPDF(testPlan, tempDir);
       
-      expect(filepath).toContain('Test_Project');
+      expect(filepath).toContain('Test-Project'); // Spaces replaced with hyphens
     });
 
     it('should create non-empty PDF file', async () => {
