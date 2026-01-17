@@ -1,15 +1,16 @@
 /**
  * Test suite for GitHub synchronization
  * 
- * NOTE: This test file uses eval("require(...)") instead of regular require() or import()
- * to load the webhookHandler and githubSyncService modules at runtime. This is necessary
- * because webpack aggressively processes all module imports/requires at build time, even
- * dynamic ones, and replaces them with bundled code or error-throwing stubs when it can't
- * resolve them. By using eval(), we bypass webpack's static analysis and ensure the modules
- * are loaded at runtime from their compiled locations in dist/.
+ * NOTE: This test file loads the webhookHandler and githubSyncService modules at runtime
+ * from their compiled locations in dist/. These modules are compiled as separate webpack
+ * entry points in the tools bundle (see webpack.config.js). To prevent webpack from bundling
+ * these modules into the test file at build time, they are marked as 'externals' in the
+ * webpack configuration. This allows the test to use regular require() calls to load them
+ * at runtime without webpack interference.
  * 
- * The required modules (webhookHandler.js and githubSyncService.js) are compiled as separate
- * webpack entry points in the tools bundle (see webpack.config.js) so they exist at runtime.
+ * The externals configuration tells webpack: "don't bundle these modules; leave the require()
+ * calls as-is and resolve them at runtime." This is the proper way to handle test-time
+ * dependencies that need to be loaded dynamically.
  */
 
 // Import types for test fixtures
@@ -94,9 +95,9 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 1: Parse GitHub webhook payload
   try {
-    // Use eval to bypass webpack's static analysis
-    const webhookModule = eval("require('./webhookHandler.js')");
-    const WebhookHandler = webhookModule.WebhookProcessor;
+    // Load the separately compiled webhook handler module
+    const webhookModule = require('./webhookHandler.js');
+    const WebhookProcessor = webhookModule.WebhookProcessor;
     const parseIssueWebhook = webhookModule.parseIssueWebhook;
 
     const payload = {
@@ -121,7 +122,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 2: Verify webhook signature
   try {
-    const webhookModule = eval("require('./webhookHandler.js')");
+    const webhookModule = require('./webhookHandler.js');
     const WebhookProcessor = webhookModule.WebhookProcessor;
     const crypto = require('crypto');
 
@@ -146,7 +147,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 3: Create sync event from GitHub issue
   try {
-    const webhookModule = eval("require('./webhookHandler.js')");
+    const webhookModule = require('./webhookHandler.js');
     const createSyncEvent = webhookModule.createSyncEvent;
     const parseIssueWebhook = webhookModule.parseIssueWebhook;
 
@@ -173,7 +174,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 4: Handle webhook events
   try {
-    const webhookModule = eval("require('./webhookHandler.js')");
+    const webhookModule = require('./webhookHandler.js');
     const WebhookProcessor = webhookModule.WebhookProcessor;
 
     const processor = new WebhookProcessor('test-secret');
@@ -209,7 +210,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 5: Map task status to GitHub state
   try {
-    const syncServiceModule = eval("require('../services/githubSyncService.js')");
+    const syncServiceModule = require('../services/githubSyncService.js');
     const GitHubSyncService = syncServiceModule.GitHubSyncService;
 
     // Create a mock service to test internal mapping
@@ -233,7 +234,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 6: GitHub to task conversion
   try {
-    const syncServiceModule = eval("require('../services/githubSyncService.js')");
+    const syncServiceModule = require('../services/githubSyncService.js');
     const GitHubSyncService = syncServiceModule.GitHubSyncService;
 
     setupMockFetch({});
@@ -264,7 +265,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 7: Sync log tracking
   try {
-    const syncServiceModule = eval("require('../services/githubSyncService.js')");
+    const syncServiceModule = require('../services/githubSyncService.js');
     const GitHubSyncService = syncServiceModule.GitHubSyncService;
 
     setupMockFetch({});
@@ -298,7 +299,7 @@ async function runGitHubSyncTests(): Promise<void> {
 
   // Test 8: Full sync operation
   try {
-    const syncServiceModule = eval("require('../services/githubSyncService.js')");
+    const syncServiceModule = require('../services/githubSyncService.js');
     const GitHubSyncService = syncServiceModule.GitHubSyncService;
 
     setupMockFetch({
