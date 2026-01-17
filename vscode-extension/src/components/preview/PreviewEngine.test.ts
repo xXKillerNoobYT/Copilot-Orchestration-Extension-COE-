@@ -11,7 +11,6 @@
  * @date 2026-01-12
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { PreviewEngine, type WizardState, type RenderOptions } from './PreviewEngine';
 
 describe('PreviewEngine', () => {

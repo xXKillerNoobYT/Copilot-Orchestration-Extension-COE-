@@ -46,7 +46,7 @@ module.exports = {
     '/out/',
     '\\.disabled\\.',
     // Exclude Vitest-specific test files (they import from 'vitest')
-    '__tests__/sample\\.test\\.ts',  // Vitest-based sample test
+    '/src/__tests__/sample\\.test\\.ts',  // Vitest-based sample test
     'planBuilder/__tests__/integration',
     'planBuilder/__tests__/wizardStore\\.test\\.ts',
     'planBuilder/wizardContainer\\.test\\.ts',
@@ -60,9 +60,10 @@ module.exports = {
     'planBuilder/aiAssistanceService\\.test\\.ts',
     'services/planPersistence\\.test\\.ts',
     'services/taskDecomposition\\.test\\.ts',
-    // Preview tests ENABLED for Issue #56
+    // Preview tests converted to Jest - no longer excluded
+    // // Preview tests ENABLED for Issue #56
     // 'components/preview/PreviewEngine\\.test\\.ts',
-    // 'components/preview/WizardStateObserver\\.test\\.ts',
+    // // 'components/preview/WizardStateObserver\\.test\\.ts',
     'copilotDispatcher\\.test\\.ts',
     'panels/visualVerificationPanel\\.test\\.ts',
     'panels/planAdjustmentWizard\\.test\\.ts',

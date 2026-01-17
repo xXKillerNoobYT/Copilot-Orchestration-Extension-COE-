@@ -439,4 +439,285 @@ class PlanDecompositionServiceTest extends TestCase
         $this->assertEquals('medium', $tasks[1]['priority']); // 'normal' -> 'medium'
         $this->assertEquals('medium', $tasks[2]['priority']); // 'unknown' -> 'medium' (default)
     }
+
+    /** @test */
+    public function it_handles_multiple_dependencies_per_task()
+    {
+        $normalizedPlan = [
+            'features' => collect([
+                [
+                    'id' => 'feat-1',
+                    'name' => 'Database',
+                    'description' => 'Setup database',
+                    'priority' => 'high',
+                    'dependencies' => [],
+                ],
+                [
+                    'id' => 'feat-2',
+                    'name' => 'API',
+                    'description' => 'API layer',
+                    'priority' => 'high',
+                    'dependencies' => [],
+                ],
+                [
+                    'id' => 'feat-3',
+                    'name' => 'Frontend',
+                    'description' => 'UI layer',
+                    'priority' => 'medium',
+                    'dependencies' => ['feat-1', 'feat-2'], // Multiple dependencies
+                ],
+            ]),
+            'timeline' => [],
+            'architecture' => ['pattern' => 'mvc'],
+        ];
+        
+        $result = $this->service->decomposePlan($normalizedPlan);
+        
+        $tasks = $result['tasks'];
+        
+        $this->assertCount(2, $tasks[2]['dependencies']);
+        $this->assertContains('feat-1', $tasks[2]['dependencies']);
+        $this->assertContains('feat-2', $tasks[2]['dependencies']);
+    }
+
+    /** @test */
+    public function it_handles_parallel_independent_tasks()
+    {
+        $normalizedPlan = [
+            'features' => collect([
+                [
+                    'id' => 'feat-1',
+                    'name' => 'Feature 1',
+                    'description' => 'Independent feature 1',
+                    'priority' => 'high',
+                    'dependencies' => [],
+                ],
+                [
+                    'id' => 'feat-2',
+                    'name' => 'Feature 2',
+                    'description' => 'Independent feature 2',
+                    'priority' => 'high',
+                    'dependencies' => [],
+                ],
+                [
+                    'id' => 'feat-3',
+                    'name' => 'Feature 3',
+                    'description' => 'Independent feature 3',
+                    'priority' => 'high',
+                    'dependencies' => [],
+                ],
+            ]),
+            'timeline' => [],
+            'architecture' => ['pattern' => 'mvc'],
+        ];
+        
+        $result = $this->service->decomposePlan($normalizedPlan);
+        
+        $tasks = $result['tasks'];
+        
+        // All tasks should be independent
+        foreach ($tasks as $task) {
+            $this->assertEmpty($task['dependencies']);
+        }
+    }
+
+    /** @test */
+    public function it_generates_unique_task_ids()
+    {
+        $normalizedPlan = [
+            'features' => collect([
+                [
+                    'id' => 'feat-1',
+                    'name' => 'Feature 1',
+                    'description' => 'First feature',
+                    'priority' => 'high',
+                    'dependencies' => [],
+                ],
+                [
+                    'id' => 'feat-2',
+                    'name' => 'Feature 2',
+                    'description' => 'Second feature',
+                    'priority' => 'medium',
+                    'dependencies' => [],
+                ],
+            ]),
+            'timeline' => [],
+            'architecture' => ['pattern' => 'mvc'],
+        ];
+        
+        $result = $this->service->decomposePlan($normalizedPlan);
+        
+        $taskIds = array_column($result['tasks'], 'id');
+        
+        // All IDs should be unique
+        $this->assertCount(count(array_unique($taskIds)), $taskIds);
+    }
+
+    /** @test */
+    public function it_calculates_total_estimated_hours_correctly()
+    {
+        $normalizedPlan = [
+            'features' => collect([
+                [
+                    'id' => 'feat-1',
+                    'name' => 'Feature 1',
+                    'description' => 'Simple feature',
+                    'priority' => 'high',
+                    'dependencies' => [],
+                ],
+                [
+                    'id' => 'feat-2',
+                    'name' => 'Feature 2',
+                    'description' => 'Another feature',
+                    'priority' => 'medium',
+                    'dependencies' => [],
+                ],
+            ]),
+            'timeline' => [],
+            'architecture' => ['pattern' => 'mvc'],
+        ];
+        
+        $result = $this->service->decomposePlan($normalizedPlan);
+        
+        $totalHours = $result['metadata']['estimated_hours'];
+        $taskHoursSum = array_sum(array_column($result['tasks'], 'estimate_hours'));
+        
+        $this->assertEquals($taskHoursSum, $totalHours);
+        $this->assertGreaterThan(0, $totalHours);
+    }
+
+    /** @test */
+    public function it_handles_self_referencing_dependency()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        
+        $normalizedPlan = [
+            'features' => collect([
+                [
+                    'id' => 'feat-1',
+                    'name' => 'Feature 1',
+                    'description' => 'Self-referencing feature',
+                    'priority' => 'high',
+                    'dependencies' => ['feat-1'], // Self-reference
+                ],
+            ]),
+            'timeline' => [],
+            'architecture' => ['pattern' => 'mvc'],
+        ];
+        
+        $this->service->decomposePlan($normalizedPlan);
+    }
+
+    /** @test */
+    public function it_handles_long_dependency_chain()
+    {
+        // Create a chain of 10 dependencies
+        $features = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $features[] = [
+                'id' => "feat-{$i}",
+                'name' => "Feature {$i}",
+                'description' => "Feature number {$i}",
+                'priority' => 'medium',
+                'dependencies' => $i > 1 ? ["feat-" . ($i - 1)] : [],
+            ];
+        }
+        
+        $normalizedPlan = [
+            'features' => collect($features),
+            'timeline' => [],
+            'architecture' => ['pattern' => 'mvc'],
+        ];
+        
+        $result = $this->service->decomposePlan($normalizedPlan);
+        
+        $this->assertCount(10, $result['tasks']);
+        
+        // Critical path should include all tasks in the chain
+        $criticalPath = $result['metadata']['critical_path'];
+        $this->assertGreaterThanOrEqual(2, count($criticalPath));
+    }
+
+    /** @test */
+    public function it_handles_diamond_dependency_pattern()
+    {
+        // Diamond pattern: A -> B, A -> C, B -> D, C -> D
+        $normalizedPlan = [
+            'features' => collect([
+                [
+                    'id' => 'feat-a',
+                    'name' => 'Feature A',
+                    'description' => 'Root feature',
+                    'priority' => 'high',
+                    'dependencies' => [],
+                ],
+                [
+                    'id' => 'feat-b',
+                    'name' => 'Feature B',
+                    'description' => 'Branch 1',
+                    'priority' => 'high',
+                    'dependencies' => ['feat-a'],
+                ],
+                [
+                    'id' => 'feat-c',
+                    'name' => 'Feature C',
+                    'description' => 'Branch 2',
+                    'priority' => 'high',
+                    'dependencies' => ['feat-a'],
+                ],
+                [
+                    'id' => 'feat-d',
+                    'name' => 'Feature D',
+                    'description' => 'Merge point',
+                    'priority' => 'high',
+                    'dependencies' => ['feat-b', 'feat-c'],
+                ],
+            ]),
+            'timeline' => [],
+            'architecture' => ['pattern' => 'mvc'],
+        ];
+        
+        $result = $this->service->decomposePlan($normalizedPlan);
+        
+        $tasks = $result['tasks'];
+        
+        $this->assertCount(4, $tasks);
+        $this->assertEmpty($tasks[0]['dependencies']); // A
+        $this->assertEquals(['feat-a'], $tasks[1]['dependencies']); // B
+        $this->assertEquals(['feat-a'], $tasks[2]['dependencies']); // C
+        $this->assertCount(2, $tasks[3]['dependencies']); // D has 2 deps
+    }
+
+    /** @test */
+    public function it_performance_handles_large_feature_set()
+    {
+        // Test performance with 50+ features
+        $features = [];
+        for ($i = 1; $i <= 55; $i++) {
+            $features[] = [
+                'id' => "feat-{$i}",
+                'name' => "Feature {$i}",
+                'description' => "Complex feature with authentication and database integration for feature number {$i}",
+                'priority' => $i <= 10 ? 'critical' : ($i <= 30 ? 'high' : 'medium'),
+                'dependencies' => $i > 1 && $i % 3 === 0 ? ["feat-" . ($i - 1)] : [],
+            ];
+        }
+        
+        $normalizedPlan = [
+            'features' => collect($features),
+            'timeline' => [],
+            'architecture' => ['pattern' => 'microservices'],
+        ];
+        
+        $startTime = microtime(true);
+        $result = $this->service->decomposePlan($normalizedPlan);
+        $duration = microtime(true) - $startTime;
+        
+        // Should complete in less than 2 seconds
+        $this->assertLessThan(2.0, $duration, 'Decomposition took too long: ' . $duration . 's');
+        
+        $this->assertCount(55, $result['tasks']);
+        $this->assertEquals(55, $result['metadata']['total_tasks']);
+        $this->assertGreaterThan(0, $result['metadata']['estimated_hours']);
+    }
 }
