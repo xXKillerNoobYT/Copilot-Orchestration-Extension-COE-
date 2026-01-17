@@ -157,6 +157,47 @@ class McpController extends Controller
     }
 
     /**
+     * GET /mcp/task/{taskId}
+     * 
+     * Fetch a specific task by ID with current version.
+     * Used by clients for version conflict retry.
+     * 
+     * Response: { success, task: { taskId, version, status, ... } }
+     */
+    public function getTaskById(string $taskId): JsonResponse
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            
+            $taskPayload = [
+                'taskId' => $task->id,
+                'title' => $task->name,
+                'description' => $task->description,
+                'priority' => $task->priority,
+                'type' => $task->task_type,
+                'status' => $task->status,
+                'version' => $task->version ?? 0,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'task' => $taskPayload,
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Task not found',
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('MCP getTaskById error', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * POST /mcp/reportTaskStatus
      * 
      * Report task completion status with implementation details.

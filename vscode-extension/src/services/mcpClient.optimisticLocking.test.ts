@@ -294,7 +294,7 @@ describe('MCPClient - Optimistic Locking', () => {
           status: 'done',
           expectedVersion: 3,
         });
-        fail('Should have thrown error');
+        throw new Error('Should have thrown error');
       } catch (error: any) {
         expect(error.status).toBe(409);
         expect(error.error).toBe('version_conflict');
