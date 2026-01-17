@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { ProgrammingOrchestratorManager } from './programmingOrchestratorTab';
 import { MCPClient } from '../services/mcpClient';
+import { ProviderFactory } from '../transport/transportManager';
 
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
@@ -135,10 +136,8 @@ export class SettingsPanel {
 
   private async _testConnection(config: any) {
     try {
-      // Import required modules for backend connection testing
-      const { ProviderFactory } = await import('../transport/transportManager');
-      
       // Create a provider instance using the config from the webview
+      // This runs in the extension host context, avoiding webview CSP restrictions
       const provider = ProviderFactory.createProvider('lmstudio', {
         name: 'LM Studio',
         baseUrl: config.baseUrl,
@@ -148,7 +147,6 @@ export class SettingsPanel {
       });
 
       // Use the provider's built-in testConnection method
-      // This runs in the extension host context, avoiding webview CSP restrictions
       const connected = await provider.testConnection();
 
       if (connected) {
@@ -161,7 +159,7 @@ export class SettingsPanel {
         this._panel.webview.postMessage({
           command: 'connectionTestResult',
           success: false,
-          message: `Connection test failed. Please verify:\n1. LLM server is running at ${config.baseUrl}\n2. Model "${config.model}" is loaded\n3. Server is accessible from this machine\n4. If remote server, external API access is enabled`,
+          message: this._buildConnectionFailureMessage(config.baseUrl, config.model),
         });
       }
     } catch (error) {
@@ -171,6 +169,19 @@ export class SettingsPanel {
         message: `Connection test failed for ${config.baseUrl}: ${error instanceof Error ? error.message : String(error)}. Confirm network reachability and that the server exposes /v1/chat/completions.`,
       });
     }
+  }
+
+  /**
+   * Build a user-friendly error message for connection failures
+   */
+  private _buildConnectionFailureMessage(baseUrl: string, model: string): string {
+    const steps = [
+      `1. LLM server is running at ${baseUrl}`,
+      `2. Model "${model}" is loaded`,
+      '3. Server is accessible from this machine',
+      '4. If remote server, external API access is enabled',
+    ];
+    return `Connection test failed. Please verify:\n${steps.join('\n')}`;
   }
 
   /**
