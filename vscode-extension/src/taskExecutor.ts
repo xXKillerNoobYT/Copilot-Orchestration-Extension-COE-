@@ -276,6 +276,16 @@ export class TaskExecutor {
   }
 
   /**
+   * Extract agent capabilities from tool permissions
+   */
+  private extractAgentCapabilities(toolPermissions?: Record<string, unknown>): string[] {
+    if (!toolPermissions) {
+      return [];
+    }
+    return Object.keys(toolPermissions).filter(key => toolPermissions[key] === true);
+  }
+
+  /**
    * Execute prompt using Copilot Agent API
    * Integrates with GitHub Copilot Agent Mode API when enabled
    */
@@ -294,13 +304,12 @@ export class TaskExecutor {
           }
 
           // Register the agent if not already registered
+          const capabilities = this.extractAgentCapabilities(payload.agent.tool_permissions);
           const registered = await this.copilotAgentClient.registerAgent({
             agentId: `orchestrator-${payload.agent.name}`,
             name: payload.agent.name,
             role: payload.agent.role,
-            capabilities: payload.agent.tool_permissions 
-              ? Object.keys(payload.agent.tool_permissions).filter(k => payload.agent.tool_permissions![k])
-              : [],
+            capabilities,
           });
 
           if (!registered) {

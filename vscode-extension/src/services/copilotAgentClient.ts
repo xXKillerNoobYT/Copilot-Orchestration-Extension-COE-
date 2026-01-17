@@ -12,7 +12,7 @@
  */
 
 import * as vscode from 'vscode';
-import { PromptPayload } from '../copilotDispatcher';
+import { PromptPayload, ContextFile } from '../copilotDispatcher';
 
 export interface CopilotAgentConfig {
   /** Base URL for GitHub Copilot Agent Mode API */
@@ -287,7 +287,7 @@ export class CopilotAgentClient {
   /**
    * Internal fetch method for API calls
    */
-  private async fetch(endpoint: string, method: string, body?: unknown): Promise<any> {
+  private async fetch(endpoint: string, method: string, body?: unknown): Promise<Record<string, any>> {
     const url = `${this.config.baseUrl}${endpoint}`;
     
     const controller = new AbortController();
@@ -310,11 +310,21 @@ export class CopilotAgentClient {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
+      return await response.json() as Record<string, any>;
     } catch (error) {
       clearTimeout(timeoutId);
       throw error;
     }
+  }
+
+  /**
+   * Format context files for display in mock response
+   */
+  private formatContextFiles(files: ContextFile[]): string {
+    if (files.length === 0) {
+      return 'No context files provided';
+    }
+    return files.map(f => `- ${f.path}${f.truncated ? ' (truncated)' : ''}`).join('\n');
   }
 
   /**
@@ -340,9 +350,7 @@ This is a simulated response from GitHub Copilot Agent Mode API. In production, 
 ${payload.agent.instructions || 'Using default agent instructions'}
 
 ## Context Files
-${payload.context.files.length > 0 
-  ? payload.context.files.map(f => `- ${f.path}${f.truncated ? ' (truncated)' : ''}`).join('\n')
-  : 'No context files provided'}
+${this.formatContextFiles(payload.context.files)}
 
 ## Implementation Plan
 1. Review task requirements and constraints
