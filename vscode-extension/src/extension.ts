@@ -740,7 +740,9 @@ class OrchestratorStatusProvider implements vscode.TreeDataProvider<vscode.TreeI
 
   async refreshFromDisk(): Promise<void> {
     const config = readLlmConfig();
-    const taskRoots = config.config.taskRoots || ['_ZENTASKS'];
+    const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator');
+    const issueFolder = vsConfig.get<string>('task.issueFolder', '.vscode/github-issues');
+    const taskRoots = [issueFolder, ...(config.config.taskRoots || ['_ZENTASKS'])];
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     let tasksDir: string | undefined;
     let loadedFromWorkspace = false;

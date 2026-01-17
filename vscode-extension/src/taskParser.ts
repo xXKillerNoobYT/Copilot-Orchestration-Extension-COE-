@@ -74,36 +74,36 @@ export interface ParseResult {
 
 // Validation functions
 export function isValidTaskType(value: unknown): value is TaskType {
-  return typeof value === 'string' && 
+  return typeof value === 'string' &&
     ['feature', 'bug', 'refactor', 'maintenance', 'architecture', 'testing', 'documentation'].includes(value);
 }
 
 export function isValidTaskPriority(value: unknown): value is TaskPriority {
-  return typeof value === 'string' && 
+  return typeof value === 'string' &&
     ['critical', 'high', 'medium', 'low'].includes(value);
 }
 
 export function isValidTaskStatus(value: unknown): value is TaskStatus {
-  return typeof value === 'string' && 
+  return typeof value === 'string' &&
     ['pending', 'approved', 'in_progress', 'testing', 'review', 'completed', 'failed', 'blocked', 'cancelled'].includes(value);
 }
 
 export function isValidAgentType(value: unknown): value is AgentType {
-  return typeof value === 'string' && 
+  return typeof value === 'string' &&
     ['planner', 'architect', 'coder', 'tester', 'reviewer', 'documentation', 'deployment', 'maintenance'].includes(value);
 }
 
 // Effort normalization: converts human-readable estimates to minutes
 export function normalizeEffort(estimate: string): number {
   const trimmed = estimate.trim().toLowerCase();
-  
+
   // Numeric only (assume minutes)
   if (/^\d+$/.test(trimmed)) {
     return parseInt(trimmed, 10);
   }
-  
+
   let totalMinutes = 0;
-  
+
   // Parse composite format: "2h 30m", "3d", "1w", etc.
   const patterns = [
     { regex: /(\d+(?:\.\d+)?)\s*w(?:eeks?)?/g, multiplier: 2400 },  // 5 days × 8 hours × 60 min
@@ -111,21 +111,21 @@ export function normalizeEffort(estimate: string): number {
     { regex: /(\d+(?:\.\d+)?)\s*h(?:ours?)?/g, multiplier: 60 },
     { regex: /(\d+(?:\.\d+)?)\s*m(?:in(?:utes?)?)?/g, multiplier: 1 },
   ];
-  
+
   for (const { regex, multiplier } of patterns) {
     let match;
     while ((match = regex.exec(trimmed)) !== null) {
       totalMinutes += parseFloat(match[1]) * multiplier;
     }
   }
-  
+
   return totalMinutes > 0 ? Math.round(totalMinutes) : 0;
 }
 
 function validateTask(task: ParsedTask, options: ParserOptions): ValidationError[] {
   const errors: ValidationError[] = [];
   const fileName = options.fileName || task.source || 'unknown';
-  
+
   // Required field validation
   if (!task.title || task.title.trim().length === 0) {
     errors.push({
@@ -135,7 +135,7 @@ function validateTask(task: ParsedTask, options: ParserOptions): ValidationError
       severity: 'error',
     });
   }
-  
+
   // Type validation
   if (task.type && !isValidTaskType(task.type)) {
     errors.push({
@@ -146,7 +146,7 @@ function validateTask(task: ParsedTask, options: ParserOptions): ValidationError
       severity: 'error',
     });
   }
-  
+
   // Priority validation
   if (task.priority && !isValidTaskPriority(task.priority)) {
     errors.push({
@@ -157,7 +157,7 @@ function validateTask(task: ParsedTask, options: ParserOptions): ValidationError
       severity: 'error',
     });
   }
-  
+
   // Status validation
   if (task.status && !isValidTaskStatus(task.status)) {
     errors.push({
@@ -168,7 +168,7 @@ function validateTask(task: ParsedTask, options: ParserOptions): ValidationError
       severity: 'error',
     });
   }
-  
+
   // Assignees validation
   if (task.assignees.length > 0) {
     const invalidAssignees = task.assignees.filter(a => !isValidAgentType(a));
@@ -182,7 +182,7 @@ function validateTask(task: ParsedTask, options: ParserOptions): ValidationError
       });
     }
   }
-  
+
   // Effort validation
   if (options.normalizeEffort && task.estimate) {
     const normalized = normalizeEffort(task.estimate);
@@ -196,7 +196,7 @@ function validateTask(task: ParsedTask, options: ParserOptions): ValidationError
       });
     }
   }
-  
+
   // GitHub integration validation
   if (task.github_issue_id && task.github_issue_id <= 0) {
     errors.push({
@@ -206,7 +206,7 @@ function validateTask(task: ParsedTask, options: ParserOptions): ValidationError
       severity: 'warning',
     });
   }
-  
+
   if (task.github_issue_url && !task.github_issue_url.startsWith('http')) {
     errors.push({
       file: fileName,
@@ -215,13 +215,17 @@ function validateTask(task: ParsedTask, options: ParserOptions): ValidationError
       severity: 'warning',
     });
   }
-  
+
   return errors;
 }
 
-function normalizeTaskId(idFromFrontMatter: string | undefined, fileName?: string): string {
-  if (idFromFrontMatter && idFromFrontMatter.trim().length > 0) {
-    return idFromFrontMatter.trim();
+function normalizeTaskId(idFromFrontMatter: string | number | undefined, fileName?: string): string {
+  // Handle both string and number IDs (GitHub issues use numeric IDs)
+  if (idFromFrontMatter !== undefined && idFromFrontMatter !== null) {
+    const idString = String(idFromFrontMatter).trim();
+    if (idString.length > 0) {
+      return idString;
+    }
   }
 
   if (fileName) {
@@ -236,6 +240,22 @@ function normalizeTitle(titleFromFrontMatter: string | undefined, fallbackId: st
     return titleFromFrontMatter.trim();
   }
   return fallbackId;
+}
+
+function normalizeGitHubState(state: unknown): TaskStatus | undefined {
+  if (typeof state === 'string') {
+    const normalized = state.toLowerCase();
+    if (normalized === 'open') return 'pending';
+    if (normalized === 'closed') return 'completed';
+  }
+  return undefined;
+}
+
+function normalizeGitHubAssignees(assignees: unknown): string[] {
+  if (!Array.isArray(assignees)) return [];
+  return assignees
+    .filter((a): a is { login: string } => typeof a === 'object' && a !== null && typeof (a as any).login === 'string')
+    .map(a => a.login);
 }
 
 function buildSubtasks(subtasks: TaskFrontMatter['subtasks'], parentSource?: string): ParsedTask[] {
@@ -260,12 +280,12 @@ function buildSubtasks(subtasks: TaskFrontMatter['subtasks'], parentSource?: str
 
     const subtaskId = normalizeTaskId(subtask.id, parentSource ? `${parentSource}#${index}` : undefined);
     const title = normalizeTitle(subtask.title, subtaskId);
-    
+
     // Extract and validate type
     const type = subtask.type && isValidTaskType(subtask.type) ? subtask.type : undefined;
-    
+
     // Extract and validate assignees
-    const assignees: AgentType[] = Array.isArray(subtask.assignees) 
+    const assignees: AgentType[] = Array.isArray(subtask.assignees)
       ? subtask.assignees.filter((a): a is AgentType => typeof a === 'string' && isValidAgentType(a))
       : [];
 
@@ -310,14 +330,25 @@ export function parseTaskMarkdown(markdown: string, options?: { fileName?: strin
 
   const id = normalizeTaskId(frontMatter.id, options?.fileName);
   const title = normalizeTitle(frontMatter.title, id);
-  
+
+  // Handle GitHub issue format: 'number' field maps to github_issue_id
+  const githubIssueId = typeof frontMatter.github_issue_id === 'number'
+    ? frontMatter.github_issue_id
+    : (typeof (frontMatter as any).number === 'number' ? (frontMatter as any).number : undefined);
+
+  // Handle GitHub issue format: 'state' field maps to status
+  const status = frontMatter.status
+    ? frontMatter.status
+    : normalizeGitHubState((frontMatter as any).state);
+
   // Extract and validate type
   const type = frontMatter.type && isValidTaskType(frontMatter.type) ? frontMatter.type : undefined;
-  
-  // Extract and validate assignees
-  const assignees: AgentType[] = Array.isArray(frontMatter.assignees) 
+
+  // Handle GitHub issue format: assignees can be objects with 'login' property
+  const githubAssigneeLogins = normalizeGitHubAssignees(frontMatter.assignees);
+  const assignees: AgentType[] = Array.isArray(frontMatter.assignees) && typeof frontMatter.assignees[0] === 'string'
     ? frontMatter.assignees.filter((a): a is AgentType => typeof a === 'string' && isValidAgentType(a))
-    : [];
+    : githubAssigneeLogins.filter((login): login is AgentType => isValidAgentType(login));
 
   const parsedTask: ParsedTask = {
     id,
@@ -325,13 +356,13 @@ export function parseTaskMarkdown(markdown: string, options?: { fileName?: strin
     description: body,
     type,
     priority: frontMatter.priority,
-    status: frontMatter.status,
+    status,
     dependencies: Array.isArray(frontMatter.dependencies) ? (frontMatter.dependencies.filter(Boolean) as string[]) : [],
     assignees,
     labels: Array.isArray(frontMatter.labels) ? (frontMatter.labels.filter(Boolean) as string[]) : [],
     estimate: typeof frontMatter.estimate === 'string' ? frontMatter.estimate : undefined,
     due: typeof frontMatter.due === 'string' ? frontMatter.due : undefined,
-    github_issue_id: typeof frontMatter.github_issue_id === 'number' ? frontMatter.github_issue_id : undefined,
+    github_issue_id: githubIssueId,
     github_issue_url: typeof frontMatter.github_issue_url === 'string' ? frontMatter.github_issue_url : undefined,
     context_bundle: typeof frontMatter.context_bundle === 'string' ? frontMatter.context_bundle : undefined,
     format_version: typeof frontMatter.format_version === 'string' ? frontMatter.format_version : undefined,
@@ -347,14 +378,14 @@ export function parseTaskMarkdown(markdown: string, options?: { fileName?: strin
 export function parseTaskFile(markdown: string, options: ParserOptions = {}): ParseResult {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
-  
+
   try {
     const task = parseTaskMarkdown(markdown, options);
-    
+
     // Perform validation if requested
     if (options.validateSchema) {
       const validationErrors = validateTask(task, options);
-      
+
       validationErrors.forEach(err => {
         if (err.severity === 'error') {
           errors.push(err);
@@ -362,13 +393,13 @@ export function parseTaskFile(markdown: string, options: ParserOptions = {}): Pa
           warnings.push(err);
         }
       });
-      
+
       // Fail fast if requested and errors found
       if (options.failOnInvalid && errors.length > 0) {
         return { task: null, errors, warnings };
       }
     }
-    
+
     return { task, errors, warnings };
   } catch (error) {
     errors.push({
@@ -377,7 +408,7 @@ export function parseTaskFile(markdown: string, options: ParserOptions = {}): Pa
       message: (error as Error).message,
       severity: 'error',
     });
-    
+
     return { task: null, errors, warnings };
   }
 }
@@ -403,14 +434,14 @@ export async function parseTasksFromDirectory(directory: string, options: Parser
 
     const filePath = path.join(directory, entry.name);
     const content = await fs.readFile(filePath, 'utf-8');
-    
+
     try {
       const result = parseTaskFile(content, { ...options, fileName: filePath });
-      
+
       if (result.task) {
         tasks.push(result.task);
       }
-      
+
       // Validation errors/warnings are now silent in production
       // Uncomment for debugging:
       // if (result.errors.length > 0 || result.warnings.length > 0) {

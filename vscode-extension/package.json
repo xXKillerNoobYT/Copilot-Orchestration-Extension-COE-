@@ -120,6 +120,12 @@
           "scope": "application",
           "secret": true
         },
+        "copilot-orchestrator.task.issueFolder": {
+          "type": "string",
+          "default": ".vscode/github-issues",
+          "markdownDescription": "Folder for task/issue markdown files. Defaults to .vscode/github-issues.",
+          "scope": "resource"
+        },
         "copilot-orchestrator.taskRoots": {
           "type": "array",
           "items": {
