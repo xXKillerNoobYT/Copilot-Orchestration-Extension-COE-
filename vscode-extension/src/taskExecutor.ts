@@ -61,15 +61,8 @@ export class TaskExecutor {
     this.tasksDir = options?.tasksDir ?? path.join(this.workspaceRoot, '_ZENTASKS');
     this.outputDir = options?.outputDir ?? path.join(this.workspaceRoot, '.orchestrator-output');
     this.memoryLimit = options?.memoryLimit ?? 50;
-    
-    // Validate and set cleanup interval (must be > 0)
-    const cleanupInterval = options?.memoryCleanupInterval ?? 10;
-    this.memoryCleanupInterval = cleanupInterval > 0 ? cleanupInterval : 10;
-    
-    // Validate and set TTL (must be > 0)
-    const ttlMinutes = options?.memoryTTLMinutes ?? 30;
-    this.memoryTTLMinutes = ttlMinutes > 0 ? ttlMinutes : 30;
-    
+    this.memoryCleanupInterval = TaskExecutor.validatePositiveNumber(options?.memoryCleanupInterval, 10);
+    this.memoryTTLMinutes = TaskExecutor.validatePositiveNumber(options?.memoryTTLMinutes, 30);
     this.enableVerification = options?.enableVerification ?? true;
     this.llmHandler = options?.llmHandler;
     
@@ -397,6 +390,26 @@ Return "PASS" or "FAIL" with explanation.
   }
 
   /**
+   * Validate that a number is positive, return default if not
+   */
+  private static validatePositiveNumber(value: number | undefined, defaultValue: number): number {
+    const num = value ?? defaultValue;
+    return num > 0 ? num : defaultValue;
+  }
+
+  /**
+   * Check if a timestamp string is valid
+   */
+  private static isValidTimestamp(timestamp: string): boolean {
+    try {
+      const time = new Date(timestamp).getTime();
+      return !isNaN(time);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Prune memory entries based on TTL (Time To Live)
    * Removes entries older than the configured TTL
    */
@@ -406,22 +419,14 @@ Return "PASS" or "FAIL" with explanation.
     const initialCount = this.memory.length;
     
     this.memory = this.memory.filter(entry => {
-      try {
-        const entryTime = new Date(entry.timestamp).getTime();
-        
-        // Check if timestamp is valid
-        if (isNaN(entryTime)) {
-          console.warn(`[MemoryCleanup] Invalid timestamp found: ${entry.timestamp}, keeping entry`);
-          return true; // Keep entries with invalid timestamps
-        }
-        
-        const age = now - entryTime;
-        return age < ttlMs;
-      } catch (error) {
-        // If any error occurs parsing timestamp, keep the entry to be safe
-        console.warn(`[MemoryCleanup] Error parsing timestamp: ${error}, keeping entry`);
-        return true;
+      if (!TaskExecutor.isValidTimestamp(entry.timestamp)) {
+        console.warn(`[MemoryCleanup] Invalid timestamp found: ${entry.timestamp}, keeping entry`);
+        return true; // Keep entries with invalid timestamps (conservative approach)
       }
+      
+      const entryTime = new Date(entry.timestamp).getTime();
+      const age = now - entryTime;
+      return age < ttlMs;
     });
     
     const pruned = initialCount - this.memory.length;
@@ -433,6 +438,8 @@ Return "PASS" or "FAIL" with explanation.
   /**
    * Perform periodic memory cleanup
    * Called every N cycles to actively manage memory
+   * Note: This method is designed for sequential execution in Node.js single-threaded environment.
+   * The cycleCount increment is safe because executeNextTask() calls are sequential.
    */
   private performPeriodicMemoryCleanup(): void {
     this.cycleCount++;
