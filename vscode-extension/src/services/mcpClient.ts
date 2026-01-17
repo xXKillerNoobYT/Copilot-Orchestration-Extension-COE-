@@ -177,6 +177,64 @@ export class MCPClient {
   }
 
   /**
+   * GET /api/teams/status
+   * Get current team state with latest metrics
+   */
+  async getTeamsStatus(): Promise<{
+    planning: {
+      name: string;
+      status: 'idle' | 'working' | 'blocked' | 'error';
+      currentTask?: string;
+      tasksCompleted: number;
+      activeTaskCount: number;
+      lastActivity?: string;
+      metrics?: {
+        tasksCreated?: number;
+        planVersion?: string;
+      };
+    };
+    answer: {
+      name: string;
+      status: 'idle' | 'working' | 'blocked' | 'error';
+      currentTask?: string;
+      tasksCompleted: number;
+      activeTaskCount: number;
+      lastActivity?: string;
+      metrics?: {
+        questionsAnswered?: number;
+        currentTask?: string;
+      };
+    };
+    decomposition: {
+      name: string;
+      status: 'idle' | 'working' | 'blocked' | 'error';
+      currentTask?: string;
+      tasksCompleted: number;
+      activeTaskCount: number;
+      lastActivity?: string;
+      metrics?: {
+        subtasksCreated?: number;
+        avgTaskSize?: number;
+      };
+    };
+    verification: {
+      name: string;
+      status: 'idle' | 'working' | 'blocked' | 'error';
+      currentTask?: string;
+      tasksCompleted: number;
+      activeTaskCount: number;
+      lastActivity?: string;
+      metrics?: {
+        tasksVerified?: number;
+        pendingVisual?: number;
+      };
+    };
+  }> {
+    const url = `${this.baseUrl}/api/teams/status`;
+    return this.fetchWithRetry(url, 'GET');
+  }
+
+  /**
    * Generic fetch wrapper with error handling
    */
   private async fetch(url: string, method: string = 'GET', body?: any): Promise<any> {

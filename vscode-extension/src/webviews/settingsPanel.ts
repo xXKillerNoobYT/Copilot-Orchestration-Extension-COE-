@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { ProgrammingOrchestratorManager } from './programmingOrchestratorTab';
+import { MCPClient } from '../services/mcpClient';
 
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
@@ -13,6 +14,7 @@ export class SettingsPanel {
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
   private orchestratorManager: ProgrammingOrchestratorManager;
+  private mcpClient: MCPClient;
 
   public static createOrShow(extensionUri: vscode.Uri) {
     const column = vscode.window.activeTextEditor
@@ -49,6 +51,9 @@ export class SettingsPanel {
 
     // Initialize orchestrator manager
     this.orchestratorManager = ProgrammingOrchestratorManager.getInstance();
+    
+    // Initialize MCP client
+    this.mcpClient = MCPClient.getInstance();
 
     // Set the webview's initial html content
     this._update();
@@ -746,9 +751,14 @@ export class SettingsPanel {
         teams: ['planning', 'answer', 'decomposition', 'verification'],
       });
 
-      // Fetch team status from MCP (would call actual MCP endpoint in production)
-      // For now, simulate the refresh with current orchestrator state
-      const teamState = await this.orchestratorManager.getTeamState();
+      // Fetch team status from MCP endpoint
+      const teamState = await this.mcpClient.getTeamsStatus();
+
+      // Update orchestrator manager with fresh data
+      this.orchestratorManager.updateTeamStatus('planning', teamState.planning);
+      this.orchestratorManager.updateTeamStatus('answer', teamState.answer);
+      this.orchestratorManager.updateTeamStatus('decomposition', teamState.decomposition);
+      this.orchestratorManager.updateTeamStatus('verification', teamState.verification);
 
       // Update webview with fresh data
       this._panel.webview.postMessage({

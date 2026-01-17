@@ -477,5 +477,5 @@ describe('Task Decomposition Integration Tests', () => {
     const result = await runTests();
     expect(result.failed).toBe(0);
     expect(result.passed).toBeGreaterThan(0);
-  }, 30000); // 30 second timeout for comprehensive tests
+  });
 });
