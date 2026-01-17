@@ -61,8 +61,15 @@ export class TaskExecutor {
     this.tasksDir = options?.tasksDir ?? path.join(this.workspaceRoot, '_ZENTASKS');
     this.outputDir = options?.outputDir ?? path.join(this.workspaceRoot, '.orchestrator-output');
     this.memoryLimit = options?.memoryLimit ?? 50;
-    this.memoryCleanupInterval = options?.memoryCleanupInterval ?? 10; // Default: every 10 cycles
-    this.memoryTTLMinutes = options?.memoryTTLMinutes ?? 30; // Default: 30 minutes TTL
+    
+    // Validate and set cleanup interval (must be > 0)
+    const cleanupInterval = options?.memoryCleanupInterval ?? 10;
+    this.memoryCleanupInterval = cleanupInterval > 0 ? cleanupInterval : 10;
+    
+    // Validate and set TTL (must be > 0)
+    const ttlMinutes = options?.memoryTTLMinutes ?? 30;
+    this.memoryTTLMinutes = ttlMinutes > 0 ? ttlMinutes : 30;
+    
     this.enableVerification = options?.enableVerification ?? true;
     this.llmHandler = options?.llmHandler;
     
@@ -399,9 +406,22 @@ Return "PASS" or "FAIL" with explanation.
     const initialCount = this.memory.length;
     
     this.memory = this.memory.filter(entry => {
-      const entryTime = new Date(entry.timestamp).getTime();
-      const age = now - entryTime;
-      return age < ttlMs;
+      try {
+        const entryTime = new Date(entry.timestamp).getTime();
+        
+        // Check if timestamp is valid
+        if (isNaN(entryTime)) {
+          console.warn(`[MemoryCleanup] Invalid timestamp found: ${entry.timestamp}, keeping entry`);
+          return true; // Keep entries with invalid timestamps
+        }
+        
+        const age = now - entryTime;
+        return age < ttlMs;
+      } catch (error) {
+        // If any error occurs parsing timestamp, keep the entry to be safe
+        console.warn(`[MemoryCleanup] Error parsing timestamp: ${error}, keeping entry`);
+        return true;
+      }
     });
     
     const pruned = initialCount - this.memory.length;

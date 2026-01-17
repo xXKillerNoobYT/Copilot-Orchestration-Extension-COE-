@@ -336,6 +336,75 @@ describe('TaskExecutor Memory Management', () => {
     });
   });
 
+  describe('Edge Cases and Validation', () => {
+    test('should handle zero or negative cleanup interval gracefully', () => {
+      const executor1 = new TaskExecutor({
+        workspaceRoot: tempDir,
+        tasksDir,
+        memoryCleanupInterval: 0, // Invalid, should default to 10
+      });
+
+      const executor2 = new TaskExecutor({
+        workspaceRoot: tempDir,
+        tasksDir,
+        memoryCleanupInterval: -5, // Invalid, should default to 10
+      });
+
+      const stats1 = executor1.getStats();
+      const stats2 = executor2.getStats();
+
+      expect(stats1.memoryConfig.cleanupInterval).toBe(10);
+      expect(stats2.memoryConfig.cleanupInterval).toBe(10);
+    });
+
+    test('should handle zero or negative TTL gracefully', () => {
+      const executor1 = new TaskExecutor({
+        workspaceRoot: tempDir,
+        tasksDir,
+        memoryTTLMinutes: 0, // Invalid, should default to 30
+      });
+
+      const executor2 = new TaskExecutor({
+        workspaceRoot: tempDir,
+        tasksDir,
+        memoryTTLMinutes: -10, // Invalid, should default to 30
+      });
+
+      const stats1 = executor1.getStats();
+      const stats2 = executor2.getStats();
+
+      expect(stats1.memoryConfig.ttlMinutes).toBe(30);
+      expect(stats2.memoryConfig.ttlMinutes).toBe(30);
+    });
+
+    test('should handle invalid timestamps gracefully', () => {
+      const executor = new TaskExecutor({
+        workspaceRoot: tempDir,
+        tasksDir,
+        memoryCleanupInterval: 2,
+        memoryTTLMinutes: 30,
+      });
+
+      // Manually inject entries with invalid timestamps
+      const memory = (executor as any).memory;
+      memory.push({ role: 'user', content: 'Valid entry', timestamp: new Date().toISOString() });
+      memory.push({ role: 'user', content: 'Invalid timestamp 1', timestamp: 'not-a-date' });
+      memory.push({ role: 'user', content: 'Invalid timestamp 2', timestamp: '' });
+      memory.push({ role: 'user', content: 'Another valid', timestamp: new Date().toISOString() });
+
+      // Trigger cleanup by adding entries
+      const addToMemory = (executor as any).addToMemory.bind(executor);
+      addToMemory('user', 'Trigger 1');
+      addToMemory('user', 'Trigger 2'); // Cycle 2, cleanup should trigger
+
+      const finalMemory = executor.getMemory();
+      
+      // Invalid timestamps should be kept (conservative approach)
+      expect(finalMemory.some(m => m.content === 'Invalid timestamp 1')).toBe(true);
+      expect(finalMemory.some(m => m.content === 'Invalid timestamp 2')).toBe(true);
+    });
+  });
+
   describe('Combined Cleanup Strategies', () => {
     test('should apply both TTL and periodic cleanup', async () => {
       const executor = new TaskExecutor({
