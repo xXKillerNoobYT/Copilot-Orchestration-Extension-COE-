@@ -117,7 +117,7 @@ describe('MCPClient Cache Invalidation', () => {
       MCPClient.invalidateInstance();
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[MCPClient] Invalidating cached instance due to configuration change'
+        '[MCPClient] Invalidating cached instance and resetting circuit breaker due to configuration change'
       );
 
       consoleSpy.mockRestore();
@@ -129,7 +129,7 @@ describe('MCPClient Cache Invalidation', () => {
       const vscode = require('vscode');
       
       // Create initial instance
-      const instance1 = MCPClient.getInstance();
+      MCPClient.getInstance();
       
       // Change config
       const newConfig = {
@@ -160,7 +160,10 @@ describe('MCPClient Cache Invalidation', () => {
 
       // Get new instance
       const instance2 = MCPClient.getInstance();
+      
+      // New instance should be created and differ from the old one
       expect(instance2).toBeDefined();
+      expect(instance2).not.toBe(instance1);
 
       // Both instances should have circuit breaker (not testing state preservation
       // as that would require accessing private fields, just ensuring new instance works)
