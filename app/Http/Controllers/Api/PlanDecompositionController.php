@@ -7,6 +7,7 @@ use App\Models\Plan;
 use App\Models\Task;
 use App\Services\PlanDecompositionService;
 use App\Services\WizardPlanParserService;
+use App\Events\TaskCreated;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -203,6 +204,9 @@ class PlanDecompositionController extends Controller
                         : null, // Convert hours to minutes
                 ]);
                 
+                // Broadcast task creation via WebSocket
+                event(new TaskCreated($task));
+                
                 $taskIdMap[$taskData['id']] = $task->id;
                 
                 $createdTasks[] = [
@@ -228,6 +232,9 @@ class PlanDecompositionController extends Controller
                                 ? (int)($subtaskData['estimate_hours'] * 60)
                                 : null,
                         ]);
+                        
+                        // Broadcast subtask creation via WebSocket
+                        event(new TaskCreated($subtask));
                         
                         $taskIdMap[$subtaskData['id']] = $subtask->id;
                         
