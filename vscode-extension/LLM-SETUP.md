@@ -67,10 +67,48 @@ The priority order is:
 
 - **Invalid base URL**: must begin with `http` or `https` (no `ftp:`). The status bar tooltip lists validation issues.
 - **APIPA address warning (169.254.x.x)**: This indicates automatic IP addressing, which typically means network configuration issues. Use `localhost` or a properly configured static IP instead.
+- **HTTPS with local servers**: Local LLM servers (LM Studio, Ollama) run on HTTP by default, not HTTPS. If you see connection timeouts or TLS errors with `https://localhost` or `https://192.168.x.x`, change the protocol to `http://`. For production deployments requiring HTTPS, see the reverse proxy setup section below.
 - **401/Forbidden**: check API key scope and value; re-run Configure LLM.
 - **Connection refused / timeout**: verify the server is running and the port/base URL is correct; increase timeout if needed.
 - **Wrong model name**: ensure the model string matches your provider (OpenAI model IDs or LM Studio model name).
 - **Task roots**: keep `_ZENTASKS` unless your tasks live elsewhere; use relative paths only.
+
+## HTTPS Reverse Proxy Setup (Optional)
+
+Local LLM servers typically use HTTP for simplicity. If you need HTTPS (e.g., for security policies or remote access), set up a reverse proxy with TLS certificates:
+
+### nginx Example
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name llm.example.com;
+    
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    
+    location / {
+        proxy_pass http://localhost:1234;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Caddy Example (simpler)
+```
+llm.example.com {
+    reverse_proxy localhost:1234
+}
+```
+
+After setting up the reverse proxy:
+1. Point your Base URL to `https://llm.example.com` (or your domain)
+2. Ensure certificates are valid and trusted
+3. Test the connection with "Test Connection" button
+
+**Note**: Self-signed certificates may still cause connection errors. Use Let's Encrypt or proper CA-signed certificates for production.
 
 ## Where settings are stored
 
