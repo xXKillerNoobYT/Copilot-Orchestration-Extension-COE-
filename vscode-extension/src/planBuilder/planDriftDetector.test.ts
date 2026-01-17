@@ -2,7 +2,7 @@
  * Tests for Plan Drift Detection
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 import { PlanDriftDetector, createDriftDetector, hasPlanDrift, type TaskExecutionData } from './planDriftDetector';
 import type { PlanJSON } from './planGenerator';
 
