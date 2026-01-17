@@ -15,20 +15,15 @@ describe('AiAssistanceService', () => {
   let mockMCPClient: jest.Mocked<MCPClient>;
 
   beforeEach(() => {
-    // Reset the singleton instance before each test
-    (MCPClient as any).resetInstance();
-    
-    // Create a mock MCPClient instance
+    // Create a mock MCPClient instance with all required methods
     mockMCPClient = {
       askQuestion: jest.fn(),
-      getInstance: jest.fn(),
     } as any;
 
     // Mock the getInstance static method to return our mock
-    (MCPClient.getInstance as jest.Mock).mockReturnValue(mockMCPClient);
+    jest.spyOn(MCPClient, 'getInstance').mockReturnValue(mockMCPClient);
 
     service = new AiAssistanceService();
-    mockMCPClient = MCPClient.getInstance() as jest.Mocked<MCPClient>;
   });
 
   afterEach(() => {
