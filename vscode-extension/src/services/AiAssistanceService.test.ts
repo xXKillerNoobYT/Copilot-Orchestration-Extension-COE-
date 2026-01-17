@@ -15,9 +15,11 @@ describe('AiAssistanceService', () => {
   let mockMCPClient: jest.Mocked<MCPClient>;
 
   beforeEach(() => {
+    // Reset the singleton instance before each test
+    (MCPClient as any).resetInstance();
+    
     service = new AiAssistanceService();
     mockMCPClient = MCPClient.getInstance() as jest.Mocked<MCPClient>;
-    mockMCPClient.askQuestion = jest.fn();
   });
 
   afterEach(() => {
@@ -99,12 +101,6 @@ describe('AiAssistanceService', () => {
   });
 
   describe('getSuggestionsDebounced', () => {
-    jest.useFakeTimers();
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
     it('should debounce multiple rapid calls', async () => {
       const mockResponse = {
         success: true,
@@ -120,18 +116,22 @@ describe('AiAssistanceService', () => {
         wizardState: {},
       };
 
-      // Fire 3 requests rapidly
-      const promise1 = service.getSuggestionsDebounced(request, 100);
-      const promise2 = service.getSuggestionsDebounced(request, 100);
-      const promise3 = service.getSuggestionsDebounced(request, 100);
+      // Fire 3 requests rapidly with a short debounce time
+      const promise1 = service.getSuggestionsDebounced(request, 50);
+      const promise2 = service.getSuggestionsDebounced(request, 50);
+      const promise3 = service.getSuggestionsDebounced(request, 50);
 
-      jest.advanceTimersByTime(100);
+      // Wait for all promises to resolve
+      const results = await Promise.all([promise1, promise2, promise3]);
 
-      await Promise.all([promise1, promise2, promise3]);
-
+      // Verify all promises got the same result
+      expect(results[0].suggestions[0].suggestion).toBe('Test answer');
+      expect(results[1].suggestions[0].suggestion).toBe('Test answer');
+      expect(results[2].suggestions[0].suggestion).toBe('Test answer');
+      
       // Only one call should be made after debounce
       expect(mockMCPClient.askQuestion).toHaveBeenCalledTimes(1);
-    });
+    }, 5000);
   });
 
   describe('logAcceptedSuggestion', () => {
