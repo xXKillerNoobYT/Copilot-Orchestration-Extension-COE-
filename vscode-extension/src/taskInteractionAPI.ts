@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { ParsedTask } from './taskParser';
 import { TaskStatusParser } from './taskStatusParser';
 import { defaultAgentProfileLoader, AgentProfile } from './agentProfiles';
+import { validateFilePath, validateAndFilterFilePaths, FilePathValidationError } from './utils/pathValidation';
 
 /**
  * TaskInteractionAPI: Bridge between .task.md files and the main orchestrator workflow
@@ -256,6 +257,98 @@ export class TaskInteractionAPI {
         `Failed to create context bundle: ${error instanceof Error ? error.message : String(error)}`
       );
     }
+  }
+
+  /**
+   * Add files to an existing context bundle with validation
+   * Validates file paths before adding them to the bundle
+   */
+  async addFilesToContextBundle(bundlePath: string, filePaths: string[]): Promise<void> {
+    try {
+      // Read existing bundle
+      const uri = vscode.Uri.file(bundlePath);
+      const content = await vscode.workspace.fs.readFile(uri);
+      const bundleData = JSON.parse(new TextDecoder().decode(content));
+
+      // Get workspace root for path normalization
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+      // Validate and filter file paths
+      const validatedPaths = await validateAndFilterFilePaths(filePaths, {
+        checkExists: true,
+        workspaceRoot,
+        throwOnInvalid: false,
+        logInvalid: true,
+      });
+
+      if (validatedPaths.length === 0) {
+        vscode.window.showWarningMessage(
+          'No valid file paths to add. All paths were invalid or files do not exist.'
+        );
+        return;
+      }
+
+      // Add validated paths to bundle (avoid duplicates)
+      const existingFiles = new Set(bundleData.files || []);
+      const newFiles = validatedPaths.filter(p => !existingFiles.has(p));
+
+      if (newFiles.length === 0) {
+        vscode.window.showInformationMessage('All files already exist in the bundle.');
+        return;
+      }
+
+      bundleData.files = [...(bundleData.files || []), ...newFiles];
+      bundleData.updatedAt = new Date().toISOString();
+
+      // Write updated bundle
+      await vscode.workspace.fs.writeFile(
+        uri,
+        new TextEncoder().encode(JSON.stringify(bundleData, null, 2))
+      );
+
+      const invalidCount = filePaths.length - validatedPaths.length;
+      const message = invalidCount > 0
+        ? `Added ${newFiles.length} file(s) to bundle. ${invalidCount} invalid path(s) were skipped.`
+        : `Added ${newFiles.length} file(s) to context bundle.`;
+
+      vscode.window.showInformationMessage(message);
+
+      // Emit event
+      this.eventEmitter.fire({
+        type: 'contextBundleCreated', // Reusing event type for simplicity
+        taskId: bundleData.taskId || '',
+        taskUri: vscode.Uri.file(bundleData.taskId || ''),
+        bundlePath,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to add files to context bundle: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  /**
+   * Validate a single file path for context bundle inclusion
+   * Returns validation result with detailed error information
+   */
+  async validateContextFilePath(filePath: string): Promise<{
+    valid: boolean;
+    normalizedPath?: string;
+    errorMessage?: string;
+  }> {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    
+    const result = await validateFilePath(filePath, {
+      checkExists: true,
+      workspaceRoot,
+    });
+
+    return {
+      valid: result.valid,
+      normalizedPath: result.normalizedPath,
+      errorMessage: result.error?.message,
+    };
   }
 
   /**

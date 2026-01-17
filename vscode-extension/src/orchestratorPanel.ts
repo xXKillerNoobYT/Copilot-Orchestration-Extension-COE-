@@ -13,6 +13,9 @@ export interface MemoryEntry {
 export interface ContextBundle {
   id: string;
   name: string;
+  // File paths must be validated before being added to this array
+  // Use validateFilePath() or validateAndFilterFilePaths() from utils/pathValidation
+  // to ensure paths are valid URIs and files exist
   files: string[];
   description?: string;
   metadata?: Record<string, unknown>;
