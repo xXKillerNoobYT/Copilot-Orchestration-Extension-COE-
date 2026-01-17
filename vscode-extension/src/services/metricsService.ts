@@ -39,20 +39,20 @@ export interface ErrorMetricsResponse {
 export class MetricsService {
   constructor(private readonly baseUrl: string) {}
 
-  async getTaskMetrics(): Promise<TaskMetricsResponse> {
-    const res = await fetch(`${this.baseUrl}/api/v1/metrics/tasks`);
+  async getTaskMetrics(timeRange: string = '24h'): Promise<TaskMetricsResponse> {
+    const res = await fetch(`${this.baseUrl}/api/v1/metrics/tasks?range=${encodeURIComponent(timeRange)}`);
     if (!res.ok) throw new Error(`Failed to fetch task metrics (${res.status})`);
     return res.json() as Promise<TaskMetricsResponse>;
   }
 
-  async getAgentMetrics(): Promise<AgentMetricsResponse> {
-    const res = await fetch(`${this.baseUrl}/api/v1/metrics/agents`);
+  async getAgentMetrics(timeRange: string = '24h'): Promise<AgentMetricsResponse> {
+    const res = await fetch(`${this.baseUrl}/api/v1/metrics/agents?range=${encodeURIComponent(timeRange)}`);
     if (!res.ok) throw new Error(`Failed to fetch agent metrics (${res.status})`);
     return res.json() as Promise<AgentMetricsResponse>;
   }
 
-  async getErrorMetrics(): Promise<ErrorMetricsResponse> {
-    const res = await fetch(`${this.baseUrl}/api/v1/metrics/errors`);
+  async getErrorMetrics(timeRange: string = '24h'): Promise<ErrorMetricsResponse> {
+    const res = await fetch(`${this.baseUrl}/api/v1/metrics/errors?range=${encodeURIComponent(timeRange)}`);
     if (!res.ok) throw new Error(`Failed to fetch error metrics (${res.status})`);
     return res.json() as Promise<ErrorMetricsResponse>;
   }

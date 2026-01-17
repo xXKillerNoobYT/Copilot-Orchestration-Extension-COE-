@@ -5,10 +5,28 @@
         <h2>Metrics Dashboard</h2>
         <p class="subtitle">Task throughput, agent utilization, and errors</p>
       </div>
-      <button class="refresh-btn" @click="refreshAll" :disabled="loading">
-        {{ loading ? 'Refreshing…' : 'Refresh' }}
-      </button>
+      <div class="header-controls">
+        <div class="time-range-selector">
+          <button 
+            v-for="range in timeRanges" 
+            :key="range.value"
+            :class="['range-btn', { active: selectedRange === range.value }]"
+            @click="selectTimeRange(range.value)"
+          >
+            {{ range.label }}
+          </button>
+        </div>
+        <button class="refresh-btn" @click="refreshAll" :disabled="loading">
+          {{ loading ? 'Refreshing…' : 'Refresh' }}
+        </button>
+      </div>
     </header>
+
+    <div v-if="errorMessage" class="error-banner">
+      <span class="error-icon">⚠️</span>
+      <span>{{ errorMessage }}</span>
+      <button class="dismiss-btn" @click="errorMessage = null">✕</button>
+    </div>
 
     <section class="cards">
       <div class="card">
@@ -119,20 +137,41 @@
     <section class="chart-row">
       <div class="card">
         <div class="card-header">
+          <span>Task Completion</span>
+          <small>Tasks completed over time</small>
+        </div>
+        <div class="card-body">
+          <canvas ref="completionCanvas" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span>Agent Utilization</span>
+          <small>Executions per agent</small>
+        </div>
+        <div class="card-body">
+          <canvas ref="utilizationCanvas" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="chart-row">
+      <div class="card">
+        <div class="card-header">
+          <span>Error Severity</span>
+          <small>Distribution by severity level</small>
+        </div>
+        <div class="card-body">
+          <canvas ref="errorSeverityCanvas" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
           <span>Status Mix</span>
           <small>Distribution of task states</small>
         </div>
         <div class="card-body">
           <canvas ref="statusCanvas" height="200"></canvas>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <span>Failures</span>
-          <small>Executions vs failures</small>
-        </div>
-        <div class="card-body">
-          <canvas ref="failureCanvas" height="200"></canvas>
         </div>
       </div>
     </section>
@@ -143,6 +182,13 @@
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import Chart from 'chart.js/auto';
 import { createMetricsService, type AgentMetricsResponse, type ErrorMetricsResponse, type TaskMetricsResponse } from '../services/metricsService';
+import { 
+  generateTimeLabels, 
+  generateSampleCompletionData, 
+  generateSampleAgentData, 
+  generateSampleSeverityData,
+  type TimeRange
+} from './metricsChartUtils';
 
 interface Props {
   baseUrl: string;
@@ -151,40 +197,198 @@ interface Props {
 const props = defineProps<Props>();
 const service = createMetricsService(props.baseUrl);
 const loading = ref(false);
+const selectedRange = ref<TimeRange>('24h');
 const taskMetrics = ref<TaskMetricsResponse | null>(null);
 const agentMetrics = ref<AgentMetricsResponse | null>(null);
 const errorMetrics = ref<ErrorMetricsResponse | null>(null);
+const errorMessage = ref<string | null>(null);
+const consecutiveErrors = ref(0);
+
+const completionCanvas = ref<HTMLCanvasElement | null>(null);
+const utilizationCanvas = ref<HTMLCanvasElement | null>(null);
+const errorSeverityCanvas = ref<HTMLCanvasElement | null>(null);
 const statusCanvas = ref<HTMLCanvasElement | null>(null);
-const failureCanvas = ref<HTMLCanvasElement | null>(null);
+
+let completionChart: Chart | null = null;
+let utilizationChart: Chart | null = null;
+let errorSeverityChart: Chart | null = null;
 let statusChart: Chart | null = null;
-let failureChart: Chart | null = null;
+let autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
+
+const timeRanges = [
+  { label: '24h', value: '24h' as TimeRange },
+  { label: '7d', value: '7d' as TimeRange },
+  { label: '30d', value: '30d' as TimeRange },
+];
+
+function selectTimeRange(range: TimeRange) {
+  selectedRange.value = range;
+  refreshAll();
+}
 
 async function refreshAll() {
   loading.value = true;
   try {
     const [t, a, e] = await Promise.all([
-      service.getTaskMetrics(),
-      service.getAgentMetrics(),
-      service.getErrorMetrics(),
+      service.getTaskMetrics(selectedRange.value),
+      service.getAgentMetrics(selectedRange.value),
+      service.getErrorMetrics(selectedRange.value),
     ]);
     taskMetrics.value = t;
     agentMetrics.value = a;
     errorMetrics.value = e;
+    errorMessage.value = null;
+    consecutiveErrors.value = 0;
 
     renderCharts();
+  } catch (error) {
+    consecutiveErrors.value++;
+    const err = error as Error;
+    errorMessage.value = `Failed to load metrics: ${err.message}`;
+    
+    // Stop auto-refresh after 3 consecutive failures
+    if (consecutiveErrors.value >= 3 && autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+      errorMessage.value += ' (Auto-refresh disabled due to repeated failures)';
+    }
   } finally {
     loading.value = false;
   }
 }
 
-onMounted(refreshAll);
+function setupAutoRefresh() {
+  // Auto-refresh every 30 seconds
+  autoRefreshInterval = setInterval(() => {
+    refreshAll();
+  }, 30000);
+}
+
+onMounted(() => {
+  refreshAll();
+  setupAutoRefresh();
+});
 
 onBeforeUnmount(() => {
+  completionChart?.destroy();
+  utilizationChart?.destroy();
+  errorSeverityChart?.destroy();
   statusChart?.destroy();
-  failureChart?.destroy();
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+  }
 });
 
 function renderCharts() {
+  renderTaskCompletionChart();
+  renderAgentUtilizationChart();
+  renderErrorSeverityChart();
+  renderStatusMixChart();
+}
+
+function renderTaskCompletionChart() {
+  if (completionCanvas.value && taskMetrics.value) {
+    completionChart?.destroy();
+    
+    // Generate sample data for task completion over time
+    // In a real implementation, this would come from the API
+    const labels = generateTimeLabels(selectedRange.value);
+    const data = generateSampleCompletionData(taskMetrics.value.counts.completed, labels.length);
+    
+    completionChart = new Chart(completionCanvas.value, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Completed Tasks',
+            data,
+            borderColor: '#4ec9b0',
+            backgroundColor: 'rgba(78, 201, 176, 0.1)',
+            tension: 0.4,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true, position: 'bottom' },
+        },
+        scales: {
+          y: { beginAtZero: true },
+        },
+      },
+    });
+  }
+}
+
+function renderAgentUtilizationChart() {
+  if (utilizationCanvas.value && agentMetrics.value) {
+    utilizationChart?.destroy();
+    
+    // Generate sample agent utilization data.
+    // NOTE: These labels and values are placeholders for visualization only.
+    // Replace with real per-agent execution metrics once the backend exposes them.
+    const agentNames = ['Sample Agent 1', 'Sample Agent 2', 'Sample Agent 3', 'Sample Agent 4', 'Sample Agent 5'];
+    const executionCounts = generateSampleAgentData(agentMetrics.value.counts.total_executions);
+    
+    utilizationChart = new Chart(utilizationCanvas.value, {
+      type: 'bar',
+      data: {
+        labels: agentNames,
+        datasets: [
+          {
+            label: 'Executions',
+            data: executionCounts,
+            backgroundColor: '#3a96dd',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          y: { beginAtZero: true },
+        },
+      },
+    });
+  }
+}
+
+function renderErrorSeverityChart() {
+  if (errorSeverityCanvas.value && errorMetrics.value) {
+    errorSeverityChart?.destroy();
+    
+    // Generate sample error severity distribution
+    const totalErrors = errorMetrics.value.failures.failed_executions;
+    const severityData = generateSampleSeverityData(totalErrors);
+    
+    errorSeverityChart = new Chart(errorSeverityCanvas.value, {
+      type: 'pie',
+      data: {
+        labels: ['Critical', 'High', 'Medium', 'Low'],
+        datasets: [
+          {
+            data: severityData,
+            backgroundColor: ['#f48771', '#cc5500', '#cca700', '#6c6c6c'],
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+        },
+      },
+    });
+  }
+}
+
+function renderStatusMixChart() {
   if (statusCanvas.value && taskMetrics.value) {
     const { completed, in_progress, pending, blocked, failed } = taskMetrics.value.counts;
     statusChart?.destroy();
@@ -206,36 +410,6 @@ function renderCharts() {
       },
     });
   }
-
-  if (failureCanvas.value && errorMetrics.value) {
-    const { failure_rate, failed_executions, total_executions } = errorMetrics.value.failures;
-    failureChart?.destroy();
-    failureChart = new Chart(failureCanvas.value, {
-      type: 'bar',
-      data: {
-        labels: ['Total Execs', 'Failed'],
-        datasets: [
-          {
-            label: 'Executions',
-            data: [total_executions, failed_executions],
-            backgroundColor: ['#3a96dd', '#f48771'],
-          },
-        ],
-      },
-      options: {
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              afterBody: () => `Failure rate: ${failure_rate}%`,
-            },
-          },
-        },
-        responsive: true,
-        scales: { y: { beginAtZero: true } },
-      },
-    });
-  }
 }
 </script>
 
@@ -251,6 +425,72 @@ function renderCharts() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 4px;
+  color: var(--vscode-inputValidation-errorForeground);
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+.dismiss-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--vscode-inputValidation-errorForeground);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+}
+
+.dismiss-btn:hover {
+  opacity: 0.8;
+}
+
+.time-range-selector {
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  padding: 2px;
+  background: var(--vscode-editor-background);
+}
+
+.range-btn {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.range-btn:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.range-btn.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
 }
 
 .subtitle {
@@ -267,6 +507,11 @@ function renderCharts() {
   cursor: pointer;
 }
 
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -277,13 +522,13 @@ function renderCharts() {
   border: 1px solid var(--vscode-panel-border);
   border-radius: 6px;
   background: var(--vscode-editor-background);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
 
 .chart-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
-}
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .card-header {

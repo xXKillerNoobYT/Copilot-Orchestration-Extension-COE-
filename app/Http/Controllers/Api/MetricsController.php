@@ -14,7 +14,12 @@ class MetricsController extends Controller
 
     public function tasks(): JsonResponse
     {
-        return response()->json($this->metricsService->getTaskMetrics());
+        $validated = request()->validate([
+            'range' => ['sometimes', 'string', 'regex:/^\d+[hdwm]$/'],
+        ]);
+
+        $range = $validated['range'] ?? '7d';
+        return response()->json($this->metricsService->getTaskMetrics($range));
     }
 
     public function agents(): JsonResponse
@@ -24,7 +29,15 @@ class MetricsController extends Controller
 
     public function errors(): JsonResponse
     {
-        return response()->json($this->metricsService->getErrorMetrics());
+        $validated = request()->validate([
+            'severity' => 'nullable|string|in:critical,high,medium,low',
+            'limit'    => 'nullable|integer|min:1|max:1000',
+        ]);
+
+        $severity = $validated['severity'] ?? null;
+        $limit = $validated['limit'] ?? 10;
+
+        return response()->json($this->metricsService->getErrorMetrics($limit, $severity));
     }
 
     /**
