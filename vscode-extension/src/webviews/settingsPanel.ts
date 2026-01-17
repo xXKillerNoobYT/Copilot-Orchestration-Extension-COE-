@@ -143,7 +143,7 @@ export class SettingsPanel {
         baseUrl: config.baseUrl,
         apiKey: config.apiKey || undefined,
         defaultModel: config.model,
-        timeout: 30000,
+        // Note: testConnection() uses its own timeout (3000ms), so this is only for other operations
       });
 
       // Use the provider's built-in testConnection method
