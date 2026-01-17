@@ -6,6 +6,8 @@ Guidelines for using Copilot with this project's GitHub Issues-based task manage
 - ✅ Coordinate multiple agents to handle complex tasks
 - ✅ Ensure clear communication between agents
 - ✅ Ensure all tests are picked up in Jest/Mocha test configuration
+- ✅ Always give a recommended task or next step. And by task I mean issue if an issue is complete.
+- ✅ If there are problems or things that need to be fixed. That you're not working on right now and you do not need to get fixed to finish your task. Or issue? Create a Github issue for it.
 
 ## VS Code Extension Build Configuration
 ### Webpack Settings (vscode-extension/webpack.config.js)
@@ -42,3 +44,6 @@ Guidelines for using Copilot with this project's GitHub Issues-based task manage
 - Coordinate multiple agents to handle complex tasks.
 - Ensure clear communication between agents.
 - make sure all the tests are being picked up in the jest test running configuration.
+- Always give a recommended task or next step. And by task I mean issue if an issue is complete.
+- allways create a github issue for anything that needs to be fixed that you're not working on right now and do not need to get fixed to finish your task.
+- Run tests frequently to catch issues early. using the test tool you have.

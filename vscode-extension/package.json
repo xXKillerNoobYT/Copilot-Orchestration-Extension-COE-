@@ -105,6 +105,21 @@
           "markdownDescription": "Request timeout in milliseconds for LLM calls.",
           "scope": "window"
         },
+        "copilot-orchestrator.mcp.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "markdownDescription": "Base URL for the MCP/agent coordination service (e.g., http://localhost:8000 or https://api.githubcopilot.com/mcp).",
+          "scope": "window",
+          "pattern": "^https?://.+",
+          "patternErrorMessage": "Enter a valid http(s) URL (e.g., http://localhost:8000)."
+        },
+        "copilot-orchestrator.mcp.authToken": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Bearer token used when calling the MCP service (required for GitHub Copilot MCP endpoints).",
+          "scope": "application",
+          "secret": true
+        },
         "copilot-orchestrator.taskRoots": {
           "type": "array",
           "items": {

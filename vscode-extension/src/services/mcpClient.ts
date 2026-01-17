@@ -20,6 +20,7 @@ import { retryWithBackoff, withTimeout, CircuitBreaker, showErrorMessage, logErr
 
 export interface MCPConfig {
   baseUrl: string;
+  authToken?: string;
   timeout?: number;
 }
 
@@ -69,12 +70,14 @@ export interface TeamStatusResponse {
 
 export class MCPClient {
   private baseUrl: string;
+  private authToken?: string;
   private timeout: number = 10000;
   private static instance: MCPClient;
   private circuitBreaker: CircuitBreaker;
 
   private constructor(config: MCPConfig) {
     this.baseUrl = config.baseUrl;
+    this.authToken = config.authToken;
     this.timeout = config.timeout ?? 10000;
     this.circuitBreaker = new CircuitBreaker({
       failureThreshold: 5,
@@ -91,7 +94,10 @@ export class MCPClient {
     if (!MCPClient.instance) {
       const config = vscode.workspace.getConfiguration('copilot-orchestrator');
       const baseUrl = config.get<string>('mcp.baseUrl', 'http://localhost:8000');
-      MCPClient.instance = new MCPClient({ baseUrl });
+      const authToken = config.get<string>('mcp.authToken', '')
+        || process.env.COPILOT_MCP_TOKEN
+        || process.env.GITHUB_COPILOT_MCP_TOKEN;
+      MCPClient.instance = new MCPClient({ baseUrl, authToken });
     }
     return MCPClient.instance;
   }
@@ -140,14 +146,6 @@ export class MCPClient {
     createTask?: boolean;
   }): Promise<any> {
     return this.fetch(`${this.baseUrl}/mcp/reportObservation`, 'POST', data);
-  }
-
-  /**
-   * GET /api/teams/status
-   * Fetch current status of all agent teams from MCP server
-   */
-  async getTeamsStatus(): Promise<any> {
-    return this.fetchWithRetry(`${this.baseUrl}/api/teams/status`, 'GET');
   }
 
   /**
@@ -250,6 +248,10 @@ export class MCPClient {
         },
       };
 
+      if (this.authToken) {
+        options.headers['Authorization'] = `Bearer ${this.authToken}`;
+      }
+
       if (body) {
         options.body = JSON.stringify(body);
       }
@@ -294,6 +296,10 @@ export class MCPClient {
 
   setBaseUrl(baseUrl: string): void {
     this.baseUrl = baseUrl;
+  }
+
+  setAuthToken(token?: string): void {
+    this.authToken = token;
   }
 
   setTimeout(timeout: number): void {
