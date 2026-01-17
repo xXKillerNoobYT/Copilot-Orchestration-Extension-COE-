@@ -30,8 +30,9 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/orchestrator', function () {
-    // Default to 'default' project or use environment config
-    $projectId = request()->input('project', config('app.default_project_id', 'default'));
+    // Default to 'default' project or use environment variable if set
+    $defaultProjectId = env('DEFAULT_PROJECT_ID', 'default');
+    $projectId = request()->input('project', $defaultProjectId);
     
     return Inertia::render('OrchestratorDashboard', [
         'projectId' => $projectId

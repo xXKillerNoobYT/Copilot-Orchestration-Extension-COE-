@@ -24,3 +24,6 @@ _ZENTASKS/tasks.json
 _ZENTASKS/sync_metadata.json
 _ZENTASKS/.env
 _ZENTASKS/__pycache__/
+
+# Ignore auto-generated Ziggy routes file
+/resources/js/ziggy.js

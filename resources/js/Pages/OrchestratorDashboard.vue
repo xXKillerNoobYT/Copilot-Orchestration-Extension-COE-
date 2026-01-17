@@ -426,7 +426,7 @@ onUnmounted(() => {
                             </div>
                             <div v-else class="space-y-2 font-mono text-sm">
                                 <div 
-                                    v-for="log in executionLogs.slice(0, 20)" 
+                                    v-for="log in executionLogs.slice(0, props.executionLogLimit)" 
                                     :key="log.id"
                                     class="flex items-start gap-3"
                                 >
