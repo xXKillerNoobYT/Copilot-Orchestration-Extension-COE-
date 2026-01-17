@@ -12,6 +12,12 @@ use Illuminate\Support\Collection;
 class MetricsService
 {
     /**
+     * Default time range in days for metrics analysis.
+     * Provides a good balance between recent trends and statistical significance.
+     */
+    private const DEFAULT_TIME_RANGE_DAYS = 30;
+
+    /**
      * Aggregate task metrics (counts, completion rate, cycle time).
      * 
      * @param string|null $timeRange Optional time range (e.g., '7d', '30d', '90d')
@@ -231,7 +237,8 @@ class MetricsService
             $projectId = null;
         } else {
             $errorMessage = $error['message'] ?? 'Unknown error';
-            $metadata = $error['metadata'] ?? $error;
+            // Only store explicit metadata field to avoid recursive structures
+            $metadata = $error['metadata'] ?? null;
             $agentId = $error['agent_id'] ?? null;
             $userId = $error['user_id'] ?? null;
             $projectId = $error['project_id'] ?? null;
@@ -521,7 +528,7 @@ class MetricsService
             return (int) $matches[1];
         }
 
-        // Default to 30 days if format not recognized
-        return 30;
+        // Return default if format not recognized
+        return self::DEFAULT_TIME_RANGE_DAYS;
     }
 }
