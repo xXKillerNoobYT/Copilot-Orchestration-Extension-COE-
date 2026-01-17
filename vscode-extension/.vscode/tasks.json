@@ -19,6 +19,14 @@
       "group": "build",
       "problemMatcher": [],
       "detail": "CMake template clean rebuild task"
+    },
+    {
+      "type": "npm",
+      "script": "test:jest:watch",
+      "group": "build",
+      "problemMatcher": [],
+      "label": "npm: test:jest:watch",
+      "detail": "jest --watch"
     }
   ]
 }
