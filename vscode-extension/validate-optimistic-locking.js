@@ -73,11 +73,11 @@ console.log(`  Final: version=${task.version}, status=${task.status}`);
 console.log('\nScenario 2: Version conflict detection');
 tracker.createTask('task-002');
 
-// Agent A gets task (capture version value, not reference)
+// Agent A gets task version
 const agentAVersion = tracker.getTask('task-002').version;
 console.log(`  Agent A fetches: version=${agentAVersion}`);
 
-// Agent B gets task (capture version value, not reference)
+// Agent B gets task version
 const agentBVersion = tracker.getTask('task-002').version;
 console.log(`  Agent B fetches: version=${agentBVersion}`);
 
