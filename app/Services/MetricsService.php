@@ -6,6 +6,7 @@ use App\Models\Agent;
 use App\Models\MetricsEvent;
 use App\Models\Task;
 use App\Models\TaskExecution;
+use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Illuminate\Support\Collection;
 
@@ -117,11 +118,18 @@ class MetricsService
         $errorQuery = TaskExecution::failed()
             ->latest('completed_at');
         
-        // Apply severity filter if provided
+        // Apply severity filter if provided using proper parameter binding
         // Note: This assumes error_message or metadata contains severity information
         // If there's a dedicated severity column, update this logic
         if ($severity) {
-            $errorQuery->where('error_message', 'LIKE', "%{$severity}%");
+            // Sanitize severity input to only allow valid severity levels
+            $validSeverities = ['critical', 'high', 'medium', 'low'];
+            $sanitizedSeverity = strtolower(trim($severity));
+            
+            if (in_array($sanitizedSeverity, $validSeverities)) {
+                // Use parameter binding to prevent SQL injection
+                $errorQuery->where('error_message', 'LIKE', '%' . $sanitizedSeverity . '%');
+            }
         }
         
         $recentErrors = $errorQuery
