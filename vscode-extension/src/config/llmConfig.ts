@@ -45,7 +45,7 @@ export function readLlmConfig(options?: { configuration?: ConfigLike }): LlmConf
   const envBaseUrl = process.env.COPILOT_LLM_BASE_URL;
   const configBaseUrl = configuration?.get<string>('copilot-orchestrator.llm.baseUrl', DEFAULTS.baseUrl) ?? DEFAULTS.baseUrl;
   const baseUrl = envBaseUrl || configBaseUrl;
-  
+
   const apiKey = configuration?.get<string>('copilot-orchestrator.llm.apiKey', DEFAULTS.apiKey) ?? DEFAULTS.apiKey;
   const defaultModel = configuration?.get<string>('copilot-orchestrator.llm.defaultModel', DEFAULTS.defaultModel) ?? DEFAULTS.defaultModel;
   const customModel = configuration?.get<string>('copilot-orchestrator.llm.customModel', DEFAULTS.customModel) ?? DEFAULTS.customModel;
@@ -59,7 +59,7 @@ export function readLlmConfig(options?: { configuration?: ConfigLike }): LlmConf
   if (!isValidBaseUrl(baseUrlTrimmed)) {
     issues.push('Invalid LLM baseUrl: must start with http or https');
   }
-  
+
   // Warn about APIPA addresses (169.254.x.x)
   if (isApipaAddress(baseUrlTrimmed)) {
     issues.push('Warning: APIPA address (169.254.x.x) detected. This may indicate network configuration issues.');
