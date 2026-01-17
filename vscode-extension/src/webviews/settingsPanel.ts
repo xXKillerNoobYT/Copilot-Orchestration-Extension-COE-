@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { ProgrammingOrchestratorManager } from './programmingOrchestratorTab';
+import { MCPClient } from '../services/mcpClient';
 
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
@@ -13,6 +13,7 @@ export class SettingsPanel {
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
   private orchestratorManager: ProgrammingOrchestratorManager;
+  private mcpClient: MCPClient;
 
   public static createOrShow(extensionUri: vscode.Uri) {
     const column = vscode.window.activeTextEditor
@@ -49,6 +50,9 @@ export class SettingsPanel {
 
     // Initialize orchestrator manager
     this.orchestratorManager = ProgrammingOrchestratorManager.getInstance();
+
+    // Initialize MCP client
+    this.mcpClient = MCPClient.getInstance();
 
     // Set the webview's initial html content
     this._update();
@@ -746,13 +750,12 @@ export class SettingsPanel {
         teams: ['planning', 'answer', 'decomposition', 'verification'],
       });
 
-      // Fetch team status from MCP server
-      const mcpClient = (await import('../services/mcpClient')).MCPClient.getInstance();
-      const teamState = await mcpClient.getTeamsStatus();
+      // Fetch team status from MCP endpoint
+      const teamState = await this.mcpClient.getTeamsStatus();
 
-      // Update orchestrator manager with fresh data
+      // Update orchestrator manager with fresh data (supports both flat and nested responses)
       if (teamState && typeof teamState === 'object' && 'teams' in teamState) {
-        const teams = teamState.teams as Record<string, any>;
+        const teams = (teamState as { teams: Record<string, any> }).teams;
         for (const [teamName, status] of Object.entries(teams)) {
           if (teamName in this.orchestratorManager.getState().teamStatuses) {
             this.orchestratorManager.updateTeamStatus(
@@ -761,6 +764,11 @@ export class SettingsPanel {
             );
           }
         }
+      } else {
+        this.orchestratorManager.updateTeamStatus('planning', (teamState as any)?.planning);
+        this.orchestratorManager.updateTeamStatus('answer', (teamState as any)?.answer);
+        this.orchestratorManager.updateTeamStatus('decomposition', (teamState as any)?.decomposition);
+        this.orchestratorManager.updateTeamStatus('verification', (teamState as any)?.verification);
       }
 
       // Update webview with fresh data
