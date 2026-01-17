@@ -397,7 +397,7 @@ export class TaskInteractionAPI {
         ? `Added ${newFiles.length} file(s) to bundle. ${invalidCount} invalid path(s) were skipped.`
         : `Added ${newFiles.length} file(s) to context bundle.`;
 
-      // Warn if approaching or at threshold
+      // Warn if above threshold
       // Use Math.floor to avoid floating point precision issues
       if (newTotalCount > Math.floor(MAX_FILES_PER_BUNDLE * BUNDLE_WARNING_THRESHOLD)) {
         message += ` Bundle now has ${newTotalCount}/${MAX_FILES_PER_BUNDLE} files.`;

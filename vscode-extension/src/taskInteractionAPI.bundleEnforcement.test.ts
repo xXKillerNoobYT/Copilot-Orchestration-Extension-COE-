@@ -4,7 +4,7 @@
  */
 
 import { TaskInteractionAPI } from './taskInteractionAPI';
-import { MAX_FILES_PER_BUNDLE, BUNDLE_WARNING_THRESHOLD } from './orchestratorPanel';
+import { MAX_FILES_PER_BUNDLE } from './orchestratorPanel';
 import * as vscode from 'vscode';
 import { promises as fs } from 'fs';
 import * as path from 'path';
