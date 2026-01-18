@@ -2,12 +2,24 @@
  * Handler for copilot_orchestrator_report_observation tool
  */
 
-export async function handleReportObservation(args: any) {
-  const { type, message, severity = 'medium', suggestedAction, createTask = false } = args;
+import {
+  validateInput,
+  ValidationSchemas,
+  formatAgentSuccess,
+  formatAgentError,
+  AgentErrors,
+} from '../agentValidation.js';
+import { getGitHubIntegration, getTaskManager } from '../integrations/serviceFactory.js';
 
-  // TODO: Integrate with actual observation/issue tracking system
-  // For now, log observation and return confirmation
-  
+export async function handleReportObservation(args: any) {
+  // Validate input
+  const validation = validateInput(ValidationSchemas.reportObservation, args);
+  if (!validation.valid) {
+    return formatAgentError(validation.error);
+  }
+
+  const { type, message, severity = 'medium', suggestedAction, createTask = false } = validation.data;
+
   const observation = {
     id: `OBS-${Date.now()}`,
     type,
@@ -16,25 +28,51 @@ export async function handleReportObservation(args: any) {
     suggestedAction,
     createTask,
     timestamp: new Date().toISOString(),
-    status: 'recorded'
+    status: 'recorded',
+    issueUrl: undefined as string | undefined,
   };
 
-  // If createTask is true, we would create a GitHub issue here
+  // Create GitHub issue if requested
   if (createTask) {
-    observation.status = 'task-created';
-    // TODO: Call GitHub integration to create issue
+    const github = getGitHubIntegration();
+
+    if (github.isAvailable()) {
+      const result = await github.createObservationIssue({
+        type,
+        message,
+        severity,
+        suggestedAction,
+      });
+
+      if (result.success && result.issue) {
+        observation.status = 'task-created';
+        observation.issueUrl = result.issue.html_url;
+      } else {
+        observation.status = 'task-creation-failed';
+      }
+    } else {
+      // Log observation locally if GitHub is not available
+      const manager = getTaskManager();
+      await manager.logActivity({
+        type: 'observation',
+        observationType: type,
+        message,
+        severity,
+        suggestedAction,
+        timestamp: new Date().toISOString(),
+      });
+      observation.status = 'logged-locally';
+    }
   }
 
-  return {
-    content: [
-      {
-        type: 'text',
-        text: JSON.stringify({
-          success: true,
-          observation,
-          message: `Observation recorded${createTask ? ' and task created' : ''}`
-        }, null, 2)
-      }
-    ]
-  };
+  return formatAgentSuccess({
+    observation,
+    message: `Observation recorded${
+      createTask && observation.issueUrl
+        ? ` and task created: ${observation.issueUrl}`
+        : createTask
+        ? ' (logged locally)'
+        : ''
+    }`,
+  });
 }

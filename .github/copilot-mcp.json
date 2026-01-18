@@ -26,6 +26,11 @@
         "copilot_orchestrator_report_observation - Report discoveries/issues",
         "copilot_orchestrator_request_verification - Request human verification",
         "copilot_orchestrator_ask_user_question - Ask user a question",
-        "copilot_orchestrator_get_workspace_config - Get workspace configuration"
+        "copilot_orchestrator_get_workspace_config - Get workspace configuration",
+        "copilot_orchestrator_get_next_task - Get highest-priority task to work on (Agent Mode)",
+        "copilot_orchestrator_report_task_status - Update task status and progress (Agent Mode)",
+        "copilot_orchestrator_get_context_bundle - Get comprehensive task context (Agent Mode)",
+        "copilot_orchestrator_report_test_failure - Report test failures (Agent Mode)",
+        "copilot_orchestrator_report_verification_result - Submit verification findings (Agent Mode)"
     ]
 }

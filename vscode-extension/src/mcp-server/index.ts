@@ -21,6 +21,12 @@ import { handleReportObservation } from './handlers/reportObservation.js';
 import { handleRequestVerification } from './handlers/requestVerification.js';
 import { handleAskUserQuestion } from './handlers/askUserQuestion.js';
 import { handleGetWorkspaceConfig } from './handlers/getWorkspaceConfig.js';
+// Agent Mode specific handlers
+import { handleGetNextTask } from './handlers/getNextTask.js';
+import { handleReportTaskStatus } from './handlers/reportTaskStatus.js';
+import { handleGetContextBundle } from './handlers/getContextBundle.js';
+import { handleReportTestFailure } from './handlers/reportTestFailure.js';
+import { handleReportVerificationResult } from './handlers/reportVerificationResult.js';
 
 /**
  * Extension-only MCP tools exposed to GitHub Copilot coding agent
@@ -169,6 +175,150 @@ const EXTENSION_TOOLS: Tool[] = [
         }
       }
     }
+  },
+  // Agent Mode specific tools
+  {
+    name: 'copilot_orchestrator_get_next_task',
+    description: 'Get the highest-priority task for agent to work on next. Returns task with full context bundle.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filter: {
+          type: 'string',
+          description: 'Optional filter string for task selection'
+        },
+        priority: {
+          type: 'string',
+          enum: ['critical', 'high', 'medium', 'low'],
+          description: 'Minimum priority level for task selection'
+        },
+        agentType: {
+          type: 'string',
+          description: 'Agent type for skill-matching (e.g., code-master, test-runner, auto-zen)'
+        }
+      }
+    }
+  },
+  {
+    name: 'copilot_orchestrator_report_task_status',
+    description: 'Update task progress and status. Triggers workflow transitions and notifies other agents.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'Task ID to update'
+        },
+        status: {
+          type: 'string',
+          enum: ['pending', 'in-progress', 'blocked', 'done', 'failed'],
+          description: 'New task status'
+        },
+        progress: {
+          type: 'number',
+          minimum: 0,
+          maximum: 1,
+          description: 'Progress percentage (0.0 to 1.0)'
+        },
+        observations: {
+          type: 'string',
+          description: 'Agent observations about task progress'
+        },
+        blockers: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of blockers preventing task completion'
+        }
+      },
+      required: ['taskId', 'status']
+    }
+  },
+  {
+    name: 'copilot_orchestrator_get_context_bundle',
+    description: 'Get comprehensive context for a task including relevant files, documentation, and guidance.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'Task ID to get context for'
+        },
+        includeFiles: {
+          type: 'boolean',
+          description: 'Include relevant file listings',
+          default: true
+        },
+        includeDocs: {
+          type: 'boolean',
+          description: 'Include relevant documentation',
+          default: true
+        }
+      },
+      required: ['taskId']
+    }
+  },
+  {
+    name: 'copilot_orchestrator_report_test_failure',
+    description: 'Report test failures and optionally create investigation tasks for debugging.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'Task ID where test failed'
+        },
+        testName: {
+          type: 'string',
+          description: 'Name of the failing test'
+        },
+        errorMessage: {
+          type: 'string',
+          description: 'Error message from test failure'
+        },
+        stackTrace: {
+          type: 'string',
+          description: 'Stack trace from test failure'
+        },
+        suggestedFix: {
+          type: 'string',
+          description: 'Suggested fix if agent can diagnose the issue'
+        }
+      },
+      required: ['taskId', 'testName', 'errorMessage']
+    }
+  },
+  {
+    name: 'copilot_orchestrator_report_verification_result',
+    description: 'Submit verification findings after testing. Triggers quality gates and workflow transitions.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'Task ID being verified'
+        },
+        verificationType: {
+          type: 'string',
+          enum: ['visual', 'functional', 'integration'],
+          description: 'Type of verification performed'
+        },
+        passed: {
+          type: 'boolean',
+          description: 'Whether verification passed'
+        },
+        findings: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'List of verification findings or issues'
+        },
+        screenshots: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Paths to screenshot files (for visual verification)'
+        }
+      },
+      required: ['taskId', 'verificationType', 'passed', 'findings']
+    }
   }
 ];
 
@@ -222,6 +372,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'copilot_orchestrator_get_workspace_config':
         return await handleGetWorkspaceConfig(args);
+
+      // Agent Mode specific tools
+      case 'copilot_orchestrator_get_next_task':
+        return await handleGetNextTask(args);
+
+      case 'copilot_orchestrator_report_task_status':
+        return await handleReportTaskStatus(args);
+
+      case 'copilot_orchestrator_get_context_bundle':
+        return await handleGetContextBundle(args);
+
+      case 'copilot_orchestrator_report_test_failure':
+        return await handleReportTestFailure(args);
+
+      case 'copilot_orchestrator_report_verification_result':
+        return await handleReportVerificationResult(args);
 
       default:
         throw new Error(`Unknown tool: ${name}`);
