@@ -12,6 +12,31 @@ interface ChecklistItem {
   planLineEnd?: number;
 }
 
+interface DesignSystemReference {
+  colors?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    background?: string;
+    text?: string;
+    border?: string;
+  };
+  typography?: {
+    fontFamily?: string;
+    weights?: number[];
+    sizes?: { [key: string]: string };
+  };
+  components?: {
+    borderRadius?: string;
+    padding?: string;
+    shadow?: string;
+  };
+  links?: {
+    componentLibrary?: string;
+    designDocs?: string;
+  };
+}
+
 interface VerificationState {
   taskId: string;
   taskTitle: string;
@@ -25,6 +50,7 @@ interface VerificationState {
   notInScope: string[];
   planHighlights: { title: string; details: string }[];
   changeRequests: { summary: string; impact?: string }[];
+  designSystem?: DesignSystemReference;
 }
 
 export class VisualVerificationPanel {
@@ -71,6 +97,11 @@ export class VisualVerificationPanel {
         console.error('Failed to fetch initial checklist:', error);
       });
     }
+
+    // Load design system reference from workspace
+    this.loadDesignSystemReference().catch(error => {
+      console.error('Failed to load design system reference:', error);
+    });
 
     this.panel.webview.onDidReceiveMessage(async (message) => {
       switch (message.command) {
@@ -389,6 +420,177 @@ export class VisualVerificationPanel {
   }
 
   /**
+   * Validate design system structure to ensure type safety
+   */
+  private validateDesignSystemStructure(data: any): DesignSystemReference | null {
+    if (!data || typeof data !== 'object') {
+      console.warn('Design system data is not an object');
+      return null;
+    }
+
+    const validated: DesignSystemReference = {};
+
+    // Validate colors (if present)
+    if (data.colors && typeof data.colors === 'object') {
+      const colors: any = {};
+      const colorKeys = ['primary', 'secondary', 'accent', 'background', 'text', 'border'];
+      for (const key of colorKeys) {
+        if (data.colors[key] && typeof data.colors[key] === 'string') {
+          colors[key] = data.colors[key];
+        }
+      }
+      if (Object.keys(colors).length > 0) {
+        validated.colors = colors;
+      }
+    }
+
+    // Validate typography (if present)
+    if (data.typography && typeof data.typography === 'object') {
+      const typography: any = {};
+      if (typeof data.typography.fontFamily === 'string') {
+        typography.fontFamily = data.typography.fontFamily;
+      }
+      if (Array.isArray(data.typography.weights)) {
+        typography.weights = data.typography.weights.filter((w: any) => typeof w === 'number');
+      }
+      if (data.typography.sizes && typeof data.typography.sizes === 'object') {
+        const sizes: any = {};
+        for (const [key, value] of Object.entries(data.typography.sizes)) {
+          if (typeof value === 'string') {
+            sizes[key] = value;
+          }
+        }
+        if (Object.keys(sizes).length > 0) {
+          typography.sizes = sizes;
+        }
+      }
+      if (Object.keys(typography).length > 0) {
+        validated.typography = typography;
+      }
+    }
+
+    // Validate components (if present)
+    if (data.components && typeof data.components === 'object') {
+      const components: any = {};
+      if (typeof data.components.borderRadius === 'string') {
+        components.borderRadius = data.components.borderRadius;
+      }
+      if (typeof data.components.padding === 'string') {
+        components.padding = data.components.padding;
+      }
+      if (typeof data.components.shadow === 'string') {
+        components.shadow = data.components.shadow;
+      }
+      if (Object.keys(components).length > 0) {
+        validated.components = components;
+      }
+    }
+
+    // Validate links (if present)
+    if (data.links && typeof data.links === 'object') {
+      const links: any = {};
+      if (typeof data.links.componentLibrary === 'string') {
+        links.componentLibrary = data.links.componentLibrary;
+      }
+      if (typeof data.links.designDocs === 'string') {
+        links.designDocs = data.links.designDocs;
+      }
+      if (Object.keys(links).length > 0) {
+        validated.links = links;
+      }
+    }
+
+    return Object.keys(validated).length > 0 ? validated : null;
+  }
+
+  /**
+   * Load design system reference from workspace
+   * Looks for design-system.json in workspace root or .vscode folder
+   */
+  async loadDesignSystemReference(): Promise<void> {
+    try {
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (!workspaceFolders || workspaceFolders.length === 0) {
+        console.log('No workspace folder open, skipping design system load');
+        return;
+      }
+
+      // Try multiple possible locations
+      const possiblePaths = [
+        vscode.Uri.joinPath(workspaceFolders[0].uri, 'design-system.json'),
+        vscode.Uri.joinPath(workspaceFolders[0].uri, '.vscode', 'design-system.json'),
+        vscode.Uri.joinPath(workspaceFolders[0].uri, 'resources', 'design-system.json'),
+      ];
+
+      let designSystemData: DesignSystemReference | null = null;
+
+      for (const designSystemPath of possiblePaths) {
+        try {
+          const fileData = await vscode.workspace.fs.readFile(designSystemPath);
+          const jsonString = Buffer.from(fileData).toString('utf8');
+          const parsedData = JSON.parse(jsonString);
+          
+          // Validate structure
+          const validatedData = this.validateDesignSystemStructure(parsedData);
+          if (validatedData) {
+            designSystemData = validatedData;
+            console.log(`Loaded design system from ${designSystemPath.fsPath}`);
+            break;
+          } else {
+            console.warn(`Invalid design system structure in ${designSystemPath.fsPath}`);
+          }
+        } catch (error) {
+          // Log parsing errors in development to help with debugging
+          if (error instanceof SyntaxError) {
+            console.warn(`JSON syntax error in ${designSystemPath.fsPath}:`, error.message);
+          }
+          // File doesn't exist or is invalid, try next path
+          continue;
+        }
+      }
+
+      if (designSystemData) {
+        this.updateState({ designSystem: designSystemData });
+        console.log('Design system reference loaded successfully');
+      } else {
+        // Use default design system if no file found
+        this.updateState({
+          designSystem: {
+            colors: {
+              primary: '#0284c7',
+              secondary: '#0ea5e9',
+              accent: '#06b6d4',
+              background: '#f0f9ff',
+              text: '#0c4a6e',
+              border: '#bae6fd',
+            },
+            typography: {
+              fontFamily: 'Inter, system-ui, sans-serif',
+              weights: [400, 500, 600, 700],
+              sizes: {
+                xs: '0.75rem',
+                sm: '0.875rem',
+                base: '1rem',
+                lg: '1.125rem',
+                xl: '1.25rem',
+              },
+            },
+            components: {
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              shadow: 'md',
+            },
+          },
+        });
+        console.log('Using default design system (no design-system.json found)');
+      }
+    } catch (error) {
+      console.error('Failed to load design system reference:', error);
+      vscode.window.showWarningMessage('Could not load design system reference');
+    }
+  }
+
+  /**
    * Navigate to plan section based on checklist item
    */
   async navigateToPlanSection(itemId: string): Promise<void> {
@@ -598,6 +800,119 @@ ${issueData.description}
           .join('')
       : '<div class="muted">No change requests yet.</div>';
 
+    // Design System Reference HTML
+    const designSystemHtml = state.designSystem
+      ? `
+        ${
+          state.designSystem.colors
+            ? `<div style="margin-bottom: 16px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600;">Color Palette</h4>
+                ${Object.entries(state.designSystem.colors)
+                  .map(
+                    ([name, value]) =>
+                      value
+                        ? `<div class="color-item">
+                            <span class="color-swatch" style="background-color: ${this.validateCssColor(value)};"></span>
+                            <span class="color-label">${this.escapeHtml(name.charAt(0).toUpperCase() + name.slice(1))}</span>
+                            <span class="color-value">${this.escapeHtml(value)}</span>
+                          </div>`
+                        : ''
+                  )
+                  .join('')}
+              </div>`
+            : ''
+        }
+        ${
+          state.designSystem.typography
+            ? `<div style="margin-bottom: 16px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600;">Typography</h4>
+                <div class="typography-item">
+                  <strong>Font Family:</strong> ${this.escapeHtml(state.designSystem.typography.fontFamily || 'Not specified')}
+                  <div class="font-preview" style="font-family: ${this.validateCssFontFamily(state.designSystem.typography.fontFamily || 'inherit')};">
+                    The quick brown fox jumps over the lazy dog
+                  </div>
+                </div>
+                ${
+                  state.designSystem.typography.weights && state.designSystem.typography.weights.length > 0
+                    ? `<div class="typography-item">
+                        <strong>Font Weights:</strong> ${state.designSystem.typography.weights.join(', ')}
+                      </div>`
+                    : ''
+                }
+                ${
+                  state.designSystem.typography.sizes
+                    ? `<div class="typography-item">
+                        <strong>Font Sizes:</strong><br>
+                        ${Object.entries(state.designSystem.typography.sizes)
+                          .map(([name, size]) => `<span class="pill">${this.escapeHtml(name)}: ${this.escapeHtml(size)}</span>`)
+                          .join(' ')}
+                      </div>`
+                    : ''
+                }
+              </div>`
+            : ''
+        }
+        ${
+          state.designSystem.components
+            ? `<div style="margin-bottom: 16px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600;">Components</h4>
+                ${
+                  state.designSystem.components.borderRadius
+                    ? `<div class="typography-item">
+                        <strong>Border Radius:</strong> ${this.escapeHtml(state.designSystem.components.borderRadius)}
+                        <div class="component-preview" style="border-radius: ${this.validateCssLength(state.designSystem.components.borderRadius)};">
+                          Sample Component
+                        </div>
+                      </div>`
+                    : ''
+                }
+                ${
+                  state.designSystem.components.padding
+                    ? `<div class="typography-item">
+                        <strong>Padding:</strong> ${this.escapeHtml(state.designSystem.components.padding)}
+                        <div class="muted" style="font-size: 11px;">Validated: ${this.escapeHtml(this.validateCssLength(state.designSystem.components.padding))}</div>
+                      </div>`
+                    : ''
+                }
+                ${
+                  state.designSystem.components.shadow
+                    ? `<div class="typography-item">
+                        <strong>Shadow:</strong> ${this.escapeHtml(state.designSystem.components.shadow)}
+                        <div class="muted" style="font-size: 11px;">Display only - not used in CSS</div>
+                      </div>`
+                    : ''
+                }
+              </div>`
+            : ''
+        }
+        ${
+          state.designSystem.links
+            ? `<div style="margin-bottom: 8px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600;">Links</h4>
+                ${
+                  state.designSystem.links.componentLibrary
+                    ? `<div class="typography-item">
+                        <a href="${this.escapeHtml(state.designSystem.links.componentLibrary)}" style="color: var(--vscode-textLink-foreground);">
+                          Component Library
+                        </a>
+                      </div>`
+                    : ''
+                }
+                ${
+                  state.designSystem.links.designDocs
+                    ? `<div class="typography-item">
+                        <a href="${this.escapeHtml(state.designSystem.links.designDocs)}" style="color: var(--vscode-textLink-foreground);">
+                          Design Documentation
+                        </a>
+                      </div>`
+                    : ''
+                }
+              </div>`
+            : ''
+        }
+      `
+      : '<div class="muted">No design system loaded. Add a design-system.json file to your workspace.</div>';
+
     const serverBadge = {
       running: 'badge-success',
       starting: 'badge-warn',
@@ -752,6 +1067,14 @@ ${issueData.description}
     .change-title { font-weight: 600; }
     .change-impact { color: var(--vscode-descriptionForeground); font-size: 12px; }
     textarea, input[type="text"] { width: 100%; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 3px; padding: 8px; }
+    .design-system-section { margin-bottom: 12px; }
+    .color-swatch { display: inline-block; width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--vscode-panel-border); margin-right: 8px; vertical-align: middle; }
+    .color-item { display: flex; align-items: center; margin: 6px 0; font-size: 12px; }
+    .color-label { font-weight: 500; min-width: 100px; }
+    .color-value { font-family: monospace; color: var(--vscode-descriptionForeground); }
+    .typography-item { margin: 8px 0; font-size: 12px; }
+    .font-preview { padding: 8px; background: var(--vscode-editor-background); border: 1px solid var(--vscode-panel-border); border-radius: 4px; margin-top: 4px; }
+    .component-preview { display: inline-block; padding: 8px 16px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); margin: 4px; }
   </style>
 </head>
 <body>
@@ -788,6 +1111,11 @@ ${issueData.description}
       <h3>Plan Highlights</h3>
       ${highlights}
     </div>
+  </div>
+
+  <div class="card design-system-section">
+    <h3>📐 Design System Reference</h3>
+    ${designSystemHtml}
   </div>
 
   <div class="card" style="margin-bottom:12px;">
@@ -949,6 +1277,102 @@ ${issueData.description}
   private renderOption(value: ChecklistItem['status'], current: ChecklistItem['status'], label: string) {
     const selected = value === current ? 'selected' : '';
     return `<option value="${value}" ${selected}>${label}</option>`;
+  }
+
+  /**
+   * Validate CSS color value to prevent CSS injection
+   * Allows hex colors (#xxx or #xxxxxx) and common CSS color formats with range validation
+   */
+  private validateCssColor(color: string): string {
+    // Allow hex colors
+    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(color)) {
+      return color;
+    }
+    
+    // Allow rgb/rgba with range validation (R, G, B: 0-255, alpha: 0-1)
+    const rgbMatch = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(\s*,\s*([\d.]+))?\s*\)$/.exec(color);
+    if (rgbMatch) {
+      const r = parseInt(rgbMatch[1], 10);
+      const g = parseInt(rgbMatch[2], 10);
+      const b = parseInt(rgbMatch[3], 10);
+      const alphaStr = rgbMatch[5];
+      
+      let alphaValid = true;
+      if (alphaStr !== undefined) {
+        const alpha = parseFloat(alphaStr);
+        alphaValid = !Number.isNaN(alpha) && alpha >= 0 && alpha <= 1;
+      }
+      
+      if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255 && alphaValid) {
+        return color;
+      }
+    }
+    
+    // Allow hsl/hsla with range validation (hue: 0-360, s/l: 0-100%, alpha: 0-1)
+    const hslMatch = /^hsla?\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%(\s*,\s*([\d.]+))?\s*\)$/.exec(color);
+    if (hslMatch) {
+      const hue = parseInt(hslMatch[1], 10);
+      const saturation = parseInt(hslMatch[2], 10);
+      const lightness = parseInt(hslMatch[3], 10);
+      const alphaStr = hslMatch[5];
+      
+      let alphaValid = true;
+      if (alphaStr !== undefined) {
+        const alpha = parseFloat(alphaStr);
+        alphaValid = !Number.isNaN(alpha) && alpha >= 0 && alpha <= 1;
+      }
+      
+      if (hue >= 0 && hue <= 360 && saturation >= 0 && saturation <= 100 && lightness >= 0 && lightness <= 100 && alphaValid) {
+        return color;
+      }
+    }
+    
+    // Default to a safe fallback
+    console.warn(`Invalid CSS color value: ${color}, using fallback`);
+    return '#cccccc';
+  }
+
+  /**
+   * Validate CSS length value to prevent CSS injection
+   * Allows common CSS length units: px, rem, em, %, etc.
+   * Rejects negative values and extremely large values to prevent layout manipulation
+   */
+  private validateCssLength(value: string): string {
+    // Allow numeric values with valid CSS units (anchored regex)
+    const lengthMatch = /^([\d.]+)(px|rem|em|%|vh|vw|vmin|vmax|ch|ex|cm|mm|in|pt|pc)$/.exec(value);
+    if (lengthMatch) {
+      const numericValue = parseFloat(lengthMatch[1]);
+      // Reject negative values and extremely large values (> 10000)
+      if (!Number.isNaN(numericValue) && numericValue >= 0 && numericValue <= 10000) {
+        return value;
+      }
+    }
+    // Allow unitless 0
+    if (value === '0') {
+      return value;
+    }
+    // Default to a safe fallback
+    console.warn(`Invalid CSS length value: ${value}, using fallback`);
+    return '0';
+  }
+
+  /**
+   * Validate CSS font family to prevent CSS injection
+   * Sanitizes font family names and validates against common patterns
+   */
+  private validateCssFontFamily(fontFamily: string): string {
+    // Remove potentially dangerous characters including backslashes
+    const sanitized = fontFamily.replace(/[<>{}()\\/]/g, '');
+    
+    // Check for common safe patterns: font names, system fonts, fallback stacks
+    // More restrictive pattern that explicitly lists allowed characters
+    if (/^[a-zA-Z0-9\s,\-'"]+$/.test(sanitized)) {
+      return sanitized;
+    }
+    
+    // Default to a safe fallback
+    console.warn(`Invalid font family: ${fontFamily}, using fallback`);
+    return 'system-ui, sans-serif';
   }
 
   private escapeHtml(text: string): string {
