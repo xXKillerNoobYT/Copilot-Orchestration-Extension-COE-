@@ -52,6 +52,16 @@
           {{ suggestion.context }}
         </div>
 
+        <!-- Sources/Citations -->
+        <div v-if="suggestion.sources && suggestion.sources.length > 0" class="suggestion-sources">
+          <p class="sources-label">📚 Sources:</p>
+          <ul class="sources-list">
+            <li v-for="(source, idx) in suggestion.sources" :key="idx" class="source-item">
+              {{ source }}
+            </li>
+          </ul>
+        </div>
+
         <!-- Confidence Badge -->
         <div class="suggestion-footer">
           <span class="confidence" :title="confidenceTooltip(suggestion.confidence)">
@@ -67,6 +77,13 @@
             title="Use this suggestion"
           >
             ✓ Use
+          </button>
+          <button 
+            class="action-btn apply-btn"
+            @click.stop="applyToAnswer(suggestion)"
+            title="Apply this suggestion to your answer"
+          >
+            ↪️ Apply
           </button>
           <button 
             class="action-btn reject-btn"
@@ -126,6 +143,7 @@ interface Emits {
   (e: 'accept', suggestion: AiSuggestion): void;
   (e: 'reject', id: string): void;
   (e: 'retry'): void;
+  (e: 'apply', suggestion: AiSuggestion): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -170,6 +188,15 @@ const rejectSuggestion = (id: string) => {
     feedbackMessage.value = 'All suggestions dismissed.';
     showFeedback.value = true;
   }
+};
+
+/**
+ * Apply suggestion to answer field
+ */
+const applyToAnswer = (suggestion: AiSuggestion) => {
+  emit('apply', suggestion);
+  feedbackMessage.value = `↪️ Suggestion applied. Review and edit as needed.`;
+  showFeedback.value = true;
 };
 
 /**
@@ -370,6 +397,35 @@ const confidenceTooltip = (confidence: number): string => {
   line-height: 1.4;
 }
 
+.suggestion-sources {
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: rgba(78, 201, 176, 0.1);
+  border-radius: 3px;
+  border-left: 2px solid #4ec9b0;
+}
+
+.sources-label {
+  margin: 0 0 4px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4ec9b0;
+}
+
+.sources-list {
+  margin: 0;
+  padding-left: 16px;
+  list-style-type: disc;
+}
+
+.source-item {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #cccccc);
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+
 .suggestion-footer {
   display: flex;
   justify-content: space-between;
@@ -387,7 +443,7 @@ const confidenceTooltip = (confidence: number): string => {
 
 .suggestion-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .action-btn {
@@ -396,7 +452,7 @@ const confidenceTooltip = (confidence: number): string => {
   border: 1px solid var(--vscode-panel-border, #3e3e42);
   border-radius: 3px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   transition: all 0.2s;
 }
@@ -409,6 +465,16 @@ const confidenceTooltip = (confidence: number): string => {
 
 .accept-btn:hover {
   background: rgba(0, 128, 0, 0.3);
+}
+
+.apply-btn {
+  background: rgba(0, 122, 204, 0.2);
+  color: #569cd6;
+  border-color: #569cd6;
+}
+
+.apply-btn:hover {
+  background: rgba(0, 122, 204, 0.3);
 }
 
 .reject-btn {

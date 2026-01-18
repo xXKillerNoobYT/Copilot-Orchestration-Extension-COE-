@@ -5,6 +5,27 @@
       <p class="description">{{ questionData.description }}</p>
     </div>
 
+    <!-- AI Hint Section -->
+    <div v-if="aiHint" class="ai-hint-section">
+      <div class="ai-hint-content">
+        <span class="hint-icon">💡</span>
+        <p class="hint-text">{{ aiHint }}</p>
+      </div>
+    </div>
+
+    <!-- Ask AI Button -->
+    <div class="ai-actions">
+      <button 
+        class="ask-ai-btn"
+        @click="handleAskAI"
+        :disabled="isLoadingAI"
+        title="Get AI-powered help for this question"
+      >
+        <span class="btn-icon">🤖</span>
+        <span class="btn-text">{{ isLoadingAI ? 'Loading...' : 'Ask AI for Help' }}</span>
+      </button>
+    </div>
+
     <div class="question-body">
       <!-- Text input question type -->
       <div v-if="questionData.type === 'text'" class="question-control">
@@ -185,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 
 interface QuestionOption {
   value: string | number | boolean;
@@ -215,6 +236,8 @@ interface QuestionData {
 interface Props {
   questionData: QuestionData;
   validationErrors?: Record<string, string[]>;
+  currentAnswers?: Record<string, unknown>;
+  showAiAssistance?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -225,12 +248,17 @@ const validationErrors = computed(() => props.validationErrors || {});
 const emit = defineEmits<{
   'answer-changed': [answer: any];
   'validation-error': [errors: string[]];
+  'ask-ai': [questionId: string];
+  'ai-loading-complete': [questionId: string];
 }>();
 
 // State
 const answer = ref<any>(
   props.questionData.type === 'checkbox' ? [] : ''
 );
+const aiHint = ref<string>('');
+const isLoadingAI = ref<boolean>(false);
+const aiLoadingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const currentQuestionId = computed(() => props.questionData.id);
 
@@ -333,6 +361,114 @@ const selectVisualOption = (value: any) => {
   answer.value = value;
   validateAndEmit();
 };
+
+/**
+ * Handle "Ask AI for Help" button click
+ */
+const handleAskAI = () => {
+  isLoadingAI.value = true;
+  emit('ask-ai', props.questionData.id);
+  
+  // Set a fallback timeout in case the parent doesn't respond
+  // This prevents infinite loading state
+  if (aiLoadingTimeout.value) {
+    clearTimeout(aiLoadingTimeout.value);
+  }
+  
+  aiLoadingTimeout.value = setTimeout(() => {
+    isLoadingAI.value = false;
+  }, 10000); // 10 seconds fallback
+};
+
+/**
+ * Watch for AI assistance completion from parent
+ */
+watch(() => props.showAiAssistance, (newVal, oldVal) => {
+  // When AI panel is shown after request, clear loading state
+  if (newVal && !oldVal && isLoadingAI.value) {
+    isLoadingAI.value = false;
+    if (aiLoadingTimeout.value) {
+      clearTimeout(aiLoadingTimeout.value);
+      aiLoadingTimeout.value = null;
+    }
+  }
+});
+
+/**
+ * Also clear loading when AI hints are generated
+ * while the AI assistance panel is already visible.
+ */
+watch(() => aiHint.value, () => {
+  if (isLoadingAI.value) {
+    isLoadingAI.value = false;
+    if (aiLoadingTimeout.value) {
+      clearTimeout(aiLoadingTimeout.value);
+      aiLoadingTimeout.value = null;
+    }
+  }
+});
+
+/**
+ * Configuration for question-based hints
+ */
+const HINT_CONFIG: Record<string, string> = {
+  'project-name': 'Common answers include descriptive names that reflect your project\'s purpose. Consider your target audience.',
+  'name': 'Choose a unique, descriptive name that clearly communicates the purpose of your project.',
+  'description': 'Provide a clear overview focusing on what problem you\'re solving and who it helps.',
+  'overview': 'Describe the key features and benefits of your project. What makes it unique?',
+  'timeline': 'Consider your team size, complexity, and resource availability when estimating timelines.',
+  'team': 'List the roles needed to successfully deliver your project.',
+  'architecture': 'Choose an architecture that aligns with your scalability and maintainability goals.',
+  'features': 'Break down your project into logical, deliverable features that provide value.',
+};
+
+/**
+ * Generate contextual AI hint based on question type and title
+ */
+const generateDefaultHint = () => {
+  const questionType = props.questionData.type;
+  const questionTitle = props.questionData.title.toLowerCase();
+  const questionId = props.questionData.id.toLowerCase();
+  
+  // Check for exact ID match first
+  for (const [key, hint] of Object.entries(HINT_CONFIG)) {
+    if (questionId.includes(key)) {
+      aiHint.value = hint;
+      return;
+    }
+  }
+  
+  // Check for title match
+  for (const [key, hint] of Object.entries(HINT_CONFIG)) {
+    if (questionTitle.includes(key)) {
+      aiHint.value = hint;
+      return;
+    }
+  }
+  
+  // Fallback hints based on question type
+  if (questionType === 'text' || questionType === 'textarea') {
+    aiHint.value = 'Provide clear, concise information that will help the team understand your needs.';
+  } else if (questionType === 'radio' || questionType === 'select') {
+    aiHint.value = 'Review the options carefully. Consider your project requirements and constraints.';
+  } else if (questionType === 'checkbox') {
+    aiHint.value = 'Select all options that apply to your project. You can choose multiple.';
+  }
+};
+
+// Generate default hint on mount if AI assistance is enabled
+onMounted(() => {
+  if (props.showAiAssistance) {
+    generateDefaultHint();
+  }
+});
+
+// Cleanup timeout on unmount
+onUnmounted(() => {
+  if (aiLoadingTimeout.value) {
+    clearTimeout(aiLoadingTimeout.value);
+  }
+});
 </script>
 
 <style scoped>
@@ -363,6 +499,72 @@ const selectVisualOption = (value: any) => {
   font-size: 14px;
   color: var(--vscode-descriptionForeground);
 }
+
+/* AI Hint Section */
+.ai-hint-section {
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(78, 201, 176, 0.1);
+  border-left: 3px solid #4ec9b0;
+  border-radius: 4px;
+}
+
+.ai-hint-content {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.hint-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.hint-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--vscode-editor-foreground);
+}
+
+/* AI Actions */
+.ai-actions {
+  margin: 12px 0;
+}
+
+.ask-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border);
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ask-ai-btn:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.ask-ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  font-size: 14px;
+}
+
+.btn-text {
+  font-family: inherit;
+}
+
 
 /* Question body */
 .question-body {

@@ -8,6 +8,7 @@
  */
 
 import { MCPClient } from '../services/mcpClient';
+import { PlanContextService } from './services/PlanContextService';
 import type { WizardPage } from './questionFramework';
 
 export interface AiSuggestion {
@@ -17,6 +18,8 @@ export interface AiSuggestion {
   relatedAnswers: string[];
   confidence: number;
   timestamp: Date;
+  sources?: string[];
+  suggestedAnswer?: string;
 }
 
 export interface AiAssistanceConfig {
@@ -30,6 +33,7 @@ export interface AiAssistanceConfig {
  */
 export class AiAssistanceService {
   private mcpClient: MCPClient;
+  private planContextService: PlanContextService;
   private debounceTimer?: ReturnType<typeof setTimeout>;
   private config: Required<AiAssistanceConfig>;
   private suggestionHistory: AiSuggestion[] = [];
@@ -37,6 +41,7 @@ export class AiAssistanceService {
 
   constructor(config: AiAssistanceConfig = {}) {
     this.mcpClient = MCPClient.getInstance();
+    this.planContextService = PlanContextService.getInstance();
     this.config = {
       debounceMs: config.debounceMs ?? 1000,
       enableLogging: config.enableLogging ?? false,
@@ -52,8 +57,8 @@ export class AiAssistanceService {
     currentAnswers: Record<string, unknown>,
     userRole?: string
   ): Promise<AiSuggestion[]> {
-    // Build context from current state
-    const context = this.buildContext(currentPage, currentAnswers, userRole);
+    // Build context from current state (now async)
+    const context = await this.buildContext(currentPage, currentAnswers, userRole);
 
     try {
       const response = await this.mcpClient.askQuestion({
@@ -65,6 +70,9 @@ export class AiAssistanceService {
       return this.parseSuggestions(response, currentPage.id);
     } catch (error) {
       this.log('Error generating suggestions:', error);
+      
+      // Graceful degradation: return empty array instead of throwing
+      // This allows the wizard to continue functioning even if AI is unavailable
       return [];
     }
   }
@@ -106,12 +114,28 @@ export class AiAssistanceService {
 
   /**
    * Build context object for MCP request
+   * Includes plan context from workspace for richer AI responses
    */
-  private buildContext(
+  private async buildContext(
     page: WizardPage,
     answers: Record<string, unknown>,
     userRole?: string
-  ): Record<string, unknown> {
+  ): Promise<Record<string, unknown>> {
+    // Load plan context from workspace with error handling
+    let planContext;
+    try {
+      planContext = await this.planContextService.loadPlanContext();
+    } catch (error) {
+      this.log('Failed to load plan context, using empty context:', error);
+      planContext = {
+        projectDescription: '',
+        features: [],
+        architectureNotes: '',
+        constraints: [],
+        technicalRequirements: [],
+      };
+    }
+    
     return {
       pageId: page.id,
       pageTitle: page.title,
@@ -120,6 +144,14 @@ export class AiAssistanceService {
       answeredQuestions: Object.keys(answers).length,
       relevantAnswers: this.extractRelevantAnswers(answers),
       questionCount: page.questions.length,
+      // Add workspace context
+      planContext: {
+        projectDescription: planContext.projectDescription,
+        features: planContext.features,
+        architectureNotes: planContext.architectureNotes,
+        constraints: planContext.constraints,
+        technicalRequirements: planContext.technicalRequirements,
+      },
     };
   }
 
@@ -141,6 +173,17 @@ export class AiAssistanceService {
 
   /**
    * Parse MCP response into suggestions
+   * 
+   * Expected response format:
+   * {
+   *   question: string,        // The suggestion question text
+   *   context?: string,        // Explanation/context for the suggestion
+   *   confidence?: number,     // AI confidence (0-1)
+   *   sources?: string[],      // Array of source citations (preferred)
+   *   citations?: string[],    // Alternative property for sources (legacy support)
+   *   suggestedAnswer?: string, // Suggested answer text (preferred)
+   *   answer?: string          // Alternative property for suggested answer (legacy support)
+   * }
    */
   private parseSuggestions(response: any, pageId: string): AiSuggestion[] {
     const suggestions: AiSuggestion[] = [];
@@ -150,6 +193,16 @@ export class AiAssistanceService {
       const questions = Array.isArray(response) ? response : [response];
 
       questions.slice(0, this.config.maxSuggestions).forEach((item: any, index: number) => {
+        // Support both 'sources' (preferred) and 'citations' (legacy) properties
+        // Merge both arrays if they exist
+        const sourcesArray = [
+          ...(item.sources || []),
+          ...(item.citations || []),
+        ];
+        
+        // Support both 'suggestedAnswer' (preferred) and 'answer' (legacy) properties
+        const answerText = item.suggestedAnswer || item.answer || '';
+        
         const suggestion: AiSuggestion = {
           id: `ai-${pageId}-${Date.now()}-${index}`,
           question: typeof item === 'string' ? item : item.question || item.text || '',
@@ -157,6 +210,8 @@ export class AiAssistanceService {
           relatedAnswers: item.relatedAnswers || [],
           confidence: item.confidence || 0.8,
           timestamp: new Date(),
+          sources: sourcesArray,
+          suggestedAnswer: answerText,
         };
 
         if (suggestion.question) {
