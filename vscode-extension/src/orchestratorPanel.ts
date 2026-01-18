@@ -3,6 +3,9 @@ import * as path from 'path';
 import { ParsedTask } from './taskParser';
 import { TaskGraph, TaskGraphGenerator, exportToMermaid } from './taskGraphGenerator';
 import { AgentProfile, defaultAgentProfileLoader } from './agentProfiles';
+import { MCPClient, TeamStatusResponse } from './services/mcpClient';
+import { MetricsService, TaskMetricsResponse } from './services/metricsService';
+import { getWebSocketClient } from './services/webSocketClient';
 
 export interface MemoryEntry {
   role: 'user' | 'assistant' | 'system';
@@ -21,6 +24,18 @@ export const MAX_FILES_PER_BUNDLE = 100;
  * When a bundle reaches this threshold, users receive a warning to consider splitting it.
  */
 export const BUNDLE_WARNING_THRESHOLD = 0.8;
+
+/**
+ * Real-time update polling interval in milliseconds.
+ * Used as fallback when WebSocket is unavailable.
+ */
+const POLLING_INTERVAL_MS = 5000;
+
+/**
+ * Initial delay before first status request in milliseconds.
+ * Allows time for panel initialization before requesting data.
+ */
+const INITIAL_REQUEST_DELAY_MS = 500;
 
 export interface ContextBundle {
   id: string;
@@ -50,6 +65,9 @@ export class OrchestratorPanelProvider {
   private agents: AgentProfile[] = [];
   private memory: MemoryEntry[] = [];
   private contextBundles: ContextBundle[] = [];
+  private teamsStatus: TeamStatusResponse | null = null;
+  private taskMetrics: TaskMetricsResponse | null = null;
+  private wsUpdateInterval: NodeJS.Timeout | null = null;
 
   public static createOrShow(
     extensionUri: vscode.Uri,
@@ -146,6 +164,15 @@ export class OrchestratorPanelProvider {
           case 'getLoopStatus':
             void this.updateLiveStatus();
             break;
+          case 'getTeamsStatus':
+            void this.updateTeamsStatus();
+            break;
+          case 'getMetrics':
+            void this.updateMetrics();
+            break;
+          case 'toggleCoordination':
+            void this.toggleCoordination(message.setting, message.value);
+            break;
           case 'runCommand':
             if (message.id) {
               void vscode.commands.executeCommand(message.id);
@@ -156,6 +183,9 @@ export class OrchestratorPanelProvider {
       null,
       this._disposables
     );
+
+    // Start real-time updates via WebSocket
+    this.startRealtimeUpdates();
   }
 
   private async loadAgents() {
@@ -218,6 +248,93 @@ export class OrchestratorPanelProvider {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
       });
+    }
+  }
+
+  /**
+   * Update teams status from MCP server
+   */
+  private async updateTeamsStatus() {
+    try {
+      const mcpClient = MCPClient.getInstance();
+      this.teamsStatus = await mcpClient.getTeamsStatus();
+      
+      this._panel.webview.postMessage({
+        command: 'updateTeamsStatus',
+        teamsStatus: this.teamsStatus,
+      });
+    } catch (error) {
+      console.error('Error updating teams status:', error);
+      this._panel.webview.postMessage({
+        command: 'updateTeamsStatus',
+        teamsStatus: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Update metrics from backend
+   */
+  private async updateMetrics() {
+    try {
+      const backendUrl = vscode.workspace.getConfiguration('copilot-orchestrator').get<string>('backendUrl') || 'http://localhost:8000';
+      const metricsService = new MetricsService(backendUrl);
+      this.taskMetrics = await metricsService.getTaskMetrics('24h');
+      
+      this._panel.webview.postMessage({
+        command: 'updateMetrics',
+        metrics: this.taskMetrics,
+      });
+    } catch (error) {
+      console.error('Error updating metrics:', error);
+      this._panel.webview.postMessage({
+        command: 'updateMetrics',
+        metrics: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Toggle coordination setting
+   */
+  private async toggleCoordination(setting: string, value: boolean) {
+    const config = vscode.workspace.getConfiguration('copilot-orchestrator');
+    await config.update(`coordination.${setting}`, value, vscode.ConfigurationTarget.Workspace);
+    vscode.window.showInformationMessage(`Coordination setting "${setting}" set to ${value}`);
+  }
+
+  /**
+   * Start real-time updates via WebSocket
+   */
+  private startRealtimeUpdates() {
+    const wsClient = getWebSocketClient();
+    
+    if (wsClient) {
+      // Subscribe to team status updates
+      wsClient.subscribe('teams', 'StatusUpdated', (data) => {
+        this.teamsStatus = data;
+        this._panel.webview.postMessage({
+          command: 'updateTeamsStatus',
+          teamsStatus: data,
+        });
+      });
+
+      // Subscribe to metrics updates
+      wsClient.subscribe('metrics', 'MetricsUpdated', (data) => {
+        this.taskMetrics = data;
+        this._panel.webview.postMessage({
+          command: 'updateMetrics',
+          metrics: data,
+        });
+      });
+    } else {
+      // Only use polling fallback if WebSocket is not available
+      this.wsUpdateInterval = setInterval(() => {
+        void this.updateTeamsStatus();
+        void this.updateMetrics();
+      }, POLLING_INTERVAL_MS);
     }
   }
 
@@ -318,6 +435,12 @@ export class OrchestratorPanelProvider {
   public dispose() {
     OrchestratorPanelProvider.currentPanel = undefined;
 
+    // Stop real-time updates
+    if (this.wsUpdateInterval) {
+      clearInterval(this.wsUpdateInterval);
+      this.wsUpdateInterval = null;
+    }
+
     // Clean up our resources
     this._panel.dispose();
 
@@ -373,6 +496,15 @@ export class OrchestratorPanelProvider {
     }));
 
     const memoryData = this.memory.slice(-10); // Last 10 entries
+
+    // Get coordination settings from VS Code configuration
+    const config = vscode.workspace.getConfiguration('copilot-orchestrator');
+    const coordinationConfig = {
+      autoDecompose: config.get<boolean>('coordination.autoDecompose', false),
+      requireVisualVerification: config.get<boolean>('coordination.requireVisualVerification', false),
+      notifyOnCompletion: config.get<boolean>('coordination.notifyOnCompletion', true),
+      pauseAgents: config.get<boolean>('coordination.pauseAgents', false),
+    };
 
     // Use a nonce to only allow specific scripts to run
     const nonce = getNonce();
@@ -650,6 +782,171 @@ export class OrchestratorPanelProvider {
       text-transform: uppercase;
       margin-top: 4px;
     }
+
+    .team-card {
+      padding: 16px;
+      background-color: var(--vscode-editor-background);
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 4px;
+      border-left: 4px solid var(--vscode-input-border);
+    }
+
+    .team-card.status-working {
+      border-left-color: #28a745;
+    }
+
+    .team-card.status-idle {
+      border-left-color: #6c757d;
+    }
+
+    .team-card.status-blocked {
+      border-left-color: #dc3545;
+    }
+
+    .team-card.status-error {
+      border-left-color: #fd7e14;
+    }
+
+    .team-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .team-name {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .team-status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .team-status-badge.working {
+      background-color: #28a745;
+      color: #fff;
+    }
+
+    .team-status-badge.idle {
+      background-color: #6c757d;
+      color: #fff;
+    }
+
+    .team-status-badge.blocked {
+      background-color: #dc3545;
+      color: #fff;
+    }
+
+    .team-status-badge.error {
+      background-color: #fd7e14;
+      color: #fff;
+    }
+
+    .team-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .team-metric {
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    .team-metric-value {
+      font-weight: 600;
+      color: var(--vscode-foreground);
+    }
+
+    .coordination-controls {
+      padding: 16px;
+      background-color: var(--vscode-editor-inactiveSelectionBackground);
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 4px;
+    }
+
+    .toggle-group {
+      margin-bottom: 12px;
+    }
+
+    .toggle-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--vscode-panel-border);
+    }
+
+    .toggle-item:last-child {
+      border-bottom: none;
+    }
+
+    .toggle-label {
+      font-size: 13px;
+      color: var(--vscode-foreground);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 20px;
+      background-color: #6c757d;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .toggle-switch.active {
+      background-color: #28a745;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: white;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s;
+    }
+
+    .toggle-switch.active::after {
+      left: 22px;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background-color: var(--vscode-editor-background);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #6c757d;
+    }
+
+    .status-indicator.connected {
+      background-color: #28a745;
+    }
+
+    .status-indicator.disconnected {
+      background-color: #dc3545;
+    }
   </style>
 </head>
 <body>
@@ -666,6 +963,157 @@ export class OrchestratorPanelProvider {
         <button class="btn" onclick="handleExecuteSingleCycle()">Execute Single Cycle</button>
       </div>
       <div id="loop-status-inline" style="margin-top:10px; font-size:12px; color: var(--vscode-descriptionForeground);"></div>
+    </div>
+
+    <!-- Connection Status & Coordination Controls -->
+    <div class="grid">
+      <div class="section">
+        <h2>🔌 Connection Status</h2>
+        <div class="connection-status">
+          <div class="status-indicator" id="connection-indicator"></div>
+          <span id="connection-text">Checking connection...</span>
+        </div>
+        <div style="margin-top: 12px;">
+          <button class="btn" onclick="handleReconnect()">Reconnect</button>
+          <span id="reconnect-attempts" style="margin-left: 8px; font-size: 12px; color: var(--vscode-descriptionForeground);"></span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>🎮 Coordination Controls</h2>
+        <div class="toggle-group">
+          <div class="toggle-item">
+            <span class="toggle-label">Auto-decompose tasks &gt;60 min</span>
+            <div class="toggle-switch" id="toggle-auto-decompose" onclick="handleToggle('autoDecompose', this)"></div>
+          </div>
+          <div class="toggle-item">
+            <span class="toggle-label">Require visual verification</span>
+            <div class="toggle-switch" id="toggle-visual-verify" onclick="handleToggle('requireVisualVerification', this)"></div>
+          </div>
+          <div class="toggle-item">
+            <span class="toggle-label">Notify on task completion</span>
+            <div class="toggle-switch" id="toggle-notify" onclick="handleToggle('notifyOnCompletion', this)"></div>
+          </div>
+          <div class="toggle-item">
+            <span class="toggle-label">Pause agent teams</span>
+            <div class="toggle-switch" id="toggle-pause" onclick="handleToggle('pauseAgents', this)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Status Cards -->
+    <div class="section">
+      <h2>👥 Agent Teams Status</h2>
+      <div class="grid" id="team-cards-container">
+        <!-- Team cards will be populated here -->
+        <div class="team-card status-idle">
+          <div class="team-header">
+            <div class="team-name">🎯 Planning Team</div>
+            <span class="team-status-badge idle">IDLE</span>
+          </div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground);">
+            <div>Current Task: <span id="planning-task">None</span></div>
+            <div style="margin-top: 4px;">Last Activity: <span id="planning-activity">-</span></div>
+          </div>
+          <div class="team-metrics">
+            <div class="team-metric">
+              Completed: <span class="team-metric-value" id="planning-completed">0</span>
+            </div>
+            <div class="team-metric">
+              Active: <span class="team-metric-value" id="planning-active">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="team-card status-idle">
+          <div class="team-header">
+            <div class="team-name">💬 Answer Team</div>
+            <span class="team-status-badge idle">IDLE</span>
+          </div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground);">
+            <div>Current Task: <span id="answer-task">None</span></div>
+            <div style="margin-top: 4px;">Last Activity: <span id="answer-activity">-</span></div>
+          </div>
+          <div class="team-metrics">
+            <div class="team-metric">
+              Completed: <span class="team-metric-value" id="answer-completed">0</span>
+            </div>
+            <div class="team-metric">
+              Active: <span class="team-metric-value" id="answer-active">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="team-card status-idle">
+          <div class="team-header">
+            <div class="team-name">🔨 Decomposition Team</div>
+            <span class="team-status-badge idle">IDLE</span>
+          </div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground);">
+            <div>Current Task: <span id="decomposition-task">None</span></div>
+            <div style="margin-top: 4px;">Last Activity: <span id="decomposition-activity">-</span></div>
+          </div>
+          <div class="team-metrics">
+            <div class="team-metric">
+              Completed: <span class="team-metric-value" id="decomposition-completed">0</span>
+            </div>
+            <div class="team-metric">
+              Active: <span class="team-metric-value" id="decomposition-active">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="team-card status-idle">
+          <div class="team-header">
+            <div class="team-name">✅ Verification Team</div>
+            <span class="team-status-badge idle">IDLE</span>
+          </div>
+          <div style="font-size: 12px; color: var(--vscode-descriptionForeground);">
+            <div>Current Task: <span id="verification-task">None</span></div>
+            <div style="margin-top: 4px;">Last Activity: <span id="verification-activity">-</span></div>
+          </div>
+          <div class="team-metrics">
+            <div class="team-metric">
+              Completed: <span class="team-metric-value" id="verification-completed">0</span>
+            </div>
+            <div class="team-metric">
+              Active: <span class="team-metric-value" id="verification-active">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Metrics Panel -->
+    <div class="section">
+      <h2>📊 Live Metrics</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="metric-created">0</div>
+          <div class="stat-label">Tasks Created</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="metric-completed-today">0</div>
+          <div class="stat-label">Completed Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="metric-verified">0</div>
+          <div class="stat-label">Verified</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="metric-failed">0</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="metric-blocked">0</div>
+          <div class="stat-label">Blocked</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="metric-avg-duration">0s</div>
+          <div class="stat-label">Avg Duration</div>
+        </div>
+      </div>
     </div>
 
     <!-- Statistics -->
@@ -749,6 +1197,7 @@ export class OrchestratorPanelProvider {
     const graphData = ${JSON.stringify(graphData)};
     const bundlesData = ${JSON.stringify(contextBundlesData)};
     const memoryData = ${JSON.stringify(memoryData)};
+    const coordinationConfig = ${JSON.stringify(coordinationConfig)};
 
     let selectedTaskId = null;
     let selectedAgentName = null;
@@ -761,6 +1210,28 @@ export class OrchestratorPanelProvider {
       renderGraph();
       renderBundles();
       renderMemory();
+      initializeToggles();
+    }
+
+    function initializeToggles() {
+      // Initialize toggle switches based on configuration
+      const autoDecomposeToggle = document.getElementById('toggle-auto-decompose');
+      const visualVerifyToggle = document.getElementById('toggle-visual-verify');
+      const notifyToggle = document.getElementById('toggle-notify');
+      const pauseToggle = document.getElementById('toggle-pause');
+
+      if (autoDecomposeToggle && coordinationConfig.autoDecompose) {
+        autoDecomposeToggle.classList.add('active');
+      }
+      if (visualVerifyToggle && coordinationConfig.requireVisualVerification) {
+        visualVerifyToggle.classList.add('active');
+      }
+      if (notifyToggle && coordinationConfig.notifyOnCompletion) {
+        notifyToggle.classList.add('active');
+      }
+      if (pauseToggle && coordinationConfig.pauseAgents) {
+        pauseToggle.classList.add('active');
+      }
     }
 
     function renderStats() {
@@ -941,6 +1412,146 @@ export class OrchestratorPanelProvider {
       return div.innerHTML;
     }
 
+    function handleToggle(setting, element) {
+      const isActive = element.classList.toggle('active');
+      vscode.postMessage({ 
+        command: 'toggleCoordination', 
+        setting: setting,
+        value: isActive 
+      });
+    }
+
+    function handleReconnect() {
+      updateConnectionStatus('connecting', 'Reconnecting...', 0);
+      requestTeamsStatus();
+      requestMetrics();
+    }
+
+    function updateConnectionStatus(status, text, attempts) {
+      const indicator = document.getElementById('connection-indicator');
+      const statusText = document.getElementById('connection-text');
+      const attemptsEl = document.getElementById('reconnect-attempts');
+      
+      if (indicator) {
+        indicator.className = 'status-indicator ' + status;
+      }
+      if (statusText) {
+        statusText.textContent = text;
+      }
+      
+      if (attemptsEl) {
+        if (attempts > 0) {
+          attemptsEl.textContent = \`(Attempt \${attempts})\`;
+        } else {
+          attemptsEl.textContent = '';
+        }
+      }
+    }
+
+    function requestTeamsStatus() {
+      vscode.postMessage({ command: 'getTeamsStatus' });
+    }
+
+    function requestMetrics() {
+      vscode.postMessage({ command: 'getMetrics' });
+    }
+
+    function updateTeamsDisplay(teamsStatus) {
+      if (!teamsStatus) {
+        updateConnectionStatus('disconnected', 'Failed to fetch team status', 0);
+        return;
+      }
+
+      updateConnectionStatus('connected', 'Connected to MCP server', 0);
+
+      // Update Planning Team
+      updateTeamCard('planning', teamsStatus.planning);
+      
+      // Update Answer Team
+      updateTeamCard('answer', teamsStatus.answer);
+      
+      // Update Decomposition Team
+      updateTeamCard('decomposition', teamsStatus.decomposition);
+      
+      // Update Verification Team
+      updateTeamCard('verification', teamsStatus.verification);
+      
+      // Update verified count from Verification team metrics
+      if (teamsStatus.verification && teamsStatus.verification.metrics) {
+        const verifiedCount = teamsStatus.verification.metrics.tasksVerified || 0;
+        const verifiedEl = document.getElementById('metric-verified');
+        if (verifiedEl) {
+          verifiedEl.textContent = String(verifiedCount);
+        }
+      }
+    }
+
+    function updateTeamCard(teamKey, teamData) {
+      if (!teamData) return;
+
+      const taskEl = document.getElementById(\`\${teamKey}-task\`);
+      const activityEl = document.getElementById(\`\${teamKey}-activity\`);
+      const completedEl = document.getElementById(\`\${teamKey}-completed\`);
+      const activeEl = document.getElementById(\`\${teamKey}-active\`);
+
+      if (taskEl) taskEl.textContent = teamData.currentTask || 'None';
+      if (activityEl) activityEl.textContent = teamData.lastActivity || '-';
+      if (completedEl) completedEl.textContent = String(teamData.tasksCompleted || 0);
+      if (activeEl) activeEl.textContent = String(teamData.activeTaskCount || 0);
+
+      // Update card status styling
+      const cards = document.querySelectorAll('.team-card');
+      const teamNames = ['planning', 'answer', 'decomposition', 'verification'];
+      const cardIndex = teamNames.indexOf(teamKey);
+      
+      if (cardIndex >= 0 && cards[cardIndex]) {
+        const card = cards[cardIndex];
+        const badge = card.querySelector('.team-status-badge');
+        
+        // Remove old status classes
+        card.className = 'team-card status-' + teamData.status;
+        
+        // Update badge
+        if (badge) {
+          badge.className = 'team-status-badge ' + teamData.status;
+          badge.textContent = teamData.status.toUpperCase();
+        }
+      }
+    }
+
+    function updateMetricsDisplay(metrics) {
+      if (!metrics) return;
+
+      const counts = metrics.counts || {};
+      
+      const createdEl = document.getElementById('metric-created');
+      const completedTodayEl = document.getElementById('metric-completed-today');
+      const failedEl = document.getElementById('metric-failed');
+      const blockedEl = document.getElementById('metric-blocked');
+      const avgDurationEl = document.getElementById('metric-avg-duration');
+
+      if (createdEl) {
+        createdEl.textContent = String(counts.total || 0);
+      }
+      if (completedTodayEl) {
+        completedTodayEl.textContent = String(counts.completed || 0);
+      }
+      // Note: Verified count comes from team status, not task metrics - will be updated separately
+      if (failedEl) {
+        failedEl.textContent = String(counts.failed || 0);
+      }
+      if (blockedEl) {
+        blockedEl.textContent = String(counts.blocked || 0);
+      }
+      
+      const avgSeconds = metrics.averageCycleSeconds || 0;
+      if (avgDurationEl) {
+        avgDurationEl.textContent = avgSeconds > 0 
+          ? avgSeconds.toFixed(1) + 's' 
+          : '0s';
+      }
+    }
+
     function handleStartLoop() {
       vscode.postMessage({ command: 'runCommand', id: 'copilot-orchestrator.startAutoLoop' });
       // Request live status updates after a brief delay
@@ -976,6 +1587,10 @@ export class OrchestratorPanelProvider {
       
       if (message.command === 'updateLoopStatus') {
         updateLoopStatusDisplay(message.status);
+      } else if (message.command === 'updateTeamsStatus') {
+        updateTeamsDisplay(message.teamsStatus);
+      } else if (message.command === 'updateMetrics') {
+        updateMetricsDisplay(message.metrics);
       }
     });
 
@@ -1034,6 +1649,16 @@ export class OrchestratorPanelProvider {
 
     // Initialize on load
     init();
+    
+    // Request initial teams status and metrics after panel initialization
+    // Delay allows the webview to fully render before data requests
+    setTimeout(() => {
+      requestTeamsStatus();
+      requestMetrics();
+    }, ${INITIAL_REQUEST_DELAY_MS});
+    
+    // Note: Real-time updates are handled by the backend via WebSocket subscriptions
+    // or polling fallback. The webview receives updates via postMessage.
   </script>
 </body>
 </html>`;
