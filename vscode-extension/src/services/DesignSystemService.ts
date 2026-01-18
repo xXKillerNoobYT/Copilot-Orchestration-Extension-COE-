@@ -16,10 +16,14 @@ import { validateDesignTokens } from '../planBuilder/designSystem/validator';
 
 /**
  * Extended design system schema with breakpoints
+ * Extends DesignTokens with optional additional metadata
  */
 export interface DesignSystem extends DesignTokens {
+  /** Responsive breakpoint definitions (e.g., { sm: '640px', md: '1024px' }) */
   breakpoints?: Record<string, string>;
+  /** Design system version (semver recommended) */
   version?: string;
+  /** Optional metadata about the design system */
   metadata?: {
     name?: string;
     description?: string;
@@ -33,7 +37,7 @@ export interface DesignSystem extends DesignTokens {
 export class DesignSystemService {
   private static instance: DesignSystemService | undefined;
   private designSystem: DesignSystem | null = null;
-  private fileWatcher: vscode.FileSystemWatcher | undefined;
+  private fileWatchers: vscode.FileSystemWatcher[] = [];
   private cache: Map<string, { data: DesignSystem; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly FILE_NAMES = ['design-system.json', 'design-system.yaml', 'design-system.yml'];
@@ -203,10 +207,9 @@ export class DesignSystemService {
    * Dispose service and clean up watchers
    */
   public dispose(): void {
-    if (this.fileWatcher) {
-      this.fileWatcher.dispose();
-      this.fileWatcher = undefined;
-    }
+    // Dispose all file watchers
+    this.fileWatchers.forEach(watcher => watcher.dispose());
+    this.fileWatchers = [];
     this.cache.clear();
     this.designSystem = null;
   }
@@ -269,17 +272,16 @@ export class DesignSystemService {
    * Set up file watcher for automatic reloading
    */
   private setupFileWatcher(workspaceRoot: string): void {
-    // Clean up existing watcher
-    if (this.fileWatcher) {
-      this.fileWatcher.dispose();
-    }
+    // Clean up existing watchers
+    this.fileWatchers.forEach(watcher => watcher.dispose());
+    this.fileWatchers = [];
 
     // Create pattern for all supported file names
     const patterns = this.FILE_NAMES.map(name => 
       new vscode.RelativePattern(workspaceRoot, name)
     );
 
-    // Watch all patterns
+    // Watch all patterns and store all watchers for proper disposal
     patterns.forEach(pattern => {
       const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
@@ -295,10 +297,8 @@ export class DesignSystemService {
         this.handleFileDelete();
       });
 
-      // Store the first watcher (for disposal)
-      if (!this.fileWatcher) {
-        this.fileWatcher = watcher;
-      }
+      // Store all watchers for proper cleanup
+      this.fileWatchers.push(watcher);
     });
   }
 
