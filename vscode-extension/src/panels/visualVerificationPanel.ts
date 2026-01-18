@@ -455,7 +455,7 @@ export class VisualVerificationPanel {
 
       if (designSystemData) {
         this.updateState({ designSystem: designSystemData });
-        vscode.window.showInformationMessage('Design system reference loaded');
+        console.log('Design system reference loaded successfully');
       } else {
         // Use default design system if no file found
         this.updateState({
@@ -716,7 +716,7 @@ ${issueData.description}
                     ([name, value]) =>
                       value
                         ? `<div class="color-item">
-                            <span class="color-swatch" style="background-color: ${this.escapeHtml(value)};"></span>
+                            <span class="color-swatch" style="background-color: ${this.validateCssColor(value)};"></span>
                             <span class="color-label">${this.escapeHtml(name.charAt(0).toUpperCase() + name.slice(1))}</span>
                             <span class="color-value">${this.escapeHtml(value)}</span>
                           </div>`
@@ -732,7 +732,7 @@ ${issueData.description}
                 <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600;">Typography</h4>
                 <div class="typography-item">
                   <strong>Font Family:</strong> ${this.escapeHtml(state.designSystem.typography.fontFamily || 'Not specified')}
-                  <div class="font-preview" style="font-family: ${this.escapeHtml(state.designSystem.typography.fontFamily || 'inherit')};">
+                  <div class="font-preview" style="font-family: ${this.validateCssFontFamily(state.designSystem.typography.fontFamily || 'inherit')};">
                     The quick brown fox jumps over the lazy dog
                   </div>
                 </div>
@@ -764,7 +764,7 @@ ${issueData.description}
                   state.designSystem.components.borderRadius
                     ? `<div class="typography-item">
                         <strong>Border Radius:</strong> ${this.escapeHtml(state.designSystem.components.borderRadius)}
-                        <div class="component-preview" style="border-radius: ${this.escapeHtml(state.designSystem.components.borderRadius)};">
+                        <div class="component-preview" style="border-radius: ${this.validateCssLength(state.designSystem.components.borderRadius)};">
                           Sample Component
                         </div>
                       </div>`
@@ -1179,6 +1179,64 @@ ${issueData.description}
   private renderOption(value: ChecklistItem['status'], current: ChecklistItem['status'], label: string) {
     const selected = value === current ? 'selected' : '';
     return `<option value="${value}" ${selected}>${label}</option>`;
+  }
+
+  /**
+   * Validate CSS color value to prevent CSS injection
+   * Allows hex colors (#xxx or #xxxxxx) and common CSS color formats
+   */
+  private validateCssColor(color: string): string {
+    // Allow hex colors
+    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(color)) {
+      return color;
+    }
+    // Allow rgb/rgba
+    if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*[\d.]+)?\s*\)$/.test(color)) {
+      return color;
+    }
+    // Allow hsl/hsla
+    if (/^hsla?\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%(\s*,\s*[\d.]+)?\s*\)$/.test(color)) {
+      return color;
+    }
+    // Default to a safe fallback
+    console.warn(`Invalid CSS color value: ${color}, using fallback`);
+    return '#cccccc';
+  }
+
+  /**
+   * Validate CSS length value to prevent CSS injection
+   * Allows common CSS length units: px, rem, em, %, etc.
+   */
+  private validateCssLength(value: string): string {
+    // Allow numeric values with valid CSS units
+    if (/^[\d.]+(?:px|rem|em|%|vh|vw|vmin|vmax|ch|ex|cm|mm|in|pt|pc)$/.test(value)) {
+      return value;
+    }
+    // Allow unitless 0
+    if (value === '0') {
+      return value;
+    }
+    // Default to a safe fallback
+    console.warn(`Invalid CSS length value: ${value}, using fallback`);
+    return '0';
+  }
+
+  /**
+   * Validate CSS font family to prevent CSS injection
+   * Sanitizes font family names and validates against common patterns
+   */
+  private validateCssFontFamily(fontFamily: string): string {
+    // Remove potentially dangerous characters
+    const sanitized = fontFamily.replace(/[<>{}()]/g, '');
+    
+    // Check for common safe patterns: font names, system fonts, fallback stacks
+    if (/^[\w\s,\-'"]+$/.test(sanitized)) {
+      return sanitized;
+    }
+    
+    // Default to a safe fallback
+    console.warn(`Invalid font family: ${fontFamily}, using fallback`);
+    return 'system-ui, sans-serif';
   }
 
   private escapeHtml(text: string): string {
