@@ -1,0 +1,31 @@
+{
+    "mcpServers": {
+        "copilot-orchestrator": {
+            "command": "node",
+            "args": [
+                "REPLACE_WITH_ABSOLUTE_PATH_TO_EXTENSION/dist/mcp-server/index.js"
+            ],
+            "description": "Copilot Orchestrator MCP Server - Provides task management, agent state, and feedback tools for GitHub Copilot coding agent",
+            "env": {
+                "NODE_ENV": "production"
+            }
+        }
+    },
+    "_instructions": {
+        "step1": "Find extension path: Command Palette → 'Copilot Orchestrator: Copy MCP Server Path'",
+        "step2": "Replace REPLACE_WITH_ABSOLUTE_PATH_TO_EXTENSION with actual path",
+        "step3": "Example Windows: C:/Users/username/.vscode/extensions/copilot-orchestrator-1.0.0",
+        "step4": "Example macOS/Linux: /home/username/.vscode/extensions/copilot-orchestrator-1.0.0",
+        "step5": "Commit this file to your repository",
+        "step6": "Push to remote - coding agent reads from remote, not local"
+    },
+    "_availableTools": [
+        "copilot_orchestrator_get_task_status - Get task status by ID",
+        "copilot_orchestrator_list_active_tasks - List active tasks with filtering",
+        "copilot_orchestrator_get_agent_state - Get orchestration system state",
+        "copilot_orchestrator_report_observation - Report discoveries/issues",
+        "copilot_orchestrator_request_verification - Request human verification",
+        "copilot_orchestrator_ask_user_question - Ask user a question",
+        "copilot_orchestrator_get_workspace_config - Get workspace configuration"
+    ]
+}

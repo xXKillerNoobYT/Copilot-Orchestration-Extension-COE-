@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import { MCPClient } from '../services/mcpClient';
+import { DockerMCPClient } from '../services/dockerMCPClient';
 import { logError } from '../utils/errorHandler';
 
 export type ConnectionStatus = 'connected' | 'degraded' | 'disconnected';
@@ -12,10 +13,14 @@ export type ConnectionStatus = 'connected' | 'degraded' | 'disconnected';
 export interface ConnectionState {
   mcp: ConnectionStatus;
   websocket: ConnectionStatus;
+  docker: ConnectionStatus;
   lastMcpCheck: string;
   lastWsCheck: string;
+  lastDockerCheck: string;
   mcpError?: string;
   wsError?: string;
+  dockerError?: string;
+  dockerAuthRequired?: boolean;
   retryCount: number;
 }
 
@@ -31,8 +36,10 @@ export class ConnectionMonitor {
     this.state = {
       mcp: 'disconnected',
       websocket: 'disconnected',
+      docker: 'disconnected',
       lastMcpCheck: new Date().toISOString(),
       lastWsCheck: new Date().toISOString(),
+      lastDockerCheck: new Date().toISOString(),
       retryCount: 0,
     };
     this.onStateChange = new vscode.EventEmitter<ConnectionState>();
@@ -96,6 +103,7 @@ export class ConnectionMonitor {
     await Promise.all([
       this.checkMcpConnection(),
       this.checkWebSocketConnection(),
+      this.checkDockerGateway(),
     ]);
 
     // Fire state change event
@@ -108,7 +116,7 @@ export class ConnectionMonitor {
   private async checkMcpConnection(): Promise<void> {
     try {
       const mcpClient = MCPClient.getInstance();
-      
+
       // Try to fetch next task as health check (or use dedicated health endpoint)
       const response = await Promise.race([
         mcpClient.getNextTask(),
@@ -122,7 +130,7 @@ export class ConnectionMonitor {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       if (this.state.mcp === 'connected') {
         // Just disconnected
         console.warn('[ConnectionMonitor] MCP connection lost');
@@ -158,8 +166,88 @@ export class ConnectionMonitor {
       this.state.websocket = 'disconnected';
       this.state.wsError = error instanceof Error ? error.message : 'Unknown error';
       this.state.lastWsCheck = new Date().toISOString();
-      
+
       logError(error, 'ConnectionMonitor.checkWebSocketConnection');
+    }
+  }
+
+  /**
+   * Check Docker MCP Gateway connection
+   */
+  private async checkDockerGateway(): Promise<void> {
+    try {
+      const config = vscode.workspace.getConfiguration('copilot-orchestrator');
+      const dockerEnabled = config.get('mcp.dockerGatewayEnabled', true);
+
+      if (!dockerEnabled) {
+        this.state.docker = 'disconnected';
+        this.state.lastDockerCheck = new Date().toISOString();
+        return;
+      }
+
+      const dockerClient = DockerMCPClient.getInstance();
+
+      // Check if Docker MCP is available
+      const isAvailable = await dockerClient.isAvailable();
+
+      if (!isAvailable) {
+        this.state.docker = 'disconnected';
+        this.state.dockerError = 'Docker MCP Toolkit not installed or not available';
+        this.state.lastDockerCheck = new Date().toISOString();
+        return;
+      }
+
+      // Try to list tools (validates gateway is working)
+      const tools = await Promise.race([
+        dockerClient.listTools(),
+        this.timeout(5000)
+      ]);
+
+      this.state.docker = 'connected';
+      this.state.dockerError = undefined;
+      this.state.dockerAuthRequired = false;
+      this.state.lastDockerCheck = new Date().toISOString();
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      // Check if it's an authentication error
+      if (errorMessage.includes('unauthorized') || errorMessage.includes('permission denied')) {
+        this.state.docker = 'degraded';
+        this.state.dockerError = 'Authentication required';
+        this.state.dockerAuthRequired = true;
+        this.state.lastDockerCheck = new Date().toISOString();
+
+        // Show authentication notification
+        this.showDockerAuthNotification();
+      } else {
+        this.state.docker = 'disconnected';
+        this.state.dockerError = errorMessage;
+        this.state.lastDockerCheck = new Date().toISOString();
+      }
+
+      logError(error, 'ConnectionMonitor.checkDockerGateway');
+    }
+  }
+
+  /**
+   * Show Docker authentication notification with action button
+   */
+  private showDockerAuthNotification(): void {
+    // Only show notification once per session
+    if (this.state.dockerAuthRequired && this.state.docker === 'degraded') {
+      vscode.window.showWarningMessage(
+        'Docker MCP Gateway requires authentication',
+        'Login to Docker',
+        'Dismiss'
+      ).then(action => {
+        if (action === 'Login to Docker') {
+          // Open Docker login terminal
+          const terminal = vscode.window.createTerminal('Docker Login');
+          terminal.show();
+          terminal.sendText('docker login');
+        }
+      });
     }
   }
 
@@ -228,7 +316,7 @@ function updateStatusBarItem(item: vscode.StatusBarItem, state: ConnectionState)
   const wsIcon = getStatusIcon(state.websocket);
 
   item.text = `$(${mcpIcon}) MCP | $(${wsIcon}) WS`;
-  
+
   const tooltip = [
     `MCP Server: ${state.mcp}`,
     state.mcpError ? `  Error: ${state.mcpError}` : '',
@@ -273,12 +361,21 @@ Last check: ${new Date(state.lastMcpCheck).toLocaleString()}
 ${state.wsError ? `Error: ${state.wsError}` : ''}
 Last check: ${new Date(state.lastWsCheck).toLocaleString()}
 
+**Docker Gateway**: ${state.docker}
+${state.dockerError ? `Error: ${state.dockerError}` : ''}
+${state.dockerAuthRequired ? '⚠️ Authentication required' : ''}
+Last check: ${new Date(state.lastDockerCheck).toLocaleString()}
+
 Retry count: ${state.retryCount}/${3}
   `.trim();
 
-  vscode.window.showInformationMessage(message, { modal: true }, 'Retry').then(action => {
+  vscode.window.showInformationMessage(message, { modal: true }, 'Retry', 'Docker Login').then(action => {
     if (action === 'Retry') {
       monitor.retry();
+    } else if (action === 'Docker Login') {
+      const terminal = vscode.window.createTerminal('Docker Login');
+      terminal.show();
+      terminal.sendText('docker login');
     }
   });
 }
