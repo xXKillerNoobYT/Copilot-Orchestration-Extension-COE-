@@ -19,6 +19,21 @@ vi.mock('../../../services/mcpClient', () => ({
   },
 }));
 
+// Mock PlanContextService
+vi.mock('../../services/PlanContextService', () => ({
+  PlanContextService: {
+    getInstance: vi.fn(() => ({
+      loadPlanContext: vi.fn().mockResolvedValue({
+        projectDescription: '',
+        features: [],
+        architectureNotes: '',
+        constraints: [],
+        technicalRequirements: [],
+      }),
+    })),
+  },
+}));
+
 describe('AI Assistance Integration Tests', () => {
   let aiService: AiAssistanceService;
   let framework: QuestionFramework;
@@ -122,11 +137,23 @@ describe('AI Assistance Integration Tests', () => {
   });
 
   describe('Suggestion Acceptance', () => {
-    it('should track accepted suggestions', () => {
-      const suggestionId = 'test-123';
-      const answer = 'My test answer';
+    it('should track accepted suggestions', async () => {
+      const pages = framework.getPages();
+      const firstPage = pages[0];
 
-      aiService.acceptSuggestion(suggestionId, answer);
+      // Mock a single suggestion
+      mockMcpClient.askQuestion.mockResolvedValue([
+        { question: 'Q1', confidence: 0.8 },
+      ]);
+
+      const suggestions = await aiService.generateSuggestions(
+        firstPage,
+        {},
+        'analyst'
+      );
+
+      const answer = 'My test answer';
+      aiService.acceptSuggestion(suggestions[0].id, answer);
 
       const rate = aiService.getAcceptanceRate();
       expect(rate).toBeGreaterThan(0);

@@ -194,7 +194,11 @@ export class AiAssistanceService {
 
       questions.slice(0, this.config.maxSuggestions).forEach((item: any, index: number) => {
         // Support both 'sources' (preferred) and 'citations' (legacy) properties
-        const sourcesArray = item.sources || item.citations || [];
+        // Merge both arrays if they exist
+        const sourcesArray = [
+          ...(item.sources || []),
+          ...(item.citations || []),
+        ];
         
         // Support both 'suggestedAnswer' (preferred) and 'answer' (legacy) properties
         const answerText = item.suggestedAnswer || item.answer || '';

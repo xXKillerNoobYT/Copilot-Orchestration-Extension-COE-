@@ -404,8 +404,6 @@ const handleSuggestionApplied = (suggestion: AiSuggestion) => {
   }
 };
 
-
-
 // Template handling
 const handleTemplateSelected = async (templateId: string) => {
   try {

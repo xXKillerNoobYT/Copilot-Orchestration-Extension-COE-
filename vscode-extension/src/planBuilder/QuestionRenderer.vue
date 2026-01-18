@@ -395,6 +395,20 @@ watch(() => props.showAiAssistance, (newVal, oldVal) => {
 });
 
 /**
+ * Also clear loading when AI hints are generated
+ * while the AI assistance panel is already visible.
+ */
+watch(() => aiHint.value, () => {
+  if (isLoadingAI.value) {
+    isLoadingAI.value = false;
+    if (aiLoadingTimeout.value) {
+      clearTimeout(aiLoadingTimeout.value);
+      aiLoadingTimeout.value = null;
+    }
+  }
+});
+
+/**
  * Configuration for question-based hints
  */
 const HINT_CONFIG: Record<string, string> = {

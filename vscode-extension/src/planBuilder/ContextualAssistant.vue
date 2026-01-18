@@ -199,7 +199,6 @@ const applyToAnswer = (suggestion: AiSuggestion) => {
   showFeedback.value = true;
 };
 
-
 /**
  * Select a suggestion (highlight for focus)
  */
