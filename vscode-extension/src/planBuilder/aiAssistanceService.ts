@@ -8,6 +8,7 @@
  */
 
 import { MCPClient } from '../services/mcpClient';
+import { PlanContextService } from './services/PlanContextService';
 import type { WizardPage } from './questionFramework';
 
 export interface AiSuggestion {
@@ -32,6 +33,7 @@ export interface AiAssistanceConfig {
  */
 export class AiAssistanceService {
   private mcpClient: MCPClient;
+  private planContextService: PlanContextService;
   private debounceTimer?: ReturnType<typeof setTimeout>;
   private config: Required<AiAssistanceConfig>;
   private suggestionHistory: AiSuggestion[] = [];
@@ -39,6 +41,7 @@ export class AiAssistanceService {
 
   constructor(config: AiAssistanceConfig = {}) {
     this.mcpClient = MCPClient.getInstance();
+    this.planContextService = PlanContextService.getInstance();
     this.config = {
       debounceMs: config.debounceMs ?? 1000,
       enableLogging: config.enableLogging ?? false,
@@ -54,8 +57,8 @@ export class AiAssistanceService {
     currentAnswers: Record<string, unknown>,
     userRole?: string
   ): Promise<AiSuggestion[]> {
-    // Build context from current state
-    const context = this.buildContext(currentPage, currentAnswers, userRole);
+    // Build context from current state (now async)
+    const context = await this.buildContext(currentPage, currentAnswers, userRole);
 
     try {
       const response = await this.mcpClient.askQuestion({
@@ -111,12 +114,16 @@ export class AiAssistanceService {
 
   /**
    * Build context object for MCP request
+   * Includes plan context from workspace for richer AI responses
    */
-  private buildContext(
+  private async buildContext(
     page: WizardPage,
     answers: Record<string, unknown>,
     userRole?: string
-  ): Record<string, unknown> {
+  ): Promise<Record<string, unknown>> {
+    // Load plan context from workspace
+    const planContext = await this.planContextService.loadPlanContext();
+    
     return {
       pageId: page.id,
       pageTitle: page.title,
@@ -125,6 +132,14 @@ export class AiAssistanceService {
       answeredQuestions: Object.keys(answers).length,
       relevantAnswers: this.extractRelevantAnswers(answers),
       questionCount: page.questions.length,
+      // Add workspace context
+      planContext: {
+        projectDescription: planContext.projectDescription,
+        features: planContext.features,
+        architectureNotes: planContext.architectureNotes,
+        constraints: planContext.constraints,
+        technicalRequirements: planContext.technicalRequirements,
+      },
     };
   }
 
