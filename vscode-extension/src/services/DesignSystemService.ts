@@ -167,7 +167,8 @@ export class DesignSystemService {
     // Search colors
     if (this.designSystem.colors) {
       Object.entries(this.designSystem.colors).forEach(([name, value]) => {
-        if (name.toLowerCase().includes(lowerQuery) || value.toLowerCase().includes(lowerQuery)) {
+        const colorValue = typeof value === 'string' ? value : String(value);
+        if (name.toLowerCase().includes(lowerQuery) || colorValue.toLowerCase().includes(lowerQuery)) {
           results.push({ type: 'color', name, value });
         }
       });
@@ -185,7 +186,8 @@ export class DesignSystemService {
     // Search spacing
     if (this.designSystem.spacing) {
       Object.entries(this.designSystem.spacing).forEach(([name, value]) => {
-        if (name.toLowerCase().includes(lowerQuery)) {
+        const spacingValue = typeof value === 'string' ? value : String(value);
+        if (name.toLowerCase().includes(lowerQuery) || spacingValue.toLowerCase().includes(lowerQuery)) {
           results.push({ type: 'spacing', name, value });
         }
       });

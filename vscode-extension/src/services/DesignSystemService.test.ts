@@ -297,6 +297,16 @@ describe('DesignSystemService', () => {
       const results = service.search('nonexistent');
       expect(results).toEqual([]);
     });
+
+    it('should search colors by hex value', () => {
+      const results = service.search('#007AFF');
+      expect(results.some(r => r.type === 'color' && r.name === 'primary')).toBe(true);
+    });
+
+    it('should search spacing by value', () => {
+      const results = service.search('8px');
+      expect(results.some(r => r.type === 'spacing' && r.name === 'sm')).toBe(true);
+    });
   });
 
   describe('caching', () => {
