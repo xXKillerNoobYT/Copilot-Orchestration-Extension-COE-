@@ -242,6 +242,27 @@ describe('DesignSystemService', () => {
       const color = service.getColor('primary');
       expect(color).toBeNull();
     });
+
+    it('should handle 3-digit hex colors', async () => {
+      const mockDesignSystemWith3Digit = {
+        ...mockDesignSystem,
+        colors: {
+          ...mockDesignSystem.colors,
+          accent: '#FFF',
+        },
+      };
+
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockDesignSystemWith3Digit));
+
+      await service.loadDesignSystem(mockWorkspaceRoot, true);
+
+      const rgbColor = service.getColor('accent', 'rgb');
+      expect(rgbColor).toBe('rgb(255, 255, 255)');
+
+      const hslColor = service.getColor('accent', 'hsl');
+      expect(hslColor).toMatch(/^hsl\(\d+, \d+%, \d+%\)$/);
+    });
   });
 
   describe('search', () => {

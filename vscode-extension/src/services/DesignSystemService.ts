@@ -32,13 +32,21 @@ export interface DesignSystem extends DesignTokens {
 }
 
 /**
+ * Cache entry for design system data
+ */
+interface CacheEntry {
+  data: DesignSystem;
+  timestamp: number;
+}
+
+/**
  * Design system service for loading and managing design system files
  */
 export class DesignSystemService {
   private static instance: DesignSystemService | undefined;
   private designSystem: DesignSystem | null = null;
   private fileWatchers: vscode.FileSystemWatcher[] = [];
-  private cache: Map<string, { data: DesignSystem; timestamp: number }> = new Map();
+  private cache: Map<string, CacheEntry> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly FILE_NAMES = ['design-system.json', 'design-system.yaml', 'design-system.yml'];
 
@@ -167,8 +175,7 @@ export class DesignSystemService {
     // Search colors
     if (this.designSystem.colors) {
       Object.entries(this.designSystem.colors).forEach(([name, value]) => {
-        const colorValue = typeof value === 'string' ? value : String(value);
-        if (name.toLowerCase().includes(lowerQuery) || colorValue.toLowerCase().includes(lowerQuery)) {
+        if (name.toLowerCase().includes(lowerQuery) || value.toLowerCase().includes(lowerQuery)) {
           results.push({ type: 'color', name, value });
         }
       });
@@ -186,8 +193,7 @@ export class DesignSystemService {
     // Search spacing
     if (this.designSystem.spacing) {
       Object.entries(this.designSystem.spacing).forEach(([name, value]) => {
-        const spacingValue = typeof value === 'string' ? value : String(value);
-        if (name.toLowerCase().includes(lowerQuery) || spacingValue.toLowerCase().includes(lowerQuery)) {
+        if (name.toLowerCase().includes(lowerQuery) || value.toLowerCase().includes(lowerQuery)) {
           results.push({ type: 'spacing', name, value });
         }
       });
@@ -331,10 +337,34 @@ export class DesignSystemService {
   }
 
   /**
+   * Normalize hex color to 6-digit format
+   * Supports both 3-digit (#FFF) and 6-digit (#FFFFFF) formats
+   */
+  private normalizeHex(hex: string): string {
+    // Remove # if present
+    const cleanHex = hex.replace('#', '');
+    
+    // Expand 3-digit to 6-digit format
+    if (cleanHex.length === 3) {
+      return `#${cleanHex[0]}${cleanHex[0]}${cleanHex[1]}${cleanHex[1]}${cleanHex[2]}${cleanHex[2]}`;
+    }
+    
+    // Already 6-digit format
+    if (cleanHex.length === 6) {
+      return `#${cleanHex}`;
+    }
+    
+    // Invalid format, return as-is
+    return hex;
+  }
+
+  /**
    * Convert hex to RGB
+   * Supports both 3-digit (#FFF) and 6-digit (#FFFFFF) hex colors
    */
   private hexToRgb(hex: string): string {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    const normalized = this.normalizeHex(hex);
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalized);
     if (!result) {
       return hex;
     }
@@ -348,9 +378,11 @@ export class DesignSystemService {
 
   /**
    * Convert hex to HSL
+   * Supports both 3-digit (#FFF) and 6-digit (#FFFFFF) hex colors
    */
   private hexToHsl(hex: string): string {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    const normalized = this.normalizeHex(hex);
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalized);
     if (!result) {
       return hex;
     }
