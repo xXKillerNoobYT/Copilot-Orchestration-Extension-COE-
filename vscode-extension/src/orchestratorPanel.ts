@@ -25,6 +25,18 @@ export const MAX_FILES_PER_BUNDLE = 100;
  */
 export const BUNDLE_WARNING_THRESHOLD = 0.8;
 
+/**
+ * Real-time update polling interval in milliseconds.
+ * Used as fallback when WebSocket is unavailable.
+ */
+const POLLING_INTERVAL_MS = 5000;
+
+/**
+ * Initial delay before first status request in milliseconds.
+ * Allows time for panel initialization before requesting data.
+ */
+const INITIAL_REQUEST_DELAY_MS = 500;
+
 export interface ContextBundle {
   id: string;
   name: string;
@@ -317,13 +329,13 @@ export class OrchestratorPanelProvider {
           metrics: data,
         });
       });
+    } else {
+      // Only use polling fallback if WebSocket is not available
+      this.wsUpdateInterval = setInterval(() => {
+        void this.updateTeamsStatus();
+        void this.updateMetrics();
+      }, POLLING_INTERVAL_MS);
     }
-
-    // Fallback: Periodic polling every 5 seconds if WebSocket not available
-    this.wsUpdateInterval = setInterval(() => {
-      void this.updateTeamsStatus();
-      void this.updateMetrics();
-    }, 5000);
   }
 
   public updateData(tasks: ParsedTask[], memory?: MemoryEntry[], contextBundles?: ContextBundle[]) {
@@ -1425,6 +1437,12 @@ export class OrchestratorPanelProvider {
       
       // Update Verification Team
       updateTeamCard('verification', teamsStatus.verification);
+      
+      // Update verified count from Verification team metrics
+      if (teamsStatus.verification && teamsStatus.verification.metrics) {
+        const verifiedCount = teamsStatus.verification.metrics.tasksVerified || 0;
+        document.getElementById('metric-verified').textContent = String(verifiedCount);
+      }
     }
 
     function updateTeamCard(teamKey, teamData) {
@@ -1467,7 +1485,7 @@ export class OrchestratorPanelProvider {
       
       document.getElementById('metric-created').textContent = String(counts.total || 0);
       document.getElementById('metric-completed-today').textContent = String(counts.completed || 0);
-      document.getElementById('metric-verified').textContent = String(counts.completed || 0);
+      // Note: Verified count comes from team status, not task metrics - will be updated separately
       document.getElementById('metric-failed').textContent = String(counts.failed || 0);
       document.getElementById('metric-blocked').textContent = String(counts.blocked || 0);
       
@@ -1575,17 +1593,18 @@ export class OrchestratorPanelProvider {
     // Initialize on load
     init();
     
-    // Request initial teams status and metrics
+    // Request initial teams status and metrics after panel initialization
+    // Delay allows the webview to fully render before data requests
     setTimeout(() => {
       requestTeamsStatus();
       requestMetrics();
-    }, 500);
+    }, ${INITIAL_REQUEST_DELAY_MS});
     
-    // Poll for updates every 5 seconds
+    // Poll for updates periodically (matches backend POLLING_INTERVAL_MS)
     setInterval(() => {
       requestTeamsStatus();
       requestMetrics();
-    }, 5000);
+    }, ${POLLING_INTERVAL_MS});
   </script>
 </body>
 </html>`;
