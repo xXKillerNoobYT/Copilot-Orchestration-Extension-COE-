@@ -395,21 +395,50 @@ watch(() => props.showAiAssistance, (newVal, oldVal) => {
 });
 
 /**
- * Generate contextual AI hint based on question type
+ * Configuration for question-based hints
+ */
+const HINT_CONFIG: Record<string, string> = {
+  'project-name': 'Common answers include descriptive names that reflect your project\'s purpose. Consider your target audience.',
+  'name': 'Choose a unique, descriptive name that clearly communicates the purpose of your project.',
+  'description': 'Provide a clear overview focusing on what problem you\'re solving and who it helps.',
+  'overview': 'Describe the key features and benefits of your project. What makes it unique?',
+  'timeline': 'Consider your team size, complexity, and resource availability when estimating timelines.',
+  'team': 'List the roles needed to successfully deliver your project.',
+  'architecture': 'Choose an architecture that aligns with your scalability and maintainability goals.',
+  'features': 'Break down your project into logical, deliverable features that provide value.',
+};
+
+/**
+ * Generate contextual AI hint based on question type and title
  */
 const generateDefaultHint = () => {
   const questionType = props.questionData.type;
-  const questionTitle = props.questionData.title;
+  const questionTitle = props.questionData.title.toLowerCase();
+  const questionId = props.questionData.id.toLowerCase();
   
-  // Generate helpful hints based on question type
-  if (questionType === 'text' || questionType === 'textarea') {
-    if (questionTitle.toLowerCase().includes('name')) {
-      aiHint.value = 'Common answers include descriptive names that reflect your project\'s purpose. Consider your target audience.';
-    } else if (questionTitle.toLowerCase().includes('description')) {
-      aiHint.value = 'Provide a clear overview focusing on what problem you\'re solving and who it helps.';
+  // Check for exact ID match first
+  for (const [key, hint] of Object.entries(HINT_CONFIG)) {
+    if (questionId.includes(key)) {
+      aiHint.value = hint;
+      return;
     }
+  }
+  
+  // Check for title match
+  for (const [key, hint] of Object.entries(HINT_CONFIG)) {
+    if (questionTitle.includes(key)) {
+      aiHint.value = hint;
+      return;
+    }
+  }
+  
+  // Fallback hints based on question type
+  if (questionType === 'text' || questionType === 'textarea') {
+    aiHint.value = 'Provide clear, concise information that will help the team understand your needs.';
   } else if (questionType === 'radio' || questionType === 'select') {
     aiHint.value = 'Review the options carefully. Consider your project requirements and constraints.';
+  } else if (questionType === 'checkbox') {
+    aiHint.value = 'Select all options that apply to your project. You can choose multiple.';
   }
 };
 

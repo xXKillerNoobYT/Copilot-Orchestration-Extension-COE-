@@ -173,6 +173,17 @@ export class AiAssistanceService {
 
   /**
    * Parse MCP response into suggestions
+   * 
+   * Expected response format:
+   * {
+   *   question: string,        // The suggestion question text
+   *   context?: string,        // Explanation/context for the suggestion
+   *   confidence?: number,     // AI confidence (0-1)
+   *   sources?: string[],      // Array of source citations (preferred)
+   *   citations?: string[],    // Alternative property for sources (legacy support)
+   *   suggestedAnswer?: string, // Suggested answer text (preferred)
+   *   answer?: string          // Alternative property for suggested answer (legacy support)
+   * }
    */
   private parseSuggestions(response: any, pageId: string): AiSuggestion[] {
     const suggestions: AiSuggestion[] = [];
@@ -182,6 +193,12 @@ export class AiAssistanceService {
       const questions = Array.isArray(response) ? response : [response];
 
       questions.slice(0, this.config.maxSuggestions).forEach((item: any, index: number) => {
+        // Support both 'sources' (preferred) and 'citations' (legacy) properties
+        const sourcesArray = item.sources || item.citations || [];
+        
+        // Support both 'suggestedAnswer' (preferred) and 'answer' (legacy) properties
+        const answerText = item.suggestedAnswer || item.answer || '';
+        
         const suggestion: AiSuggestion = {
           id: `ai-${pageId}-${Date.now()}-${index}`,
           question: typeof item === 'string' ? item : item.question || item.text || '',
@@ -189,8 +206,8 @@ export class AiAssistanceService {
           relatedAnswers: item.relatedAnswers || [],
           confidence: item.confidence || 0.8,
           timestamp: new Date(),
-          sources: item.sources || item.citations || [],
-          suggestedAnswer: item.suggestedAnswer || item.answer || '',
+          sources: sourcesArray,
+          suggestedAnswer: answerText,
         };
 
         if (suggestion.question) {
