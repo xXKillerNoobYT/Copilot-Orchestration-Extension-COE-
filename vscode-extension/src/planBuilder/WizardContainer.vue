@@ -351,10 +351,8 @@ const generateAiSuggestions = () => {
       aiSuggestions.value = suggestions;
       aiLoading.value = false;
       
-      // Show error if no suggestions were returned (likely API failure)
-      if (suggestions.length === 0) {
-        aiError.value = 'Unable to generate suggestions. AI service may be unavailable.';
-      }
+      // Note: Empty suggestions are valid - not necessarily an error
+      // Only show error if we have an actual error state
     }
   );
 };

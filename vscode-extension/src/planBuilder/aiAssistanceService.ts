@@ -121,8 +121,20 @@ export class AiAssistanceService {
     answers: Record<string, unknown>,
     userRole?: string
   ): Promise<Record<string, unknown>> {
-    // Load plan context from workspace
-    const planContext = await this.planContextService.loadPlanContext();
+    // Load plan context from workspace with error handling
+    let planContext;
+    try {
+      planContext = await this.planContextService.loadPlanContext();
+    } catch (error) {
+      this.log('Failed to load plan context, using empty context:', error);
+      planContext = {
+        projectDescription: '',
+        features: [],
+        architectureNotes: '',
+        constraints: [],
+        technicalRequirements: [],
+      };
+    }
     
     return {
       pageId: page.id,

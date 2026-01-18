@@ -206,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 
 interface QuestionOption {
   value: string | number | boolean;
@@ -249,6 +249,7 @@ const emit = defineEmits<{
   'answer-changed': [answer: any];
   'validation-error': [errors: string[]];
   'ask-ai': [questionId: string];
+  'ai-loading-complete': [questionId: string];
 }>();
 
 // State
@@ -257,6 +258,7 @@ const answer = ref<any>(
 );
 const aiHint = ref<string>('');
 const isLoadingAI = ref<boolean>(false);
+const aiLoadingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const currentQuestionId = computed(() => props.questionData.id);
 
@@ -367,11 +369,30 @@ const handleAskAI = () => {
   isLoadingAI.value = true;
   emit('ask-ai', props.questionData.id);
   
-  // Loading state will be cleared when WizardContainer provides hint
-  setTimeout(() => {
+  // Set a fallback timeout in case the parent doesn't respond
+  // This prevents infinite loading state
+  if (aiLoadingTimeout.value) {
+    clearTimeout(aiLoadingTimeout.value);
+  }
+  
+  aiLoadingTimeout.value = setTimeout(() => {
     isLoadingAI.value = false;
-  }, 3000);
+  }, 10000); // 10 seconds fallback
 };
+
+/**
+ * Watch for AI assistance completion from parent
+ */
+watch(() => props.showAiAssistance, (newVal, oldVal) => {
+  // When AI panel is shown after request, clear loading state
+  if (newVal && !oldVal && isLoadingAI.value) {
+    isLoadingAI.value = false;
+    if (aiLoadingTimeout.value) {
+      clearTimeout(aiLoadingTimeout.value);
+      aiLoadingTimeout.value = null;
+    }
+  }
+});
 
 /**
  * Generate contextual AI hint based on question type
@@ -396,6 +417,13 @@ const generateDefaultHint = () => {
 onMounted(() => {
   if (props.showAiAssistance) {
     generateDefaultHint();
+  }
+});
+
+// Cleanup timeout on unmount
+onUnmounted(() => {
+  if (aiLoadingTimeout.value) {
+    clearTimeout(aiLoadingTimeout.value);
   }
 });
 </script>
