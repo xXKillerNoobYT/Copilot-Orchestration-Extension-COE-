@@ -420,6 +420,90 @@ export class VisualVerificationPanel {
   }
 
   /**
+   * Validate design system structure to ensure type safety
+   */
+  private validateDesignSystemStructure(data: any): DesignSystemReference | null {
+    if (!data || typeof data !== 'object') {
+      console.warn('Design system data is not an object');
+      return null;
+    }
+
+    const validated: DesignSystemReference = {};
+
+    // Validate colors (if present)
+    if (data.colors && typeof data.colors === 'object') {
+      const colors: any = {};
+      const colorKeys = ['primary', 'secondary', 'accent', 'background', 'text', 'border'];
+      for (const key of colorKeys) {
+        if (data.colors[key] && typeof data.colors[key] === 'string') {
+          colors[key] = data.colors[key];
+        }
+      }
+      if (Object.keys(colors).length > 0) {
+        validated.colors = colors;
+      }
+    }
+
+    // Validate typography (if present)
+    if (data.typography && typeof data.typography === 'object') {
+      const typography: any = {};
+      if (typeof data.typography.fontFamily === 'string') {
+        typography.fontFamily = data.typography.fontFamily;
+      }
+      if (Array.isArray(data.typography.weights)) {
+        typography.weights = data.typography.weights.filter((w: any) => typeof w === 'number');
+      }
+      if (data.typography.sizes && typeof data.typography.sizes === 'object') {
+        const sizes: any = {};
+        for (const [key, value] of Object.entries(data.typography.sizes)) {
+          if (typeof value === 'string') {
+            sizes[key] = value;
+          }
+        }
+        if (Object.keys(sizes).length > 0) {
+          typography.sizes = sizes;
+        }
+      }
+      if (Object.keys(typography).length > 0) {
+        validated.typography = typography;
+      }
+    }
+
+    // Validate components (if present)
+    if (data.components && typeof data.components === 'object') {
+      const components: any = {};
+      if (typeof data.components.borderRadius === 'string') {
+        components.borderRadius = data.components.borderRadius;
+      }
+      if (typeof data.components.padding === 'string') {
+        components.padding = data.components.padding;
+      }
+      if (typeof data.components.shadow === 'string') {
+        components.shadow = data.components.shadow;
+      }
+      if (Object.keys(components).length > 0) {
+        validated.components = components;
+      }
+    }
+
+    // Validate links (if present)
+    if (data.links && typeof data.links === 'object') {
+      const links: any = {};
+      if (typeof data.links.componentLibrary === 'string') {
+        links.componentLibrary = data.links.componentLibrary;
+      }
+      if (typeof data.links.designDocs === 'string') {
+        links.designDocs = data.links.designDocs;
+      }
+      if (Object.keys(links).length > 0) {
+        validated.links = links;
+      }
+    }
+
+    return Object.keys(validated).length > 0 ? validated : null;
+  }
+
+  /**
    * Load design system reference from workspace
    * Looks for design-system.json in workspace root or .vscode folder
    */
@@ -444,10 +528,22 @@ export class VisualVerificationPanel {
         try {
           const fileData = await vscode.workspace.fs.readFile(designSystemPath);
           const jsonString = Buffer.from(fileData).toString('utf8');
-          designSystemData = JSON.parse(jsonString) as DesignSystemReference;
-          console.log(`Loaded design system from ${designSystemPath.fsPath}`);
-          break;
+          const parsedData = JSON.parse(jsonString);
+          
+          // Validate structure
+          const validatedData = this.validateDesignSystemStructure(parsedData);
+          if (validatedData) {
+            designSystemData = validatedData;
+            console.log(`Loaded design system from ${designSystemPath.fsPath}`);
+            break;
+          } else {
+            console.warn(`Invalid design system structure in ${designSystemPath.fsPath}`);
+          }
         } catch (error) {
+          // Log parsing errors in development to help with debugging
+          if (error instanceof SyntaxError) {
+            console.warn(`JSON syntax error in ${designSystemPath.fsPath}:`, error.message);
+          }
           // File doesn't exist or is invalid, try next path
           continue;
         }
@@ -774,6 +870,7 @@ ${issueData.description}
                   state.designSystem.components.padding
                     ? `<div class="typography-item">
                         <strong>Padding:</strong> ${this.escapeHtml(state.designSystem.components.padding)}
+                        <div class="muted" style="font-size: 11px;">Validated: ${this.escapeHtml(this.validateCssLength(state.designSystem.components.padding))}</div>
                       </div>`
                     : ''
                 }
@@ -781,6 +878,7 @@ ${issueData.description}
                   state.designSystem.components.shadow
                     ? `<div class="typography-item">
                         <strong>Shadow:</strong> ${this.escapeHtml(state.designSystem.components.shadow)}
+                        <div class="muted" style="font-size: 11px;">Display only - not used in CSS</div>
                       </div>`
                     : ''
                 }
@@ -1183,21 +1281,52 @@ ${issueData.description}
 
   /**
    * Validate CSS color value to prevent CSS injection
-   * Allows hex colors (#xxx or #xxxxxx) and common CSS color formats
+   * Allows hex colors (#xxx or #xxxxxx) and common CSS color formats with range validation
    */
   private validateCssColor(color: string): string {
     // Allow hex colors
     if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(color)) {
       return color;
     }
-    // Allow rgb/rgba
-    if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(\s*,\s*[\d.]+)?\s*\)$/.test(color)) {
-      return color;
+    
+    // Allow rgb/rgba with range validation (R, G, B: 0-255, alpha: 0-1)
+    const rgbMatch = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(\s*,\s*([\d.]+))?\s*\)$/.exec(color);
+    if (rgbMatch) {
+      const r = parseInt(rgbMatch[1], 10);
+      const g = parseInt(rgbMatch[2], 10);
+      const b = parseInt(rgbMatch[3], 10);
+      const alphaStr = rgbMatch[5];
+      
+      let alphaValid = true;
+      if (alphaStr !== undefined) {
+        const alpha = parseFloat(alphaStr);
+        alphaValid = !Number.isNaN(alpha) && alpha >= 0 && alpha <= 1;
+      }
+      
+      if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255 && alphaValid) {
+        return color;
+      }
     }
-    // Allow hsl/hsla
-    if (/^hsla?\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%(\s*,\s*[\d.]+)?\s*\)$/.test(color)) {
-      return color;
+    
+    // Allow hsl/hsla with range validation (hue: 0-360, s/l: 0-100%, alpha: 0-1)
+    const hslMatch = /^hsla?\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%(\s*,\s*([\d.]+))?\s*\)$/.exec(color);
+    if (hslMatch) {
+      const hue = parseInt(hslMatch[1], 10);
+      const saturation = parseInt(hslMatch[2], 10);
+      const lightness = parseInt(hslMatch[3], 10);
+      const alphaStr = hslMatch[5];
+      
+      let alphaValid = true;
+      if (alphaStr !== undefined) {
+        const alpha = parseFloat(alphaStr);
+        alphaValid = !Number.isNaN(alpha) && alpha >= 0 && alpha <= 1;
+      }
+      
+      if (hue >= 0 && hue <= 360 && saturation >= 0 && saturation <= 100 && lightness >= 0 && lightness <= 100 && alphaValid) {
+        return color;
+      }
     }
+    
     // Default to a safe fallback
     console.warn(`Invalid CSS color value: ${color}, using fallback`);
     return '#cccccc';
@@ -1206,11 +1335,17 @@ ${issueData.description}
   /**
    * Validate CSS length value to prevent CSS injection
    * Allows common CSS length units: px, rem, em, %, etc.
+   * Rejects negative values and extremely large values to prevent layout manipulation
    */
   private validateCssLength(value: string): string {
-    // Allow numeric values with valid CSS units
-    if (/^[\d.]+(?:px|rem|em|%|vh|vw|vmin|vmax|ch|ex|cm|mm|in|pt|pc)$/.test(value)) {
-      return value;
+    // Allow numeric values with valid CSS units (anchored regex)
+    const lengthMatch = /^([\d.]+)(px|rem|em|%|vh|vw|vmin|vmax|ch|ex|cm|mm|in|pt|pc)$/.exec(value);
+    if (lengthMatch) {
+      const numericValue = parseFloat(lengthMatch[1]);
+      // Reject negative values and extremely large values (> 10000)
+      if (!Number.isNaN(numericValue) && numericValue >= 0 && numericValue <= 10000) {
+        return value;
+      }
     }
     // Allow unitless 0
     if (value === '0') {
@@ -1226,11 +1361,12 @@ ${issueData.description}
    * Sanitizes font family names and validates against common patterns
    */
   private validateCssFontFamily(fontFamily: string): string {
-    // Remove potentially dangerous characters
-    const sanitized = fontFamily.replace(/[<>{}()]/g, '');
+    // Remove potentially dangerous characters including backslashes
+    const sanitized = fontFamily.replace(/[<>{}()\\/]/g, '');
     
     // Check for common safe patterns: font names, system fonts, fallback stacks
-    if (/^[\w\s,\-'"]+$/.test(sanitized)) {
+    // More restrictive pattern that explicitly lists allowed characters
+    if (/^[a-zA-Z0-9\s,\-'"]+$/.test(sanitized)) {
       return sanitized;
     }
     
