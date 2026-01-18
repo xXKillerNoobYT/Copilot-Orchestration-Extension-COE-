@@ -1,0 +1,111 @@
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  🚀 Copilot Orchestrator Panel                                                   │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                   │
+│  ⚙️ Orchestrator Controls                                                        │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ [Start Loop] [Stop Loop] [Show Loop Status] [Execute Single Cycle]         │ │
+│  │                                                                             │ │
+│  │ 🟢 running | Cycles: 42 | Successes: 38 | Errors: 4 | Avg: 1.2s           │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+│  ┌──────────────────────────────────┬──────────────────────────────────────────┐ │
+│  │ 🔌 Connection Status             │ 🎮 Coordination Controls                │ │
+│  ├──────────────────────────────────┼──────────────────────────────────────────┤ │
+│  │ 🟢 Connected to MCP server       │ Auto-decompose tasks >60 min      [ON] │ │
+│  │                                  │ Require visual verification      [OFF] │ │
+│  │ [Reconnect]                      │ Notify on task completion         [ON] │ │
+│  │                                  │ Pause agent teams                [OFF] │ │
+│  └──────────────────────────────────┴──────────────────────────────────────────┘ │
+│                                                                                   │
+│  👥 Agent Teams Status                                                           │
+│  ┌──────────────────────────┬──────────────────────────┬────────────────────────┐│
+│  │ 🎯 Planning Team    IDLE │ 💬 Answer Team  WORKING │ 🔨 Decomposition  IDLE ││
+│  ├──────────────────────────┼──────────────────────────┼────────────────────────┤│
+│  │ Current Task: None       │ Current Task: #42        │ Current Task: None     ││
+│  │ Last Activity: 2m ago    │ Last Activity: 5s ago    │ Last Activity: 10m ago ││
+│  │                          │                          │                        ││
+│  │ Completed: 15            │ Completed: 23            │ Completed: 8           ││
+│  │ Active: 0                │ Active: 1                │ Active: 0              ││
+│  └──────────────────────────┴──────────────────────────┴────────────────────────┘│
+│  ┌──────────────────────────┐                                                    │
+│  │ ✅ Verification BLOCKED  │                                                    │
+│  ├──────────────────────────┤                                                    │
+│  │ Current Task: #38        │                                                    │
+│  │ Last Activity: 1m ago    │                                                    │
+│  │                          │                                                    │
+│  │ Completed: 19            │                                                    │
+│  │ Active: 1                │                                                    │
+│  └──────────────────────────┘                                                    │
+│                                                                                   │
+│  📊 Live Metrics                                                                 │
+│  ┌──────────┬──────────┬──────────┬──────────┬──────────┬──────────────────────┐ │
+│  │   125    │    87    │    82    │    5     │    3     │       45.2s          │ │
+│  │  CREATED │COMPLETED │ VERIFIED │  FAILED  │ BLOCKED  │   AVG DURATION       │ │
+│  └──────────┴──────────┴──────────┴──────────┴──────────┴──────────────────────┘ │
+│                                                                                   │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
+│                                                                                   │
+│  Statistics                                                                       │
+│  ┌──────────┬──────────┬──────────┬──────────┐                                  │
+│  │   125    │    87    │    35    │    3     │                                  │
+│  │  TOTAL   │COMPLETED │IN PROGRESS│ BLOCKED  │                                  │
+│  └──────────┴──────────┴──────────┴──────────┘                                  │
+│                                                                                   │
+│  ┌─────────────────────────────────┬─────────────────────────────────────────┐  │
+│  │ 📋 Tasks                        │ 🤖 Agent Selector                       │  │
+│  ├─────────────────────────────────┼─────────────────────────────────────────┤  │
+│  │ ┌─────────────────────────────┐ │ [▼ planner (Planning Agent)        ]   │  │
+│  │ │ Task #001 - Setup           │ │                                         │  │
+│  │ │ [COMPLETED] [HIGH]          │ │ Role: Planning Agent                    │  │
+│  │ │ ID: T001 | Type: feature    │ │                                         │  │
+│  │ │ [Execute][Change][Issue][…] │ │ Responsible for breaking down high-     │  │
+│  │ └─────────────────────────────┘ │ level goals into actionable tasks...    │  │
+│  │ ┌─────────────────────────────┐ │                                         │  │
+│  │ │ Task #002 - Implementation  │ │                                         │  │
+│  │ │ [IN-PROGRESS] [MEDIUM]      │ │                                         │  │
+│  │ │ ID: T002 | Type: feature    │ │                                         │  │
+│  │ │ [Execute][Change][Issue][…] │ │                                         │  │
+│  │ └─────────────────────────────┘ │                                         │  │
+│  └─────────────────────────────────┴─────────────────────────────────────────┘  │
+│                                                                                   │
+│  📊 Task Graph                                                   [Refresh Graph] │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ Level 0: 3 task(s) | Level 1: 5 task(s) | Level 2: 2 task(s)              │ │
+│  │                                                                             │ │
+│  │ graph TD                                                                    │ │
+│  │   A[Task 1] --> B[Task 2]                                                  │ │
+│  │   A --> C[Task 3]                                                          │ │
+│  │   B --> D[Task 4]                                                          │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+│  ┌──────────────────────────────────┬──────────────────────────────────────────┐ │
+│  │ 📦 Context Bundles               │ 🧠 Memory                               │ │
+│  ├──────────────────────────────────┼──────────────────────────────────────────┤ │
+│  │ Bundle: core-files               │ USER                                    │ │
+│  │ 15 files - Core application      │ Start the orchestration process...      │ │
+│  │                                  │                                          │ │
+│  │ Bundle: test-suite               │ ASSISTANT                                │ │
+│  │ 23 files - Test files            │ Starting orchestration with 4 teams...  │ │
+│  └──────────────────────────────────┴──────────────────────────────────────────┘ │
+│                                                                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+LEGEND:
+─────────────────────────────────────────────────────────────────────────────────
+🎯 Planning Team      - Creates and refines project plans
+💬 Answer Team        - Provides answers to AI-assisted questions  
+🔨 Decomposition Team - Breaks down complex tasks into subtasks
+✅ Verification Team  - Validates task completion and quality
+
+Status Indicators:
+🟢 WORKING  - Team actively processing tasks
+⚪ IDLE     - Team waiting for tasks
+🔴 BLOCKED  - Team blocked by dependencies
+🟠 ERROR    - Team encountered an error
+
+Coordination Controls:
+• Auto-decompose: Automatically break down tasks estimated >60 minutes
+• Visual verification: Require visual verification for UI-related tasks
+• Notify on completion: Send notifications when tasks complete
+• Pause teams: Temporarily pause all agent team processing
