@@ -1,96 +1,45 @@
-# Copilot Instructions
-Guidelines for using Copilot with this project's GitHub Issues-based task management system.
+## Repository quick facts
+- Monorepo with three active codebases: **Laravel API + Inertia/Vue app** (root), **VS Code extension** (`vscode-extension/`), and **TypeScript context manager library** (`context-manager/`). Docs live in `Docs/` (runbook, plans, MCP references).
+- Default branch: `main`. PHP 8.2+, Laravel 10, Sanctum auth. Frontend uses Vue 3 + Vite + Tailwind. Node 18+ for JS/TS projects.
 
-## Critical Requirements
-- ✅ Use GitHub Issues for task management and tracking
-- ✅ Coordinate multiple agents to handle complex tasks
-- ✅ Ensure clear communication between agents
-- ✅ Ensure all tests are picked up in Jest/Mocha test configuration
-- ✅ Always give a recommended task or next step. And by task I mean issue if an issue is complete.
-- ✅ If there are problems or things that need to be fixed. That you're not working on right now and you do not need to get fixed to finish your task. Or issue? Create a Github issue for it.
+## Setup & common commands
+- Root Laravel app: `composer install`, copy `.env`, `php artisan key:generate`, `npm install`. Dev server: `php artisan serve` + `npm run dev`. Prod build: `npm run build` (runs `vue-tsc` then Vite SSR + CSR).
+- Tests: PHP `php artisan test` (or `vendor/bin/phpunit`). JS (root) `npm test` / `npm run test:coverage`. Context-manager: `cd context-manager && npm install && npm test`. VS Code extension: `cd vscode-extension && npm install && npm run compile && npm test`.
+- Lint/format: Laravel `php artisan pint`; context-manager `npm run lint`.
 
-## VS Code Extension Build Configuration
-### Webpack Settings (vscode-extension/webpack.config.js)
-- **Main Extension Bundle**: EXCLUDE .test.ts files (production only)
-- **Tools Bundle**: INCLUDE .test.ts files (test compilation)
-- **Entry Points**: All test files must be listed explicitly
-- **Rule**: Do NOT apply same module rules to both bundles
+## Backend architecture (Laravel)
+- API is versioned under `/api/v1` (see `routes/api.php`). Core domains:
+	- **Tasks** (`TaskController`): list/project queries, status updates, dependency graph validation, critical path/ready/blocked endpoints.
+	- **Agents** (`AgentController`): CRUD, activate/deactivate, workload distribution, candidate matching for tasks.
+	- **Context Bundles** (`ContextBundleController`): build task context from tasks/files/repo; supports versioning, search, metadata updates, file add/remove.
+	- **Metrics/Monitoring** (`MetricsController`, `MonitoringController`): task/agent/error dashboards; aggregate endpoint protected by Sanctum.
+	- **Planning** (`PlanningController`, `PlanDecompositionController`): plan decomposition and plan uploads; controller wiring is present—check implementation before changing contracts.
+	- **Repository & MCP** (`RepositoryController`, `RepositoryHealthController`, `McpController`, `GitHubController`): GitHub/MCP integration and repo health checks.
+	- **Agent loop** (`AgentLoopController@run`), **Design tokens** (`DesignColor/Typography/SpacingController`) for design system resources.
+- Convention: controllers live in `app/Http/Controllers/Api`, Eloquent models in `app/Models`, services in `app/Services` or `app/Repositories`. Keep API namespaced `v1` and mirror route naming when adding endpoints.
 
-### Test Configuration Status ✅
-- Jest Configuration: vscode-extension/jest.config.js ✅
-- Mocha Test Support: extension.agentLoop.test.ts ✅
-- Test Compilation: Webpack properly configured ✅
-- Test Execution: All 92 tests passing ✅
+## Frontend (resources/js)
+- Inertia + Vue 3 with Tailwind. Types live in `resources/js/types`. Vite config in `vite.config.js`; Ziggy for route helpers.
+- Design System Editor (see `resources/js/Components/DesignSystem/README.md`): ColorThemePicker, FontSelector, ComponentStyleEditor, LivePreview with <500ms update target; route `/design-system` (auth protected). Maintain latency metric display and section toggles when modifying.
 
-## Recent Fixes (Jan 15, 2026)
-### Issue Resolution
-- Fixed webpack test compilation - now properly includes .test.ts files in tools bundle
-- Added missing extension.agentLoop.test entry point to webpack config
-- All 92 tests now passing with 0 failures
+## VS Code extension (`vscode-extension/`)
+- Provides task graph parsing/validation and **MCP tools for GitHub Copilot**. Key docs: `OFFICIAL-MCP-REFERENCE.md`, `GITHUB-COPILOT-AGENT-SETUP.md`, `MCP-ARCHITECTURE-SUMMARY.md`, Docker integration guides. Build/test with `npm run compile`, `npm test`. Templates in `templates/plan-templates/` and plan builder docs in `docs/plan-builder/`.
 
-### Verification
-```
-✅ npm run compile   → SUCCESS
-✅ npm test         → 92 PASSING (0 failing, 4 pending)
-✅ Build artifacts  → ALL GENERATED
-```
+## Context manager library (`context-manager/`)
+- Type-safe storage for task/agent contexts (JSON/YAML adapters, pruning policies, Zod validation). Main class `src/context-manager.ts`; storage adapters in `src/storage`. See `README.md` and `IMPLEMENTATION-SUMMARY.md` for API. Tests via Jest (`npm test`).
 
-## Key Lessons
-1. **Webpack Dual-Bundle Pattern**: Different rules needed for source vs test bundles
-2. **Test File Inclusion**: Test files must be explicitly listed in entry points
-3. **Mixed Frameworks**: Jest and Mocha can coexist with proper webpack configuration
-## Autonomous Issue Fix Workflow (Jan 16, 2026+)
+## Docs to consult first
+- `Docs/PROJECT-RUNBOOK.md` (execution order, task expectations, commands), `Docs/GITHUB-ISSUES-PLAN.md` (issue mappings), `Docs/README.md` (doc navigation), `COPILOT-WORKFLOW-QUICKSTART.md` (autonomous Copilot flow). Issues are mirrored in `.github/issues/` via GitHub Issues Sync.
+- PRD sources: prefer `PRD.json` (machine-readable for AI); `PRD.md` for human review; regenerate both via `PRD.ipynb` when upstream docs change.
 
-When tasked with fixing GitHub issues autonomously:
+## Testing/CI expectations
+- Aim for all suites green: Laravel `php artisan test`, root Jest, context-manager Jest, extension Jest. Coverage targets noted in context-manager (80%+) and extension docs. Keep Vite/TypeScript builds clean (`npm run build`, `npm run compile`).
 
-### Workflow Pattern
-1. **Issue Created**: Issue exists in GitHub with clear description, steps, evidence
-2. **Assign Copilot**: Use `mcp_github_assign_copilot_to_issue` to assign issue to Copilot coding agent
-3. **Copilot Works**: Copilot creates implementation branch and PR with fixes
-4. **Request Review**: Use `mcp_github_request_copilot_review` on the PR for automated code review
-5. **Review Feedback**: Address any feedback from Copilot review
-6. **Merge PR**: Merge the PR back to main branch
-7. **Sync Changes**: Pull latest changes to verify everything integrated correctly
-8. **Close Issue**: Issue auto-closes when PR merged, or manually close if needed
+## Common pitfalls
+- API changes must keep `/api/v1` route structure and Sanctum-protected endpoints intact. Update Ziggy route names if routes move.
+- Design system latency budget (<500ms) is part of acceptance criteria—avoid heavy synchronous work in LivePreview updates.
+- Keep MCP config files (`.github/copilot-mcp.json`, docs in vscode-extension) in sync when adding new MCP tools.
+- Context bundles handle file uploads/versions; respect existing metadata/version APIs to avoid breaking clients.
 
-### When to Use This Pattern
-- ✅ Issue has clear acceptance criteria
-- ✅ Issue has reproduction steps documented
-- ✅ Issue is isolated (not blocking other work)
-- ✅ Issue doesn't require complex architecture decisions
-- ✅ Can be completed in 1-3 days
-
-### When NOT to Use
-- ❌ Issue requires design discussion first
-- ❌ Issue depends on other issues not yet fixed
-- ❌ Issue requires manual testing on local machine
-- ❌ Issue needs human decision-making
-
-### Example Commands
-```bash
-# Assign Copilot to issue #86
-mcp_github_assign_copilot_to_issue(owner, repo, 86)
-
-# Request Copilot review on PR #99
-mcp_github_request_copilot_review(owner, repo, 99)
-
-# Merge PR when review passes
-mcp_github2_merge_pull_request(owner, repo, 99)
-```
-
-### Benefits
-- **Autonomous Execution**: Issues get fixed without human coding
-- **Parallel Work**: Multiple issues can be assigned to Copilot simultaneously
-- **Code Review**: Automated review catches issues before human review
-- **Audit Trail**: Full commit history and PR record of all changes
-- **Scale**: Can fix 10+ issues in parallel with one orchestrator
-
-## Remembers
-- Use GitHub Issues for task management and tracking.
-- Coordinate multiple agents to handle complex tasks.
-- Ensure clear communication between agents.
-- **When you see fixable issues, assign them to Copilot agents instead of fixing manually** (use autonomous workflow above).
-- make sure all the tests are being picked up in the jest test running configuration.
-- Always give a recommended task or next step. And by task I mean issue if an issue is complete.
-- allways create a github issue for anything that needs to be fixed that you're not working on right now and do not need to get fixed to finish your task.
-- Run tests frequently to catch issues early. using the test tool you have.
+## How to get productive fast
+- Start from the relevant doc in `Docs/` (runbook/plan) to understand task intent, then open matching controller/service and Vue component. Use route names from `routes/api.php` with Ziggy in the frontend. For agent automation, follow commands in `COPILOT-WORKFLOW-QUICKSTART.md` and `.github/issues/README.md`.
