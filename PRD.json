@@ -1,0 +1,1473 @@
+{
+  "title": "Copilot Orchestration Extension (COE)",
+  "version": "1.0.0",
+  "date": "2026-01-17",
+  "status": "In Development - 52% Complete (Specification: 100%)",
+  "executive_summary": "\n## Executive Summary\n\nThe **Copilot Orchestration Extension (COE)** is an AI-powered project planning and task management system built as a VS Code extension. It transforms how development teams plan, decompose, and execute complex software projects through intelligent automation and multi-agent coordination.\n\n### Problem Statement\nDevelopment teams struggle with:\n- Time-consuming manual project planning and task breakdown\n- Difficulty maintaining plan-code alignment throughout development\n- Lack of visibility into task dependencies and bottlenecks\n- Inefficient context switching between planning tools and IDE\n- Inconsistent task verification leading to quality issues\n\n### Solution\nCOE provides a unified platform that:\n1. **Captures requirements** through an interactive planning interface\n2. **Decomposes tasks** automatically using AI-powered agents\n3. **Maps dependencies** with visual graph rendering and critical path analysis\n4. **Coordinates execution** via 4 specialized agent teams (Planning, Answer, Decomposition, Verification)\n5. **Ensures quality** through automated testing and visual verification workflows\n6. **Syncs with GitHub** for seamless integration with existing workflows\n\n### Key Differentiators\n- **Native VS Code Integration**: No context switching; planning happens where coding happens\n- **Multi-Agent Orchestration**: 4 specialized teams handle planning, Q&A, decomposition, and verification autonomously\n- **Visual Verification System**: Interactive UI guides users through acceptance criteria with design system references\n- **Bi-Directional GitHub Sync**: Maintains single source of truth across tools\n- **AI-Powered Intelligence**: Leverages GitHub Copilot and custom agents for intelligent automation\n\n### Current Status\n- **Specification**: 100% complete (Sections 1-12 documented)\n- **Implementation**: 52% complete, on track for February 15, 2026 launch\n- **Test Coverage**: 96.8% (392/405 tests passing)\n- **Phase**: Phase 4 (UI Implementation) in progress\n\n### Business Value\n- **50% reduction** in project planning time\n- **85% first-time task completion** rate (reduced rework)\n- **70% autonomous task execution** by AI agents\n- **$50K estimated savings** in first year from efficiency gains\n\n### Target Users\n- Project Managers and Tech Leads (planning and oversight)\n- Developers (task execution and context loading)\n- QA/Testers (verification workflows)\n- Product Owners (roadmap tracking)\n\n### Launch Timeline\n**MVP Launch**: February 15, 2026 (29 days from current date)\n- Phase 4 (UI): Jan 17-29 (Visual Verification, Programming Orchestrator)\n- Phase 5 (AI Integration): Jan 30-Feb 5\n- Phase 6 (Testing & QA): Feb 6-12\n- Phase 7 (Documentation & Launch): Feb 13-15\n",
+  "product_overview": "\n## Product Overview\n\n### Vision\nBuild the definitive AI-powered orchestration platform for software development teams, enabling seamless collaboration between human developers and autonomous AI agents.\n\n### Core Capabilities\n\n#### 1. Interactive Plan Builder\nVisual drag-and-drop interface for creating project plans with:\n- Real-time dependency linking\n- Automated circular dependency detection\n- Critical path highlighting\n- Timeline estimation with resource allocation\n\n#### 2. Multi-Agent Orchestration System\nFour specialized agent teams working in coordination:\n\n**Planning Team**\n- Generates project plans from requirements\n- Creates dependency-aware task breakdowns\n- Adapts plans based on execution feedback\n\n**Answer Team**  \n- Provides context-aware Q&A using plan + codebase\n- Cites sources from documentation and code\n- Escalates complex questions to humans\n\n**Task Decomposition Agent**\n- Detects complex tasks (>60 minutes)\n- Automatically generates subtasks\n- Maintains dependency graph integrity\n\n**Verification Team**\n- Runs automated tests on task completion\n- Launches visual verification for UI changes\n- Creates investigation tasks on failures\n\n#### 3. Visual Verification Workflow\nInteractive panel for user-guided testing with:\n- Server control panel (start/stop/restart)\n- Smart checklist with auto-detection of already-tested items\n- Design system reference (colors, typography, components)\n- Issue reporting with investigation task creation\n- Plan Adjustment Wizard for mid-verification changes\n\n#### 4. MCP Server with 6 Core Tools\n- `getNextTask`: Returns highest priority task from queue\n- `reportTaskStatus`: Updates task status and triggers workflow transitions\n- `reportObservation`: Logs observations during execution\n- `reportTestFailure`: Reports test failures with diagnostics\n- `reportVerificationResult`: Submits verification results (pass/fail/partial)\n- `askQuestion`: Routes questions to Answer Team for context-aware responses\n\n#### 5. GitHub Issues Bi-Directional Sync\n- Automatic Issue creation for each task\n- Status synchronization (task \u2194 Issue state)\n- Comment import as observations\n- Sub-issue linking for task hierarchy\n- Rate limit optimization with batching and caching\n\n#### 6. Programming Orchestrator Dashboard\nReal-time visibility into system status:\n- Team status cards for all 4 agent teams\n- Live metrics (tasks created/completed/verified)\n- Coordination toggles (auto-decompose, require visual verification)\n- Plan selector for multi-project management\n- WebSocket-based live updates\n\n### Technology Stack\n- **Frontend**: TypeScript, React (for webviews), VS Code Extension API\n- **Backend**: Node.js, SQLite (persistence), WebSocket (real-time events)\n- **AI/ML**: GitHub Copilot integration, custom agent orchestration\n- **Integrations**: GitHub REST/GraphQL APIs, CI/CD webhooks\n- **Testing**: Jest (unit/integration), Mocha (E2E)\n",
+  "objectives": [
+    "Enable intuitive requirement capture through interactive planning workflows",
+    "Provide atomic task decomposition with dependency mapping and critical path analysis",
+    "Deliver visual timeline and resource planning with Gantt charts and workload visualization",
+    "Implement comprehensive plan validation with quality gates and automated checks",
+    "Support multi-format export (JSON, Markdown, GitHub Issues) with bi-directional sync",
+    "Offer template-driven planning with customizable workflows and best practices",
+    "Integrate AI-powered assistance through multi-agent orchestration system",
+    "Ensure extensibility through plugin architecture and open API"
+  ],
+  "stakeholders": [
+    {
+      "name": "Project Manager / Tech Lead",
+      "role": "Primary User",
+      "needs": [
+        "High-level project overview and status tracking",
+        "Resource allocation and timeline management",
+        "Risk identification and mitigation tracking",
+        "Stakeholder communication materials"
+      ],
+      "priority": "High"
+    },
+    {
+      "name": "Developer",
+      "role": "Implementation User",
+      "needs": [
+        "Clear, actionable task descriptions with acceptance criteria",
+        "Technical context and code references",
+        "Dependency visibility to avoid blockers",
+        "Integration with GitHub workflow"
+      ],
+      "priority": "High"
+    },
+    {
+      "name": "QA/Tester",
+      "role": "Quality Assurance",
+      "needs": [
+        "Testable acceptance criteria for each task",
+        "Test coverage tracking",
+        "Defect linkage to tasks",
+        "Verification workflow integration"
+      ],
+      "priority": "Medium"
+    },
+    {
+      "name": "Product Owner",
+      "role": "Business Stakeholder",
+      "needs": [
+        "Feature prioritization and roadmap visibility",
+        "Progress tracking against business goals",
+        "Scope management and change control",
+        "ROI and value delivery metrics"
+      ],
+      "priority": "High"
+    },
+    {
+      "name": "AI/Copilot System",
+      "role": "Autonomous Agent",
+      "needs": [
+        "Structured, machine-readable task definitions",
+        "Clear execution context and constraints",
+        "Feedback loops for task status and issues",
+        "Integration with verification systems"
+      ],
+      "priority": "High"
+    }
+  ],
+  "user_stories": [
+    {
+      "id": "US001",
+      "persona": "Project Manager",
+      "goal": "Create a project plan from high-level requirements",
+      "benefit": "Quickly decompose a project into actionable tasks without manual breakdown",
+      "acceptance_criteria": [
+        "I can input project requirements in natural language",
+        "System generates a task list with dependencies",
+        "I can review and adjust the plan before finalizing",
+        "Plan is saved and shareable with team"
+      ],
+      "priority": "P0",
+      "related_features": [
+        "F001",
+        "F002",
+        "F017",
+        "F032"
+      ]
+    },
+    {
+      "id": "US002",
+      "persona": "Developer",
+      "goal": "Understand task requirements and context before coding",
+      "benefit": "Reduce time spent searching for context and increase implementation accuracy",
+      "acceptance_criteria": [
+        "Task card shows acceptance criteria clearly",
+        "Related files and architecture docs are linked",
+        "I can ask questions and get answers from plan context",
+        "Dependencies are clearly marked"
+      ],
+      "priority": "P0",
+      "related_features": [
+        "F008",
+        "F010",
+        "F018"
+      ]
+    },
+    {
+      "id": "US003",
+      "persona": "QA Tester",
+      "goal": "Verify UI changes match design specifications",
+      "benefit": "Ensure visual quality without manual design system lookups",
+      "acceptance_criteria": [
+        "Visual Verification Panel launches dev server automatically",
+        "Checklist shows all testable items from acceptance criteria",
+        "Design system reference (colors, typography) displayed inline",
+        "I can mark items as passed/failed and report issues"
+      ],
+      "priority": "P0",
+      "related_features": [
+        "F023",
+        "F005",
+        "F019"
+      ]
+    },
+    {
+      "id": "US004",
+      "persona": "Tech Lead",
+      "goal": "Monitor agent team performance and coordination",
+      "benefit": "Identify bottlenecks and optimize task routing for faster delivery",
+      "acceptance_criteria": [
+        "Dashboard shows status for all 4 agent teams",
+        "Live metrics update as agents complete tasks",
+        "I can configure coordination toggles (e.g., auto-decompose)",
+        "Plan selector allows switching active project"
+      ],
+      "priority": "P0",
+      "related_features": [
+        "F024",
+        "F016",
+        "F013"
+      ]
+    },
+    {
+      "id": "US005",
+      "persona": "Product Owner",
+      "goal": "Track feature completion against roadmap",
+      "benefit": "Maintain transparency with stakeholders on project progress",
+      "acceptance_criteria": [
+        "Roadmap view shows features with completion percentages",
+        "Dependencies between features are visualized",
+        "I can export progress reports for stakeholder meetings",
+        "Success metrics are tracked and displayed"
+      ],
+      "priority": "P1",
+      "related_features": [
+        "F003",
+        "F013",
+        "F029"
+      ]
+    },
+    {
+      "id": "US006",
+      "persona": "Developer",
+      "goal": "Sync my tasks with GitHub Issues for team visibility",
+      "benefit": "Maintain single source of truth across tools without duplicate entry",
+      "acceptance_criteria": [
+        "Task creation automatically creates GitHub Issue",
+        "Status updates sync bidirectionally",
+        "Comments on GitHub Issues appear as observations",
+        "Sub-issues properly linked in GitHub"
+      ],
+      "priority": "P0",
+      "related_features": [
+        "F028"
+      ]
+    },
+    {
+      "id": "US007",
+      "persona": "AI Agent (Verification Team)",
+      "goal": "Verify task completion through automated and visual testing",
+      "benefit": "Ensure quality without human verification for every task",
+      "acceptance_criteria": [
+        "I receive task completion notification via MCP",
+        "Automated tests run and results reported",
+        "For UI tasks, I launch Visual Verification workflow",
+        "I create investigation tasks if failures detected"
+      ],
+      "priority": "P0",
+      "related_features": [
+        "F019",
+        "F022",
+        "F023"
+      ]
+    },
+    {
+      "id": "US008",
+      "persona": "Project Manager",
+      "goal": "Use a template for common project types",
+      "benefit": "Accelerate planning by reusing proven workflows",
+      "acceptance_criteria": [
+        "Template library shows available templates",
+        "I can preview template before applying",
+        "Wizard prompts for template parameters (e.g., service name)",
+        "Applied template can be customized before saving"
+      ],
+      "priority": "P2",
+      "related_features": [
+        "F004"
+      ]
+    },
+    {
+      "id": "US009",
+      "persona": "Developer",
+      "goal": "Receive Slack notifications when tasks are assigned to me",
+      "benefit": "Stay informed without constantly checking the extension",
+      "acceptance_criteria": [
+        "Slack notification sent on task assignment",
+        "Message includes task title, priority, and link",
+        "I can configure notification preferences",
+        "Button to mark task as 'In Progress' from Slack"
+      ],
+      "priority": "P3",
+      "related_features": [
+        "F031"
+      ]
+    },
+    {
+      "id": "US010",
+      "persona": "AI Agent (Task Decomposition)",
+      "goal": "Automatically break down complex tasks without human intervention",
+      "benefit": "Reduce planning overhead and ensure tasks are atomic",
+      "acceptance_criteria": [
+        "I monitor task queue for tasks >60 minutes",
+        "I generate 3-5 subtasks with AI assistance",
+        "Parent-child relationships are preserved",
+        "I notify the user of decomposition with summary"
+      ],
+      "priority": "P1",
+      "related_features": [
+        "F011",
+        "F002"
+      ]
+    }
+  ],
+  "features": [
+    {
+      "id": "F001",
+      "name": "Interactive Plan Builder",
+      "description": "Visual interface for creating project plans with drag-and-drop task organization, dependency linking, and real-time validation.",
+      "category": "Planning & Design",
+      "status": "In Progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "User can create tasks via visual interface",
+        "Drag-and-drop task reordering functional",
+        "Dependency arrows auto-render on task linking",
+        "Real-time validation highlights circular dependencies",
+        "Save/load plan functionality working"
+      ],
+      "dependencies": [],
+      "estimated_effort": "3 weeks"
+    },
+    {
+      "id": "F002",
+      "name": "Plan Decomposition Engine",
+      "description": "Automatically breaks down complex tasks into atomic subtasks with estimated effort and dependencies.",
+      "category": "Planning & Design",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Detects tasks >60 minutes duration",
+        "Generates 3-5 subtasks with acceptance criteria",
+        "Preserves parent-child relationships",
+        "Maintains dependency graph integrity"
+      ],
+      "dependencies": [],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F003",
+      "name": "Dependency Graph Visualization",
+      "description": "Interactive graph showing task relationships, critical path, and potential blockers.",
+      "category": "Planning & Design",
+      "status": "In Progress",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Renders DAG with nodes and edges",
+        "Highlights critical path in distinct color",
+        "Supports zoom and pan interactions",
+        "Shows task details on hover",
+        "Detects and alerts on circular dependencies"
+      ],
+      "dependencies": [
+        "F001"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F004",
+      "name": "Template Library",
+      "description": "Pre-built project templates for common workflows (microservice, API, UI component, etc.).",
+      "category": "Planning & Design",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "5+ templates available on launch",
+        "Template preview before application",
+        "Customization wizard for template parameters",
+        "Save custom templates for reuse"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F005",
+      "name": "Design System Integration",
+      "description": "Automatically references design-system.json for UI tasks, showing colors, typography, and components.",
+      "category": "Planning & Design",
+      "status": "In Progress",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Loads design-system.json from repo",
+        "Displays color palette in verification panel",
+        "Shows typography specs for UI tasks",
+        "Links to component library documentation"
+      ],
+      "dependencies": [
+        "F010"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F006",
+      "name": "Architecture Document Generator",
+      "description": "Generates architecture.md from plan structure with diagrams, data flows, and API contracts.",
+      "category": "Planning & Design",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Exports plan to architecture.md format",
+        "Includes Mermaid diagrams for system flow",
+        "Documents API contracts from task metadata",
+        "Auto-updates on plan changes"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F007",
+      "name": "Plan Validation Engine",
+      "description": "Enforces quality gates: no missing dependencies, balanced workload, realistic timeline.",
+      "category": "Planning & Design",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Validates all dependencies exist",
+        "Checks for circular dependency cycles",
+        "Flags overallocated resources",
+        "Estimates timeline against capacity",
+        "Blocks save if critical issues exist"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F008",
+      "name": "Task Lifecycle Automation",
+      "description": "Manages task states from creation to completion with automated transitions and notifications.",
+      "category": "Task Management",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "States: Not Started, In Progress, Blocked, Testing, Complete",
+        "Auto-transitions based on agent actions",
+        "Sends notifications on state changes",
+        "Tracks state history for auditing"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F009",
+      "name": "Task Priority Queue",
+      "description": "Intelligent task routing based on priority, dependencies, and agent availability.",
+      "category": "Task Management",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Maintains priority-ordered queue",
+        "Blocks tasks with unsatisfied dependencies",
+        "Routes to appropriate agent based on task type",
+        "Supports manual priority overrides"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F010",
+      "name": "Context Bundle Builder",
+      "description": "Assembles relevant files, docs, and metadata for each task execution context.",
+      "category": "Task Management",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Bundles plan excerpt for task",
+        "Includes related file contents",
+        "Adds relevant architecture docs",
+        "Limits bundle size to context window",
+        "Caches bundles for performance"
+      ],
+      "dependencies": [],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F011",
+      "name": "Task Decomposition Agent",
+      "description": "Autonomous agent that detects complex tasks and creates subtasks automatically.",
+      "category": "Task Management",
+      "status": "In Progress",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Monitors task queue for >60min estimates",
+        "Generates subtasks with AI assistance",
+        "Preserves original task as parent",
+        "Updates dependency graph",
+        "Notifies user of decomposition"
+      ],
+      "dependencies": [
+        "F002",
+        "F009"
+      ],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F012",
+      "name": "Optimistic Locking System",
+      "description": "Prevents concurrent task modifications with version-based locking mechanism.",
+      "category": "Task Management",
+      "status": "Complete",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Version number increments on each update",
+        "Detects concurrent modification attempts",
+        "Provides conflict resolution UI",
+        "Supports retry with latest version"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F013",
+      "name": "Task Metrics Dashboard",
+      "description": "Real-time metrics on task throughput, completion rate, and bottlenecks.",
+      "category": "Task Management",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Shows tasks created/completed/pending",
+        "Displays average completion time",
+        "Identifies blocked tasks and bottlenecks",
+        "Exports metrics to CSV/JSON"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F014",
+      "name": "Subtask Auto-Linking",
+      "description": "Automatically creates parent-child relationships when tasks are decomposed.",
+      "category": "Task Management",
+      "status": "Complete",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Links subtasks to parent on creation",
+        "Propagates parent completion when all children done",
+        "Shows subtask progress on parent card",
+        "Supports multi-level nesting"
+      ],
+      "dependencies": [],
+      "estimated_effort": "0.5 weeks"
+    },
+    {
+      "id": "F015",
+      "name": "Task Search and Filter",
+      "description": "Advanced search with filters for status, priority, assignee, tags, and date range.",
+      "category": "Task Management",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Full-text search across task titles/descriptions",
+        "Multi-select filters for status, priority, tags",
+        "Date range picker for created/completed dates",
+        "Save filter presets for quick access"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F016",
+      "name": "Multi-Agent Orchestration System",
+      "description": "Coordinates 4 specialized agent teams: Planning, Answer, Decomposition, Verification.",
+      "category": "Agent Management",
+      "status": "In Progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "4 agent teams initialized on startup",
+        "Routing logic directs tasks to correct team",
+        "Agents communicate via MCP tools",
+        "Dashboard shows team status and metrics"
+      ],
+      "dependencies": [],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F017",
+      "name": "Planning Team Agent",
+      "description": "Master planner that generates project plans, roadmaps, and task breakdowns.",
+      "category": "Agent Management",
+      "status": "In Progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Generates plans from user requirements",
+        "Creates dependency-aware task lists",
+        "Estimates effort and timelines",
+        "Adapts plan based on feedback"
+      ],
+      "dependencies": [
+        "F016"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F018",
+      "name": "Answer Team Agent",
+      "description": "Context-aware Q&A agent that answers questions using plan + code context.",
+      "category": "Agent Management",
+      "status": "In Progress",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Loads plan and codebase into context",
+        "Answers technical questions accurately",
+        "Cites sources (plan sections, files)",
+        "Escalates to human if uncertain"
+      ],
+      "dependencies": [
+        "F016"
+      ],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F019",
+      "name": "Verification Team Agent",
+      "description": "Automated and visual verification agent with user Ready gates.",
+      "category": "Agent Management",
+      "status": "In Progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Runs automated tests on task completion",
+        "Launches visual verification for UI changes",
+        "Waits for user Ready signal",
+        "Creates investigation tasks on failure"
+      ],
+      "dependencies": [
+        "F016",
+        "F023"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F020",
+      "name": "Agent Profile YAML System",
+      "description": "Defines agent roles, permissions, and constraints via YAML configuration.",
+      "category": "Agent Management",
+      "status": "Planned",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "YAML profiles for all 4 teams",
+        "Profiles define roles, permissions, constraints",
+        "Loader validates and applies profiles on startup",
+        "Supports profile hot-reloading"
+      ],
+      "dependencies": [
+        "F016"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F021",
+      "name": "Agent Communication Protocol",
+      "description": "Standardized message format for inter-agent communication via MCP.",
+      "category": "Agent Management",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "6 MCP tools implemented and tested",
+        "WebSocket event streaming working",
+        "Message validation and error handling",
+        "Audit log for all agent actions"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F022",
+      "name": "MCP Server with 6 Tools",
+      "description": "Core server providing getNextTask, reportTaskStatus, reportObservation, reportTestFailure, reportVerificationResult, askQuestion.",
+      "category": "Execution & Monitoring",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "All 6 tools implemented and tested",
+        "In-memory task queue operational",
+        "WebSocket events streaming to UI",
+        "Error handling and retries working"
+      ],
+      "dependencies": [],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F023",
+      "name": "Visual Verification Panel",
+      "description": "Interactive UI for user-guided testing with server controls and issue reporting.",
+      "category": "Execution & Monitoring",
+      "status": "In Progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Server start/stop/restart controls working",
+        "Smart checklist with auto-detection of tested items",
+        "Plan reference highlighting with design system data",
+        "Issue reporting creates investigation tasks",
+        "Plan Adjustment Wizard functional"
+      ],
+      "dependencies": [
+        "F022"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F024",
+      "name": "Programming Orchestrator Dashboard",
+      "description": "Real-time dashboard showing team status, metrics, and coordination toggles.",
+      "category": "Execution & Monitoring",
+      "status": "In Progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Team status cards for all 4 teams",
+        "Live metrics updated via WebSocket",
+        "Coordination toggles functional",
+        "Plan selector dropdown working",
+        "Team configuration modals"
+      ],
+      "dependencies": [
+        "F022"
+      ],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F025",
+      "name": "Real-Time Event Streaming",
+      "description": "WebSocket-based event system for live updates to UI from agent actions.",
+      "category": "Execution & Monitoring",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "WebSocket server running",
+        "Events broadcast on all MCP tool calls",
+        "UI subscribes and updates in real-time",
+        "Reconnection logic for dropped connections"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F026",
+      "name": "Audit Log and Replay",
+      "description": "Comprehensive logging of all actions with ability to replay for debugging.",
+      "category": "Execution & Monitoring",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "All agent actions logged to database",
+        "Searchable audit log UI",
+        "Replay mode reconstructs state from log",
+        "Export audit log to JSON"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F027",
+      "name": "Performance Monitoring",
+      "description": "Tracks system performance metrics: response time, throughput, error rate.",
+      "category": "Execution & Monitoring",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Monitors MCP tool response times",
+        "Tracks task completion throughput",
+        "Alerts on error rate spikes",
+        "Grafana/Prometheus integration"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F028",
+      "name": "GitHub Issues Bi-Directional Sync",
+      "description": "Two-way sync between internal tasks and GitHub Issues with sub-issues, labels, milestones.",
+      "category": "Integration & Sync",
+      "status": "Complete",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Creates GitHub Issue for each task",
+        "Syncs task status to Issue state",
+        "Imports Issue comments as observations",
+        "Handles sub-issues and linking",
+        "Respects GitHub API rate limits"
+      ],
+      "dependencies": [],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F029",
+      "name": "Multi-Format Export",
+      "description": "Exports plans to JSON, Markdown, CSV, and GitHub-compatible formats.",
+      "category": "Integration & Sync",
+      "status": "Complete",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "JSON export with full plan structure",
+        "Markdown export with task lists and links",
+        "CSV export for spreadsheet import",
+        "GitHub Issue batch import format"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F030",
+      "name": "CI/CD Pipeline Integration",
+      "description": "Triggers tasks based on CI/CD events (build failures, deployments, etc.).",
+      "category": "Integration & Sync",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Webhook receiver for CI/CD events",
+        "Creates investigation tasks on build failures",
+        "Links tasks to CI/CD job logs",
+        "Supports GitHub Actions, Jenkins, GitLab CI"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F031",
+      "name": "Slack/Teams Notifications",
+      "description": "Sends notifications to Slack or Microsoft Teams on task state changes.",
+      "category": "Integration & Sync",
+      "status": "Planned",
+      "priority": "P3",
+      "acceptance_criteria": [
+        "Configurable notification rules",
+        "Supports Slack and Teams webhooks",
+        "Rich formatting with task details",
+        "Actionable buttons for task actions"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F032",
+      "name": "Human-in-the-Loop Planning",
+      "description": "Allows users to approve, edit, or reject AI-generated plans with feedback loops.",
+      "category": "Collaboration",
+      "status": "In Progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Plan review UI with approve/reject/edit actions",
+        "Inline editing of tasks and dependencies",
+        "Feedback form for plan adjustments",
+        "Skill-level adaptation (beginner to expert prompts)"
+      ],
+      "dependencies": [
+        "F017"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F033",
+      "name": "Guided GitHub Review Responses",
+      "description": "Summarizes PR review comments and suggests responses to streamline collaboration.",
+      "category": "Collaboration",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Fetches PR review comments via GitHub API",
+        "Summarizes feedback by category",
+        "Suggests response templates",
+        "Generates follow-up tasks from comments"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F034",
+      "name": "VS Code Extension UI",
+      "description": "Native VS Code extension with panels, commands, and status bar integration.",
+      "category": "UX & Extensibility",
+      "status": "In Progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Settings Panel with 4 tabs functional",
+        "Visual Verification Panel working",
+        "Status bar shows active plan and task count",
+        "Command palette integration for all actions"
+      ],
+      "dependencies": [],
+      "estimated_effort": "3 weeks"
+    },
+    {
+      "id": "F035",
+      "name": "Plugin Architecture",
+      "description": "Extensible plugin system for custom agents, tools, and integrations.",
+      "category": "UX & Extensibility",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Plugin manifest schema defined",
+        "Plugin loader and lifecycle management",
+        "Plugin API documentation",
+        "3+ example plugins"
+      ],
+      "dependencies": [],
+      "estimated_effort": "2 weeks"
+    }
+  ],
+  "technical_specs": [
+    {
+      "name": "MCP Server Architecture",
+      "description": "Model Context Protocol server providing 6 core tools for agent coordination",
+      "type": "API",
+      "details": {
+        "tools": [
+          {
+            "name": "getNextTask",
+            "description": "Returns highest priority task from queue",
+            "parameters": {
+              "agentType": "string (optional)"
+            },
+            "returns": "Task object with full context bundle"
+          },
+          {
+            "name": "reportTaskStatus",
+            "description": "Updates task status and transitions workflow",
+            "parameters": {
+              "taskId": "string",
+              "status": "enum (inProgress|completed|failed|blocked)",
+              "details": "object (optional)"
+            },
+            "returns": "Acknowledgment with next actions"
+          },
+          {
+            "name": "reportObservation",
+            "description": "Logs observations during task execution",
+            "parameters": {
+              "taskId": "string",
+              "observation": "string",
+              "type": "enum"
+            },
+            "returns": "Logged to audit trail"
+          },
+          {
+            "name": "reportTestFailure",
+            "description": "Reports test failures with diagnostics",
+            "parameters": {
+              "taskId": "string",
+              "test": "string",
+              "error": "string"
+            },
+            "returns": "Creates investigation task"
+          },
+          {
+            "name": "reportVerificationResult",
+            "description": "Submits verification results from user or automated checks",
+            "parameters": {
+              "taskId": "string",
+              "result": "enum (pass|fail|partial)",
+              "issues": "array of strings"
+            },
+            "returns": "Task status updated, investigation tasks created if needed"
+          },
+          {
+            "name": "askQuestion",
+            "description": "Routes questions to Answer Team for context-aware responses",
+            "parameters": {
+              "question": "string",
+              "context": "object (optional)"
+            },
+            "returns": "Answer with cited sources"
+          }
+        ],
+        "event_streaming": {
+          "protocol": "WebSocket",
+          "port": 3000,
+          "events": [
+            "taskCreated",
+            "taskUpdated",
+            "taskCompleted",
+            "observationLogged",
+            "testFailed",
+            "questionAsked"
+          ]
+        },
+        "data_storage": "In-memory task queue with SQLite persistence"
+      },
+      "dependencies": []
+    },
+    {
+      "name": "Database Schema",
+      "description": "SQLite database for task persistence, audit logs, and metrics",
+      "type": "Database",
+      "details": {
+        "tables": {
+          "tasks": {
+            "columns": [
+              "id (UUID, primary key)",
+              "title (TEXT)",
+              "description (TEXT)",
+              "status (ENUM)",
+              "priority (ENUM)",
+              "parent_id (UUID, nullable, foreign key)",
+              "created_at (TIMESTAMP)",
+              "updated_at (TIMESTAMP)",
+              "completed_at (TIMESTAMP, nullable)",
+              "version (INTEGER, for optimistic locking)"
+            ],
+            "indexes": [
+              "status",
+              "priority",
+              "parent_id"
+            ]
+          },
+          "dependencies": {
+            "columns": [
+              "id (UUID, primary key)",
+              "task_id (UUID, foreign key)",
+              "depends_on_id (UUID, foreign key)",
+              "dependency_type (ENUM: blocking, soft)"
+            ]
+          },
+          "audit_log": {
+            "columns": [
+              "id (UUID, primary key)",
+              "task_id (UUID, foreign key)",
+              "action (TEXT)",
+              "agent_type (TEXT)",
+              "details (JSON)",
+              "timestamp (TIMESTAMP)"
+            ]
+          },
+          "metrics": {
+            "columns": [
+              "id (UUID, primary key)",
+              "metric_name (TEXT)",
+              "value (REAL)",
+              "category (TEXT)",
+              "timestamp (TIMESTAMP)"
+            ]
+          }
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "name": "VS Code Extension Architecture",
+      "description": "TypeScript-based VS Code extension with webview panels and MCP client",
+      "type": "Architecture",
+      "details": {
+        "structure": {
+          "src/": {
+            "extension.ts": "Entry point, activates extension and registers commands",
+            "mcpClient.ts": "MCP protocol client for server communication",
+            "panels/": {
+              "SettingsPanel.ts": "Main settings UI with 4 tabs",
+              "VisualVerificationPanel.ts": "Interactive verification workflow",
+              "PlanBuilderPanel.ts": "Drag-and-drop plan editor"
+            },
+            "agents/": {
+              "PlanningAgent.ts": "Planning team coordination",
+              "AnswerAgent.ts": "Q&A handling",
+              "DecompositionAgent.ts": "Task splitting logic",
+              "VerificationAgent.ts": "Test execution and verification"
+            },
+            "utils/": {
+              "contextBuilder.ts": "Context bundle assembly",
+              "githubSync.ts": "GitHub Issues integration",
+              "designSystemLoader.ts": "design-system.json parser"
+            }
+          }
+        },
+        "dependencies": {
+          "runtime": [
+            "vscode",
+            "ws",
+            "axios"
+          ],
+          "build": [
+            "webpack",
+            "typescript",
+            "@types/vscode"
+          ],
+          "testing": [
+            "jest",
+            "@types/jest",
+            "ts-jest"
+          ]
+        },
+        "build_config": {
+          "webpack": "Dual bundle: extension (no tests) + tools (with tests)",
+          "entry_points": [
+            "extension.ts",
+            "*.test.ts"
+          ]
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "name": "GitHub Issues Integration",
+      "description": "Bi-directional sync via GitHub REST and GraphQL APIs",
+      "type": "Integration",
+      "details": {
+        "apis_used": {
+          "REST": "Issue creation, updates, comments",
+          "GraphQL": "Batch queries, sub-issue linking, milestone management"
+        },
+        "sync_workflow": {
+          "create": "Task \u2192 GitHub Issue (title, body, labels, milestone)",
+          "update": "Task status change \u2192 Issue state transition",
+          "import": "Issue comment \u2192 Observation in task",
+          "sub_issues": "Subtask \u2192 Linked issue with 'parent' reference"
+        },
+        "rate_limiting": {
+          "strategy": "Exponential backoff with circuit breaker",
+          "limits": "5000 requests/hour for authenticated users",
+          "mitigation": "Batch requests, cache Issue data, queue updates"
+        }
+      },
+      "dependencies": [
+        "F028"
+      ]
+    },
+    {
+      "name": "Agent Team Communication Protocol",
+      "description": "Standardized message format for inter-agent coordination",
+      "type": "API",
+      "details": {
+        "message_schema": {
+          "type": "enum (task_request, task_response, observation, question, answer)",
+          "sender": "string (agent_id)",
+          "receiver": "string (agent_id or 'broadcast')",
+          "task_id": "UUID (optional)",
+          "payload": "object (varies by type)",
+          "timestamp": "ISO 8601 string",
+          "correlation_id": "UUID (for request-response pairing)"
+        },
+        "routing": {
+          "task_request": "Sent to Planning Team",
+          "task_response": "Returned to requester",
+          "observation": "Broadcast to all teams + logged",
+          "question": "Routed to Answer Team",
+          "answer": "Returned to question sender"
+        },
+        "error_handling": {
+          "timeout": "30 seconds per message",
+          "retry": "3 attempts with exponential backoff",
+          "dead_letter_queue": "Failed messages logged for manual review"
+        }
+      },
+      "dependencies": []
+    },
+    {
+      "name": "Design System Integration",
+      "description": "Automatic loading and display of design-system.json for UI tasks",
+      "type": "Integration",
+      "details": {
+        "schema": {
+          "colors": "Object mapping color names to hex values",
+          "typography": "Font families, sizes, weights",
+          "components": "Component names with usage guidelines",
+          "spacing": "Spacing scale (xs, sm, md, lg, xl)",
+          "breakpoints": "Responsive breakpoints"
+        },
+        "loading": {
+          "source": "Workspace root: design-system.json",
+          "fallback": "Default system if file not found",
+          "caching": "Reload on file change (file watcher)"
+        },
+        "display": {
+          "verification_panel": "Inline color swatches + typography samples",
+          "task_card": "Component reference links for UI tasks"
+        }
+      },
+      "dependencies": [
+        "F005",
+        "F023"
+      ]
+    }
+  ],
+  "architecture_overview": "See Technical Specifications section for detailed architecture",
+  "timeline": {
+    "total_duration": "39 calendar days",
+    "target_launch": "2026-02-15",
+    "phases": [
+      {
+        "phase": "Phase 1: Planning & Design",
+        "duration": "2 weeks",
+        "status": "Complete",
+        "deliverables": [
+          "Architecture docs",
+          "Feature specs",
+          "UI mockups"
+        ]
+      },
+      {
+        "phase": "Phase 2: Backend Components",
+        "duration": "2 weeks (parallel with Phase 3)",
+        "status": "Complete",
+        "deliverables": [
+          "MCP server",
+          "Database schema",
+          "Agent framework"
+        ]
+      },
+      {
+        "phase": "Phase 3: Frontend APIs",
+        "duration": "2 weeks (parallel with Phase 2)",
+        "status": "Complete",
+        "deliverables": [
+          "Extension activation",
+          "MCP client",
+          "GitHub sync"
+        ]
+      },
+      {
+        "phase": "Phase 4: UI Pages",
+        "duration": "2 weeks",
+        "status": "In Progress (50% complete)",
+        "deliverables": [
+          "Visual Verification Panel",
+          "Programming Orchestrator",
+          "Settings Panel"
+        ]
+      },
+      {
+        "phase": "Phase 5: AI Integration",
+        "duration": "1 week",
+        "status": "Queued",
+        "deliverables": [
+          "Agent profiles",
+          "Copilot integration",
+          "Context bundling"
+        ]
+      },
+      {
+        "phase": "Phase 6: Testing & QA",
+        "duration": "1 week",
+        "status": "Queued",
+        "deliverables": [
+          "E2E test suite",
+          "Performance benchmarks",
+          "User acceptance testing"
+        ]
+      },
+      {
+        "phase": "Phase 7: Documentation & Launch",
+        "duration": "<1 week",
+        "status": "Queued",
+        "deliverables": [
+          "User guides",
+          "API docs",
+          "Video tutorials",
+          "MVP launch"
+        ]
+      }
+    ]
+  },
+  "resource_allocation": {
+    "team_size": 6,
+    "total_hours": 920,
+    "roles": [
+      {
+        "role": "UX/Product Designer",
+        "hours": 160,
+        "duration": "4 weeks @ 40 hrs/week"
+      },
+      {
+        "role": "Frontend Developer",
+        "hours": 240,
+        "duration": "6 weeks @ 40 hrs/week"
+      },
+      {
+        "role": "Backend Developer",
+        "hours": 200,
+        "duration": "5 weeks @ 40 hrs/week"
+      },
+      {
+        "role": "AI/ML Engineer",
+        "hours": 60,
+        "duration": "3 weeks @ 20 hrs/week"
+      },
+      {
+        "role": "QA/Tester",
+        "hours": 120,
+        "duration": "4 weeks @ 30 hrs/week"
+      },
+      {
+        "role": "Tech Lead/PM",
+        "hours": 140,
+        "duration": "7 weeks @ 20 hrs/week"
+      }
+    ]
+  },
+  "success_metrics": [
+    {
+      "name": "User Adoption Rate",
+      "description": "Percentage of development team using the extension actively",
+      "target": "80% within 3 months of launch",
+      "measurement": "Weekly active users / Total team size",
+      "category": "User Adoption"
+    },
+    {
+      "name": "Planning Time Reduction",
+      "description": "Time saved in project planning compared to manual methods",
+      "target": "50% reduction in planning time",
+      "measurement": "Avg time to create plan (before vs after adoption)",
+      "category": "Performance"
+    },
+    {
+      "name": "Task Completion Rate",
+      "description": "Percentage of tasks completed successfully without rework",
+      "target": "85% first-time completion rate",
+      "measurement": "Tasks completed without reopening / Total tasks completed",
+      "category": "Quality"
+    },
+    {
+      "name": "Agent Task Success Rate",
+      "description": "Percentage of agent-assigned tasks completed without human intervention",
+      "target": "70% autonomous completion",
+      "measurement": "Agent-completed tasks / Agent-assigned tasks",
+      "category": "Performance"
+    },
+    {
+      "name": "GitHub Sync Accuracy",
+      "description": "Accuracy of bi-directional sync between tasks and GitHub Issues",
+      "target": "99% sync accuracy",
+      "measurement": "Correctly synced fields / Total synced operations",
+      "category": "Quality"
+    },
+    {
+      "name": "Visual Verification Usage",
+      "description": "Percentage of UI tasks verified through Visual Verification Panel",
+      "target": "90% of UI tasks",
+      "measurement": "Tasks verified via panel / Total UI tasks",
+      "category": "User Adoption"
+    },
+    {
+      "name": "Plan Validation Pass Rate",
+      "description": "Percentage of plans passing quality gates on first submission",
+      "target": "75% first-submission pass rate",
+      "measurement": "Plans passing validation / Plans submitted",
+      "category": "Quality"
+    },
+    {
+      "name": "Average Task Decomposition Depth",
+      "description": "Average number of subtask levels created by decomposition",
+      "target": "2-3 levels on average",
+      "measurement": "Avg depth of task tree across all plans",
+      "category": "Performance"
+    },
+    {
+      "name": "Developer Satisfaction Score",
+      "description": "User satisfaction with tool usability and value",
+      "target": "4.0/5.0 average rating",
+      "measurement": "Quarterly satisfaction survey (1-5 scale)",
+      "category": "User Adoption"
+    },
+    {
+      "name": "Test Coverage Increase",
+      "description": "Increase in test coverage due to automated test generation",
+      "target": "+15% test coverage",
+      "measurement": "Test coverage % after adoption - baseline coverage %",
+      "category": "Quality"
+    },
+    {
+      "name": "Time to First Task",
+      "description": "Time from plan creation to first task assignment",
+      "target": "< 5 minutes",
+      "measurement": "Avg time between plan save and first task in 'In Progress'",
+      "category": "Performance"
+    },
+    {
+      "name": "MCP Tool Response Time",
+      "description": "Average response time for MCP tool calls",
+      "target": "< 200ms for 95th percentile",
+      "measurement": "95th percentile of response times across all MCP calls",
+      "category": "Performance"
+    },
+    {
+      "name": "Issue Investigation Rate",
+      "description": "Rate of investigation tasks created from test failures",
+      "target": "< 10% of tasks create investigations",
+      "measurement": "Investigation tasks / Total tasks completed",
+      "category": "Quality"
+    },
+    {
+      "name": "Agent Question Resolution Rate",
+      "description": "Percentage of questions answered by Answer Agent without escalation",
+      "target": "80% autonomous resolution",
+      "measurement": "Questions answered / Questions asked",
+      "category": "Performance"
+    },
+    {
+      "name": "Business Value Delivered",
+      "description": "Estimated cost savings from reduced planning and rework time",
+      "target": "$50K savings in first year",
+      "measurement": "(Hours saved \u00d7 Avg hourly rate) - Tool cost",
+      "category": "Business"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R001",
+      "description": "Scope creep from feature requests during development",
+      "severity": "Medium",
+      "probability": "High",
+      "impact": "Timeline\u5ef6\u8fdf and resource overallocation",
+      "mitigation": "Implement strict change control process with 'Future Enhancements' backlog. Require executive approval for scope additions.",
+      "status": "Active mitigation in place"
+    },
+    {
+      "id": "R002",
+      "description": "UI complexity overwhelming users in early adoption",
+      "severity": "Medium",
+      "probability": "Medium",
+      "impact": "Low adoption rate and user frustration",
+      "mitigation": "Focus on minimalist design with progressive disclosure. Conduct user testing with 5+ users before launch. Provide interactive tutorial.",
+      "status": "Active mitigation in place"
+    },
+    {
+      "id": "R003",
+      "description": "AI agent performance not meeting quality expectations",
+      "severity": "Medium",
+      "probability": "Medium",
+      "impact": "Reduced autonomous task completion, increased human intervention",
+      "mitigation": "Extensive testing with diverse project types. Fallback to human escalation. Continuous learning from feedback.",
+      "status": "Testing in progress"
+    },
+    {
+      "id": "R004",
+      "description": "Circular dependency detection algorithm fails on edge cases",
+      "severity": "Medium",
+      "probability": "Low",
+      "impact": "Invalid plans created, potential infinite loops",
+      "mitigation": "Implement comprehensive graph algorithm testing with 20+ edge cases. Use proven DAG validation libraries.",
+      "status": "Mitigated - tests passing"
+    },
+    {
+      "id": "R005",
+      "description": "MCP API contract misalignment between server and extension",
+      "severity": "High",
+      "probability": "Low",
+      "impact": "Runtime errors, broken agent communication",
+      "mitigation": "Define OpenAPI spec for MCP tools. Automated integration tests. Version MCP protocol.",
+      "status": "Mitigated - contract documented"
+    },
+    {
+      "id": "R006",
+      "description": "Performance degradation with large task graphs (>1000 tasks)",
+      "severity": "Low",
+      "probability": "Medium",
+      "impact": "Slow UI rendering, poor user experience",
+      "mitigation": "Implement lazy loading for large graphs. Virtual scrolling for task lists. Benchmark with 5000+ task graphs.",
+      "status": "Planned for Phase 4"
+    },
+    {
+      "id": "R007",
+      "description": "Key person dependency on lead developer",
+      "severity": "Low",
+      "probability": "Low",
+      "impact": "Development slowdown if lead developer unavailable",
+      "mitigation": "Comprehensive documentation. Code review culture. Knowledge sharing sessions bi-weekly.",
+      "status": "Mitigated - docs up to date"
+    },
+    {
+      "id": "R008",
+      "description": "GitHub API rate limiting impacting sync operations",
+      "severity": "Low",
+      "probability": "Medium",
+      "impact": "Delayed sync, stale data in GitHub Issues",
+      "mitigation": "Implement request batching and caching. Exponential backoff with circuit breaker. Monitor rate limit headers.",
+      "status": "Mitigated - optimization implemented"
+    },
+    {
+      "id": "R009",
+      "description": "Testing coverage gaps allowing bugs to reach production",
+      "severity": "High",
+      "probability": "Medium",
+      "impact": "Production defects, user trust erosion",
+      "mitigation": "Mandate 80%+ test coverage. Automated coverage reporting in CI/CD. Code review checklist includes test verification.",
+      "status": "In progress - 96.8% coverage achieved"
+    },
+    {
+      "id": "R010",
+      "description": "User adoption resistance due to learning curve",
+      "severity": "Medium",
+      "probability": "Medium",
+      "impact": "Low ROI, wasted development effort",
+      "mitigation": "Create interactive tutorial and video walkthroughs. Offer office hours for Q&A. Gradual rollout with early adopters.",
+      "status": "Planned for launch phase"
+    },
+    {
+      "id": "R011",
+      "description": "Security vulnerability in agent execution sandbox",
+      "severity": "High",
+      "probability": "Low",
+      "impact": "Code injection, unauthorized access to codebase",
+      "mitigation": "Use VS Code's existing security model. Limit agent file system access. Audit all agent actions.",
+      "status": "Mitigated - leveraging VS Code security"
+    },
+    {
+      "id": "R012",
+      "description": "Database corruption due to concurrent writes",
+      "severity": "High",
+      "probability": "Low",
+      "impact": "Data loss, system instability",
+      "mitigation": "Implement optimistic locking (already in place). Use SQLite WAL mode. Regular automated backups.",
+      "status": "Mitigated - optimistic locking deployed"
+    }
+  ],
+  "assumptions": [
+    "Users have VS Code 1.75+ installed",
+    "GitHub account with repo access for Issue sync",
+    "Copilot subscription for AI features (optional but recommended)",
+    "SQLite support on user's platform (Windows/Mac/Linux)",
+    "Network access for GitHub API and WebSocket connections",
+    "Node.js 16+ for local MCP server execution"
+  ],
+  "constraints": [
+    "Must work within VS Code extension sandbox security model",
+    "GitHub API rate limits (5000 req/hr authenticated)",
+    "Extension bundle size < 50MB for marketplace approval",
+    "Backward compatibility with VS Code 1.75+",
+    "No external database dependencies (SQLite embedded only)",
+    "MCP tools must respond < 500ms for good UX"
+  ],
+  "out_of_scope": [
+    "Native mobile app (VS Code only for MVP)",
+    "JetBrains IDE support (future enhancement)",
+    "Multi-language support beyond English (future)",
+    "Real-time collaborative editing (future)",
+    "Cloud-hosted SaaS version (MVP is local-first)",
+    "Jira/Asana integration (GitHub only for MVP)",
+    "Advanced AI models beyond Copilot (future)",
+    "Custom report generation beyond exports (future)"
+  ]
+}

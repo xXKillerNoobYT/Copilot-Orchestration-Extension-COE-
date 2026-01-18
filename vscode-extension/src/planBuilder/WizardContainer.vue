@@ -57,12 +57,15 @@
           <component
             :is="getCurrentQuestionComponent()"
             :question-data="getCurrentQuestion()"
+            :question-id="getCurrentQuestion()?.id"
             :validation-errors="validationErrors"
             :current-answers="wizardStore.answers"
             :show-ai-assistance="showAssistant"
             @answer-changed="handleAnswerChanged"
             @validation-error="handleValidationError"
             @ask-ai="handleAskAI"
+            @edit-question="handleEditQuestion"
+            @generate-plan="handleGeneratePlan"
           />
         </div>
       </transition>
@@ -163,6 +166,26 @@ const QuestionRenderer = defineAsyncComponent(() =>
   import('./QuestionRenderer.vue')
 );
 
+// Import Five Core Wizard Questions
+const QuestionOne = defineAsyncComponent(() =>
+  import('./components/wizard/QuestionOne.vue')
+);
+const QuestionTwo = defineAsyncComponent(() =>
+  import('./components/wizard/QuestionTwo.vue')
+);
+const QuestionThree = defineAsyncComponent(() =>
+  import('./components/wizard/QuestionThree.vue')
+);
+const QuestionFour = defineAsyncComponent(() =>
+  import('./components/wizard/QuestionFour.vue')
+);
+const QuestionFive = defineAsyncComponent(() =>
+  import('./components/wizard/QuestionFive.vue')
+);
+const WizardSummary = defineAsyncComponent(() =>
+  import('./components/wizard/WizardSummary.vue')
+);
+
 // Store and state
 const wizardStore = useWizardStore();
 const currentStep = ref(0);
@@ -189,37 +212,49 @@ const showPreview = ref(true); // Default to ON for live preview
 const previewRenderTime = ref<number>(0);
 const previewErrors = ref<string[]>([]);
 
-// Question definitions (would typically come from config)
+// Question definitions - Five Core Wizard Questions
 const questions = ref([
   {
-    id: 'project-overview',
-    title: 'Project Overview',
-    description: 'Tell us about your project',
-    type: 'project-overview',
+    id: 'q1-what-building',
+    title: 'What are you building?',
+    description: 'Project details and objectives',
+    type: 'question-one',
+    component: 'QuestionOne',
   },
   {
-    id: 'architecture',
-    title: 'Architecture Pattern',
-    description: 'Choose your architecture style',
-    type: 'architecture',
+    id: 'q2-users-stakeholders',
+    title: 'Who are the users/stakeholders?',
+    description: 'Identify your audience',
+    type: 'question-two',
+    component: 'QuestionTwo',
   },
   {
-    id: 'features',
-    title: 'Feature Breakdown',
-    description: 'Define your core features',
-    type: 'features',
+    id: 'q3-success-criteria',
+    title: 'What are success criteria?',
+    description: 'Define how you measure success',
+    type: 'question-three',
+    component: 'QuestionThree',
   },
   {
-    id: 'timeline',
-    title: 'Timeline Planning',
-    description: 'Set your milestones and timeline',
-    type: 'timeline',
+    id: 'q4-constraints',
+    title: 'What are constraints?',
+    description: 'Timeline, technology, and resource limits',
+    type: 'question-four',
+    component: 'QuestionFour',
   },
   {
-    id: 'team',
-    title: 'Team Structure',
-    description: 'Define your team and roles',
-    type: 'team',
+    id: 'q5-risks',
+    title: 'What are risks?',
+    description: 'Identify potential challenges',
+    type: 'question-five',
+    component: 'QuestionFive',
+  },
+  {
+    id: 'q6-summary',
+    title: 'Review & Generate',
+    description: 'Review your answers and generate plan',
+    type: 'summary',
+    component: 'WizardSummary',
   },
 ]);
 
@@ -257,8 +292,8 @@ const getCurrentQuestion = () => {
 
 const getCurrentQuestionComponent = () => {
   // Return dynamic component based on question type
-  // For MVP, use generic QuestionRenderer with config
-  return 'QuestionRenderer';
+  const currentQuestion = questions.value[currentStep.value];
+  return currentQuestion?.component || 'QuestionRenderer';
 };
 
 const goToNextStep = () => {
@@ -494,6 +529,62 @@ const handleTemplateSelected = async (templateId: string) => {
 
 const handleValidationError = (errors: string[]) => {
   validationErrors.value[currentStep.value] = errors;
+};
+
+// Handle navigation from summary to edit a specific question
+const handleEditQuestion = (questionNumber: number) => {
+  // Navigate to the question (questionNumber is 1-indexed, currentStep is 0-indexed)
+  const targetStep = questionNumber - 1;
+  if (targetStep >= 0 && targetStep < questions.value.length) {
+    currentStep.value = targetStep;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+
+// Handle plan generation from summary
+const handleGeneratePlan = async (answers: any) => {
+  isSubmitting.value = true;
+  try {
+    // Import WizardService dynamically
+    const { WizardService } = await import('./services/WizardService');
+    
+    // Combine all answers
+    const fullAnswers = {
+      ...answers.q1,
+      ...answers.q2,
+      ...answers.q3,
+      ...answers.q4,
+      ...answers.q5,
+    };
+    
+    // Validate all answers
+    const validation = WizardService.validateAnswers(fullAnswers);
+    if (!validation.valid) {
+      console.error('Validation errors:', validation.errors);
+      alert(`Please complete all required fields:\n${validation.errors.join('\n')}`);
+      isSubmitting.value = false;
+      return;
+    }
+    
+    // Generate the plan
+    const generatedPlan = await WizardService.generatePlan(fullAnswers);
+    
+    // Add metadata
+    const planWithMetadata = PlanMetadataManager.addMetadata(generatedPlan);
+    
+    // Emit event for plan completion
+    window.dispatchEvent(new CustomEvent('wizard-complete', { 
+      detail: { plan: planWithMetadata } 
+    }));
+    
+    console.log('[Wizard] Plan generated successfully:', generatedPlan);
+    
+  } catch (error) {
+    console.error('Failed to generate plan:', error);
+    alert('Failed to generate plan. Please try again.');
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 
 const submitWizard = async () => {
