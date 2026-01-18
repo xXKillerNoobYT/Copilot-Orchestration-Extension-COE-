@@ -5,6 +5,27 @@
       <p class="description">{{ questionData.description }}</p>
     </div>
 
+    <!-- AI Hint Section -->
+    <div v-if="aiHint" class="ai-hint-section">
+      <div class="ai-hint-content">
+        <span class="hint-icon">💡</span>
+        <p class="hint-text">{{ aiHint }}</p>
+      </div>
+    </div>
+
+    <!-- Ask AI Button -->
+    <div class="ai-actions">
+      <button 
+        class="ask-ai-btn"
+        @click="handleAskAI"
+        :disabled="isLoadingAI"
+        title="Get AI-powered help for this question"
+      >
+        <span class="btn-icon">🤖</span>
+        <span class="btn-text">{{ isLoadingAI ? 'Loading...' : 'Ask AI for Help' }}</span>
+      </button>
+    </div>
+
     <div class="question-body">
       <!-- Text input question type -->
       <div v-if="questionData.type === 'text'" class="question-control">
@@ -185,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 
 interface QuestionOption {
   value: string | number | boolean;
@@ -215,6 +236,8 @@ interface QuestionData {
 interface Props {
   questionData: QuestionData;
   validationErrors?: Record<string, string[]>;
+  currentAnswers?: Record<string, unknown>;
+  showAiAssistance?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -225,12 +248,15 @@ const validationErrors = computed(() => props.validationErrors || {});
 const emit = defineEmits<{
   'answer-changed': [answer: any];
   'validation-error': [errors: string[]];
+  'ask-ai': [questionId: string];
 }>();
 
 // State
 const answer = ref<any>(
   props.questionData.type === 'checkbox' ? [] : ''
 );
+const aiHint = ref<string>('');
+const isLoadingAI = ref<boolean>(false);
 
 const currentQuestionId = computed(() => props.questionData.id);
 
@@ -333,6 +359,45 @@ const selectVisualOption = (value: any) => {
   answer.value = value;
   validateAndEmit();
 };
+
+/**
+ * Handle "Ask AI for Help" button click
+ */
+const handleAskAI = () => {
+  isLoadingAI.value = true;
+  emit('ask-ai', props.questionData.id);
+  
+  // Loading state will be cleared when WizardContainer provides hint
+  setTimeout(() => {
+    isLoadingAI.value = false;
+  }, 3000);
+};
+
+/**
+ * Generate contextual AI hint based on question type
+ */
+const generateDefaultHint = () => {
+  const questionType = props.questionData.type;
+  const questionTitle = props.questionData.title;
+  
+  // Generate helpful hints based on question type
+  if (questionType === 'text' || questionType === 'textarea') {
+    if (questionTitle.toLowerCase().includes('name')) {
+      aiHint.value = 'Common answers include descriptive names that reflect your project\'s purpose. Consider your target audience.';
+    } else if (questionTitle.toLowerCase().includes('description')) {
+      aiHint.value = 'Provide a clear overview focusing on what problem you\'re solving and who it helps.';
+    }
+  } else if (questionType === 'radio' || questionType === 'select') {
+    aiHint.value = 'Review the options carefully. Consider your project requirements and constraints.';
+  }
+};
+
+// Generate default hint on mount if AI assistance is enabled
+onMounted(() => {
+  if (props.showAiAssistance) {
+    generateDefaultHint();
+  }
+});
 </script>
 
 <style scoped>
@@ -363,6 +428,72 @@ const selectVisualOption = (value: any) => {
   font-size: 14px;
   color: var(--vscode-descriptionForeground);
 }
+
+/* AI Hint Section */
+.ai-hint-section {
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(78, 201, 176, 0.1);
+  border-left: 3px solid #4ec9b0;
+  border-radius: 4px;
+}
+
+.ai-hint-content {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.hint-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.hint-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--vscode-editor-foreground);
+}
+
+/* AI Actions */
+.ai-actions {
+  margin: 12px 0;
+}
+
+.ask-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border);
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ask-ai-btn:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.ask-ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  font-size: 14px;
+}
+
+.btn-text {
+  font-family: inherit;
+}
+
 
 /* Question body */
 .question-body {

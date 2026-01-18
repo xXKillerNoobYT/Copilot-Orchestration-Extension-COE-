@@ -58,8 +58,11 @@
             :is="getCurrentQuestionComponent()"
             :question-data="getCurrentQuestion()"
             :validation-errors="validationErrors"
+            :current-answers="wizardStore.answers"
+            :show-ai-assistance="showAssistant"
             @answer-changed="handleAnswerChanged"
             @validation-error="handleValidationError"
+            @ask-ai="handleAskAI"
           />
         </div>
       </transition>
@@ -88,6 +91,7 @@
         @accept="handleSuggestionAccepted"
         @reject="handleSuggestionRejected"
         @retry="refreshAiSuggestions"
+        @apply="handleSuggestionApplied"
       />
     </div>
 
@@ -338,7 +342,7 @@ const generateAiSuggestions = () => {
     questions: [] // Empty array since we're working with simplified question structure
   };
   
-  // Use debounced generation
+  // Use debounced generation with error handling
   aiService.debouncedGenerateSuggestions(
     wizardPage,
     currentAnswers,
@@ -346,6 +350,11 @@ const generateAiSuggestions = () => {
     (suggestions) => {
       aiSuggestions.value = suggestions;
       aiLoading.value = false;
+      
+      // Show error if no suggestions were returned (likely API failure)
+      if (suggestions.length === 0) {
+        aiError.value = 'Unable to generate suggestions. AI service may be unavailable.';
+      }
     }
   );
 };
@@ -367,6 +376,37 @@ const handleSuggestionAccepted = (suggestion: AiSuggestion) => {
 const handleSuggestionRejected = (id: string) => {
   console.log('[Wizard] Suggestion rejected:', id);
 };
+
+/**
+ * Handle "Ask AI" request from question component
+ */
+const handleAskAI = (questionId: string) => {
+  // Ensure assistant is visible
+  if (!showAssistant.value) {
+    showAssistant.value = true;
+  }
+  
+  // Generate suggestions for the current question
+  generateAiSuggestions();
+  
+  console.log('[Wizard] AI assistance requested for:', questionId);
+};
+
+/**
+ * Handle suggestion applied to answer field
+ */
+const handleSuggestionApplied = (suggestion: AiSuggestion) => {
+  const currentQuestion = getCurrentQuestion();
+  if (!currentQuestion) return;
+  
+  // Apply the suggested answer to the current question
+  if (suggestion.suggestedAnswer) {
+    wizardStore.setAnswer(currentQuestion.id, suggestion.suggestedAnswer);
+    console.log('[Wizard] Suggestion applied:', suggestion);
+  }
+};
+
+
 
 // Template handling
 const handleTemplateSelected = async (templateId: string) => {

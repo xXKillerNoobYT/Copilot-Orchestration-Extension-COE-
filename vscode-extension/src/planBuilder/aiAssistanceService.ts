@@ -17,6 +17,8 @@ export interface AiSuggestion {
   relatedAnswers: string[];
   confidence: number;
   timestamp: Date;
+  sources?: string[];
+  suggestedAnswer?: string;
 }
 
 export interface AiAssistanceConfig {
@@ -65,6 +67,9 @@ export class AiAssistanceService {
       return this.parseSuggestions(response, currentPage.id);
     } catch (error) {
       this.log('Error generating suggestions:', error);
+      
+      // Graceful degradation: return empty array instead of throwing
+      // This allows the wizard to continue functioning even if AI is unavailable
       return [];
     }
   }
@@ -157,6 +162,8 @@ export class AiAssistanceService {
           relatedAnswers: item.relatedAnswers || [],
           confidence: item.confidence || 0.8,
           timestamp: new Date(),
+          sources: item.sources || item.citations || [],
+          suggestedAnswer: item.suggestedAnswer || item.answer || '',
         };
 
         if (suggestion.question) {
