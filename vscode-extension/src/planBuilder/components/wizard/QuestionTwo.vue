@@ -134,10 +134,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 const wizardStore = useWizardStore();
 
-// State
-const primaryUsers = ref(['']);
-const secondaryUsers = ref(['']);
-const stakeholders = ref(['']);
+// State initialization defaults
+const primaryUsers = ref<string[]>(['']);
+const secondaryUsers = ref<string[]>(['']);
+const stakeholders = ref<string[]>(['']);
 const userNeeds = ref('');
 
 const errors = ref({
@@ -244,13 +244,13 @@ onMounted(() => {
   if (existingAnswer) {
     primaryUsers.value = existingAnswer.primaryUsers?.length > 0 
       ? [...existingAnswer.primaryUsers] 
-      : [''];
+      : [];
     secondaryUsers.value = existingAnswer.secondaryUsers?.length > 0 
       ? [...existingAnswer.secondaryUsers] 
-      : [''];
+      : [];
     stakeholders.value = existingAnswer.stakeholders?.length > 0 
       ? [...existingAnswer.stakeholders] 
-      : [''];
+      : [];
     userNeeds.value = existingAnswer.userNeeds || '';
   }
 });

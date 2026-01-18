@@ -88,6 +88,10 @@ export interface GeneratedTask {
 }
 
 export class WizardService {
+  // Constants for maintainability
+  private static readonly MAX_USER_NEEDS_PREVIEW_LENGTH = 100;
+  private static readonly MAX_TASK_TITLE_LENGTH = 50;
+  
   /**
    * Process wizard answers and generate a structured project plan
    */
@@ -157,7 +161,9 @@ export class WizardService {
     
     // Generate criteria from user needs
     if (answers.userNeeds) {
-      criteria.push(`User needs are met: ${answers.userNeeds.substring(0, 100)}${answers.userNeeds.length > 100 ? '...' : ''}`);
+      const preview = answers.userNeeds.substring(0, this.MAX_USER_NEEDS_PREVIEW_LENGTH);
+      const suffix = answers.userNeeds.length > this.MAX_USER_NEEDS_PREVIEW_LENGTH ? '...' : '';
+      criteria.push(`User needs are met: ${preview}${suffix}`);
     }
     
     // Generate criteria from objectives
@@ -236,9 +242,10 @@ export class WizardService {
     
     // Generate tasks from objectives
     answers.objectives.forEach((objective, index) => {
+      const titlePreview = objective.substring(0, this.MAX_TASK_TITLE_LENGTH);
       tasks.push({
         id: `task-objective-${index + 1}`,
-        title: `Implement: ${objective.substring(0, 50)}`,
+        title: `Implement: ${titlePreview}`,
         description: objective,
         phase: 'development',
         priority: index < 2 ? 'high' : 'medium',
