@@ -497,6 +497,15 @@ export class OrchestratorPanelProvider {
 
     const memoryData = this.memory.slice(-10); // Last 10 entries
 
+    // Get coordination settings from VS Code configuration
+    const config = vscode.workspace.getConfiguration('copilot-orchestrator');
+    const coordinationConfig = {
+      autoDecompose: config.get<boolean>('coordination.autoDecompose', false),
+      requireVisualVerification: config.get<boolean>('coordination.requireVisualVerification', false),
+      notifyOnCompletion: config.get<boolean>('coordination.notifyOnCompletion', true),
+      pauseAgents: config.get<boolean>('coordination.pauseAgents', false),
+    };
+
     // Use a nonce to only allow specific scripts to run
     const nonce = getNonce();
 
@@ -983,7 +992,7 @@ export class OrchestratorPanelProvider {
           </div>
           <div class="toggle-item">
             <span class="toggle-label">Notify on task completion</span>
-            <div class="toggle-switch active" id="toggle-notify" onclick="handleToggle('notifyOnCompletion', this)"></div>
+            <div class="toggle-switch" id="toggle-notify" onclick="handleToggle('notifyOnCompletion', this)"></div>
           </div>
           <div class="toggle-item">
             <span class="toggle-label">Pause agent teams</span>
@@ -1188,6 +1197,7 @@ export class OrchestratorPanelProvider {
     const graphData = ${JSON.stringify(graphData)};
     const bundlesData = ${JSON.stringify(contextBundlesData)};
     const memoryData = ${JSON.stringify(memoryData)};
+    const coordinationConfig = ${JSON.stringify(coordinationConfig)};
 
     let selectedTaskId = null;
     let selectedAgentName = null;
@@ -1200,6 +1210,28 @@ export class OrchestratorPanelProvider {
       renderGraph();
       renderBundles();
       renderMemory();
+      initializeToggles();
+    }
+
+    function initializeToggles() {
+      // Initialize toggle switches based on configuration
+      const autoDecomposeToggle = document.getElementById('toggle-auto-decompose');
+      const visualVerifyToggle = document.getElementById('toggle-visual-verify');
+      const notifyToggle = document.getElementById('toggle-notify');
+      const pauseToggle = document.getElementById('toggle-pause');
+
+      if (autoDecomposeToggle && coordinationConfig.autoDecompose) {
+        autoDecomposeToggle.classList.add('active');
+      }
+      if (visualVerifyToggle && coordinationConfig.requireVisualVerification) {
+        visualVerifyToggle.classList.add('active');
+      }
+      if (notifyToggle && coordinationConfig.notifyOnCompletion) {
+        notifyToggle.classList.add('active');
+      }
+      if (pauseToggle && coordinationConfig.pauseAgents) {
+        pauseToggle.classList.add('active');
+      }
     }
 
     function renderStats() {
@@ -1400,13 +1432,19 @@ export class OrchestratorPanelProvider {
       const statusText = document.getElementById('connection-text');
       const attemptsEl = document.getElementById('reconnect-attempts');
       
-      indicator.className = 'status-indicator ' + status;
-      statusText.textContent = text;
+      if (indicator) {
+        indicator.className = 'status-indicator ' + status;
+      }
+      if (statusText) {
+        statusText.textContent = text;
+      }
       
-      if (attempts > 0) {
-        attemptsEl.textContent = \`(Attempt \${attempts})\`;
-      } else {
-        attemptsEl.textContent = '';
+      if (attemptsEl) {
+        if (attempts > 0) {
+          attemptsEl.textContent = \`(Attempt \${attempts})\`;
+        } else {
+          attemptsEl.textContent = '';
+        }
       }
     }
 
@@ -1441,7 +1479,10 @@ export class OrchestratorPanelProvider {
       // Update verified count from Verification team metrics
       if (teamsStatus.verification && teamsStatus.verification.metrics) {
         const verifiedCount = teamsStatus.verification.metrics.tasksVerified || 0;
-        document.getElementById('metric-verified').textContent = String(verifiedCount);
+        const verifiedEl = document.getElementById('metric-verified');
+        if (verifiedEl) {
+          verifiedEl.textContent = String(verifiedCount);
+        }
       }
     }
 
@@ -1483,16 +1524,32 @@ export class OrchestratorPanelProvider {
 
       const counts = metrics.counts || {};
       
-      document.getElementById('metric-created').textContent = String(counts.total || 0);
-      document.getElementById('metric-completed-today').textContent = String(counts.completed || 0);
+      const createdEl = document.getElementById('metric-created');
+      const completedTodayEl = document.getElementById('metric-completed-today');
+      const failedEl = document.getElementById('metric-failed');
+      const blockedEl = document.getElementById('metric-blocked');
+      const avgDurationEl = document.getElementById('metric-avg-duration');
+
+      if (createdEl) {
+        createdEl.textContent = String(counts.total || 0);
+      }
+      if (completedTodayEl) {
+        completedTodayEl.textContent = String(counts.completed || 0);
+      }
       // Note: Verified count comes from team status, not task metrics - will be updated separately
-      document.getElementById('metric-failed').textContent = String(counts.failed || 0);
-      document.getElementById('metric-blocked').textContent = String(counts.blocked || 0);
+      if (failedEl) {
+        failedEl.textContent = String(counts.failed || 0);
+      }
+      if (blockedEl) {
+        blockedEl.textContent = String(counts.blocked || 0);
+      }
       
       const avgSeconds = metrics.averageCycleSeconds || 0;
-      document.getElementById('metric-avg-duration').textContent = avgSeconds > 0 
-        ? avgSeconds.toFixed(1) + 's' 
-        : '0s';
+      if (avgDurationEl) {
+        avgDurationEl.textContent = avgSeconds > 0 
+          ? avgSeconds.toFixed(1) + 's' 
+          : '0s';
+      }
     }
 
     function handleStartLoop() {
@@ -1600,11 +1657,8 @@ export class OrchestratorPanelProvider {
       requestMetrics();
     }, ${INITIAL_REQUEST_DELAY_MS});
     
-    // Poll for updates periodically (matches backend POLLING_INTERVAL_MS)
-    setInterval(() => {
-      requestTeamsStatus();
-      requestMetrics();
-    }, ${POLLING_INTERVAL_MS});
+    // Note: Real-time updates are handled by the backend via WebSocket subscriptions
+    // or polling fallback. The webview receives updates via postMessage.
   </script>
 </body>
 </html>`;

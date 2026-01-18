@@ -193,15 +193,16 @@ describe('OrchestratorPanel Dashboard Enhancements', () => {
   });
 
   describe('Real-time Updates', () => {
-    it('should include polling logic in JavaScript', () => {
+    it('should request initial data on load', () => {
       provider = new OrchestratorPanelProvider(mockPanel(), mockUri(), [], [], []);
       const html = provider._getHtmlForWebview(mockWebview());
 
-      // Check for polling setup
-      expect(html).toContain('setInterval');
+      // Check for initial data request
+      expect(html).toContain('setTimeout');
       expect(html).toContain('requestTeamsStatus()');
       expect(html).toContain('requestMetrics()');
-      expect(html).toContain('5000'); // 5 second interval
+      // Backend handles polling, not webview
+      expect(html).toContain('Real-time updates are handled by the backend');
     });
 
     it('should handle incoming WebSocket messages', () => {
