@@ -6,6 +6,16 @@
 import * as vscode from 'vscode';
 import { ProgrammingOrchestratorManager } from './programmingOrchestratorTab';
 import { MCPClient } from '../services/mcpClient';
+import { ProviderFactory } from '../transport/transportManager';
+
+/**
+ * Configuration for connection testing
+ */
+interface ConnectionConfig {
+  baseUrl: string;
+  apiKey?: string;
+  model: string;
+}
 
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
@@ -133,38 +143,34 @@ export class SettingsPanel {
     }
   }
 
-  private async _testConnection(config: any) {
+  private async _testConnection(config: ConnectionConfig) {
     try {
-      const url = this._buildApiUrl(config.baseUrl, 'chat/completions');
-      const response = await this._fetchWithTimeout(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}),
-        },
-        body: JSON.stringify({
-          model: config.model,
-          messages: [{ role: 'user', content: 'ping' }],
-          max_tokens: 5,
-        }),
-      }, 10000);
+      // Create a provider instance using the config from the webview
+      // This runs in the extension host context, avoiding webview CSP restrictions
+      const provider = ProviderFactory.createProvider('lmstudio', {
+        name: 'LM Studio',
+        baseUrl: config.baseUrl,
+        apiKey: config.apiKey,
+        defaultModel: config.model,
+        // Note: testConnection() uses its own timeout (3000ms), so this is only for other operations
+      });
 
-      if (!response.ok) {
+      // Use the provider's built-in testConnection method
+      const connected = await provider.testConnection();
+
+      if (connected) {
+        this._panel.webview.postMessage({
+          command: 'connectionTestResult',
+          success: true,
+          message: 'Connection successful! Model responded.',
+        });
+      } else {
         this._panel.webview.postMessage({
           command: 'connectionTestResult',
           success: false,
-          message: `HTTP ${response.status}: ${response.statusText} (URL: ${url}). If this is a remote LM Studio host, enable external connections and confirm port 1234 is reachable.`,
+          message: this._buildConnectionFailureMessage(config.baseUrl, config.model),
         });
-        return;
       }
-
-      const data = await response.json();
-      this._panel.webview.postMessage({
-        command: 'connectionTestResult',
-        success: true,
-        message: 'Connection successful! Model responded.',
-        data: data,
-      });
     } catch (error) {
       this._panel.webview.postMessage({
         command: 'connectionTestResult',
@@ -172,6 +178,19 @@ export class SettingsPanel {
         message: `Connection test failed for ${config.baseUrl}: ${error instanceof Error ? error.message : String(error)}. Confirm network reachability and that the server exposes /v1/chat/completions.`,
       });
     }
+  }
+
+  /**
+   * Build a user-friendly error message for connection failures
+   */
+  private _buildConnectionFailureMessage(baseUrl: string, model: string): string {
+    const steps = [
+      `1. LLM server is running at ${baseUrl}`,
+      `2. Model "${model}" is loaded`,
+      '3. Server is accessible from this machine',
+      '4. If remote server, external API access is enabled',
+    ];
+    return `Connection test failed. Please verify:\n${steps.join('\n')}`;
   }
 
   /**

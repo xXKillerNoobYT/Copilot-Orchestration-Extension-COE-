@@ -1,5 +1,4 @@
 {
-    "$schema": "https://docs.github.com/schemas/copilot-mcp.json",
     "mcpServers": {
         "copilot-orchestrator": {
             "command": "node",
