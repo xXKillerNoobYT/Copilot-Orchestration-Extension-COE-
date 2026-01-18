@@ -123,15 +123,18 @@ export function validateInput<T>(
     return { valid: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const issues = error.issues || [];
+      const issues = error.issues;
       const firstError = issues[0];
+      const pathString = firstError?.path && Array.isArray(firstError.path) 
+        ? firstError.path.join('.') 
+        : 'input';
       return {
         valid: false,
         error: {
           code: AgentErrorCode.INVALID_INPUT,
           message: firstError?.message || 'Invalid input',
           details: issues,
-          suggestion: firstError ? `Please check the ${firstError.path.join('.')} field and ensure it meets the requirements.` : 'Please check your input.',
+          suggestion: `Please check the ${pathString} field and ensure it meets the requirements.`,
         },
       };
     }

@@ -23,6 +23,9 @@ export async function handleGetNextTask(args: any) {
   try {
     // TODO: Integrate with actual task management system
     // For now, return mock data showing the structure agents will receive
+    // NOTE: Mock data intentionally uses hard-coded values to demonstrate
+    // the expected response structure. Replace with real data when integrating
+    // with task management backend.
 
     const nextTask = {
       taskId: 'TASK-001',

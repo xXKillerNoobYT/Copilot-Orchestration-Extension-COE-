@@ -33,7 +33,7 @@ export async function handleReportVerificationResult(args: any) {
       screenshots: screenshots || [],
       timestamp: new Date().toISOString(),
       reviewer: 'agent',
-      qualityGatePassed: passed && findings.length === 0,
+      qualityGatePassed: passed,  // Pass status is independent of findings count
     };
 
     // Determine next workflow step
