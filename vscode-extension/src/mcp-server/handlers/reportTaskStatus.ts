@@ -10,6 +10,17 @@ import {
   formatAgentError,
   AgentErrors,
 } from '../agentValidation.js';
+import { TaskManager } from '../integrations/taskManager.js';
+
+// Singleton instance
+let taskManager: TaskManager | null = null;
+
+function getTaskManager(): TaskManager {
+  if (!taskManager) {
+    taskManager = new TaskManager();
+  }
+  return taskManager;
+}
 
 export async function handleReportTaskStatus(args: any) {
   // Validate input
@@ -21,14 +32,20 @@ export async function handleReportTaskStatus(args: any) {
   const { taskId, status, progress, observations, blockers } = validation.data;
 
   try {
-    // TODO: Integrate with actual task management system
-    // For now, log status update and return confirmation
+    const manager = getTaskManager();
+    const result = await manager.updateTaskStatus(taskId, status, progress, observations, blockers);
+
+    if (!result.success) {
+      return formatAgentError(
+        AgentErrors.taskNotFound(result.error || `Task ${taskId}`)
+      );
+    }
 
     const statusUpdate = {
       taskId,
-      previousStatus: 'pending',
+      previousStatus: result.task?.status || 'unknown',
       newStatus: status,
-      progress: progress ?? 0.5,
+      progress: progress ?? 0,
       observations,
       blockers: blockers || [],
       updatedAt: new Date().toISOString(),
@@ -40,7 +57,7 @@ export async function handleReportTaskStatus(args: any) {
           : ['Continue implementation'],
     };
 
-    // Simulate workflow transition
+    // Add task completion message
     if (status === 'done') {
       statusUpdate.nextSteps.push('Task marked complete, verification requested');
     }

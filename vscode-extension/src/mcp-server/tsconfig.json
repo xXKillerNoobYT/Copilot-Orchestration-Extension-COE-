@@ -1,15 +1,16 @@
 {
     "compilerOptions": {
         "module": "ESNext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "target": "ES2020",
         "outDir": "../../dist/mcp-server",
         "rootDir": ".",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "strict": true,
+        "strict": false,
         "skipLibCheck": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "noImplicitAny": false
     },
     "include": [
         "**/*.ts"

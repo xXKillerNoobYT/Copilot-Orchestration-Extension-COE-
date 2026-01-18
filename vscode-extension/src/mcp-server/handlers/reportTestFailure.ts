@@ -10,6 +10,31 @@ import {
   formatAgentError,
   AgentErrors,
 } from '../agentValidation.js';
+import { GitHubIntegration } from '../integrations/githubIntegration.js';
+import { TaskManager } from '../integrations/taskManager.js';
+
+// Singleton instances
+let githubIntegration: GitHubIntegration | null = null;
+let taskManager: TaskManager | null = null;
+
+function getGitHubIntegration(): GitHubIntegration {
+  if (!githubIntegration) {
+    // Try to get GitHub config from environment or use defaults
+    const owner = process.env.GITHUB_OWNER || 'owner';
+    const repo = process.env.GITHUB_REPO || 'repo';
+    const token = process.env.GITHUB_TOKEN;
+
+    githubIntegration = new GitHubIntegration({ owner, repo, token });
+  }
+  return githubIntegration;
+}
+
+function getTaskManager(): TaskManager {
+  if (!taskManager) {
+    taskManager = new TaskManager();
+  }
+  return taskManager;
+}
 
 export async function handleReportTestFailure(args: any) {
   // Validate input
@@ -21,9 +46,6 @@ export async function handleReportTestFailure(args: any) {
   const { taskId, testName, errorMessage, stackTrace, suggestedFix } = validation.data;
 
   try {
-    // TODO: Integrate with actual issue tracking system
-    // For now, log failure and return structured response
-
     const failureReport = {
       id: `FAILURE-${Date.now()}`,
       taskId,
@@ -34,13 +56,37 @@ export async function handleReportTestFailure(args: any) {
       timestamp: new Date().toISOString(),
       severity: 'high',
       investigationCreated: false,
+      issueUrl: undefined as string | undefined,
     };
 
-    // Optionally create investigation task
-    // This would integrate with GitHub Issues API
+    // Create investigation task if no suggested fix
     if (!suggestedFix) {
-      failureReport.investigationCreated = true;
-      // TODO: Create GitHub issue for investigation
+      const github = getGitHubIntegration();
+      
+      if (github.isAvailable()) {
+        const result = await github.createTestFailureIssue({
+          taskId,
+          testName,
+          errorMessage,
+          stackTrace,
+        });
+
+        if (result.success && result.issue) {
+          failureReport.investigationCreated = true;
+          failureReport.issueUrl = result.issue.html_url;
+        }
+      } else {
+        // Log locally if GitHub is not available
+        const manager = getTaskManager();
+        await manager.logActivity({
+          type: 'test_failure',
+          taskId,
+          testName,
+          errorMessage,
+          stackTrace,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     return formatAgentSuccess({
@@ -48,7 +94,9 @@ export async function handleReportTestFailure(args: any) {
       message: `Test failure reported for task ${taskId}`,
       nextSteps: suggestedFix
         ? ['Apply suggested fix', 'Re-run tests']
-        : ['Investigation task created', 'Debug the issue', 'Update task status'],
+        : failureReport.investigationCreated
+        ? [`Investigation task created: ${failureReport.issueUrl}`, 'Debug the issue', 'Update task status']
+        : ['Investigation logged', 'Debug the issue', 'Update task status'],
     });
   } catch (error) {
     return formatAgentError(

@@ -10,6 +10,26 @@ import {
   formatAgentError,
   AgentErrors,
 } from '../agentValidation.js';
+import { TaskManager } from '../integrations/taskManager.js';
+import { ContextRetrieval } from '../integrations/contextRetrieval.js';
+
+// Singleton instances
+let taskManager: TaskManager | null = null;
+let contextRetrieval: ContextRetrieval | null = null;
+
+function getTaskManager(): TaskManager {
+  if (!taskManager) {
+    taskManager = new TaskManager();
+  }
+  return taskManager;
+}
+
+function getContextRetrieval(): ContextRetrieval {
+  if (!contextRetrieval) {
+    contextRetrieval = new ContextRetrieval();
+  }
+  return contextRetrieval;
+}
 
 export async function handleGetContextBundle(args: any) {
   // Validate input
@@ -21,66 +41,18 @@ export async function handleGetContextBundle(args: any) {
   const { taskId, includeFiles = true, includeDocs = true } = validation.data;
 
   try {
-    // TODO: Integrate with actual workspace and documentation system
-    // For now, return mock context bundle structure
+    const manager = getTaskManager();
+    const task = await manager.getTaskById(taskId);
 
-    const contextBundle = {
-      taskId,
-      task: {
-        title: 'Task title from task manager',
-        description: 'Detailed task description',
-        acceptanceCriteria: ['Criterion 1', 'Criterion 2'],
-      },
-      relevantFiles: includeFiles
-        ? [
-            {
-              path: 'src/example.ts',
-              summary: 'Main implementation file',
-              lastModified: new Date().toISOString(),
-            },
-            {
-              path: 'tests/example.test.ts',
-              summary: 'Test file for the implementation',
-              lastModified: new Date().toISOString(),
-            },
-          ]
-        : [],
-      documentation: includeDocs
-        ? [
-            {
-              title: 'Architecture Overview',
-              path: 'docs/ARCHITECTURE.md',
-              relevance: 'high',
-              summary: 'System architecture and design patterns',
-            },
-            {
-              title: 'Coding Standards',
-              path: 'docs/CODING-STANDARDS.md',
-              relevance: 'medium',
-              summary: 'Code style and conventions',
-            },
-          ]
-        : [],
-      dependencies: [
-        {
-          name: 'typescript',
-          version: '5.0.0',
-          purpose: 'Primary language',
-        },
-      ],
-      relatedTasks: [
-        {
-          taskId: 'TASK-002',
-          title: 'Related task',
-          relationship: 'depends-on',
-        },
-      ],
-      agentGuidance: {
-        recommendedApproach: 'Start with writing tests, then implement the feature',
-        commonPitfalls: ['Avoid hardcoding values', 'Ensure proper error handling'],
-        bestPractices: ['Follow existing code patterns', 'Add inline documentation'],
-      },
-    };
+    if (!task) {
+      return formatAgentError(AgentErrors.taskNotFound(taskId));
+    }
+
+    const retrieval = getContextRetrieval();
+    const contextBundle = await retrieval.getContextBundle(task, {
+      includeFiles,
+      includeDocs,
+    });
 
     return formatAgentSuccess({
       context: contextBundle,

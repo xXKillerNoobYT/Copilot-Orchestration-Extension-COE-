@@ -10,6 +10,17 @@ import {
   formatAgentError,
   AgentErrors,
 } from '../agentValidation.js';
+import { TaskManager } from '../integrations/taskManager.js';
+
+// Singleton instance to avoid multiple filesystem reads
+let taskManager: TaskManager | null = null;
+
+function getTaskManager(): TaskManager {
+  if (!taskManager) {
+    taskManager = new TaskManager();
+  }
+  return taskManager;
+}
 
 export async function handleGetNextTask(args: any) {
   // Validate input
@@ -21,49 +32,40 @@ export async function handleGetNextTask(args: any) {
   const { filter, priority, agentType } = validation.data;
 
   try {
-    // TODO: Integrate with actual task management system
-    // For now, return mock data showing the structure agents will receive
-    // NOTE: Mock data intentionally uses hard-coded values to demonstrate
-    // the expected response structure. Replace with real data when integrating
-    // with task management backend.
+    const manager = getTaskManager();
+    const task = await manager.getNextTask({ filter, priority, agentType });
 
-    const nextTask = {
-      taskId: 'TASK-001',
-      title: 'Implement authentication middleware',
-      description: 'Add JWT-based authentication middleware to protect API endpoints',
-      status: 'pending',
-      priority: priority || 'high',
-      assignedTo: agentType || 'code-master',
-      estimatedEffort: '2 hours',
-      dependencies: [],
-      acceptanceCriteria: [
-        'JWT validation middleware implemented',
-        'Protected routes configured',
-        'Unit tests written',
-        'Integration tests passing',
-      ],
-      context: {
-        relatedFiles: [
-          'src/middleware/auth.ts',
-          'src/routes/api.ts',
-          'tests/auth.test.ts',
-        ],
-        relatedIssues: [
-          {
-            number: 42,
-            url: 'https://github.com/owner/repo/issues/42',
-            title: 'Authentication requirements',
-          },
-        ],
-        techStack: ['TypeScript', 'Express', 'JWT'],
+    if (!task) {
+      return formatAgentError(
+        AgentErrors.taskNotFound('No tasks available in queue')
+      );
+    }
+
+    const queueDepth = await manager.getQueueDepth();
+
+    // Format task for agent consumption
+    const formattedTask = {
+      taskId: task.id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      assignedTo: agentType || 'agent',
+      estimatedEffort: task.estimatedEffort || 'Unknown',
+      dependencies: task.dependencies,
+      acceptanceCriteria: task.acceptanceCriteria || [],
+      context: task.context || {
+        relatedFiles: [],
+        relatedIssues: [],
+        techStack: [],
       },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: task.createdAt || new Date().toISOString(),
+      updatedAt: task.updatedAt || new Date().toISOString(),
     };
 
     return formatAgentSuccess({
-      task: nextTask,
-      queueDepth: 5,
+      task: formattedTask,
+      queueDepth,
       message: 'Task retrieved successfully. Start by reviewing the acceptance criteria and context.',
     });
   } catch (error) {
