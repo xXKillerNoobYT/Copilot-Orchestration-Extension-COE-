@@ -12,7 +12,7 @@ interface Task {
   title: string;
   description: string;
   status: 'pending' | 'in-progress' | 'done' | 'blocked' | 'review' | 'failed' | 'cancelled';
-  priority: 'high' | 'medium' | 'low';
+  priority: 'critical' | 'high' | 'medium' | 'low';
   type?: string;
   dependencies: string[];
   details?: string;

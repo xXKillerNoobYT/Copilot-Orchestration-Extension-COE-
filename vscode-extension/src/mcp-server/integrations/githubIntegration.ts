@@ -69,8 +69,8 @@ export class GitHubIntegration {
   constructor(config: GitHubConfig) {
     this.config = config;
     
-    // Only initialize client if token is available
-    if (config.token) {
+    // Only initialize client if all required config is available
+    if (config.token && config.owner && config.repo) {
       this.client = new GitHubClient({
         owner: config.owner,
         repo: config.repo,

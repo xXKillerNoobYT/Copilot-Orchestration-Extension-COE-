@@ -108,9 +108,19 @@ export class ContextRetrieval {
   /**
    * Search directory for files matching task keywords
    */
-  private async searchDirectory(dirPath: string, task: TaskWithContext): Promise<FileContext[]> {
+  private async searchDirectory(
+    dirPath: string,
+    task: TaskWithContext,
+    depth: number = 0,
+    maxDepth: number = 5
+  ): Promise<FileContext[]> {
     const files: FileContext[] = [];
     const keywords = this.extractKeywords(task);
+
+    // Prevent excessive recursion
+    if (depth >= maxDepth) {
+      return files;
+    }
 
     try {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -121,7 +131,7 @@ export class ContextRetrieval {
         if (entry.isDirectory()) {
           // Skip node_modules and other common exclude directories
           if (!['node_modules', '.git', 'dist', 'build', '.next'].includes(entry.name)) {
-            const subFiles = await this.searchDirectory(fullPath, task);
+            const subFiles = await this.searchDirectory(fullPath, task, depth + 1, maxDepth);
             files.push(...subFiles);
           }
         } else if (entry.isFile()) {
@@ -138,6 +148,11 @@ export class ContextRetrieval {
               lastModified: stats.mtime.toISOString(),
             });
           }
+        }
+
+        // Early return if we have enough files
+        if (files.length >= 20) {
+          break;
         }
       }
     } catch (error) {

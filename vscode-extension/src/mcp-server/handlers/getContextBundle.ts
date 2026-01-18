@@ -10,19 +10,11 @@ import {
   formatAgentError,
   AgentErrors,
 } from '../agentValidation.js';
-import { TaskManager } from '../integrations/taskManager.js';
+import { getTaskManager } from '../integrations/serviceFactory.js';
 import { ContextRetrieval } from '../integrations/contextRetrieval.js';
 
-// Singleton instances
-let taskManager: TaskManager | null = null;
+// Singleton instance for context retrieval
 let contextRetrieval: ContextRetrieval | null = null;
-
-function getTaskManager(): TaskManager {
-  if (!taskManager) {
-    taskManager = new TaskManager();
-  }
-  return taskManager;
-}
 
 function getContextRetrieval(): ContextRetrieval {
   if (!contextRetrieval) {

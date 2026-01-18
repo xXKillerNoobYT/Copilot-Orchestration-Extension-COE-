@@ -10,31 +10,7 @@ import {
   formatAgentError,
   AgentErrors,
 } from '../agentValidation.js';
-import { GitHubIntegration } from '../integrations/githubIntegration.js';
-import { TaskManager } from '../integrations/taskManager.js';
-
-// Singleton instances
-let githubIntegration: GitHubIntegration | null = null;
-let taskManager: TaskManager | null = null;
-
-function getGitHubIntegration(): GitHubIntegration {
-  if (!githubIntegration) {
-    // Try to get GitHub config from environment or use defaults
-    const owner = process.env.GITHUB_OWNER || 'owner';
-    const repo = process.env.GITHUB_REPO || 'repo';
-    const token = process.env.GITHUB_TOKEN;
-
-    githubIntegration = new GitHubIntegration({ owner, repo, token });
-  }
-  return githubIntegration;
-}
-
-function getTaskManager(): TaskManager {
-  if (!taskManager) {
-    taskManager = new TaskManager();
-  }
-  return taskManager;
-}
+import { getGitHubIntegration, getTaskManager } from '../integrations/serviceFactory.js';
 
 export async function handleReportTestFailure(args: any) {
   // Validate input

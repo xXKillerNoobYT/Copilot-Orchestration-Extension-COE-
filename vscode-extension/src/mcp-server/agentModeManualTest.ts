@@ -3,7 +3,7 @@
  * Run with: node dist/mcp-server/agentModeManualTest.js
  */
 
-import { validateInput, ValidationSchemas, AgentErrorCode } from './agentValidation.js';
+import { validateInput, ValidationSchemas } from './agentValidation.js';
 import { handleGetNextTask } from './handlers/getNextTask.js';
 import { handleReportTaskStatus } from './handlers/reportTaskStatus.js';
 import { handleGetContextBundle } from './handlers/getContextBundle.js';

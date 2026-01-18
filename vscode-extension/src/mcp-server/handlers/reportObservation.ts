@@ -2,33 +2,23 @@
  * Handler for copilot_orchestrator_report_observation tool
  */
 
-import { GitHubIntegration } from '../integrations/githubIntegration.js';
-import { TaskManager } from '../integrations/taskManager.js';
-
-// Singleton instances
-let githubIntegration: GitHubIntegration | null = null;
-let taskManager: TaskManager | null = null;
-
-function getGitHubIntegration(): GitHubIntegration {
-  if (!githubIntegration) {
-    const owner = process.env.GITHUB_OWNER || 'owner';
-    const repo = process.env.GITHUB_REPO || 'repo';
-    const token = process.env.GITHUB_TOKEN;
-
-    githubIntegration = new GitHubIntegration({ owner, repo, token });
-  }
-  return githubIntegration;
-}
-
-function getTaskManager(): TaskManager {
-  if (!taskManager) {
-    taskManager = new TaskManager();
-  }
-  return taskManager;
-}
+import {
+  validateInput,
+  ValidationSchemas,
+  formatAgentSuccess,
+  formatAgentError,
+  AgentErrors,
+} from '../agentValidation.js';
+import { getGitHubIntegration, getTaskManager } from '../integrations/serviceFactory.js';
 
 export async function handleReportObservation(args: any) {
-  const { type, message, severity = 'medium', suggestedAction, createTask = false } = args;
+  // Validate input
+  const validation = validateInput(ValidationSchemas.reportObservation, args);
+  if (!validation.valid) {
+    return formatAgentError(validation.error);
+  }
+
+  const { type, message, severity = 'medium', suggestedAction, createTask = false } = validation.data;
 
   const observation = {
     id: `OBS-${Date.now()}`,
@@ -75,26 +65,14 @@ export async function handleReportObservation(args: any) {
     }
   }
 
-  return {
-    content: [
-      {
-        type: 'text',
-        text: JSON.stringify(
-          {
-            success: true,
-            observation,
-            message: `Observation recorded${
-              createTask && observation.issueUrl
-                ? ` and task created: ${observation.issueUrl}`
-                : createTask
-                ? ' (logged locally)'
-                : ''
-            }`,
-          },
-          null,
-          2
-        ),
-      },
-    ],
-  };
+  return formatAgentSuccess({
+    observation,
+    message: `Observation recorded${
+      createTask && observation.issueUrl
+        ? ` and task created: ${observation.issueUrl}`
+        : createTask
+        ? ' (logged locally)'
+        : ''
+    }`,
+  });
 }

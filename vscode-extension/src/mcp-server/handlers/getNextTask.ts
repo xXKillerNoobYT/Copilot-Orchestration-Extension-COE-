@@ -10,17 +10,7 @@ import {
   formatAgentError,
   AgentErrors,
 } from '../agentValidation.js';
-import { TaskManager } from '../integrations/taskManager.js';
-
-// Singleton instance to avoid multiple filesystem reads
-let taskManager: TaskManager | null = null;
-
-function getTaskManager(): TaskManager {
-  if (!taskManager) {
-    taskManager = new TaskManager();
-  }
-  return taskManager;
-}
+import { getTaskManager } from '../integrations/serviceFactory.js';
 
 export async function handleGetNextTask(args: any) {
   // Validate input

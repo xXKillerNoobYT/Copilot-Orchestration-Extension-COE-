@@ -11,13 +11,9 @@ export class TasksSource {
      * Resolve the path to tasks.json by checking workspace roots
      */
     resolveTaskFilePath() {
-        // Try to resolve from first available workspace root
-        for (const root of this.workspaceRoots) {
-            const candidatePath = path.join(process.cwd(), root, 'tasks.json');
-            return candidatePath;
-        }
-        // Fallback to default
-        return path.join(process.cwd(), '_ZENTASKS', 'tasks.json');
+        // Use the first workspace root directly
+        const root = this.workspaceRoots[0] || '_ZENTASKS';
+        return path.join(process.cwd(), root, 'tasks.json');
     }
     async exists() {
         try {

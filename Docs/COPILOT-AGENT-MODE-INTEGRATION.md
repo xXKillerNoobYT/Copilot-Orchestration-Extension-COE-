@@ -59,14 +59,34 @@ Add the following to your repository's `.github/copilot-mcp.json`:
 }
 ```
 
-### 2. Install Extension
+### 2. Configure GitHub Integration (Optional)
+
+To enable GitHub Issues creation for test failures and observations, set these environment variables:
+
+```bash
+export GITHUB_TOKEN="your_github_personal_access_token"
+export GITHUB_OWNER="your_github_username_or_org"
+export GITHUB_REPO="your_repository_name"
+```
+
+**Creating a GitHub Personal Access Token:**
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Click "Generate new token (classic)"
+3. Select scopes: `repo` (for private repos) or `public_repo` (for public repos)
+4. Copy the generated token
+
+**Without GitHub configuration:**
+- Test failures and observations will be logged locally to `.orchestrator-output/logs/agent-activity.jsonl`
+- The system will gracefully degrade and continue to function
+
+### 3. Install Extension
 
 1. Install the Copilot Orchestrator extension in VS Code
 2. Use Command Palette → "Copilot Orchestrator: Copy MCP Server Path"
 3. Replace `/path/to/extension/` in `.github/copilot-mcp.json` with the actual path
 4. Commit and push the configuration file
 
-### 3. Verify Setup
+### 4. Verify Setup
 
 The Copilot coding agent will automatically:
 1. Read `.github/copilot-mcp.json` from your repository
