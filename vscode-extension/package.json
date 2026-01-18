@@ -365,7 +365,7 @@
     "demo": "npm run compile && node dist/taskGraphDemo.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0",
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "chart.js": "^4.5.1",
     "graphlib": "^2.1.8",
     "laravel-echo": "^2.3.0",
