@@ -32,7 +32,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/60</span>
+                <span class='fraction'>0/72</span>
             </div>
         
             
@@ -821,8 +821,8 @@ export interface RenderOptions {
  * - Graceful degradation on invalid data
  */
 <span class="cstat-no" title="statement not covered" >export class P</span>reviewEngine {
-  private static readonly <span class="cstat-no" title="statement not covered" >DEFAULT_MAX_RENDER_TIME = 5</span>00; // ms
-  private static readonly <span class="cstat-no" title="statement not covered" >RENDER_TIMEOUT_WARNING_THRESHOLD = 3</span>00; // ms
+  private static readonly <span class="cstat-no" title="statement not covered" >DEFAULT_MAX_RENDER_TIME = 500; </span>// ms
+  private static readonly <span class="cstat-no" title="statement not covered" >RENDER_TIMEOUT_WARNING_THRESHOLD = 300; </span>// ms
   
   private readonly maxRenderTimeMs: number;
   private <span class="cstat-no" title="statement not covered" >lastRenderTimeMs: number = 0;</span>
@@ -845,7 +845,7 @@ export interface RenderOptions {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
       // Validate state
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (!state || typeof state !== 'object') {</span>
+<span class="cstat-no" title="statement not covered" >      if (!state || typeof state !== 'object') {</span>
 <span class="cstat-no" title="statement not covered" >        warnings.push('Invalid wizard state provided');</span>
 <span class="cstat-no" title="statement not covered" >        return this.createEmptyResult(warnings, startTime);</span>
       }
@@ -861,20 +861,20 @@ export interface RenderOptions {
       // Build preview sections
 <span class="cstat-no" title="statement not covered" >      sections.push(this.renderProjectHeader(projectName, projectType, description));</span>
       
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (technologies.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >      if (technologies.length &gt; 0) {</span>
 <span class="cstat-no" title="statement not covered" >        sections.push(this.renderTechnologies(technologies));</span>
       }
       
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (Object.keys(architecture).length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >      if (Object.keys(architecture).length &gt; 0) {</span>
 <span class="cstat-no" title="statement not covered" >        sections.push(this.renderArchitecture(architecture));</span>
       }
       
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (features.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >      if (features.length &gt; 0) {</span>
 <span class="cstat-no" title="statement not covered" >        sections.push(this.renderFeatures(features));</span>
       }
 &nbsp;
       // Add incomplete sections if requested
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (options.includeIncomplete) {</span>
+<span class="cstat-no" title="statement not covered" >      if (options.includeIncomplete) {</span>
 <span class="cstat-no" title="statement not covered" >        sections.push(...this.renderIncompleteSections(state));</span>
       }
 &nbsp;
@@ -886,11 +886,11 @@ export interface RenderOptions {
 <span class="cstat-no" title="statement not covered" >      this.lastRenderTimeMs = renderTimeMs;</span>
 &nbsp;
       // Performance warnings
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (renderTimeMs &gt; PreviewEngine.RENDER_TIMEOUT_WARNING_THRESHOLD) {</span>
+<span class="cstat-no" title="statement not covered" >      if (renderTimeMs &gt; PreviewEngine.RENDER_TIMEOUT_WARNING_THRESHOLD) {</span>
 <span class="cstat-no" title="statement not covered" >        warnings.push(`Render time ${renderTimeMs.toFixed(1)}ms approaching limit (${this.maxRenderTimeMs}ms)`);</span>
       }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (renderTimeMs &gt; this.maxRenderTimeMs) {</span>
+<span class="cstat-no" title="statement not covered" >      if (renderTimeMs &gt; this.maxRenderTimeMs) {</span>
 <span class="cstat-no" title="statement not covered" >        warnings.push(`CRITICAL: Render time ${renderTimeMs.toFixed(1)}ms exceeded limit (${this.maxRenderTimeMs}ms)`);</span>
       }
 &nbsp;
@@ -1018,7 +1018,7 @@ export interface RenderOptions {
     const incompleteSections: PreviewSection[] = <span class="cstat-no" title="statement not covered" >[];</span>
     
     // Check for common optional sections
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!state.answers.testing) {</span>
+<span class="cstat-no" title="statement not covered" >    if (!state.answers.testing) {</span>
 <span class="cstat-no" title="statement not covered" >      incompleteSections.push({</span>
         id: 'testing-placeholder',
         title: 'Testing Strategy',
@@ -1028,7 +1028,7 @@ export interface RenderOptions {
       });
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!state.answers.deployment) {</span>
+<span class="cstat-no" title="statement not covered" >    if (!state.answers.deployment) {</span>
 <span class="cstat-no" title="statement not covered" >      incompleteSections.push({</span>
         id: 'deployment-placeholder',
         title: 'Deployment Configuration',
@@ -1088,13 +1088,13 @@ export interface RenderOptions {
    */
   private <span class="fstat-no" title="function not covered" >escapeHTML(</span>text: any): string {
     // Handle non-string types
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (text === null || text === undefined) <span class="cstat-no" title="statement not covered" >return '';</span></span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof text !== 'string') {</span>
+<span class="cstat-no" title="statement not covered" >    if (text === null || text === undefined) <span class="cstat-no" title="statement not covered" >return '';</span></span>
+<span class="cstat-no" title="statement not covered" >    if (typeof text !== 'string') {</span>
 <span class="cstat-no" title="statement not covered" >      text = String(text); </span>// Convert to string
     }
     
     // Check if document exists (browser environment)
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof document !== 'undefined') {</span>
+<span class="cstat-no" title="statement not covered" >    if (typeof document !== 'undefined') {</span>
       const div = <span class="cstat-no" title="statement not covered" >document.createElement('div');</span>
 <span class="cstat-no" title="statement not covered" >      div.textContent = text;</span>
 <span class="cstat-no" title="statement not covered" >      return div.innerHTML;</span>
@@ -1132,7 +1132,7 @@ export interface RenderOptions {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-16T08:15:07.552Z
+                at 2026-01-18T05:35:55.893Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
