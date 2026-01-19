@@ -70,6 +70,33 @@ export class Uri {
   }
 }
 
+// VS Code MarkdownString
+// Reference: https://code.visualstudio.com/api/references/vscode-api#MarkdownString
+export class MarkdownString {
+  value: string;
+  isTrusted?: boolean;
+
+  constructor(value: string = '', isTrusted?: boolean) {
+    this.value = value;
+    this.isTrusted = isTrusted;
+  }
+
+  appendText(value: string): MarkdownString {
+    this.value += value;
+    return this;
+  }
+
+  appendMarkdown(value: string): MarkdownString {
+    this.value += value;
+    return this;
+  }
+
+  appendCodeblock(value: string, language?: string): MarkdownString {
+    this.value += `\n\`\`\`${language || ''}\n${value}\n\`\`\`\n`;
+    return this;
+  }
+}
+
 export const window = {
   showInformationMessage: createMock(),
   showErrorMessage: createMock(),
