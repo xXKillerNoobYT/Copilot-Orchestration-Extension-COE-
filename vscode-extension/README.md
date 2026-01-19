@@ -483,6 +483,56 @@ For issues or questions:
 - Review the [examples](src/taskGraphDemo.ts)
 - Run the [tests](src/taskGraphTest.ts)
 
+## Troubleshooting
+
+### Plan Builder Issues
+
+If the Interactive Plan Builder shows a blank screen or doesn't load correctly:
+
+1. **Check build output exists:**
+   ```bash
+   cd vscode-extension
+   ls -la dist/planBuilder/assets/
+   ```
+   You should see `main-*.css` and `main-*.js` files.
+
+2. **Rebuild the Vue app:**
+   ```bash
+   npm install
+   npm run build:vue
+   ```
+
+3. **Reload VS Code:**
+   Press `Ctrl+R` (Windows/Linux) or `Cmd+R` (Mac)
+
+4. **Check browser console:**
+   - Open Plan Builder panel
+   - Press `F1` → "Developer: Toggle Developer Tools"
+   - Check Console tab for errors
+   - Look for `[Plan Builder]` log messages
+
+**For detailed troubleshooting steps, see:**
+- **[Plan Builder Troubleshooting Guide](docs/PLAN_BUILDER_TROUBLESHOOTING.md)** - Complete diagnostic guide
+
+### Common Issues
+
+**"Plan Builder Not Built" error:**
+```bash
+cd vscode-extension
+npm run build:vue
+# Reload VS Code with Ctrl+R
+```
+
+**Extension not activating:**
+- Ensure VS Code version is 1.90.0+
+- Check extension is installed: `Extensions` panel → Search "Copilot Orchestrator"
+- View logs: `F1` → "Developer: Show Running Extensions"
+
+**LLM connection issues:**
+- Verify LLM endpoint is running (e.g., LM Studio at http://localhost:1234)
+- Check API key is configured correctly
+- Review timeout settings in extension configuration
+
 ---
 
 **Version**: 1.0.0  
