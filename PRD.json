@@ -1469,5 +1469,179 @@
     "Jira/Asana integration (GitHub only for MVP)",
     "Advanced AI models beyond Copilot (future)",
     "Custom report generation beyond exports (future)"
-  ]
+  ],
+  "github_issues": [
+    {
+      "number": 1,
+      "title": "[CRITICAL] Fix Git state, design system integration, and test suite",
+      "priority": "CRITICAL",
+      "type": "Bug + Chore",
+      "effort_hours": "3-4 hours",
+      "milestone": "Week 1 (Jan 11-14)",
+      "description": "Fix three critical blockers preventing project execution:\n1. Git repository in inconsistent state (uncommitted changes in vscode-extension/)\n2. Design system integration incomplete (temporary markers in planIntegration.ts)\n3. Test suite partially disabled (design system tests with .disabled extension)",
+      "acceptance_criteria": [
+        "All uncommitted changes properly committed or reverted",
+        "Git working directory is clean (git status shows 'nothing to commit')",
+        "Design system imports restored in planIntegration.ts",
+        "No 'TEMPORARY' markers remaining in codebase",
+        "Design system tests re-enabled (74+ tests)",
+        "All 74+ design tests passing (100% pass rate)",
+        "TypeScript compilation succeeds (0 errors)",
+        "4+ atomic git commits with clear messages",
+        "Code Master alignment verified",
+        "Documentation updated in Docs folder"
+      ],
+      "definition_of_done": [
+        "Git Clean",
+        "Design System Operational",
+        "Tests Passing (74/74)",
+        "No TypeScript Errors",
+        "Ready for Issue #2"
+      ],
+      "blocker": null,
+      "files_to_create": [],
+      "files_to_modify": [
+        "vscode-extension/src/planBuilder/planIntegration.ts",
+        "vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts.disabled",
+        "vscode-extension/src/planBuilder/designSystem/validator.test.ts.disabled",
+        "_ZENTASKS/tasks.json",
+        "Docs/Plan/CODE-MASTER-ALIGNMENT.md"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "[HIGH] Implement live preview system with real-time design updates",
+      "priority": "HIGH",
+      "type": "Feature",
+      "effort_hours": "5-8 hours",
+      "milestone": "Week 1-2 (Jan 12-14)",
+      "description": "Implement real-time preview system for interactive design phase.\nAllows users to see design changes as they modify wizard answers with <500ms latency.",
+      "acceptance_criteria": [
+        "PreviewEngine renders all 10 wizard pages correctly",
+        "WizardStateObserver detects all answer changes",
+        "Preview updates <500ms after wizard change (verified with performance test)",
+        "Feedback indicators display correctly (compatibility, impact)",
+        "No console errors or warnings",
+        ">75% code coverage for new code",
+        "All unit tests passing (100%)",
+        "All integration tests passing (100%)",
+        "All performance tests passing",
+        "TypeScript compilation succeeds (0 errors)",
+        "No new lint/type errors introduced",
+        "New code follows project patterns and conventions"
+      ],
+      "definition_of_done": [
+        "Preview Engine Operational (<500ms latency)",
+        "All 10 Wizard Pages Render",
+        "Feedback System Working",
+        "Tests Passing (>75% coverage)",
+        "No TypeScript Errors",
+        "Ready for ISSUE #3"
+      ],
+      "blocker": "Must complete ISSUE #1 first",
+      "files_to_create": [
+        "vscode-extension/src/components/preview/PreviewEngine.ts",
+        "vscode-extension/src/components/preview/WizardStateObserver.ts",
+        "vscode-extension/src/components/preview/PreviewFeedback.ts",
+        "vscode-extension/src/components/preview/PreviewContainer.vue",
+        "vscode-extension/src/components/preview/PreviewEngine.test.ts",
+        "vscode-extension/src/components/preview/WizardStateObserver.test.ts"
+      ],
+      "files_to_modify": [
+        "vscode-extension/src/planBuilder/wizardContainer.ts",
+        "vscode-extension/src/planBuilder/wizardContainer.vue"
+      ]
+    },
+    {
+      "number": 3,
+      "title": "[HIGH] Implement automatic task decomposition from plans",
+      "priority": "HIGH",
+      "type": "Feature",
+      "effort_hours": "12-16 hours",
+      "milestone": "Week 2 (Jan 14-21)",
+      "description": "Implement Plan Decomposition Engine for automatic task generation.\nCore mechanism that turns wizard output into executable task queue with dependency detection.",
+      "acceptance_criteria": [
+        "PlanDecompositionService created and tested",
+        "WizardPlanParserService created and tested",
+        "/api/v1/plans/{id}/decompose endpoint working",
+        "Features correctly decomposed into 15-45 min subtasks",
+        "Dependencies automatically detected from feature text",
+        "Circular dependencies prevented (algorithm verified)",
+        "Priority assignments correct (HIGH/MEDIUM/LOW)",
+        "Critical path identified and marked",
+        "Handles 50+ features without issues (performance test)",
+        ">75% code coverage for new code",
+        "All 27+ unit tests passing",
+        "All integration tests passing",
+        "No new PHP syntax errors",
+        "No new lint/type errors introduced",
+        "WebSocket broadcast working (UI updates in real-time)"
+      ],
+      "definition_of_done": [
+        "Plan \u2192 Task Conversion Operational",
+        "27+ Tests Passing (>75% coverage)",
+        "Circular Dependencies Prevented",
+        "Priority Assignment Working",
+        "Critical Path Analysis Active",
+        "No PHP Errors",
+        "Ready for Integration Testing"
+      ],
+      "blocker": "Must complete ISSUE #1 first (ISSUE #2 is independent)",
+      "files_to_create": [
+        "app/Services/PlanDecompositionService.php",
+        "app/Services/WizardPlanParserService.php",
+        "app/Http/Controllers/PlanDecompositionController.php",
+        "tests/Feature/PlanDecompositionTest.php",
+        "tests/Unit/Services/PlanDecompositionServiceTest.php",
+        "tests/Unit/Services/WizardPlanParserServiceTest.php"
+      ],
+      "files_to_modify": [
+        "routes/api.php",
+        "app/Models/Plan.php",
+        "Docs/Plan/CODE-MASTER-ALIGNMENT.md"
+      ]
+    }
+  ],
+  "execution_timeline": {
+    "sprint": "Week 1-2 (Jan 11-21, 2026)",
+    "total_estimated_hours": "20-28 hours",
+    "phases": [
+      {
+        "week": "Week 1 (Jan 11-14)",
+        "issues": [
+          {
+            "number": 1,
+            "duration": "3-4 hrs",
+            "days": "Fri-Sat"
+          },
+          {
+            "number": 2,
+            "duration": "5-8 hrs",
+            "days": "Sat-Sun",
+            "note": "Starts after Issue #1"
+          }
+        ]
+      },
+      {
+        "week": "Week 2 (Jan 14-21)",
+        "issues": [
+          {
+            "number": 3,
+            "duration": "12-16 hrs",
+            "days": "Mon-Fri",
+            "note": "Mon-Wed: Core algorithm, Wed-Thu: Testing, Thu-Fri: Performance"
+          }
+        ]
+      }
+    ],
+    "quality_gates": [
+      "TypeScript/PHP compiles without errors",
+      "All tests passing (100%)",
+      "Code coverage >75% for new code",
+      "No new lint/type/PHP errors",
+      "All related documentation updated",
+      "Atomic git commits with clear messages",
+      "Code follows project conventions"
+    ]
+  }
 }

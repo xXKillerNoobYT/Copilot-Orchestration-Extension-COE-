@@ -1219,6 +1219,164 @@ Automatic loading and display of design-system.json for UI tasks
 
 ---
 
+## Current Sprint GitHub Issues
+
+**Sprint**: Week 1-2 (Jan 11-21, 2026)  
+**Total Effort**: 20-28 hours
+
+### Issue #1: [CRITICAL] Fix Git state, design system integration, and test suite 🔴
+
+**Priority**: CRITICAL | **Type**: Bug + Chore | **Effort**: 3-4 hours  
+**Milestone**: Week 1 (Jan 11-14)
+
+**Description:**
+Fix three critical blockers preventing project execution:
+1. Git repository in inconsistent state (uncommitted changes in vscode-extension/)
+2. Design system integration incomplete (temporary markers in planIntegration.ts)
+3. Test suite partially disabled (design system tests with .disabled extension)
+
+**Acceptance Criteria:**
+- [ ] All uncommitted changes properly committed or reverted
+- [ ] Git working directory is clean (git status shows 'nothing to commit')
+- [ ] Design system imports restored in planIntegration.ts
+- [ ] No 'TEMPORARY' markers remaining in codebase
+- [ ] Design system tests re-enabled (74+ tests)
+- [ ] All 74+ design tests passing (100% pass rate)
+- [ ] TypeScript compilation succeeds (0 errors)
+- [ ] 4+ atomic git commits with clear messages
+- [ ] Code Master alignment verified
+- [ ] Documentation updated in Docs folder
+
+**Definition of Done:**
+- ✅ Git Clean
+- ✅ Design System Operational
+- ✅ Tests Passing (74/74)
+- ✅ No TypeScript Errors
+- ✅ Ready for Issue #2
+
+**Files to Modify:**
+- `vscode-extension/src/planBuilder/planIntegration.ts`
+- `vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts.disabled`
+- `vscode-extension/src/planBuilder/designSystem/validator.test.ts.disabled`
+- `_ZENTASKS/tasks.json`
+- `Docs/Plan/CODE-MASTER-ALIGNMENT.md`
+
+### Issue #2: [HIGH] Implement live preview system with real-time design updates 🟠
+
+**Priority**: HIGH | **Type**: Feature | **Effort**: 5-8 hours  
+**Milestone**: Week 1-2 (Jan 12-14)
+
+**⚠️  Blocker**: Must complete ISSUE #1 first
+
+**Description:**
+Implement real-time preview system for interactive design phase.
+Allows users to see design changes as they modify wizard answers with <500ms latency.
+
+**Acceptance Criteria:**
+- [ ] PreviewEngine renders all 10 wizard pages correctly
+- [ ] WizardStateObserver detects all answer changes
+- [ ] Preview updates <500ms after wizard change (verified with performance test)
+- [ ] Feedback indicators display correctly (compatibility, impact)
+- [ ] No console errors or warnings
+- [ ] >75% code coverage for new code
+- [ ] All unit tests passing (100%)
+- [ ] All integration tests passing (100%)
+- [ ] All performance tests passing
+- [ ] TypeScript compilation succeeds (0 errors)
+- [ ] No new lint/type errors introduced
+- [ ] New code follows project patterns and conventions
+
+**Definition of Done:**
+- ✅ Preview Engine Operational (<500ms latency)
+- ✅ All 10 Wizard Pages Render
+- ✅ Feedback System Working
+- ✅ Tests Passing (>75% coverage)
+- ✅ No TypeScript Errors
+- ✅ Ready for ISSUE #3
+
+**Files to Create:**
+- `vscode-extension/src/components/preview/PreviewEngine.ts`
+- `vscode-extension/src/components/preview/WizardStateObserver.ts`
+- `vscode-extension/src/components/preview/PreviewFeedback.ts`
+- `vscode-extension/src/components/preview/PreviewContainer.vue`
+- `vscode-extension/src/components/preview/PreviewEngine.test.ts`
+- `vscode-extension/src/components/preview/WizardStateObserver.test.ts`
+
+**Files to Modify:**
+- `vscode-extension/src/planBuilder/wizardContainer.ts`
+- `vscode-extension/src/planBuilder/wizardContainer.vue`
+
+### Issue #3: [HIGH] Implement automatic task decomposition from plans 🟠
+
+**Priority**: HIGH | **Type**: Feature | **Effort**: 12-16 hours  
+**Milestone**: Week 2 (Jan 14-21)
+
+**⚠️  Blocker**: Must complete ISSUE #1 first (ISSUE #2 is independent)
+
+**Description:**
+Implement Plan Decomposition Engine for automatic task generation.
+Core mechanism that turns wizard output into executable task queue with dependency detection.
+
+**Acceptance Criteria:**
+- [ ] PlanDecompositionService created and tested
+- [ ] WizardPlanParserService created and tested
+- [ ] /api/v1/plans/{id}/decompose endpoint working
+- [ ] Features correctly decomposed into 15-45 min subtasks
+- [ ] Dependencies automatically detected from feature text
+- [ ] Circular dependencies prevented (algorithm verified)
+- [ ] Priority assignments correct (HIGH/MEDIUM/LOW)
+- [ ] Critical path identified and marked
+- [ ] Handles 50+ features without issues (performance test)
+- [ ] >75% code coverage for new code
+- [ ] All 27+ unit tests passing
+- [ ] All integration tests passing
+- [ ] No new PHP syntax errors
+- [ ] No new lint/type errors introduced
+- [ ] WebSocket broadcast working (UI updates in real-time)
+
+**Definition of Done:**
+- ✅ Plan → Task Conversion Operational
+- ✅ 27+ Tests Passing (>75% coverage)
+- ✅ Circular Dependencies Prevented
+- ✅ Priority Assignment Working
+- ✅ Critical Path Analysis Active
+- ✅ No PHP Errors
+- ✅ Ready for Integration Testing
+
+**Files to Create:**
+- `app/Services/PlanDecompositionService.php`
+- `app/Services/WizardPlanParserService.php`
+- `app/Http/Controllers/PlanDecompositionController.php`
+- `tests/Feature/PlanDecompositionTest.php`
+- `tests/Unit/Services/PlanDecompositionServiceTest.php`
+- `tests/Unit/Services/WizardPlanParserServiceTest.php`
+
+**Files to Modify:**
+- `routes/api.php`
+- `app/Models/Plan.php`
+- `Docs/Plan/CODE-MASTER-ALIGNMENT.md`
+
+### Execution Timeline
+
+**Week 1 (Jan 11-14)**
+- Issue #1: 3-4 hrs - Fri-Sat
+- Issue #2: 5-8 hrs - Sat-Sun (Starts after Issue #1)
+
+**Week 2 (Jan 14-21)**
+- Issue #3: 12-16 hrs - Mon-Fri (Mon-Wed: Core algorithm, Wed-Thu: Testing, Thu-Fri: Performance)
+
+### Quality Gates
+
+- [ ] TypeScript/PHP compiles without errors
+- [ ] All tests passing (100%)
+- [ ] Code coverage >75% for new code
+- [ ] No new lint/type/PHP errors
+- [ ] All related documentation updated
+- [ ] Atomic git commits with clear messages
+- [ ] Code follows project conventions
+
+---
+
 ## Success Metrics
 
 ### Business
@@ -1362,6 +1520,6 @@ Automatic loading and display of design-system.json for UI tasks
 
 ## Document Control
 
-**Generated**: 2026-01-18 15:05:45  
+**Generated**: 2026-01-18 17:00:25  
 **Generated by**: AI-Optimized PRD Notebook  
 **Source**: Copilot Orchestration Extension project documentation
