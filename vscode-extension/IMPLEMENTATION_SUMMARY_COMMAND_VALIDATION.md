@@ -145,11 +145,11 @@ Commands in package.json and code are out of sync!
 ## Files Created/Modified
 
 ### Created Files
-1. `vscode-extension/src/__tests__/command-registration.test.ts` - Test suite (186 lines)
-2. `vscode-extension/.githooks/pre-commit` - Extension-level hook (64 lines)
+1. `vscode-extension/src/__tests__/command-registration.test.ts` - Test suite (169 lines)
+2. `vscode-extension/.githooks/pre-commit` - Extension-level hook (69 lines)
 3. `.githooks/pre-commit` - Root-level hook (26 lines)
-4. `vscode-extension/COMMAND_REGISTRATION_GUIDE.md` - Developer guide (386 lines)
-5. `vscode-extension/CONTRIBUTING.md` - Contributing guidelines (380 lines)
+4. `vscode-extension/COMMAND_REGISTRATION_GUIDE.md` - Developer guide (384 lines)
+5. `vscode-extension/CONTRIBUTING.md` - Contributing guidelines (388 lines)
 
 ### Modified Files
 1. `vscode-extension/package.json` - Added 8 commands, 2 scripts
