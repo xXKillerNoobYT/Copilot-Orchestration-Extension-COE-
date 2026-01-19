@@ -187,6 +187,9 @@ export class CopilotAgentClient {
   
   // Maximum analytics queue size to prevent memory leaks
   private readonly MAX_ANALYTICS_QUEUE_SIZE = 1000;
+  
+  // Initialization promise to track async loading
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(
     config?: CopilotAgentConfig,
@@ -205,14 +208,39 @@ export class CopilotAgentClient {
     // Initialize auth provider if context is available
     if (this.context) {
       this.authProvider = new GitHubAuthProvider(this.context.secrets);
-      // Load stored token if available
-      this.loadStoredToken();
     }
     
-    // Load agent profiles from YAML files (async, non-blocking)
-    this.loadAgentProfiles().catch(err => {
-      console.error('[CopilotAgentClient] Failed to load agent profiles:', err);
-    });
+    // Start async initialization (profiles and stored token)
+    this.initializationPromise = this.initialize();
+  }
+  
+  /**
+   * Initialize async resources (agent profiles and stored token)
+   * 
+   * This method is called automatically in the constructor.
+   * Methods that depend on profiles or stored tokens will await this.
+   */
+  private async initialize(): Promise<void> {
+    try {
+      // Load agent profiles and stored token in parallel
+      await Promise.all([
+        this.loadAgentProfiles(),
+        this.loadStoredToken(),
+      ]);
+    } catch (error) {
+      console.error('[CopilotAgentClient] Initialization failed:', error);
+    }
+  }
+  
+  /**
+   * Ensure initialization is complete before proceeding
+   * 
+   * Called by methods that depend on agent profiles or stored tokens
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (this.initializationPromise) {
+      await this.initializationPromise;
+    }
   }
   
   /**
@@ -280,6 +308,9 @@ export class CopilotAgentClient {
    * @returns Promise<boolean> - true if authentication successful
    */
   async authenticate(): Promise<boolean> {
+    // Ensure initialization is complete (loads stored token)
+    await this.ensureInitialized();
+    
     // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Authentication successful');
@@ -341,6 +372,9 @@ export class CopilotAgentClient {
    * @returns Promise<boolean> - true if registration successful
    */
   async registerAgent(registration: AgentRegistration): Promise<boolean> {
+    // Ensure initialization is complete (loads agent profiles)
+    await this.ensureInitialized();
+    
     // Check if agent is already registered
     if (this.registeredAgents.has(registration.agentId)) {
       console.log('[CopilotAgentClient] Agent already registered:', registration.agentId);
@@ -624,6 +658,9 @@ export class CopilotAgentClient {
    * @returns Promise<AgentDiscoveryResult> - Discovery result with agents or error
    */
   async discoverAgents(): Promise<AgentDiscoveryResult> {
+    // Ensure initialization is complete (loads agent profiles)
+    await this.ensureInitialized();
+    
     // Check cache first
     if (this.agentDiscoveryCache) {
       const cacheAge = Date.now() - this.agentDiscoveryCache.timestamp;

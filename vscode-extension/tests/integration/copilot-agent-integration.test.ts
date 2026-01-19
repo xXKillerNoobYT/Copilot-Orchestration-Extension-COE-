@@ -65,16 +65,36 @@ describe('CopilotAgentClient Integration Tests', () => {
 
   describe('Authentication Flow', () => {
     test('should authenticate with valid token', async () => {
-      // Mock successful auth validation response
+      // Mock GitHub API token validation
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, valid: true }),
+        json: async () => ({ login: 'testuser' }),
+        headers: {
+          get: (name: string) => name === 'x-oauth-scopes' ? 'repo,user' : null,
+        },
+      });
+      
+      // Mock backend auth validation response
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
       });
 
       const result = await client.authenticate();
       
       expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // First call to GitHub API
+      expect(mockFetch).toHaveBeenNthCalledWith(1,
+        'https://api.github.com/user',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Accept': 'application/vnd.github+json',
+          }),
+        })
+      );
+      // Second call to backend
+      expect(mockFetch).toHaveBeenNthCalledWith(2,
         'http://localhost:8000/api/v1/auth/validate',
         expect.objectContaining({
           method: 'POST',
@@ -86,10 +106,11 @@ describe('CopilotAgentClient Integration Tests', () => {
     });
 
     test('should fail authentication with invalid token', async () => {
-      // Mock failed auth validation response
+      // Mock GitHub API returning error
       mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: false, error: 'Invalid token' }),
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
       });
 
       const result = await client.authenticate();
