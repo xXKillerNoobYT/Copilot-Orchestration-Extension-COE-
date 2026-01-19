@@ -326,14 +326,14 @@ export class PlanBuilderPanel {
       if (fs.existsSync(assetsDir)) {
         const files = fs.readdirSync(assetsDir);
         
-        // Find main CSS file (starts with 'main' or 'index' and ends with .css)
-        const cssFile = files.find((f: string) => 
-          (f.startsWith('main') || f.startsWith('index')) && f.endsWith('.css')
+        // Find main CSS file matching Vite's hashed output (e.g., main-XXXXXXXX.css or index-XXXXXXXX.css)
+        const cssFile = files.find((f: string) =>
+          /^(main|index)-[a-zA-Z0-9]+\.css$/.test(f)
         );
         
-        // Find main JS file (starts with 'main' or 'index' and ends with .js)
-        const jsFile = files.find((f: string) => 
-          (f.startsWith('main') || f.startsWith('index')) && f.endsWith('.js')
+        // Find main JS file matching Vite's hashed output (e.g., main-XXXXXXXX.js or index-XXXXXXXX.js)
+        const jsFile = files.find((f: string) =>
+          /^(main|index)-[a-zA-Z0-9]+\.js$/.test(f)
         );
         
         if (cssFile) {
@@ -360,6 +360,7 @@ export class PlanBuilderPanel {
 
     // Note: CSP includes 'unsafe-eval' for Vue 3 runtime compilation
     // This is required for Vue's template compiler but does reduce security.
+    // CSP includes 'unsafe-inline' for style-src to support Vue's runtime styles.
     // Consider pre-compiling all templates in production builds for better security.
     return `<!DOCTYPE html>
       <html lang="en">
@@ -382,12 +383,26 @@ export class PlanBuilderPanel {
   }
 
   private _getErrorHtml(title: string, message: string): string {
+    // Escape HTML to prevent XSS vulnerabilities
+    const escapeHtml = (unsafe: string): string => {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
+
+    const safeTitle = escapeHtml(title);
+    const safeMessage = escapeHtml(message);
+
     return `<!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title}</title>
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+        <title>${safeTitle}</title>
         <style>
           body {
             font-family: var(--vscode-font-family);
@@ -441,8 +456,8 @@ export class PlanBuilderPanel {
       <body>
         <div class="error-container">
           <div class="error-icon">⚠️</div>
-          <h1>${title}</h1>
-          <p>${message}</p>
+          <h1>${safeTitle}</h1>
+          <p>${safeMessage}</p>
           <div class="instructions">
             <h3>Build Instructions:</h3>
             <ol>
