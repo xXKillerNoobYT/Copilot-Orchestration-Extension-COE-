@@ -101,38 +101,51 @@ export function buildEnhancedErrorMessage(options: ErrorMessageOptions): string 
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const msg = error.message;
+    const errorCode = (error as any).code;
     
-    // Connection refused errors (check both message and errno if available)
+    // Check error code first for most reliable detection
+    if (errorCode === 'ECONNREFUSED') {
+      return 'ECONNREFUSED (Connection refused)';
+    }
+    if (errorCode === 'ETIMEDOUT') {
+      return 'ETIMEDOUT (Connection timeout)';
+    }
+    if (errorCode === 'ENOTFOUND') {
+      return 'ENOTFOUND (Host not found)';
+    }
+    if (errorCode === 'ENETUNREACH') {
+      return 'ENETUNREACH (Network unreachable)';
+    }
+    if (errorCode === 'ECONNRESET') {
+      return 'ECONNRESET (Connection reset)';
+    }
+    
+    // Fallback to message pattern matching with specific patterns
+    // Connection refused errors - be specific to avoid false positives
     if (msg.includes('ECONNREFUSED') || 
-        msg.includes('fetch failed') ||
-        msg.includes('connect ECONNREFUSED') ||
-        (error as any).code === 'ECONNREFUSED') {
+        msg.includes('connect ECONNREFUSED')) {
       return 'ECONNREFUSED (Connection refused)';
     }
     
-    // Timeout errors (check multiple patterns and errno)
+    // Timeout errors
     if (msg.includes('ETIMEDOUT') || 
         /timeout/i.test(msg) || 
-        msg.includes('timed out') ||
-        (error as any).code === 'ETIMEDOUT') {
+        msg.includes('timed out')) {
       return 'ETIMEDOUT (Connection timeout)';
     }
     
     // Host not found errors
-    if (msg.includes('ENOTFOUND') || 
-        (error as any).code === 'ENOTFOUND') {
+    if (msg.includes('ENOTFOUND')) {
       return 'ENOTFOUND (Host not found)';
     }
     
     // Network unreachable
-    if (msg.includes('ENETUNREACH') || 
-        (error as any).code === 'ENETUNREACH') {
+    if (msg.includes('ENETUNREACH')) {
       return 'ENETUNREACH (Network unreachable)';
     }
     
     // Connection reset
-    if (msg.includes('ECONNRESET') || 
-        (error as any).code === 'ECONNRESET') {
+    if (msg.includes('ECONNRESET')) {
       return 'ECONNRESET (Connection reset)';
     }
     
@@ -162,6 +175,18 @@ export function logErrorToOutput(message: string, error?: unknown): void {
 
 /**
  * Show error message to user and log to output channel
+ * 
+ * Note: This function does NOT handle or suppress the error. Callers should
+ * still handle the error appropriately (e.g., re-throw, return default value, etc.)
+ * This function only provides user notification and logging.
+ * 
+ * @example
+ * try {
+ *   await someOperation();
+ * } catch (error) {
+ *   showAndLogError({ operation: 'Some Operation', error, ... });
+ *   throw error; // Caller must still handle the error
+ * }
  */
 export function showAndLogError(options: ErrorMessageOptions): void {
   const message = buildEnhancedErrorMessage(options);

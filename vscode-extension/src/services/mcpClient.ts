@@ -20,7 +20,7 @@
 
 import * as vscode from 'vscode';
 import { retryWithBackoff, withTimeout, CircuitBreaker, createRetryHandler, logError } from '../utils/errorHandler';
-import { showAndLogError } from '../utils/errorMessages';
+import { logErrorToOutput, buildMCPErrorMessage } from '../utils/errorMessages';
 
 /**
  * Centralized MCP endpoint paths
@@ -392,6 +392,7 @@ export class MCPClient {
 
   /**
    * Fetch with retry, timeout, and circuit breaker
+   * Note: Only logs errors without showing notifications, since retries may succeed
    */
   private async fetchWithRetry(url: string, method: string = 'GET', body?: any): Promise<any> {
     try {
@@ -406,26 +407,11 @@ export class MCPClient {
         )
       );
     } catch (error) {
-      // Enhanced error handling with actionable messages
-      showAndLogError({
-        operation: 'MCP Request',
-        attemptedUrl: url,
-        error,
-        possibleCauses: [
-          'MCP server not running',
-          'WebSocket/MCP server port mismatch',
-          'Incorrect MCP URL in settings',
-          'Network connectivity issue'
-        ],
-        solutions: [
-          'Start MCP server if using Docker: docker-compose up -d',
-          'Check settings: copilot-orchestrator.mcp.baseUrl',
-          'Verify MCP server is accessible: curl ' + this.baseUrl,
-          'Check server logs for errors'
-        ],
-        context: `Method: ${method}`
-      });
+      // Log error with actionable context (without user notification during retries)
+      const errorMessage = buildMCPErrorMessage('MCP Request', url, error);
+      logErrorToOutput(errorMessage + `\nMethod: ${method}`, error);
       
+      // Re-throw for higher-level handlers to decide on user notification
       throw error;
     }
   }

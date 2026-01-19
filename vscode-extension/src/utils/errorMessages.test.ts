@@ -34,6 +34,24 @@ describe('Enhanced Error Messages', () => {
   });
 
   describe('buildEnhancedErrorMessage', () => {
+    it('should throw error when operation parameter is empty', () => {
+      expect(() => {
+        buildEnhancedErrorMessage({
+          operation: '',
+          error: new Error('Test error'),
+        });
+      }).toThrow('Operation parameter is required and cannot be empty');
+    });
+
+    it('should throw error when operation parameter is whitespace only', () => {
+      expect(() => {
+        buildEnhancedErrorMessage({
+          operation: '   ',
+          error: new Error('Test error'),
+        });
+      }).toThrow('Operation parameter is required and cannot be empty');
+    });
+
     it('should build a complete error message with all sections', () => {
       const message = buildEnhancedErrorMessage({
         operation: 'Test Operation',
@@ -235,7 +253,6 @@ describe('Enhanced Error Messages', () => {
     it('should detect connection refused errors', () => {
       const errors = [
         new Error('ECONNREFUSED'),
-        new Error('fetch failed'),
         new Error('connect ECONNREFUSED 127.0.0.1:8000'),
       ];
 
@@ -246,6 +263,18 @@ describe('Enhanced Error Messages', () => {
         });
         expect(message).toContain('ECONNREFUSED');
       });
+    });
+
+    it('should detect connection refused via error code', () => {
+      const error: any = new Error('Connection failed');
+      error.code = 'ECONNREFUSED';
+      
+      const message = buildEnhancedErrorMessage({
+        operation: 'Test',
+        error,
+      });
+      
+      expect(message).toContain('ECONNREFUSED (Connection refused)');
     });
 
     it('should detect timeout errors', () => {
@@ -262,6 +291,68 @@ describe('Enhanced Error Messages', () => {
         });
         expect(message).toContain('ETIMEDOUT');
       });
+    });
+
+    it('should detect timeout via error code', () => {
+      const error: any = new Error('Connection timeout');
+      error.code = 'ETIMEDOUT';
+      
+      const message = buildEnhancedErrorMessage({
+        operation: 'Test',
+        error,
+      });
+      
+      expect(message).toContain('ETIMEDOUT (Connection timeout)');
+    });
+
+    it('should detect host not found via error code', () => {
+      const error: any = new Error('getaddrinfo failed');
+      error.code = 'ENOTFOUND';
+      
+      const message = buildEnhancedErrorMessage({
+        operation: 'Test',
+        error,
+      });
+      
+      expect(message).toContain('ENOTFOUND (Host not found)');
+    });
+
+    it('should detect network unreachable via error code', () => {
+      const error: any = new Error('Network is unreachable');
+      error.code = 'ENETUNREACH';
+      
+      const message = buildEnhancedErrorMessage({
+        operation: 'Test',
+        error,
+      });
+      
+      expect(message).toContain('ENETUNREACH (Network unreachable)');
+    });
+
+    it('should detect connection reset via error code', () => {
+      const error: any = new Error('Connection reset by peer');
+      error.code = 'ECONNRESET';
+      
+      const message = buildEnhancedErrorMessage({
+        operation: 'Test',
+        error,
+      });
+      
+      expect(message).toContain('ECONNRESET (Connection reset)');
+    });
+
+    it('should prioritize error code over message pattern', () => {
+      const error: any = new Error('Some timeout message');
+      error.code = 'ECONNREFUSED';
+      
+      const message = buildEnhancedErrorMessage({
+        operation: 'Test',
+        error,
+      });
+      
+      // Should detect as ECONNREFUSED (from code) not ETIMEDOUT (from message)
+      expect(message).toContain('ECONNREFUSED (Connection refused)');
+      expect(message).not.toContain('ETIMEDOUT');
     });
 
     it('should handle non-Error objects', () => {

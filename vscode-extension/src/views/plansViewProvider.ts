@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { logErrorToOutput } from '../utils/errorMessages';
+import { logErrorToOutput, buildPlansNotFoundMessage } from '../utils/errorMessages';
 
 /**
  * Tree data provider for the Plans view in the Copilot Orchestrator sidebar
@@ -81,24 +81,8 @@ export class PlansViewProvider implements vscode.TreeDataProvider<PlanItem> {
     }
 
     if (allPlanFiles.length === 0) {
-      // Show enhanced error message
-      const errorMessage = [
-        '⚠️ No Plans Found\n',
-        'Searched locations:',
-        ...searchLocations.map(loc => `  - ${loc}`),
-        '',
-        'Possible causes:',
-        '  ✓ Plans directory does not exist',
-        '  ✓ No plan files created yet',
-        '  ✓ Searching in wrong workspace folder',
-        '',
-        'Solutions:',
-        '  1. Create your first plan using the Plan Builder',
-        '  2. Ensure plans are saved in Docs/Plans/ or .vscode/plans/',
-        '  3. Open the correct workspace folder',
-        '  4. Run: copilot-orchestrator.openPlanBuilder'
-      ].join('\n');
-      
+      // Use helper function for consistent error messaging
+      const errorMessage = buildPlansNotFoundMessage(searchLocations);
       logErrorToOutput(errorMessage);
       
       return [
