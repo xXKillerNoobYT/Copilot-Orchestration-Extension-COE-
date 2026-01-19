@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">6.19% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/226</span>
+                <span class='fraction'>14/226</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">4.85% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/103</span>
+                <span class='fraction'>5/103</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">10% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/30</span>
+                <span class='fraction'>3/30</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">6.27% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/223</span>
+                <span class='fraction'>14/223</span>
             </div>
         
             
@@ -637,8 +637,8 @@
 <a name='L572'></a><a href='#L572'>572</a>
 <a name='L573'></a><a href='#L573'>573</a>
 <a name='L574'></a><a href='#L574'>574</a>
-<a name='L575'></a><a href='#L575'>575</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L575'></a><a href='#L575'>575</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -678,23 +678,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1203,16 +1203,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import * as vscode from 'vscode';</span>
-<span class="cstat-no" title="statement not covered" >import * as path from 'path';</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import * as vscode from 'vscode';
+import * as path from 'path';
 import { PlanJSON } from '../planBuilder/planGenerator';
 &nbsp;
 /**
@@ -1252,22 +1252,22 @@ export interface VersionInfo {
  * PlanPersistenceService
  * Manages plan file persistence with versioning, backups, and error handling
  */
-<span class="cstat-no" title="statement not covered" >export class P</span>lanPersistenceService {
-  private readonly <span class="cstat-no" title="statement not covered" >PLANS_DIR = 'Docs/Plans';</span>
-  private readonly <span class="cstat-no" title="statement not covered" >DELETED_DIR = 'Docs/Plans/.deleted';</span>
-  private readonly <span class="cstat-no" title="statement not covered" >BACKUP_DIR = 'Docs/Plans/.backups';</span>
-  private readonly <span class="cstat-no" title="statement not covered" >METADATA_FILE = 'plan.metadata.json';</span>
+export class PlanPersistenceService {
+  private readonly PLANS_DIR = 'Docs/Plans';
+  private readonly DELETED_DIR = 'Docs/Plans/.deleted';
+  private readonly BACKUP_DIR = 'Docs/Plans/.backups';
+  private readonly METADATA_FILE = 'plan.metadata.json';
   private workspaceRoot: vscode.Uri | undefined;
 &nbsp;
-<span class="fstat-no" title="function not covered" >  constructor() {</span>
-<span class="cstat-no" title="statement not covered" >    this.initializeWorkspaceRoot();</span>
+  constructor() {
+    this.initializeWorkspaceRoot();
   }
 &nbsp;
   /**
    * Initialize workspace root
    */
-  private <span class="fstat-no" title="function not covered" >initializeWorkspaceRoot(</span>): void {
-<span class="cstat-no" title="statement not covered" >    if (vscode.workspace.workspaceFolders &amp;&amp; vscode.workspace.workspaceFolders.length &gt; 0) {</span>
+  private initializeWorkspaceRoot(): void {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (vscode.workspace.workspaceFolders &amp;&amp; vscode.workspace.workspaceFolders.length &gt; 0) {
 <span class="cstat-no" title="statement not covered" >      this.workspaceRoot = vscode.workspace.workspaceFolders[0].uri;</span>
     }
   }
@@ -1777,13 +1777,13 @@ export interface VersionInfo {
 // SINGLETON INSTANCE &amp; EXPORT
 // ============================================================================
 &nbsp;
-let persistenceInstance: PlanPersistenceService | null = <span class="cstat-no" title="statement not covered" >null;</span>
+let persistenceInstance: PlanPersistenceService | null = null;
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >g</span>etPlanPersistenceService(</span>): PlanPersistenceService {
-<span class="cstat-no" title="statement not covered" >  if (!persistenceInstance) {</span>
-<span class="cstat-no" title="statement not covered" >    persistenceInstance = new PlanPersistenceService();</span>
+export function getPlanPersistenceService(): PlanPersistenceService {
+  if (!persistenceInstance) {
+    persistenceInstance = new PlanPersistenceService();
   }
-<span class="cstat-no" title="statement not covered" >  return persistenceInstance;</span>
+  return persistenceInstance;
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -1792,7 +1792,7 @@ let persistenceInstance: PlanPersistenceService | null = <span class="cstat-no" 
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-19T04:04:36.489Z
+                at 2026-01-19T05:39:05.580Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

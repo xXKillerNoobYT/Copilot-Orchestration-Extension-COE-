@@ -361,7 +361,18 @@ export class TaskInteractionAPI {
         }
       });
       const existingFiles = new Set(normalizedExistingFiles);
-      const newFiles = validatedPaths.filter(p => !existingFiles.has(p));
+
+      // Filter out duplicates by normalizing validated paths and checking against existing
+      // But keep the original validated paths to store in the bundle
+      const newFiles = validatedPaths.filter((p: string) => {
+        try {
+          const normalizedPath = normalizeFilePath(p, workspaceRoot);
+          return !existingFiles.has(normalizedPath);
+        } catch {
+          // If normalization fails, check the original path
+          return !existingFiles.has(p);
+        }
+      });
 
       if (newFiles.length === 0) {
         vscode.window.showInformationMessage('All files already exist in the bundle.');

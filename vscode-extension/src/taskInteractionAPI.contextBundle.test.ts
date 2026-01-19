@@ -7,8 +7,29 @@ import { TaskInteractionAPI } from './taskInteractionAPI';
 import { defaultAgentProfileLoader, AgentProfile } from './agentProfiles';
 import * as vscode from 'vscode';
 
-// Mock vscode
-jest.mock('vscode');
+// Mock vscode with EventEmitter implementation
+jest.mock('vscode', () => {
+  return {
+    EventEmitter: jest.fn().mockImplementation(() => {
+      const listeners: Set<Function> = new Set();
+      return {
+        event: jest.fn((listener: Function) => {
+          listeners.add(listener);
+          return { dispose: () => listeners.delete(listener) };
+        }),
+        fire: jest.fn((data: any) => {
+          listeners.forEach(listener => listener(data));
+        }),
+        dispose: jest.fn(() => listeners.clear()),
+      };
+    }),
+    Uri: {
+      file: jest.fn((path: string) => ({ fsPath: path })),
+    },
+    window: {},
+    workspace: {},
+  };
+});
 
 // Mock defaultAgentProfileLoader
 jest.mock('./agentProfiles', () => ({
@@ -17,13 +38,27 @@ jest.mock('./agentProfiles', () => ({
   },
 }));
 
+// Mock path validation utilities
+jest.mock('./utils/pathValidation', () => ({
+  validateAndFilterFilePaths: jest.fn(),
+  validateFilePath: jest.fn(),
+  normalizeFilePath: jest.fn((path) => path),
+}));
+
+// Import mocked utilities
+import { validateAndFilterFilePaths, validateFilePath, normalizeFilePath } from './utils/pathValidation';
+
 describe('TaskInteractionAPI - Context Bundle Agent Profile', () => {
   let api: TaskInteractionAPI;
   let mockLoadProfile: jest.MockedFunction<typeof defaultAgentProfileLoader.loadProfile>;
+  let mockValidateAndFilterFilePaths: jest.MockedFunction<typeof validateAndFilterFilePaths>;
+  let mockValidateFilePath: jest.MockedFunction<typeof validateFilePath>;
 
   beforeEach(() => {
     api = new TaskInteractionAPI();
     mockLoadProfile = defaultAgentProfileLoader.loadProfile as jest.MockedFunction<typeof defaultAgentProfileLoader.loadProfile>;
+    mockValidateAndFilterFilePaths = validateAndFilterFilePaths as jest.MockedFunction<typeof validateAndFilterFilePaths>;
+    mockValidateFilePath = validateFilePath as jest.MockedFunction<typeof validateFilePath>;
     jest.clearAllMocks();
   });
 
@@ -303,13 +338,13 @@ Task description`,
   describe('addFilesToContextBundle', () => {
     // Reference: https://jestjs.io/docs/manual-mocks
     // Reference: https://jestjs.io/docs/setup-teardown#order-of-execution
-    
+
     beforeEach(() => {
       // Mock vscode.workspace
       (vscode.workspace as any).workspaceFolders = [
         { uri: { fsPath: '/test/workspace' } }
       ];
-      
+
       // Properly initialize mocks for file operations
       // See: https://jestjs.io/docs/mock-functions for mock setup
       const mockWriteFile = jest.fn().mockResolvedValue(undefined);
@@ -319,6 +354,13 @@ Task description`,
         readFile: mockReadFile,
       };
       (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
+      (vscode.window as any).showInformationMessage = jest.fn();
+      (vscode.window as any).showWarningMessage = jest.fn();
+      (vscode.window as any).showErrorMessage = jest.fn();
+
+      // Reset path validation mocks to default behavior
+      mockValidateAndFilterFilePaths.mockImplementation(async (paths) => paths);
+      mockValidateFilePath.mockResolvedValue({ valid: true, normalizedPath: '/test/file.ts' });
     });
 
     it('should add valid files to an existing bundle', async () => {
@@ -333,7 +375,7 @@ Task description`,
         new TextEncoder().encode(JSON.stringify(bundleContent))
       );
       const mockWriteFile = jest.fn().mockResolvedValue(undefined);
-      
+
       (vscode.workspace as any).fs = {
         readFile: mockReadFile,
         writeFile: mockWriteFile,
@@ -341,7 +383,8 @@ Task description`,
       (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
       (vscode.window as any).showInformationMessage = jest.fn();
 
-      const api = new TaskInteractionAPI(mockExtensionUri, mockContext);
+      // Mock validation to return the new file
+      mockValidateAndFilterFilePaths.mockResolvedValueOnce(['/new/file.ts']);
 
       await api.addFilesToContextBundle('/test/bundle.json', ['/new/file.ts']);
 
@@ -371,10 +414,7 @@ Task description`,
       (vscode.window as any).showWarningMessage = mockShowWarning;
 
       // Mock validation to return empty array (all invalid)
-      jest.mock('./utils/pathValidation', () => ({
-        validateAndFilterFilePaths: jest.fn().mockResolvedValue([]),
-        normalizeFilePath: jest.fn((path) => path),
-      }));
+      mockValidateAndFilterFilePaths.mockResolvedValueOnce([]);
 
       await api.addFilesToContextBundle('/test/bundle.json', ['/invalid/path.ts']);
 
@@ -403,10 +443,8 @@ Task description`,
       const mockShowInfo = jest.fn();
       (vscode.window as any).showInformationMessage = mockShowInfo;
 
-      jest.mock('./utils/pathValidation', () => ({
-        validateAndFilterFilePaths: jest.fn().mockResolvedValue(['/existing/file.ts']),
-        normalizeFilePath: jest.fn((path) => path),
-      }));
+      // Mock validation to return the existing file (duplicate)
+      mockValidateAndFilterFilePaths.mockResolvedValueOnce(['/existing/file.ts']);
 
       await api.addFilesToContextBundle('/test/bundle.json', ['/existing/file.ts']);
 
@@ -434,22 +472,25 @@ Task description`,
       (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
       (vscode.window as any).showInformationMessage = jest.fn();
 
+      // Subscribe to events BEFORE calling the method
       const eventSpy = jest.fn();
-      api.onTaskInteraction(eventSpy);
+      const subscription = api.onTaskInteraction(eventSpy);
 
-      jest.mock('./utils/pathValidation', () => ({
-        validateAndFilterFilePaths: jest.fn().mockResolvedValue(['/new/file.ts']),
-        normalizeFilePath: jest.fn((path) => path),
-      }));
+      // Mock validation to return the new file
+      mockValidateAndFilterFilePaths.mockResolvedValueOnce(['/new/file.ts']);
 
       await api.addFilesToContextBundle('/test/bundle.json', ['/new/file.ts']);
 
+      // Verify event was emitted
       expect(eventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'contextBundleModified',
           bundlePath: '/test/bundle.json',
         })
       );
+
+      // Clean up subscription
+      subscription.dispose();
     });
   });
 
@@ -461,12 +502,11 @@ Task description`,
     });
 
     it('should return valid result for valid file path', async () => {
-      jest.mock('./utils/pathValidation', () => ({
-        validateFilePath: jest.fn().mockResolvedValue({
-          valid: true,
-          normalizedPath: '/test/file.ts',
-        }),
-      }));
+      // Mock validateFilePath to return valid result
+      mockValidateFilePath.mockResolvedValueOnce({
+        valid: true,
+        normalizedPath: '/test/file.ts',
+      });
 
       const result = await api.validateContextFilePath('/test/file.ts');
 
@@ -476,17 +516,23 @@ Task description`,
     });
 
     it('should return invalid result with error message for invalid path', async () => {
-      jest.mock('./utils/pathValidation', () => ({
-        validateFilePath: jest.fn().mockResolvedValue({
-          valid: false,
-          error: { message: 'File does not exist' },
-        }),
-      }));
+      // Mock validateFilePath to return invalid result
+      mockValidateFilePath.mockResolvedValueOnce({
+        valid: false,
+        error: {
+          message: 'File does not exist',
+          filePath: '/invalid/path.ts',
+          reason: 'not_found',
+          name: 'FilePathValidationError',
+        } as any,
+      });
 
       const result = await api.validateContextFilePath('/invalid/path.ts');
 
       expect(result.valid).toBe(false);
-      expect(result.errorMessage).toBe('File does not exist');
+      // Error message includes path but we verify it contains the core message
+      expect(result.errorMessage).toBeDefined();
+      expect(result.errorMessage).toContain('does not exist');
     });
   });
 });

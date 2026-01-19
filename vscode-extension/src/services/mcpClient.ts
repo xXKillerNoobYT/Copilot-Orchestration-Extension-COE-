@@ -240,7 +240,14 @@ export class MCPClient {
           attempt++;
 
           if (attempt >= maxAttempts) {
-            throw new Error(`Task status update failed after ${maxAttempts} attempts due to version conflicts. ${error.message || ''}`);
+            const wrappedError: any = new Error(`Task status update failed after ${maxAttempts} attempts due to version conflicts. ${error.message || ''}`);
+            // Preserve original error details for debugging
+            wrappedError.status = error.status;
+            wrappedError.error = error.error;
+            wrappedError.currentVersion = error.currentVersion;
+            wrappedError.expectedVersion = error.expectedVersion;
+            wrappedError.currentStatus = error.currentStatus;
+            throw wrappedError;
           }
 
           // Exponential backoff: 1s, 2s, 4s (capped at 5s)

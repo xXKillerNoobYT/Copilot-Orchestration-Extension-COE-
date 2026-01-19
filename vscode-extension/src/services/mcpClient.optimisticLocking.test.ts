@@ -62,7 +62,7 @@ describe('MCPClient - Optimistic Locking', () => {
 
     it('should retry on 409 version conflict with exponential backoff', async () => {
       // Reference: https://jestjs.io/docs/timer-mocks#runalltimersasync
-      
+
       const conflictResponse = {
         success: false,
         error: 'version_conflict',
@@ -126,7 +126,7 @@ describe('MCPClient - Optimistic Locking', () => {
 
     it('should throw error after max attempts on persistent conflicts', async () => {
       // Reference: https://jestjs.io/docs/asynchronous#promises
-      
+
       const conflictResponse = {
         success: false,
         error: 'version_conflict',
@@ -175,11 +175,14 @@ describe('MCPClient - Optimistic Locking', () => {
         expectedVersion: 1,
       }, 3); // max 3 attempts
 
-      await jest.runAllTimersAsync();
+      // Advance timers and await the promise rejection simultaneously
+      const [error] = await Promise.all([
+        resultPromise.catch(e => e),
+        jest.runAllTimersAsync()
+      ]);
 
-      await expect(resultPromise).rejects.toThrow(/failed after 3 attempts/);
-
-      jest.useRealTimers();
+      expect(error).toBeDefined();
+      expect(error.message).toContain('Task status update failed after 3 attempts due to version conflicts');
     });
 
     it('should throw non-conflict errors immediately without retry', async () => {
@@ -207,8 +210,6 @@ describe('MCPClient - Optimistic Locking', () => {
     });
 
     it('should handle version conflicts with correct backoff timing', async () => {
-      jest.useFakeTimers();
-
       const conflictResponse = {
         success: false,
         error: 'version_conflict',
@@ -251,8 +252,6 @@ describe('MCPClient - Optimistic Locking', () => {
       // Should wait ~1000ms for first retry (2^(1-1) * 1000 = 2^0 * 1000 = 1000ms)
       await jest.advanceTimersByTimeAsync(1000);
       await resultPromise;
-
-      jest.useRealTimers();
     });
 
     it('should work without expectedVersion for backward compatibility', async () => {
@@ -302,11 +301,12 @@ describe('MCPClient - Optimistic Locking', () => {
       });
 
       try {
+        // Use maxAttempts: 1 to prevent retry loop
         await mcpClient.reportTaskStatus({
           taskId: 'task-123',
           status: 'done',
           expectedVersion: 3,
-        });
+        }, 1);
         throw new Error('Should have thrown error');
       } catch (error: any) {
         expect(error.status).toBe(409);
