@@ -333,6 +333,7 @@ Task description`,
         new TextEncoder().encode(JSON.stringify(bundleContent))
       );
       const mockWriteFile = jest.fn().mockResolvedValue(undefined);
+      
       (vscode.workspace as any).fs = {
         readFile: mockReadFile,
         writeFile: mockWriteFile,
@@ -340,11 +341,7 @@ Task description`,
       (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
       (vscode.window as any).showInformationMessage = jest.fn();
 
-      // Mock the validation module
-      jest.mock('./utils/pathValidation', () => ({
-        validateAndFilterFilePaths: jest.fn().mockResolvedValue(['/new/file.ts']),
-        normalizeFilePath: jest.fn((path) => path),
-      }));
+      const api = new TaskInteractionAPI(mockExtensionUri, mockContext);
 
       await api.addFilesToContextBundle('/test/bundle.json', ['/new/file.ts']);
 

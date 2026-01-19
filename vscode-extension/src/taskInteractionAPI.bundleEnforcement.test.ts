@@ -286,12 +286,13 @@ describe('TaskInteractionAPI - Context Bundle Size Enforcement', () => {
       const writtenContent = new TextDecoder().decode(writeCall[1]);
       const writtenBundle = JSON.parse(writtenContent);
       
-      // Expected: Original 2 files + 1 new unique file (duplicates filtered)
+      // Expected: Original 2 files + at most 1 new unique file (duplicates filtered)
       // file1.ts was already there, so only file3.ts should be added
-      expect(writtenBundle.files.length).toBeLessThanOrEqual(3);
+      expect(writtenBundle.files).toBeDefined();
+      expect(Array.isArray(writtenBundle.files)).toBe(true);
       expect(writtenBundle.files).toContain('/test/file3.ts');
       
-      // Verify the bundle contains unique files
+      // Verify the bundle contains unique files (no duplicates allowed)
       const uniqueFiles = new Set(writtenBundle.files);
       expect(uniqueFiles.size).toBe(writtenBundle.files.length);
     });

@@ -1,8 +1,16 @@
 # Docs Folder Structure & Navigation
 
-This folder contains all technical documentation, plans, and session records for the Copilot Orchestration Extension project.
+This folder contains all technical documentation, plans, and architecture guides for the Copilot Orchestration Extension project.
 
 ## 📂 Folder Organization
+
+### Core Documentation (Root Level)
+
+**Essential Reading**:
+- `PROJECT-RUNBOOK.md` — **START HERE**: Execution order, commands, task expectations
+- `QUICK-REFERENCE.md` — Quick commands, common fixes, test status
+- `GITHUB-ISSUES-PLAN.md` — Issue tracking and management
+- `README.md` — This file: Documentation navigation guide
 
 ### [Plan/](./Plan/) - Planning & Vision
 Core planning documents that define the project vision and features.
@@ -63,105 +71,65 @@ Release notes, deployment guides, and delivery documentation.
 ---
 
 ### [Sessions/](./Sessions/) - Session Records & Task Completions
-Session reports and completed task documentation created after each work session.
+Historical session reports and completed task documentation.
 
-**File Naming Convention**:
-- `SESSION-YYYY-MM-DD-[topic].md` — Session completion reports
-- `TASK-[id]-[description].md` — Individual task completion records
-
-**Contents**:
-- What was completed
-- Files changed
-- Tests run and results
-- Issues discovered
-- Follow-up tasks created
+**Note**: Active session reports have been moved to `../reports/` for better organization.
 
 ---
 
 ## 🚀 Quick Start - Where to Go First
 
-1. **Understanding the Project**: Read [Plan/detailed project description](./Plan/detailed%20project%20description)
-2. **Feature Overview**: Check [Plan/feature list](./Plan/feature%20list)
-3. **Current Tasks**: Review [../Docs/Plan/todo](./Plan/todo)
-4. **Setting Up**: Follow guides in [Setup/](./Setup/)
-5. **Recent Work**: Check [Sessions/](./Sessions/) for latest completion reports
+1. **Understanding the Project**: Read [PROJECT-RUNBOOK.md](./PROJECT-RUNBOOK.md)
+2. **Quick Commands**: Check [QUICK-REFERENCE.md](./QUICK-REFERENCE.md)
+3. **Feature Overview**: Check [Plan/feature list](./Plan/feature%20list)
+4. **Current Tasks**: Review [GITHUB-ISSUES-PLAN.md](./GITHUB-ISSUES-PLAN.md)
+5. **Setting Up**: Follow guides in [Setup/](./Setup/)
 
 ---
 
-## 📋 Document Types & Templates
+## 📋 AI Agent Guidelines
 
-### Session Report Template
-```markdown
-# [Session Title/Date]
+**When completing work, UPDATE existing docs instead of creating new files:**
 
-## Status: COMPLETED/IN-PROGRESS
+✅ **DO**:
+- Update `PROJECT-RUNBOOK.md` with status changes
+- Update `QUICK-REFERENCE.md` with new commands/fixes
+- Add dated entries to existing documentation
+- Update relevant sections in `Plan/` or `Implementation/`
 
-## Work Completed
-- Item 1
-- Item 2
+❌ **DON'T**:
+- Create new session report files (unless specifically requested)
+- Create duplicate documentation
+- Create summary/status files in root or Docs
+- Generate completion reports automatically
 
-## Files Modified
-- path/to/file.ext
-- path/to/other.ext
-
-## Tests Results
-- Unit: X/X passing
-- Integration: Y/Y passing
-- E2E: Z/Z passing
-
-## Related Tasks
-- TASK-id-name
-- TASK-id-name2
-
-## Next Steps
-- Recommendation 1
-- Recommendation 2
-```
-
-### Task Completion Template
-```markdown
-# Task: [Title]
-
-## Task ID: TASK-xxx-xxxxx
-## Status: COMPLETED
-
-## What Was Done
-- Detailed description
-
-## Files Changed
-- list files
-
-## How to Verify
-- Testing instructions
-- Manual verification steps
-
-## Session Reference
-- Link to SESSION file if applicable
-
-## Blockers/Issues
-- Any issues encountered
-- Resolutions applied
-```
+**Exception**: Historical session reports belong in `../reports/sessions/` when explicitly requested.
 
 ---
 
 ## 🔍 Using This Documentation
 
 ### For Developers
-- Start with [Plan/](./Plan/) to understand project scope
-- Check [Implementation/](./Implementation/) for technical details
-- Reference [Sessions/](./Sessions/) to see what was already done
+- Start with [PROJECT-RUNBOOK.md](./PROJECT-RUNBOOK.md) for execution guide
+- Check [QUICK-REFERENCE.md](./QUICK-REFERENCE.md) for commands
+- Reference [Plan/](./Plan/) to understand project scope
 - Follow [Setup/](./Setup/) guides for development environment
+
+### For AI Agents
+- Always read PROJECT-RUNBOOK.md first
+- Consult GITHUB-ISSUES-PLAN.md for issue tracking
+- Update existing docs, don't create new ones
+- Follow the "DO/DON'T" guidelines above
 
 ### For Project Managers
 - Review [Plan/feature list](./Plan/feature%20list) for feature status
 - Check [Delivery/](./Delivery/) for release information
-- Monitor [Sessions/](./Sessions/) for progress tracking
+- Monitor [../reports/](../reports/) for historical progress
 
 ### For QA/Testing
-- Check [Testing/](./Testing/) for test strategies
-- Review [Sessions/](./Sessions/) for test results in completion reports
-- See [Implementation/](./Implementation/) for component details to test
+- Check [QUICK-REFERENCE.md](./QUICK-REFERENCE.md) for test commands
+- Review [Implementation/](./Implementation/) for component details
+- See test expectations in PROJECT-RUNBOOK.md
 
 ---
 
@@ -169,33 +137,36 @@ Session reports and completed task documentation created after each work session
 
 | Purpose | Location |
 |---------|----------|
-| Project vision | [Plan/detailed project description](./Plan/detailed%20project%20description) |
-| Feature list | [Plan/feature list](./Plan/feature%20list) |
-| Current tasks | [Plan/todo](./Plan/todo) |
-| Task state | `_ZENTASKS/tasks.json` |
-| Agent instructions | `.github/COPILOT-INSTRUCTIONS-CONSOLIDATED.md` |
-| API routes | `routes/api.php` |
-| Models | `app/Models/` |
-| Services | `app/Services/` |
+| **Execution guide** | [PROJECT-RUNBOOK.md](./PROJECT-RUNBOOK.md) |
+| **Quick commands** | [QUICK-REFERENCE.md](./QUICK-REFERENCE.md) |
+| **Project vision** | [Plan/detailed project description](./Plan/detailed%20project%20description) |
+| **Feature list** | [Plan/feature list](./Plan/feature%20list) |
+| **Issue tracking** | [GITHUB-ISSUES-PLAN.md](./GITHUB-ISSUES-PLAN.md) |
+| **Historical reports** | [../reports/](../reports/) |
+| **Agent instructions** | [../.github/copilot-instructions.md](../.github/copilot-instructions.md) |
+| **API routes** | `../routes/api.php` |
+| **Models** | `../app/Models/` |
+| **Services** | `../app/Services/` |
 
 ---
 
 ## ✨ Best Practices
 
-1. **Always read Plan/ first** before starting development
-2. **Create session docs** after completing work
+1. **Always read PROJECT-RUNBOOK.md first** before starting development
+2. **Update existing docs** instead of creating new files
 3. **Link to other docs** using relative markdown links
-4. **Keep docs updated** as implementation progresses
-5. **Use consistent file naming** for easy discovery
-6. **Archive completed sessions** for reference
+4. **Keep docs current** as implementation progresses
+5. **Use consistent formatting** for easy discovery
 
 ---
 
 ## 🔄 Document Maintenance
 
-- Review and update regularly as work progresses
-- Move completed features to historical archives
-- Keep Plan/ documents as source of truth
+- **Living documents**: PROJECT-RUNBOOK.md, QUICK-REFERENCE.md, GITHUB-ISSUES-PLAN.md
+- **Update regularly** as work progresses
+- **Archive session reports** to `../reports/`
+- **Keep Plan/ documents as source of truth**
+- **Remove outdated/redundant files** to reduce clutter
 - Session records are permanent (never delete)
 - Implementation docs should evolve with code
 

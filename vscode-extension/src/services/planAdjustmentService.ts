@@ -104,10 +104,14 @@ export class PlanAdjustmentService {
       const engine = new PlanAdjustmentEngine(currentPlan, context);
       const updatedPlan = engine.applyAdjustment(currentPlan, suggestion);
 
-      // Update metadata
+      // Update metadata with new timestamp
       updatedPlan.metadata.updated_at = new Date().toISOString();
+      
+      // Increment version number for change tracking
+      const currentVersion = updatedPlan.metadata.version || 1;
+      updatedPlan.metadata.version = currentVersion + 1;
 
-      // Save with backup and version bump
+      // Save with backup and new version
       const saveResult = await this.persistenceService.savePlan(updatedPlan, {
         version: updatedPlan.metadata.version,
         createBackup: options.createBackup ?? true,

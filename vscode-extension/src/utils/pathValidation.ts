@@ -181,11 +181,18 @@ export function normalizeFilePath(filePath: string | vscode.Uri, workspaceRoot?:
       );
     }
 
+    // Return the resolved path directly (don't prepend drive letter on Windows)
     cleanPath = resolvedPath;
+  } else if (!path.isAbsolute(cleanPath)) {
+    // For relative paths without workspace root, just normalize but don't modify
+    cleanPath = path.normalize(cleanPath);
+  } else {
+    // For absolute paths, just normalize path separators and resolve . and ..
+    cleanPath = path.normalize(cleanPath);
   }
 
   // Normalize path separators and resolve . and ..
-  return path.normalize(cleanPath);
+  return cleanPath;
 }
 
 /**

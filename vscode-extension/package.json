@@ -472,7 +472,8 @@
     "test:integration": "npm run compile && node scripts/runIntegrationTests.js",
     "test:integration:ci": "xvfb-run -a node scripts/runIntegrationTests.js",
     "test:all": "npm run test:unit && npm run test:wizard && npm run test",
-    "demo": "npm run compile && node dist/taskGraphDemo.js"
+    "demo": "npm run compile && node dist/taskGraphDemo.js",
+    "report:tests": "node scripts/report-tests.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",

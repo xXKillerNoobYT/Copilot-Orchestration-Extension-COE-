@@ -101,10 +101,10 @@ describe('MCPClient - Optimistic Locking', () => {
         json: async () => latestTaskResponse,
       });
 
-      // Second attempt: success
+      // Second attempt: success with updated version
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
-        json: async () => successResponse,
+        json: async () => ({ ...successResponse, version: 3 }),
       });
 
       const resultPromise = mcpClient.reportTaskStatus({
