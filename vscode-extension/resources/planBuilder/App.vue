@@ -1,48 +1,64 @@
 <template>
-  <div class="plan-builder-app">
-    <WizardContainer
-      wizard-title="Interactive Plan Builder"
-      wizard-description="Create a comprehensive project plan in 10 guided steps"
-      :user-role="userRole"
-      :show-sidebar="true"
-      :show-preview-panel="false"
-      :show-time-estimate="true"
-    />
-  </div>
+  <ErrorBoundary>
+    <div class="plan-builder-app">
+      <WizardContainer
+        wizard-title="Interactive Plan Builder"
+        wizard-description="Create a comprehensive project plan in 10 guided steps"
+        :user-role="userRole"
+        :show-sidebar="true"
+        :show-preview-panel="false"
+        :show-time-estimate="true"
+      />
+    </div>
+  </ErrorBoundary>
 </template>
 
 <script setup lang="ts">
+/// <reference path="./types/vscode.d.ts" />
 import { ref, onMounted } from 'vue';
 import WizardContainer from './WizardContainer.vue';
+import ErrorBoundary from './ErrorBoundary.vue';
 
 // User role for time estimate calculations
 const userRole = ref<'designer' | 'analyst' | 'architect' | undefined>();
 
 // Lifecycle hooks
 onMounted(() => {
+  console.log('[App] Component mounted successfully');
+  
   // Listen for messages from VS Code extension
   window.addEventListener('message', handleVSCodeMessage);
+  console.log('[App] Message listener registered');
 
   // Send ready message to VS Code extension
   if (window.vscode) {
     window.vscode.postMessage({ type: 'wizardReady' });
+    console.log('[App] Sent wizardReady message to VS Code');
+  } else {
+    console.warn('[App] VS Code API not available');
   }
 });
 
 // Handle messages from VS Code extension
 function handleVSCodeMessage(event: MessageEvent) {
+  console.log('[App] Message received from VS Code:', event.data);
   const message = event.data;
 
   switch (message.type) {
     case 'setUserRole':
       userRole.value = message.data as 'designer' | 'analyst' | 'architect';
+      console.log('[App] User role set to:', userRole.value);
       break;
 
     case 'planComplete':
       // Plan completion is handled by WizardContainer
       // This is where we can intercept and handle plan export to backend
+      console.log('[App] Plan completion triggered');
       handlePlanCompletion(message.data);
       break;
+      
+    default:
+      console.log('[App] Unknown message type:', message.type);
   }
 }
 
@@ -67,15 +83,6 @@ async function handlePlanCompletion(plan: Record<string, unknown>) {
         error: String(error)
       });
     }
-  }
-}
-
-// Type declaration for vscode API
-declare global {
-  interface Window {
-    vscode?: {
-      postMessage(message: unknown): void;
-    };
   }
 }
 </script>
