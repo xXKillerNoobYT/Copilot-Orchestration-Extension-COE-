@@ -306,13 +306,13 @@ export class CopilotAgentClient {
       ));
 
       // Add context files if available
-      if (payload.context.contextFiles && payload.context.contextFiles.length > 0) {
-        const contextSummary = payload.context.contextFiles
-          .map(f => `- ${f.path}: ${f.summary || 'Code file'}`)
+      if (payload.context.files && payload.context.files.length > 0) {
+        const contextSummary = payload.context.files
+          .map((f: ContextFile) => `- ${f.path}${f.truncated ? ' (truncated)' : ''}`)
           .join('\n');
         
         messages.push(vscode.LanguageModelChatMessage.User(
-          `Context files:\n${contextSummary}\n\nTask requirements: ${payload.context.requirements || ''}`
+          `Context files:\n${contextSummary}\n\nAdditional context: ${JSON.stringify(payload.context.files.slice(0, 3))}`
         ));
       }
 

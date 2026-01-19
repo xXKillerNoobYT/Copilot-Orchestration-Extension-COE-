@@ -513,14 +513,17 @@ export class PlanAdjustmentService {
         plan_name: updatedPlan.project.name,
         version: updatedPlan.metadata.version,
         updated_at: updatedPlan.metadata.updated_at,
-        adjustment_type: suggestion.type,
+        adjustment_category: suggestion.category,
         adjustment_description: suggestion.description,
         impact: suggestion.impact,
         timestamp: new Date().toISOString(),
       };
 
-      // Subscribe and emit to the plan-updates channel
-      wsClient.subscribe('plan-updates', 'plan.updated');
+      // Subscribe to the plan-updates channel
+      // Note: subscribe() expects channel and event name
+      wsClient.subscribe('plan-updates', 'plan.updated', (data: any) => {
+        console.log('[PlanAdjustmentService] Received plan update broadcast:', data);
+      });
 
       // Note: The actual emit/publish would depend on the WebSocket implementation
       // For Laravel Echo/Soketi, the backend would broadcast, and we just listen
