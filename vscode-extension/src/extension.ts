@@ -17,6 +17,9 @@ import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
 import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { AuditDashboardPanel } from './panels/auditDashboardPanel';
+import { DeadLetterQueuePanel } from './panels/DeadLetterQueuePanel';
+import { DeadLetterQueueService } from './services/deadLetterQueue';
+import Database from 'better-sqlite3';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 import { getLLMIPMonitor } from './services/llmIPMonitor';
@@ -272,6 +275,30 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
       AuditDashboardPanel.createOrShow(context.extensionUri);
+    })
+  );
+
+  // Dead Letter Queue Panel
+  let dlqService: DeadLetterQueueService | null = null;
+  
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showDeadLetterQueue', async () => {
+      try {
+        // Initialize database if not already done
+        if (!dlqService) {
+          const dbPath = path.join(context.globalStorageUri.fsPath, 'copilot-orchestrator.db');
+          // Ensure directory exists
+          await fs.mkdir(context.globalStorageUri.fsPath, { recursive: true });
+          const db = new Database(dbPath);
+          dlqService = new DeadLetterQueueService(db);
+        }
+        
+        DeadLetterQueuePanel.createOrShow(context.extensionUri, dlqService);
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to open Dead Letter Queue: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
     })
   );
 

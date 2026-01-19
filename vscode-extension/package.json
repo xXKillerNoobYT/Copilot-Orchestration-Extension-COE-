@@ -416,6 +416,12 @@
         "icon": "$(report)"
       },
       {
+        "command": "copilot-orchestrator.showDeadLetterQueue",
+        "title": "Copilot Orchestrator: Show Dead Letter Queue",
+        "category": "Copilot Orchestrator",
+        "icon": "$(error)"
+      },
+      {
         "command": "copilot-orchestrator.openPlanBuilder",
         "title": "Copilot Orchestrator: Open Plan Builder",
         "category": "Plan Builder",
