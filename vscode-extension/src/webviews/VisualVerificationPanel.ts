@@ -14,355 +14,355 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 export interface DesignSystemData {
-  colors?: Record<string, string>;
-  typography?: Record<string, any>;
-  components?: Record<string, any>;
-  spacing?: Record<string, string>;
+    colors?: Record<string, string>;
+    typography?: Record<string, any>;
+    components?: Record<string, any>;
+    spacing?: Record<string, string>;
 }
 
 export interface ChecklistItem {
-  id: string;
-  text: string;
-  status: 'untested' | 'pass' | 'fail' | 'skip';
-  alreadyTested?: boolean;
+    id: string;
+    text: string;
+    status: 'untested' | 'pass' | 'fail' | 'skip';
+    alreadyTested?: boolean;
 }
 
 export interface VerificationTask {
-  id: string;
-  title: string;
-  acceptanceCriteria: string[];
-  planSection?: string;
-  isUITask: boolean;
+    id: string;
+    title: string;
+    acceptanceCriteria: string[];
+    planSection?: string;
+    isUITask: boolean;
 }
 
 export interface IssueReport {
-  description: string;
-  severity: 'critical' | 'major' | 'minor';
-  screenshot?: string;
-  taskId: string;
+    description: string;
+    severity: 'critical' | 'major' | 'minor';
+    screenshot?: string;
+    taskId: string;
 }
 
 export class VisualVerificationPanel {
-  public static currentPanel: VisualVerificationPanel | undefined;
-  private readonly _panel: vscode.WebviewPanel;
-  private readonly _extensionUri: vscode.Uri;
-  private _disposables: vscode.Disposable[] = [];
-  private mcpClient: MCPClient;
-  private currentTask: VerificationTask | null = null;
-  private designSystemData: DesignSystemData | null = null;
-  private serverStatus: 'stopped' | 'starting' | 'running' | 'error' = 'stopped';
-  private serverPort: number = 3000;
-  private checklist: ChecklistItem[] = [];
+    public static currentPanel: VisualVerificationPanel | undefined;
+    private readonly _panel: vscode.WebviewPanel;
+    private readonly _extensionUri: vscode.Uri;
+    private _disposables: vscode.Disposable[] = [];
+    private mcpClient: MCPClient;
+    private currentTask: VerificationTask | null = null;
+    private designSystemData: DesignSystemData | null = null;
+    private serverStatus: 'stopped' | 'starting' | 'running' | 'error' = 'stopped';
+    private serverPort: number = 3000;
+    private checklist: ChecklistItem[] = [];
 
-  public static createOrShow(extensionUri: vscode.Uri, task?: VerificationTask) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
+    public static createOrShow(extensionUri: vscode.Uri, task?: VerificationTask) {
+        const column = vscode.window.activeTextEditor
+            ? vscode.window.activeTextEditor.viewColumn
+            : undefined;
 
-    // If we already have a panel, show it
-    if (VisualVerificationPanel.currentPanel) {
-      VisualVerificationPanel.currentPanel._panel.reveal(column);
-      if (task) {
-        VisualVerificationPanel.currentPanel.loadTask(task);
-      }
-      return;
-    }
-
-    // Otherwise, create a new panel
-    const panel = vscode.window.createWebviewPanel(
-      'visualVerification',
-      'Visual Verification',
-      column || vscode.ViewColumn.Two,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [
-          vscode.Uri.joinPath(extensionUri, 'media'),
-          vscode.Uri.joinPath(extensionUri, 'dist'),
-        ],
-      }
-    );
-
-    VisualVerificationPanel.currentPanel = new VisualVerificationPanel(
-      panel,
-      extensionUri,
-      task
-    );
-  }
-
-  private constructor(
-    panel: vscode.WebviewPanel,
-    extensionUri: vscode.Uri,
-    task?: VerificationTask
-  ) {
-    this._panel = panel;
-    this._extensionUri = extensionUri;
-
-    // Initialize MCP client
-    this.mcpClient = MCPClient.getInstance();
-
-    // Load design system data
-    this.loadDesignSystem();
-
-    // Load initial task if provided
-    if (task) {
-      this.loadTask(task);
-    }
-
-    // Set the webview's initial html content
-    this._update();
-
-    // Listen for when the panel is disposed
-    this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-
-    // Handle messages from the webview
-    this._panel.webview.onDidReceiveMessage(
-      async (message: any) => {
-        switch (message.command) {
-          case 'startServer':
-            await this.startDevServer();
-            return;
-          case 'stopServer':
-            await this.stopDevServer();
-            return;
-          case 'restartServer':
-            await this.restartDevServer();
-            return;
-          case 'updateChecklistItem':
-            this.updateChecklistItem(message.itemId, message.status);
-            return;
-          case 'reportIssue':
-            await this.reportIssue(message.issue);
-            return;
-          case 'submitVerification':
-            await this.submitVerification(message.result);
-            return;
-          case 'uploadScreenshot':
-            await this.uploadScreenshot(message.dataUrl);
-            return;
-          case 'openPlanAdjustment':
-            vscode.commands.executeCommand('copilot-orchestrator.planAdjustment');
+        // If we already have a panel, show it
+        if (VisualVerificationPanel.currentPanel) {
+            VisualVerificationPanel.currentPanel._panel.reveal(column);
+            if (task) {
+                VisualVerificationPanel.currentPanel.loadTask(task);
+            }
             return;
         }
-      },
-      null,
-      this._disposables
-    );
-  }
 
-  /**
-   * Load a task for verification
-   */
-  public loadTask(task: VerificationTask): void {
-    this.currentTask = task;
-    this.checklist = this.generateChecklist(task.acceptanceCriteria);
-    this._update();
-  }
+        // Otherwise, create a new panel
+        const panel = vscode.window.createWebviewPanel(
+            'visualVerification',
+            'Visual Verification',
+            column || vscode.ViewColumn.Two,
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true,
+                localResourceRoots: [
+                    vscode.Uri.joinPath(extensionUri, 'media'),
+                    vscode.Uri.joinPath(extensionUri, 'dist'),
+                ],
+            }
+        );
 
-  /**
-   * Load design system data from workspace
-   */
-  private async loadDesignSystem(): Promise<void> {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-      return;
+        VisualVerificationPanel.currentPanel = new VisualVerificationPanel(
+            panel,
+            extensionUri,
+            task
+        );
     }
 
-    const designSystemPath = path.join(
-      workspaceFolders[0].uri.fsPath,
-      'design-system.json'
-    );
+    private constructor(
+        panel: vscode.WebviewPanel,
+        extensionUri: vscode.Uri,
+        task?: VerificationTask
+    ) {
+        this._panel = panel;
+        this._extensionUri = extensionUri;
 
-    try {
-      if (fs.existsSync(designSystemPath)) {
-        const content = fs.readFileSync(designSystemPath, 'utf-8');
-        this.designSystemData = JSON.parse(content);
-        console.log('Design system loaded successfully');
-      }
-    } catch (error) {
-      console.warn('Failed to load design system:', error);
-    }
-  }
+        // Initialize MCP client
+        this.mcpClient = MCPClient.getInstance();
 
-  /**
-   * Generate checklist from acceptance criteria
-   */
-  private generateChecklist(criteria: string[]): ChecklistItem[] {
-    return criteria.map((criterion, index) => ({
-      id: `criterion-${index}`,
-      text: criterion,
-      status: 'untested',
-      alreadyTested: this.detectAlreadyTested(criterion),
-    }));
-  }
+        // Load design system data
+        this.loadDesignSystem();
 
-  /**
-   * Detect if a criterion has already been tested (heuristic)
-   */
-  private detectAlreadyTested(criterion: string): boolean {
-    // Simple heuristic: check if similar tests exist
-    // In a real implementation, this would query test results
-    return criterion.toLowerCase().includes('test') && Math.random() > 0.7;
-  }
+        // Load initial task if provided
+        if (task) {
+            this.loadTask(task);
+        }
 
-  /**
-   * Update checklist item status
-   */
-  private updateChecklistItem(itemId: string, status: ChecklistItem['status']): void {
-    const item = this.checklist.find((i) => i.id === itemId);
-    if (item) {
-      item.status = status;
-      this._update();
-    }
-  }
+        // Set the webview's initial html content
+        this._update();
 
-  /**
-   * Start development server
-   */
-  private async startDevServer(): Promise<void> {
-    this.serverStatus = 'starting';
-    this._update();
+        // Listen for when the panel is disposed
+        this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    try {
-      // In a real implementation, this would start the actual dev server
-      // For now, simulate with a delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      this.serverStatus = 'running';
-      this.serverPort = 3000;
-
-      vscode.window.showInformationMessage(
-        `Dev server started on http://localhost:${this.serverPort}`
-      );
-    } catch (error) {
-      this.serverStatus = 'error';
-      vscode.window.showErrorMessage(`Failed to start server: ${error}`);
+        // Handle messages from the webview
+        this._panel.webview.onDidReceiveMessage(
+            async (message: any) => {
+                switch (message.command) {
+                    case 'startServer':
+                        await this.startDevServer();
+                        return;
+                    case 'stopServer':
+                        await this.stopDevServer();
+                        return;
+                    case 'restartServer':
+                        await this.restartDevServer();
+                        return;
+                    case 'updateChecklistItem':
+                        this.updateChecklistItem(message.itemId, message.status);
+                        return;
+                    case 'reportIssue':
+                        await this.reportIssue(message.issue);
+                        return;
+                    case 'submitVerification':
+                        await this.submitVerification(message.result);
+                        return;
+                    case 'uploadScreenshot':
+                        await this.uploadScreenshot(message.dataUrl);
+                        return;
+                    case 'openPlanAdjustment':
+                        vscode.commands.executeCommand('copilot-orchestrator.planAdjustment');
+                        return;
+                }
+            },
+            null,
+            this._disposables
+        );
     }
 
-    this._update();
-  }
-
-  /**
-   * Stop development server
-   */
-  private async stopDevServer(): Promise<void> {
-    try {
-      // In a real implementation, this would stop the actual dev server
-      this.serverStatus = 'stopped';
-      vscode.window.showInformationMessage('Dev server stopped');
-    } catch (error) {
-      vscode.window.showErrorMessage(`Failed to stop server: ${error}`);
+    /**
+     * Load a task for verification
+     */
+    public loadTask(task: VerificationTask): void {
+        this.currentTask = task;
+        this.checklist = this.generateChecklist(task.acceptanceCriteria);
+        this._update();
     }
 
-    this._update();
-  }
+    /**
+     * Load design system data from workspace
+     */
+    private async loadDesignSystem(): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            return;
+        }
 
-  /**
-   * Restart development server
-   */
-  private async restartDevServer(): Promise<void> {
-    await this.stopDevServer();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    await this.startDevServer();
-  }
+        const designSystemPath = path.join(
+            workspaceFolders[0].uri.fsPath,
+            'design-system.json'
+        );
 
-  /**
-   * Report an issue and create investigation task
-   */
-  private async reportIssue(issue: IssueReport): Promise<void> {
-    try {
-      // Report to MCP server to create investigation task
-      await this.mcpClient.reportTestFailure({
-        taskId: issue.taskId,
-        test: 'Visual Verification',
-        error: issue.description,
-        severity: issue.severity,
-      });
-
-      vscode.window.showInformationMessage('Investigation task created successfully');
-      this._update();
-    } catch (error) {
-      vscode.window.showErrorMessage(`Failed to report issue: ${error}`);
-    }
-  }
-
-  /**
-   * Submit verification result
-   */
-  private async submitVerification(result: {
-    status: 'pass' | 'fail' | 'partial';
-    issues: IssueReport[];
-  }): Promise<void> {
-    if (!this.currentTask) {
-      vscode.window.showErrorMessage('No task loaded for verification');
-      return;
+        try {
+            if (fs.existsSync(designSystemPath)) {
+                const content = fs.readFileSync(designSystemPath, 'utf-8');
+                this.designSystemData = JSON.parse(content);
+                console.log('Design system loaded successfully');
+            }
+        } catch (error) {
+            console.warn('Failed to load design system:', error);
+        }
     }
 
-    try {
-      const passedCount = this.checklist.filter((i) => i.status === 'pass').length;
-      const failedCount = this.checklist.filter((i) => i.status === 'fail').length;
-
-      await this.mcpClient.reportVerificationResult({
-        taskId: this.currentTask.id,
-        result: result.status,
-        issues: result.issues,
-        checklist: {
-          total: this.checklist.length,
-          passed: passedCount,
-          failed: failedCount,
-        },
-      });
-
-      vscode.window.showInformationMessage(
-        `Verification ${result.status}: ${passedCount}/${this.checklist.length} checks passed`
-      );
-
-      // Close panel after successful submission
-      this._panel.dispose();
-    } catch (error) {
-      vscode.window.showErrorMessage(`Failed to submit verification: ${error}`);
+    /**
+     * Generate checklist from acceptance criteria
+     */
+    private generateChecklist(criteria: string[]): ChecklistItem[] {
+        return criteria.map((criterion, index) => ({
+            id: `criterion-${index}`,
+            text: criterion,
+            status: 'untested',
+            alreadyTested: this.detectAlreadyTested(criterion),
+        }));
     }
-  }
 
-  /**
-   * Upload screenshot
-   */
-  private async uploadScreenshot(dataUrl: string): Promise<void> {
-    // In a real implementation, this would save the screenshot
-    // and return a path or URL
-    console.log('Screenshot uploaded:', dataUrl.substring(0, 50) + '...');
-    vscode.window.showInformationMessage('Screenshot uploaded successfully');
-  }
+    /**
+     * Detect if a criterion has already been tested (heuristic)
+     */
+    private detectAlreadyTested(criterion: string): boolean {
+        // Simple heuristic: check if similar tests exist
+        // In a real implementation, this would query test results
+        return criterion.toLowerCase().includes('test') && Math.random() > 0.7;
+    }
 
-  /**
-   * Update webview content
-   */
-  private _update(): void {
-    const webview = this._panel.webview;
-    this._panel.webview.html = this._getHtmlForWebview(webview);
-  }
+    /**
+     * Update checklist item status
+     */
+    private updateChecklistItem(itemId: string, status: ChecklistItem['status']): void {
+        const item = this.checklist.find((i) => i.id === itemId);
+        if (item) {
+            item.status = status;
+            this._update();
+        }
+    }
 
-  /**
-   * Generate HTML for webview
-   */
-  private _getHtmlForWebview(webview: vscode.Webview): string {
-    const nonce = getNonce();
+    /**
+     * Start development server
+     */
+    private async startDevServer(): Promise<void> {
+        this.serverStatus = 'starting';
+        this._update();
 
-    const serverStatusIcon =
-      this.serverStatus === 'running'
-        ? '🟢'
-        : this.serverStatus === 'starting'
-        ? '🟡'
-        : this.serverStatus === 'error'
-        ? '🔴'
-        : '⚪';
+        try {
+            // In a real implementation, this would start the actual dev server
+            // For now, simulate with a delay
+            await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const serverStatusText =
-      this.serverStatus.charAt(0).toUpperCase() + this.serverStatus.slice(1);
+            this.serverStatus = 'running';
+            this.serverPort = 3000;
 
-    const checklistHtml = this.checklist
-      .map(
-        (item) => `
+            vscode.window.showInformationMessage(
+                `Dev server started on http://localhost:${this.serverPort}`
+            );
+        } catch (error) {
+            this.serverStatus = 'error';
+            vscode.window.showErrorMessage(`Failed to start server: ${error}`);
+        }
+
+        this._update();
+    }
+
+    /**
+     * Stop development server
+     */
+    private async stopDevServer(): Promise<void> {
+        try {
+            // In a real implementation, this would stop the actual dev server
+            this.serverStatus = 'stopped';
+            vscode.window.showInformationMessage('Dev server stopped');
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to stop server: ${error}`);
+        }
+
+        this._update();
+    }
+
+    /**
+     * Restart development server
+     */
+    private async restartDevServer(): Promise<void> {
+        await this.stopDevServer();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await this.startDevServer();
+    }
+
+    /**
+     * Report an issue and create investigation task
+     */
+    private async reportIssue(issue: IssueReport): Promise<void> {
+        try {
+            // Report to MCP server to create investigation task
+            await this.mcpClient.reportTestFailure({
+                taskId: issue.taskId,
+                test: 'Visual Verification',
+                error: issue.description,
+                severity: issue.severity,
+            });
+
+            vscode.window.showInformationMessage('Investigation task created successfully');
+            this._update();
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to report issue: ${error}`);
+        }
+    }
+
+    /**
+     * Submit verification result
+     */
+    private async submitVerification(result: {
+        status: 'pass' | 'fail' | 'partial';
+        issues: IssueReport[];
+    }): Promise<void> {
+        if (!this.currentTask) {
+            vscode.window.showErrorMessage('No task loaded for verification');
+            return;
+        }
+
+        try {
+            const passedCount = this.checklist.filter((i) => i.status === 'pass').length;
+            const failedCount = this.checklist.filter((i) => i.status === 'fail').length;
+
+            await this.mcpClient.reportVerificationResult({
+                taskId: this.currentTask.id,
+                result: result.status,
+                issues: result.issues,
+                checklist: {
+                    total: this.checklist.length,
+                    passed: passedCount,
+                    failed: failedCount,
+                },
+            });
+
+            vscode.window.showInformationMessage(
+                `Verification ${result.status}: ${passedCount}/${this.checklist.length} checks passed`
+            );
+
+            // Close panel after successful submission
+            this._panel.dispose();
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to submit verification: ${error}`);
+        }
+    }
+
+    /**
+     * Upload screenshot
+     */
+    private async uploadScreenshot(dataUrl: string): Promise<void> {
+        // In a real implementation, this would save the screenshot
+        // and return a path or URL
+        console.log('Screenshot uploaded:', dataUrl.substring(0, 50) + '...');
+        vscode.window.showInformationMessage('Screenshot uploaded successfully');
+    }
+
+    /**
+     * Update webview content
+     */
+    private _update(): void {
+        const webview = this._panel.webview;
+        this._panel.webview.html = this._getHtmlForWebview(webview);
+    }
+
+    /**
+     * Generate HTML for webview
+     */
+    private _getHtmlForWebview(webview: vscode.Webview): string {
+        const nonce = getNonce();
+
+        const serverStatusIcon =
+            this.serverStatus === 'running'
+                ? '🟢'
+                : this.serverStatus === 'starting'
+                    ? '🟡'
+                    : this.serverStatus === 'error'
+                        ? '🔴'
+                        : '⚪';
+
+        const serverStatusText =
+            this.serverStatus.charAt(0).toUpperCase() + this.serverStatus.slice(1);
+
+        const checklistHtml = this.checklist
+            .map(
+                (item) => `
       <div class="checklist-item ${item.status}">
         <input
           type="checkbox"
@@ -381,29 +381,29 @@ export class VisualVerificationPanel {
         </div>
       </div>
     `
-      )
-      .join('');
+            )
+            .join('');
 
-    const designSystemHtml = this.designSystemData
-      ? `
+        const designSystemHtml = this.designSystemData
+            ? `
       <div class="design-system-section">
         <h3>Design System Reference</h3>
         ${this._getColorPaletteHtml()}
         ${this._getTypographyHtml()}
       </div>
     `
-      : '';
+            : '';
 
-    const taskInfoHtml = this.currentTask
-      ? `
+        const taskInfoHtml = this.currentTask
+            ? `
       <div class="task-info">
         <h2>${this.currentTask.title}</h2>
         <p class="task-type">${this.currentTask.isUITask ? '🎨 UI Task' : '⚙️ Backend Task'}</p>
       </div>
     `
-      : '<p class="no-task">No task loaded</p>';
+            : '<p class="no-task">No task loaded</p>';
 
-    return `<!DOCTYPE html>
+        return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -586,44 +586,38 @@ export class VisualVerificationPanel {
     <div class="server-status">
       <span>${serverStatusIcon}</span>
       <span>Server Status: ${serverStatusText}</span>
-      ${
-        this.serverStatus === 'running'
-          ? `<span class="badge">Port ${this.serverPort}</span>`
-          : ''
-      }
+      ${this.serverStatus === 'running'
+                ? `<span class="badge">Port ${this.serverPort}</span>`
+                : ''
+            }
     </div>
     <div class="server-buttons">
-      <button onclick="startServer()" ${
-        this.serverStatus === 'running' ? 'disabled' : ''
-      }>
+      <button onclick="startServer()" ${this.serverStatus === 'running' ? 'disabled' : ''
+            }>
         Start Server
       </button>
-      <button onclick="stopServer()" ${
-        this.serverStatus === 'stopped' ? 'disabled' : ''
-      }>
+      <button onclick="stopServer()" ${this.serverStatus === 'stopped' ? 'disabled' : ''
+            }>
         Stop Server
       </button>
-      <button onclick="restartServer()" ${
-        this.serverStatus === 'stopped' ? 'disabled' : ''
-      }>
+      <button onclick="restartServer()" ${this.serverStatus === 'stopped' ? 'disabled' : ''
+            }>
         Restart Server
       </button>
-      ${
-        this.serverStatus === 'running'
-          ? `<button onclick="window.open('http://localhost:${this.serverPort}', '_blank')">
+      ${this.serverStatus === 'running'
+                ? `<button onclick="window.open('http://localhost:${this.serverPort}', '_blank')">
            Open in Browser
          </button>`
-          : ''
-      }
+                : ''
+            }
     </div>
   </div>
 
   <div class="verification-section">
     <h3>Acceptance Criteria Checklist</h3>
     <div class="progress">
-      ${this.checklist.filter((i) => i.status === 'pass').length} / ${
-      this.checklist.length
-    } completed
+      ${this.checklist.filter((i) => i.status === 'pass').length} / ${this.checklist.length
+            } completed
     </div>
     <div class="checklist">
       ${checklistHtml}
@@ -755,29 +749,29 @@ export class VisualVerificationPanel {
   </script>
 </body>
 </html>`;
-  }
-
-  /**
-   * Get color palette HTML
-   */
-  private _getColorPaletteHtml(): string {
-    if (!this.designSystemData?.colors) {
-      return '';
     }
 
-    const colorsHtml = Object.entries(this.designSystemData.colors)
-      .map(
-        ([name, value]) => `
+    /**
+     * Get color palette HTML
+     */
+    private _getColorPaletteHtml(): string {
+        if (!this.designSystemData?.colors) {
+            return '';
+        }
+
+        const colorsHtml = Object.entries(this.designSystemData.colors)
+            .map(
+                ([name, value]) => `
       <div class="color-swatch">
         <div class="color-box" style="background-color: ${value};"></div>
         <div class="color-name">${name}</div>
         <div class="color-value">${value}</div>
       </div>
     `
-      )
-      .join('');
+            )
+            .join('');
 
-    return `
+        return `
       <div>
         <h4>Color Palette</h4>
         <div class="color-palette">
@@ -785,44 +779,44 @@ export class VisualVerificationPanel {
         </div>
       </div>
     `;
-  }
-
-  /**
-   * Get typography HTML
-   */
-  private _getTypographyHtml(): string {
-    if (!this.designSystemData?.typography) {
-      return '';
     }
 
-    return `
+    /**
+     * Get typography HTML
+     */
+    private _getTypographyHtml(): string {
+        if (!this.designSystemData?.typography) {
+            return '';
+        }
+
+        return `
       <div style="margin-top: 15px;">
         <h4>Typography</h4>
         <pre>${JSON.stringify(this.designSystemData.typography, null, 2)}</pre>
       </div>
     `;
-  }
-
-  public dispose(): void {
-    VisualVerificationPanel.currentPanel = undefined;
-
-    // Clean up resources
-    this._panel.dispose();
-
-    while (this._disposables.length) {
-      const disposable = this._disposables.pop();
-      if (disposable) {
-        disposable.dispose();
-      }
     }
-  }
+
+    public dispose(): void {
+        VisualVerificationPanel.currentPanel = undefined;
+
+        // Clean up resources
+        this._panel.dispose();
+
+        while (this._disposables.length) {
+            const disposable = this._disposables.pop();
+            if (disposable) {
+                disposable.dispose();
+            }
+        }
+    }
 }
 
 function getNonce(): string {
-  let text = '';
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
 }

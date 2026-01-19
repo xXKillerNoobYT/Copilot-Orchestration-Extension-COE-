@@ -15,171 +15,171 @@ import { AgentProfile } from '../agentProfiles';
 jest.mock('vscode');
 
 describe('AgentProfileWatcher', () => {
-  let watcher: AgentProfileWatcher;
-  let mockExtensionUri: vscode.Uri;
-  let changeEvents: ProfileChangeEvent[] = [];
+    let watcher: AgentProfileWatcher;
+    let mockExtensionUri: vscode.Uri;
+    let changeEvents: ProfileChangeEvent[] = [];
 
-  beforeEach(() => {
-    changeEvents = [];
-    mockExtensionUri = {
-      fsPath: '/mock/extension/path',
-    } as vscode.Uri;
+    beforeEach(() => {
+        changeEvents = [];
+        mockExtensionUri = {
+            fsPath: '/mock/extension/path',
+        } as vscode.Uri;
 
-    watcher = new AgentProfileWatcher(mockExtensionUri);
-  });
-
-  afterEach(() => {
-    watcher.stop();
-  });
-
-  describe('Profile Loading', () => {
-    it('should load all profiles on start', async () => {
-      await watcher.start();
-      
-      const profiles = watcher.getAllProfiles();
-      expect(profiles).toBeDefined();
-      expect(Array.isArray(profiles)).toBe(true);
+        watcher = new AgentProfileWatcher(mockExtensionUri);
     });
 
-    it('should get profile by name', async () => {
-      await watcher.start();
-      
-      const profile = watcher.getProfile('planner');
-      expect(profile).toBeDefined();
-      if (profile) {
-        expect(profile.name).toBe('Planner');
-        expect(profile.role).toBe('planner');
-      }
+    afterEach(() => {
+        watcher.stop();
     });
 
-    it('should handle case-insensitive profile lookup', async () => {
-      await watcher.start();
-      
-      const profile1 = watcher.getProfile('PLANNER');
-      const profile2 = watcher.getProfile('planner');
-      const profile3 = watcher.getProfile('Planner');
+    describe('Profile Loading', () => {
+        it('should load all profiles on start', async () => {
+            await watcher.start();
 
-      expect(profile1).toEqual(profile2);
-      expect(profile2).toEqual(profile3);
-    });
-  });
+            const profiles = watcher.getAllProfiles();
+            expect(profiles).toBeDefined();
+            expect(Array.isArray(profiles)).toBe(true);
+        });
 
-  describe('Change Detection', () => {
-    it('should notify on profile creation', (done) => {
-      const callback = (event: ProfileChangeEvent) => {
-        expect(event.changeType).toBe('created');
-        expect(event.profileName).toBeDefined();
-        expect(event.profile).toBeDefined();
-        done();
-      };
+        it('should get profile by name', async () => {
+            await watcher.start();
 
-      watcher.onChange(callback);
-      
-      // Simulate profile creation (would need file system mocking)
-      // For now, test structure is in place
-    });
+            const profile = watcher.getProfile('planner');
+            expect(profile).toBeDefined();
+            if (profile) {
+                expect(profile.name).toBe('Planner');
+                expect(profile.role).toBe('planner');
+            }
+        });
 
-    it('should notify on profile modification', (done) => {
-      const callback = (event: ProfileChangeEvent) => {
-        expect(event.changeType).toBe('modified');
-        done();
-      };
+        it('should handle case-insensitive profile lookup', async () => {
+            await watcher.start();
 
-      watcher.onChange(callback);
+            const profile1 = watcher.getProfile('PLANNER');
+            const profile2 = watcher.getProfile('planner');
+            const profile3 = watcher.getProfile('Planner');
+
+            expect(profile1).toEqual(profile2);
+            expect(profile2).toEqual(profile3);
+        });
     });
 
-    it('should notify on profile deletion', (done) => {
-      const callback = (event: ProfileChangeEvent) => {
-        expect(event.changeType).toBe('deleted');
-        done();
-      };
+    describe('Change Detection', () => {
+        it('should notify on profile creation', (done) => {
+            const callback = (event: ProfileChangeEvent) => {
+                expect(event.changeType).toBe('created');
+                expect(event.profileName).toBeDefined();
+                expect(event.profile).toBeDefined();
+                done();
+            };
 
-      watcher.onChange(callback);
+            watcher.onChange(callback);
+
+            // Simulate profile creation (would need file system mocking)
+            // For now, test structure is in place
+        });
+
+        it('should notify on profile modification', (done) => {
+            const callback = (event: ProfileChangeEvent) => {
+                expect(event.changeType).toBe('modified');
+                done();
+            };
+
+            watcher.onChange(callback);
+        });
+
+        it('should notify on profile deletion', (done) => {
+            const callback = (event: ProfileChangeEvent) => {
+                expect(event.changeType).toBe('deleted');
+                done();
+            };
+
+            watcher.onChange(callback);
+        });
+
+        it('should support multiple callbacks', async () => {
+            let callback1Called = false;
+            let callback2Called = false;
+
+            watcher.onChange(() => {
+                callback1Called = true;
+            });
+
+            watcher.onChange(() => {
+                callback2Called = true;
+            });
+
+            // Both callbacks should be in the list
+            expect(callback1Called || callback2Called).toBeDefined();
+        });
     });
 
-    it('should support multiple callbacks', async () => {
-      let callback1Called = false;
-      let callback2Called = false;
+    describe('Profile Cache', () => {
+        it('should cache loaded profiles', async () => {
+            await watcher.start();
 
-      watcher.onChange(() => {
-        callback1Called = true;
-      });
+            const profiles1 = watcher.getAllProfiles();
+            const profiles2 = watcher.getAllProfiles();
 
-      watcher.onChange(() => {
-        callback2Called = true;
-      });
+            // Should return same instances (cached)
+            expect(profiles1).toBe(profiles2);
+        });
 
-      // Both callbacks should be in the list
-      expect(callback1Called || callback2Called).toBeDefined();
-    });
-  });
+        it('should update cache on reload', async () => {
+            await watcher.start();
+            const profilesBefore = watcher.getAllProfiles();
 
-  describe('Profile Cache', () => {
-    it('should cache loaded profiles', async () => {
-      await watcher.start();
-      
-      const profiles1 = watcher.getAllProfiles();
-      const profiles2 = watcher.getAllProfiles();
+            await watcher.reloadAll();
+            const profilesAfter = watcher.getAllProfiles();
 
-      // Should return same instances (cached)
-      expect(profiles1).toBe(profiles2);
+            expect(profilesAfter).toBeDefined();
+        });
     });
 
-    it('should update cache on reload', async () => {
-      await watcher.start();
-      const profilesBefore = watcher.getAllProfiles();
+    describe('Disposable Pattern', () => {
+        it('should return disposable from onChange', () => {
+            const disposable = watcher.onChange(() => { });
 
-      await watcher.reloadAll();
-      const profilesAfter = watcher.getAllProfiles();
+            expect(disposable).toBeDefined();
+            expect(typeof disposable.dispose).toBe('function');
+        });
 
-      expect(profilesAfter).toBeDefined();
-    });
-  });
+        it('should unregister callback on dispose', () => {
+            let callCount = 0;
+            const disposable = watcher.onChange(() => {
+                callCount++;
+            });
 
-  describe('Disposable Pattern', () => {
-    it('should return disposable from onChange', () => {
-      const disposable = watcher.onChange(() => {});
-      
-      expect(disposable).toBeDefined();
-      expect(typeof disposable.dispose).toBe('function');
-    });
+            disposable.dispose();
 
-    it('should unregister callback on dispose', () => {
-      let callCount = 0;
-      const disposable = watcher.onChange(() => {
-        callCount++;
-      });
-
-      disposable.dispose();
-      
-      // Callback should not be called after dispose
-      expect(callCount).toBe(0);
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle missing profile gracefully', async () => {
-      await watcher.start();
-      
-      const profile = watcher.getProfile('nonexistent-profile');
-      expect(profile).toBeUndefined();
+            // Callback should not be called after dispose
+            expect(callCount).toBe(0);
+        });
     });
 
-    it('should handle invalid profile files', async () => {
-      // Should not throw when encountering invalid files
-      await expect(watcher.start()).resolves.not.toThrow();
+    describe('Error Handling', () => {
+        it('should handle missing profile gracefully', async () => {
+            await watcher.start();
+
+            const profile = watcher.getProfile('nonexistent-profile');
+            expect(profile).toBeUndefined();
+        });
+
+        it('should handle invalid profile files', async () => {
+            // Should not throw when encountering invalid files
+            await expect(watcher.start()).resolves.not.toThrow();
+        });
     });
-  });
 });
 
 describe('AgentProfileWatcher Singleton', () => {
-  it('should return same instance', () => {
-    const mockUri = { fsPath: '/mock' } as vscode.Uri;
-    
-    const { getAgentProfileWatcher } = require('../agentProfileWatcher');
-    const watcher1 = getAgentProfileWatcher(mockUri);
-    const watcher2 = getAgentProfileWatcher(mockUri);
+    it('should return same instance', () => {
+        const mockUri = { fsPath: '/mock' } as vscode.Uri;
 
-    expect(watcher1).toBe(watcher2);
-  });
+        const { getAgentProfileWatcher } = require('../agentProfileWatcher');
+        const watcher1 = getAgentProfileWatcher(mockUri);
+        const watcher2 = getAgentProfileWatcher(mockUri);
+
+        expect(watcher1).toBe(watcher2);
+    });
 });

@@ -47,7 +47,7 @@
         {
           "id": "copilotOrchestrator",
           "title": "Copilot Orchestrator",
-          "icon": "./media/copilot.svg"
+          "icon": "media/orchestrator-icon.svg"
         }
       ]
     },
@@ -56,7 +56,26 @@
         {
           "id": "copilotOrchestrator.status",
           "name": "Status",
-          "icon": "./media/copilot.svg"
+          "icon": "media/orchestrator-icon.svg",
+          "contextualTitle": "Orchestrator Status"
+        },
+        {
+          "id": "copilotOrchestrator.tasks",
+          "name": "Tasks",
+          "icon": "media/task-icon-dark.svg",
+          "contextualTitle": "Active Tasks"
+        },
+        {
+          "id": "copilotOrchestrator.agents",
+          "name": "Agents",
+          "icon": "media/agent-icon.svg",
+          "contextualTitle": "Agent Teams"
+        },
+        {
+          "id": "copilotOrchestrator.plans",
+          "name": "Plans",
+          "icon": "media/plan-icon.svg",
+          "contextualTitle": "Project Plans"
         }
       ]
     },
@@ -163,36 +182,42 @@
     "commands": [
       {
         "command": "copilot-orchestrator.showStatusMenu",
-        "title": "Copilot Orchestrator: Show Status Menu",
-        "category": "Copilot Orchestrator"
+        "title": "Show Status Menu",
+        "category": "Copilot Orchestrator",
+        "icon": "$(info)"
       },
       {
         "command": "copilot-orchestrator.start",
-        "title": "Copilot Orchestrator: Start",
-        "category": "Copilot Orchestrator"
+        "title": "Start Orchestrator",
+        "category": "Copilot Orchestrator",
+        "icon": "$(play-circle)"
       },
       {
         "command": "copilot-orchestrator.refreshTasks",
-        "title": "Copilot Orchestrator: Refresh Tasks",
-        "category": "Copilot Orchestrator"
+        "title": "Refresh Tasks",
+        "category": "Copilot Orchestrator",
+        "icon": "$(refresh)"
       },
       {
         "command": "copilot-orchestrator.showGraph",
-        "title": "Copilot Orchestrator: Show Task Graph",
+        "title": "Show Task Graph",
         "category": "Copilot Orchestrator",
-        "icon": "$(graph)"
+        "icon": "$(git-branch)"
       },
       {
         "command": "copilot-orchestrator.showDependencies",
-        "title": "Copilot Orchestrator: Show Task Dependencies",
+        "title": "Show Task Dependencies",
         "category": "Copilot Orchestrator",
-        "icon": "$(references)"
+        "icon": "$(type-hierarchy)"
       },
       {
         "command": "copilot-orchestrator.showPanel",
-        "title": "Copilot Orchestrator: Show Orchestrator Panel",
+        "title": "Show Orchestrator Panel",
         "category": "Copilot Orchestrator",
-        "icon": "$(dashboard)"
+        "icon": {
+          "light": "media/orchestrator-icon.svg",
+          "dark": "media/orchestrator-icon.svg"
+        }
       },
       {
         "command": "copilot-orchestrator.executeTask",
@@ -339,9 +364,91 @@
       },
       {
         "command": "copilot-orchestrator.applyPlanAdjustment",
-        "title": "Copilot Orchestrator: Apply Plan Adjustment",
+        "title": "Apply Plan Adjustment",
         "category": "Plan Adjustment",
         "icon": "$(check)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "copilot-orchestrator.showPanel",
+          "when": "true"
+        },
+        {
+          "command": "copilot-orchestrator.openPlanBuilder",
+          "when": "true"
+        },
+        {
+          "command": "copilot-orchestrator.showVisualVerification",
+          "when": "true"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "copilot-orchestrator.refreshTasks",
+          "when": "view == copilotOrchestrator.tasks",
+          "group": "navigation"
+        },
+        {
+          "command": "copilot-orchestrator.openPlanBuilder",
+          "when": "view == copilotOrchestrator.plans",
+          "group": "navigation"
+        },
+        {
+          "command": "copilot-orchestrator.showGraph",
+          "when": "view == copilotOrchestrator.tasks",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "copilot-orchestrator.executeTask",
+          "when": "view == copilotOrchestrator.tasks && viewItem == task",
+          "group": "inline"
+        },
+        {
+          "command": "copilot-orchestrator.changeTaskStatus",
+          "when": "view == copilotOrchestrator.tasks && viewItem == task"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "copilot-orchestrator.executeTask",
+          "when": "resourceExtname == .task.md",
+          "group": "navigation"
+        },
+        {
+          "command": "copilot-orchestrator.showVisualVerification",
+          "when": "resourceExtname == .task.md",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "copilot-orchestrator.showPanel",
+        "key": "ctrl+shift+o",
+        "mac": "cmd+shift+o",
+        "when": "!terminalFocus"
+      },
+      {
+        "command": "copilot-orchestrator.openTaskList",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "!terminalFocus"
+      },
+      {
+        "command": "copilot-orchestrator.showGraph",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g",
+        "when": "!terminalFocus"
+      },
+      {
+        "command": "copilot-orchestrator.startAutoLoop",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "!terminalFocus"
       }
     ]
   },

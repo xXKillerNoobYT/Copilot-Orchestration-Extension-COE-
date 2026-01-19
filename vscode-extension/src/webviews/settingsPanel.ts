@@ -1280,7 +1280,7 @@ description: "Agent description"
   private async _saveAdvancedSettings(settings: any): Promise<void> {
     try {
       const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator');
-      
+
       // Context bundling settings
       await vsConfig.update('context.maxBundleSize', settings.contextBundleSize, vscode.ConfigurationTarget.Global);
       await vsConfig.update('context.tokenLimit', settings.tokenLimit, vscode.ConfigurationTarget.Global);
