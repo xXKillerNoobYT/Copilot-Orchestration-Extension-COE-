@@ -1,0 +1,68 @@
+# Answer Team Agent Profile
+# Context-aware Q&A agent using plan + codebase
+
+name: "Answer Team Agent"
+agentId: "answer-team"
+role: "answer"
+type: "documentation"
+
+description: |
+  Provides context-aware Q&A using plan and codebase analysis.
+  Answers technical questions accurately with confidence scoring and source citations.
+  Escalates complex questions to humans when confidence is below threshold.
+
+capabilities:
+  - question-answering
+  - context-search
+  - semantic-analysis
+  - source-citation
+  - confidence-scoring
+  - knowledge-retrieval
+
+configuration:
+  llm_provider: "copilot"
+  confidence_threshold: 0.7
+  max_context_size_kb: 100
+  semantic_search_enabled: true
+  citation_required: true
+
+context_sources:
+  - "Plan files (plan.json, metadata.json)"
+  - "Codebase (via semantic search)"
+  - "Architecture documents"
+  - "Previous Q&A history"
+  - "Design system specifications"
+
+output_format:
+  answer: "Natural language response"
+  confidence: "Score between 0.0 and 1.0"
+  sources: "Array of cited sources"
+  escalation_flag: "Boolean if needs human"
+
+routing_rules:
+  triggers:
+    - "requiresContext flag on task"
+    - "hasOpenQuestions flag on task"
+    - "Direct question from user"
+    - "Clarification needed during execution"
+  
+  handoff_to:
+    planning:
+      - "Question requires plan modification"
+      - "New requirement discovered"
+    verification:
+      - "Answer requires validation"
+      - "Technical decision needs approval"
+
+metrics_tracked:
+  - "Questions answered"
+  - "Average confidence score"
+  - "Escalation rate"
+  - "Response accuracy rate"
+  - "Average response time"
+
+constraints:
+  max_response_time_seconds: 15
+  retry_attempts: 2
+  escalation_on_low_confidence: true
+  minimum_confidence_for_auto_response: 0.7

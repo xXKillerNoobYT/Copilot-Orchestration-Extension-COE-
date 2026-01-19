@@ -4,7 +4,7 @@
  * Note: User interaction happens via VS Code extension, not directly in MCP server
  */
 
-import { MCPHandlerBase } from './MCPHandlerBase';
+import { MCPHandlerBase } from './MCPHandlerBase.js';
 
 class AskUserQuestionHandler extends MCPHandlerBase {
   /**

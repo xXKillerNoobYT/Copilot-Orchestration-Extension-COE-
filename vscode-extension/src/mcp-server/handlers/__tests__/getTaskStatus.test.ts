@@ -3,7 +3,7 @@
  * Tests real backend integration with mocked fetch responses
  */
 
-import { handleGetTaskStatus } from '../getTaskStatus';
+import { handleGetTaskStatus } from '../getTaskStatus.js';
 
 // Mock fetch globally
 global.fetch = jest.fn() as jest.Mock;
@@ -186,3 +186,4 @@ describe('handleGetTaskStatus', () => {
     expect(parsedResponse.linkedIssue).toBeNull();
   });
 });
+
