@@ -86,11 +86,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Run health check on activation
   (async () => {
     try {
-      const healthResult = await healthCheckService.runHealthCheck(false);
+      const healthResult = await healthCheckService.runHealthCheck(true);
       healthCheckService.updateStatusBar(healthResult, healthStatusBar);
       healthCheckService.showWelcomeIfUnhealthy(healthResult);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[Extension] Health check failed:', error);
+      const message =
+        error instanceof Error
+          ? `Health check failed to run during activation: ${error.message}`
+          : 'Health check failed to run during activation. Some features may not work correctly.';
+      vscode.window.showErrorMessage(message);
     }
   })();
 

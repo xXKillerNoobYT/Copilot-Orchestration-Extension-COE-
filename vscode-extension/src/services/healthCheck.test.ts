@@ -2,7 +2,7 @@
  * Tests for Health Check Service
  */
 
-import { HealthCheckService, HealthStatus, OverallHealth } from './healthCheck';
+import { HealthCheckService } from './healthCheck';
 import * as vscode from 'vscode';
 import { promises as fs } from 'fs';
 import * as WebSocketConfigManagerModule from './webSocketConfigManager';
@@ -74,7 +74,7 @@ describe('HealthCheckService', () => {
     ];
 
     // Mock VS Code version
-    (vscode as any).version = '1.85.0';
+    (vscode as any).version = '1.90.0';
 
     service = HealthCheckService.getInstance();
   });
@@ -307,7 +307,7 @@ describe('HealthCheckService', () => {
 
   describe('VS Code Version Check', () => {
     it('should pass with sufficient version', async () => {
-      (vscode as any).version = '1.85.0';
+      (vscode as any).version = '1.90.0';
 
       const result = await service.runHealthCheck(false);
       const versionCheck = result.checks.find(c => c.name === 'VS Code Version');
@@ -316,7 +316,7 @@ describe('HealthCheckService', () => {
     });
 
     it('should fail with insufficient version', async () => {
-      (vscode as any).version = '1.70.0';
+      (vscode as any).version = '1.89.0';
 
       const result = await service.runHealthCheck(false);
       const versionCheck = result.checks.find(c => c.name === 'VS Code Version');

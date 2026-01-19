@@ -36,6 +36,7 @@ export class HealthCheckService {
   private readonly CACHE_DURATION_MS = 60000; // 1 minute
   private outputChannel: vscode.OutputChannel;
   private statusBarItem: vscode.StatusBarItem | undefined;
+  private isRunning: boolean = false;
 
   private constructor() {
     this.outputChannel = vscode.window.createOutputChannel('Copilot Orchestrator Health');
@@ -58,49 +59,65 @@ export class HealthCheckService {
       return this.cachedResult;
     }
 
-    const checks: HealthCheckResult[] = [];
-
-    // Run all checks in parallel for speed
-    const checkResults = await Promise.allSettled([
-      this.checkBackendUrlConfigured(),
-      this.checkBackendReachable(),
-      this.checkPlansDirectory(),
-      this.checkPlansExist(),
-      this.checkMcpServerReachable(),
-      this.checkWebSocketConfiguration(),
-      this.checkVSCodeVersion(),
-    ]);
-
-    // Collect results
-    checkResults.forEach((result) => {
-      if (result.status === 'fulfilled') {
-        checks.push(result.value);
-      } else {
-        // If a check itself throws an error, mark as unhealthy
-        checks.push({
-          name: 'Unknown Check',
-          status: 'unhealthy',
-          message: 'Check failed to run',
-          details: result.reason?.message || 'Unknown error',
-        });
+    // Prevent concurrent health checks
+    if (this.isRunning) {
+      console.log('[HealthCheck] Health check already in progress, waiting for completion');
+      // Wait a bit and return cached result if available, or throw
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (this.cachedResult) {
+        return this.cachedResult;
       }
-    });
+      throw new Error('Health check already in progress');
+    }
 
-    // Calculate overall status
-    const overallStatus = this.calculateOverallStatus(checks);
-    const summary = this.generateSummary(checks, overallStatus);
+    this.isRunning = true;
+    try {
+      const checks: HealthCheckResult[] = [];
 
-    const result: OverallHealth = {
-      status: overallStatus,
-      timestamp: new Date(),
-      checks,
-      summary,
-    };
+      // Run all checks in parallel for speed
+      const checkResults = await Promise.allSettled([
+        this.checkBackendUrlConfigured(),
+        this.checkBackendReachable(),
+        this.checkPlansDirectory(),
+        this.checkPlansExist(),
+        this.checkMcpServerReachable(),
+        this.checkWebSocketConfiguration(),
+        this.checkVSCodeVersion(),
+      ]);
 
-    // Cache the result
-    this.cachedResult = result;
+      // Collect results
+      checkResults.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          checks.push(result.value);
+        } else {
+          // If a check itself throws an error, mark as unhealthy
+          checks.push({
+            name: 'Unknown Check',
+            status: 'unhealthy',
+            message: 'Check failed to run',
+            details: result.reason?.message || 'Unknown error',
+          });
+        }
+      });
 
-    return result;
+      // Calculate overall status
+      const overallStatus = this.calculateOverallStatus(checks);
+      const summary = this.generateSummary(checks, overallStatus);
+
+      const result: OverallHealth = {
+        status: overallStatus,
+        timestamp: new Date(),
+        checks,
+        summary,
+      };
+
+      // Cache the result
+      this.cachedResult = result;
+
+      return result;
+    } finally {
+      this.isRunning = false;
+    }
   }
 
   /**
@@ -160,19 +177,23 @@ export class HealthCheckService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-      // Try to ping the backend health endpoint or root
-      const response = await fetch(`${backendUrl}/api/health`, {
-        method: 'GET',
-        signal: controller.signal,
-      }).catch(() => {
-        // If /api/health doesn't exist, try root
-        return fetch(backendUrl, {
+      let response: Response;
+      try {
+        // Try to ping the backend health endpoint
+        response = await fetch(`${backendUrl}/api/health`, {
           method: 'GET',
           signal: controller.signal,
         });
-      });
+      } catch (primaryError) {
+        // If /api/health doesn't exist or is unreachable, try root as a fallback
+        response = await fetch(backendUrl, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
-      clearTimeout(timeoutId);
       const elapsed = Date.now() - startTime;
 
       if (response.ok) {
@@ -332,19 +353,22 @@ export class HealthCheckService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-      // Try a simple health check
-      const response = await fetch(`${mcpUrl}/api/health`, {
-        method: 'GET',
-        signal: controller.signal,
-      }).catch(() => {
-        // If /api/health doesn't exist, try root
-        return fetch(mcpUrl, {
+      let response: Response;
+      try {
+        // Try a simple health check
+        response = await fetch(`${mcpUrl}/api/health`, {
           method: 'GET',
           signal: controller.signal,
         });
-      });
-
-      clearTimeout(timeoutId);
+      } catch (primaryError) {
+        // If /api/health doesn't exist or is unreachable, try root as a fallback
+        response = await fetch(mcpUrl, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (response.ok) {
         return {
@@ -387,7 +411,7 @@ export class HealthCheckService {
           status: 'degraded',
           message: 'Configuration invalid',
           details: validationError,
-          fix: 'Open Settings and configure WebSocket settings under "copilotOrchestrator.webSocket"',
+          fix: 'Open Settings and configure WebSocket settings under "copilot-orchestrator.webSocket"',
           optional: true,
         };
       }
@@ -414,7 +438,7 @@ export class HealthCheckService {
    */
   private async checkVSCodeVersion(): Promise<HealthCheckResult> {
     const currentVersion = vscode.version;
-    const requiredVersion = '1.75.0'; // From package.json engines.vscode
+    const requiredVersion = '1.90.0'; // Minimum VS Code version from package.json engines.vscode (^1.90.0)
 
     // Simple version comparison (works for semver)
     const current = currentVersion.split('.').map(Number);
