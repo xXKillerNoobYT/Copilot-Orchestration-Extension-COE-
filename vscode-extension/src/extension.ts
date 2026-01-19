@@ -555,6 +555,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   const tasksViewProvider = new TasksViewProvider(context);
   vscode.window.registerTreeDataProvider('copilotOrchestrator.tasks', tasksViewProvider);
+  context.subscriptions.push(tasksViewProvider);
 
   const agentsViewProvider = new AgentsViewProvider(context);
   vscode.window.registerTreeDataProvider('copilotOrchestrator.agents', agentsViewProvider);

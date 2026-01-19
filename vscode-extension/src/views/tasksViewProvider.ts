@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { TasksSource, Task } from '../workspace/tasksSource';
+import * as path from 'path';
 
 /**
  * Tree data provider for the Tasks view in the Copilot Orchestrator sidebar
@@ -6,11 +8,54 @@ import * as vscode from 'vscode';
 export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem> {
   private _onDidChangeTreeData = new vscode.EventEmitter<TaskItem | undefined | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+  private tasksSource: TasksSource | undefined;
+  private fileWatcherDispose: (() => void) | undefined;
 
-  constructor(private context: vscode.ExtensionContext) {}
+  constructor(private context: vscode.ExtensionContext) {
+    this.initializeTasksSource();
+  }
+
+  /**
+   * Initialize the tasks source and set up file watching
+   */
+  private async initializeTasksSource(): Promise<void> {
+    // Get workspace root
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceRoot) {
+      return;
+    }
+
+    // Create tasks source with workspace root
+    this.tasksSource = new TasksSource([path.join(workspaceRoot, '_ZENTASKS')]);
+
+    // Check if tasks file exists
+    const exists = await this.tasksSource.exists();
+    if (exists) {
+      // Load initial data
+      await this.tasksSource.load();
+      this.refresh();
+
+      // Set up file watcher for automatic updates
+      this.fileWatcherDispose = this.tasksSource.watch(() => {
+        this.refresh();
+      });
+    }
+  }
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
+  }
+
+  /**
+   * Dispose resources
+   */
+  dispose(): void {
+    if (this.fileWatcherDispose) {
+      this.fileWatcherDispose();
+    }
+    if (this.tasksSource) {
+      this.tasksSource.dispose();
+    }
   }
 
   getTreeItem(element: TaskItem): vscode.TreeItem {
@@ -53,47 +98,97 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem> {
   }
 
   private async getTasksForCategory(category: string): Promise<TaskItem[]> {
-    // TODO: Load actual tasks from workspace or backend
-    // For now, return sample data
-    const sampleTasks: Record<string, TaskItem[]> = {
-      ready: [
-        new TaskItem(
-          'Implement user authentication',
-          'task-1',
-          vscode.TreeItemCollapsibleState.None,
-          '$(play)',
-          'Execute this task'
-        ),
-        new TaskItem(
-          'Add API endpoint for tasks',
-          'task-2',
-          vscode.TreeItemCollapsibleState.None,
-          '$(play)',
-          'Execute this task'
-        ),
-      ],
-      'in-progress': [
-        new TaskItem(
-          'Setup database schema',
-          'task-3',
-          vscode.TreeItemCollapsibleState.None,
-          '$(loading~spin)',
-          'Currently executing'
-        ),
-      ],
-      blocked: [],
-      completed: [
-        new TaskItem(
-          'Project setup',
-          'task-0',
-          vscode.TreeItemCollapsibleState.None,
-          '$(check)',
-          'Completed'
-        ),
-      ],
-    };
+    // If no tasks source is available, return empty array
+    if (!this.tasksSource) {
+      return [];
+    }
 
-    return sampleTasks[category] || [];
+    // Get cached tasks from the source
+    const state = this.tasksSource.getCached();
+
+    // If there are validation issues, show a warning
+    if (!state.isValid && state.issues.length > 0) {
+      // Only show warning for the first category to avoid duplicate messages
+      if (category === 'ready') {
+        vscode.window.showWarningMessage(
+          `Tasks file has validation issues: ${state.issues[0]}`
+        );
+      }
+    }
+
+    // Map task statuses to categories
+    const tasks = state.tasks;
+    const categoryTasks: Task[] = [];
+
+    switch (category) {
+      case 'ready':
+        // Tasks with status 'pending' are ready to be executed
+        categoryTasks.push(...tasks.filter((t) => t.status === 'pending'));
+        break;
+      case 'in-progress':
+        // Tasks currently being worked on
+        categoryTasks.push(...tasks.filter((t) => t.status === 'in-progress'));
+        break;
+      case 'blocked':
+        // Tasks that are blocked
+        categoryTasks.push(...tasks.filter((t) => t.status === 'blocked'));
+        break;
+      case 'completed':
+        // Tasks that are done or in review
+        categoryTasks.push(
+          ...tasks.filter((t) => t.status === 'done' || t.status === 'review')
+        );
+        break;
+    }
+
+    // Convert tasks to TaskItems
+    return categoryTasks.map((task) => this.createTaskItem(task, category));
+  }
+
+  /**
+   * Create a TaskItem from a Task
+   */
+  private createTaskItem(task: Task, category: string): TaskItem {
+    let icon = '$(play)';
+    let tooltip = task.description;
+
+    // Set icon and tooltip based on status
+    switch (task.status) {
+      case 'pending':
+        icon = '$(play)';
+        tooltip = `${task.description}\n\nClick to execute this task`;
+        break;
+      case 'in-progress':
+        icon = '$(loading~spin)';
+        tooltip = `${task.description}\n\nCurrently executing`;
+        break;
+      case 'blocked':
+        icon = '$(error)';
+        tooltip = `${task.description}\n\nBlocked`;
+        break;
+      case 'done':
+        icon = '$(check)';
+        tooltip = `${task.description}\n\nCompleted`;
+        break;
+      case 'review':
+        icon = '$(eye)';
+        tooltip = `${task.description}\n\nIn review`;
+        break;
+    }
+
+    // Add priority indicator to label
+    let label = task.title;
+    if (task.priority === 'high') {
+      label = `⚡ ${label}`;
+    }
+
+    return new TaskItem(
+      label,
+      task.id,
+      vscode.TreeItemCollapsibleState.None,
+      icon,
+      tooltip
+    );
   }
 }
 
