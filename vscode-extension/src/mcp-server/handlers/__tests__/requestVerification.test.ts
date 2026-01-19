@@ -3,7 +3,7 @@
  * Tests verification request creation in backend
  */
 
-import { handleRequestVerification } from '../requestVerification';
+import { handleRequestVerification } from '../requestVerification.js';
 
 global.fetch = jest.fn() as jest.Mock;
 
@@ -148,3 +148,4 @@ describe('handleRequestVerification', () => {
     expect(parsedResponse.note).toContain('WebSocket');
   });
 });
+
