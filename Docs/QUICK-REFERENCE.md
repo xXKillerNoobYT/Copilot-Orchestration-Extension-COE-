@@ -150,8 +150,41 @@ cd vscode-extension && npm run compile  # Extension build
 ### Documentation
 - `Docs/PROJECT-RUNBOOK.md` - Execution guide
 - `Docs/GITHUB-ISSUES-PLAN.md` - Issue tracking
+- `Docs/MOCK-STUB-REPLACEMENT-GUIDE.md` - Production implementation guide
 - `.github/copilot-instructions.md` - AI instructions
 - `PRD.json` / `PRD.md` - Product requirements
+
+## Production Features (v1.0.0)
+
+### Task Executor
+- ✅ Real GitHub Copilot Language Model API integration
+- ✅ Semantic version checking (VS Code 1.90+)
+- ✅ Automatic fallback to mock mode on error
+- Config: `copilot-orchestrator.agentMode.useMock`
+
+### Plan Persistence
+- ✅ Backend DELETE endpoint integration
+- ✅ Cascade delete support
+- ✅ Soft delete with archiving
+- API: `DELETE /api/v1/planning/{id}`
+
+### Plan Adjustment Service
+- ✅ Real workspace .task.md file scanning
+- ✅ Multi-directory task scanning
+- ✅ WebSocket event broadcasting
+- Directories scanned: `.github/issues`, `tasks`, `.orchestrator/tasks`, `Docs/Tasks`
+
+### Testing Agent
+- ✅ Function signature parsing
+- ✅ Type-specific test generation
+- ✅ Complex TypeScript type support (generics, function types, nested)
+- Handles: `callback: (data: Array<T>) => Promise<void>`
+
+### Connection Monitor
+- ✅ Real WebSocket health checking
+- ✅ Connection state tracking
+- ✅ Overall system health API
+- API: `monitor.getHealthStatus()`
 
 ## Quick Verifications
 
@@ -167,4 +200,29 @@ git status
 
 # Security audit
 npm audit --audit-level=moderate
+
+# Run new tests
+cd vscode-extension
+npm test -- copilotAgentClient.test.ts  # Version checking tests
+npm test -- testingAgent.test.ts        # Parameter parsing tests
+```
+
+## New Configuration Options
+
+### Extension Settings
+```json
+{
+  "copilot-orchestrator.agentMode.useMock": false,
+  "copilot-orchestrator.mcp.baseUrl": "http://localhost:8000",
+  "copilot-orchestrator.websocket.driver": "soketi",
+  "copilot-orchestrator.debug.enabled": true
+}
+```
+
+### Environment Variables
+```env
+# Backend
+PLANS_DELETE_ENABLED=true
+PLANS_CASCADE_DELETE=true
+BROADCAST_DRIVER=soketi
 ```
