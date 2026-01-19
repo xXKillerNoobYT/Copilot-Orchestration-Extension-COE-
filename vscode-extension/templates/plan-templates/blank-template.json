@@ -1,0 +1,333 @@
+{
+    "metadata": {
+        "id": "core-blank",
+        "name": "Blank Project Guide",
+        "description": "A guided starting point for any project type. This template provides structure and helpful instructions to guide you through creating your plan from scratch. Perfect for unique projects, custom workflows, or learning how to use the plan builder.",
+        "category": "blank",
+        "tags": [
+            "blank",
+            "custom",
+            "minimal",
+            "starter",
+            "guide",
+            "tutorial"
+        ],
+        "author": "Copilot Orchestration Extension",
+        "version": "1.0.0",
+        "createdAt": "2026-01-19T00:00:00.000Z",
+        "updatedAt": "2026-01-19T00:00:00.000Z",
+        "isCore": true,
+        "icon": "pencil",
+        "estimatedDuration": "Flexible",
+        "recommendedTeamSize": 1
+    },
+    "plan": {
+        "metadata": {
+            "version": "1.0.0",
+            "created_at": "2026-01-19T00:00:00.000Z",
+            "updated_at": "2026-01-19T00:00:00.000Z",
+            "author": "Template",
+            "status": "draft",
+            "name": "My Project"
+        },
+        "project": {
+            "name": "Project Name",
+            "description": "📝 GUIDE: Describe your project in 2-3 sentences. What are you building? Who will use it? What problem does it solve?",
+            "type": "custom",
+            "status": "planning",
+            "vision": "📝 GUIDE: What is the long-term vision? Where do you want this project to be in 1 year?",
+            "goals": [
+                "📝 GUIDE: Goal 1 - What measurable outcome do you want to achieve?",
+                "📝 GUIDE: Goal 2 - Success metric or KPI"
+            ]
+        },
+        "architecture": {
+            "pattern": "📝 GUIDE: Choose a pattern (Layered, Microservices, Monolithic, Event-Driven, etc.) or describe your own",
+            "description": "📝 GUIDE: Explain how the system is organized. What are the main layers or components?",
+            "components": [
+                "📝 GUIDE: Component 1 - What is it and what does it do?",
+                "📝 GUIDE: Component 2 - How does it interact with other components?",
+                "📝 GUIDE: Add more components as needed"
+            ],
+            "rationale": "📝 GUIDE: Why did you choose this architecture? What are the benefits and trade-offs?",
+            "technology_stack": {
+                "frontend": "📝 GUIDE: e.g., React, Vue, Angular, or None if backend-only",
+                "backend": "📝 GUIDE: e.g., Node.js, Python, Go, Java",
+                "database": "📝 GUIDE: e.g., PostgreSQL, MongoDB, DynamoDB",
+                "infrastructure": "📝 GUIDE: e.g., Docker, Kubernetes, AWS, Azure"
+            }
+        },
+        "features": [
+            {
+                "id": "FEAT-001",
+                "name": "📝 GUIDE: Core Feature Title",
+                "description": "📝 GUIDE: What does this feature do? Why is it important? Example: 'User authentication with email and password'",
+                "priority": "high",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "📝 GUIDE: What must be true for this feature to be considered complete?",
+                    "📝 GUIDE: How will you know it works? (testable criteria)",
+                    "📝 GUIDE: Add 2-3 criteria per feature"
+                ],
+                "dependencies": [],
+                "effort_estimate": 8,
+                "effort_unit": "hours",
+                "category": "Core",
+                "notes": "📝 GUIDE: Any special considerations or implementation hints"
+            },
+            {
+                "id": "FEAT-002",
+                "name": "📝 GUIDE: Add More Features",
+                "description": "📝 GUIDE: Repeat this structure for each feature. Start with high-level features first, then break them down later.",
+                "priority": "high",
+                "status": "pending",
+                "acceptance_criteria": [
+                    "Feature acceptance criteria 1",
+                    "Feature acceptance criteria 2"
+                ],
+                "dependencies": [
+                    "FEAT-001"
+                ],
+                "effort_estimate": 16,
+                "effort_unit": "hours"
+            }
+        ],
+        "timeline": {
+            "start_date": "2026-02-01T00:00:00.000Z",
+            "end_date": "2026-04-01T00:00:00.000Z",
+            "phases": [
+                {
+                    "name": "📝 GUIDE: Phase 1 - Planning & Design",
+                    "start_date": "2026-02-01T00:00:00.000Z",
+                    "end_date": "2026-02-15T00:00:00.000Z",
+                    "description": "📝 GUIDE: What should happen in this phase? (e.g., Requirements gathering, architecture design, setup)"
+                },
+                {
+                    "name": "📝 GUIDE: Phase 2 - Development",
+                    "start_date": "2026-02-16T00:00:00.000Z",
+                    "end_date": "2026-03-20T00:00:00.000Z",
+                    "description": "📝 GUIDE: Main development phase. Can be broken into multiple sprints or milestones."
+                },
+                {
+                    "name": "📝 GUIDE: Phase 3 - Testing & Launch",
+                    "start_date": "2026-03-21T00:00:00.000Z",
+                    "end_date": "2026-04-01T00:00:00.000Z",
+                    "description": "📝 GUIDE: Testing, bug fixes, performance optimization, and launch preparation"
+                }
+            ],
+            "milestones": [
+                {
+                    "id": "M1",
+                    "name": "📝 GUIDE: Milestone 1 - MVP Ready",
+                    "target_date": "2026-03-01T00:00:00.000Z",
+                    "phase": "development",
+                    "completion_status": "pending",
+                    "dependencies": [],
+                    "description": "📝 GUIDE: What defines a successful milestone? (e.g., all core features working)"
+                },
+                {
+                    "id": "M2",
+                    "name": "📝 GUIDE: Milestone 2 - Production Ready",
+                    "target_date": "2026-04-01T00:00:00.000Z",
+                    "phase": "deployment",
+                    "completion_status": "pending",
+                    "dependencies": [
+                        "M1"
+                    ],
+                    "description": "📝 GUIDE: Final readiness check before launch"
+                }
+            ]
+        },
+        "team": {
+            "members": [
+                {
+                    "id": "ROLE-001",
+                    "role_name": "📝 GUIDE: Your Role (e.g., Full Stack Developer)",
+                    "responsibilities": [
+                        "📝 GUIDE: What are your main responsibilities?",
+                        "📝 GUIDE: What tasks will you own?"
+                    ],
+                    "skills": [
+                        "📝 GUIDE: Technology 1",
+                        "📝 GUIDE: Technology 2"
+                    ],
+                    "agent_mapping": "📝 GUIDE: Which AI agent(s) can help? (Auto Zen, Testing Agent, etc.)",
+                    "availability": "full-time",
+                    "allocation_percentage": 100
+                },
+                {
+                    "id": "ROLE-002",
+                    "role_name": "📝 GUIDE: Team Member 2 (if applicable)",
+                    "responsibilities": [
+                        "Task ownership area"
+                    ],
+                    "skills": [
+                        "Skill 1"
+                    ],
+                    "agent_mapping": "Optional - assign AI agents",
+                    "availability": "part-time",
+                    "allocation_percentage": 50
+                }
+            ],
+            "structure": "📝 GUIDE: Agile, Waterfall, Kanban, or Hybrid?",
+            "size": 1,
+            "communication_plan": "📝 GUIDE: How will team members communicate? (Daily standups, Weekly reviews, Slack channel, etc.)"
+        },
+        "success_criteria": [
+            "📝 GUIDE: Criterion 1 - What does success look like? (must be measurable)",
+            "📝 GUIDE: Criterion 2 - How will you know the project is successful?",
+            "📝 GUIDE: Criterion 3 - Add more criteria as needed"
+        ],
+        "risks": [
+            {
+                "id": "RISK-001",
+                "description": "📝 GUIDE: What could go wrong? (e.g., Technical complexity, resource constraints, scope creep)",
+                "probability": "medium",
+                "impact": "medium",
+                "mitigation": "📝 GUIDE: What's your plan to prevent or handle this risk?",
+                "contingency": "📝 GUIDE: What's your backup plan if this happens?"
+            },
+            {
+                "id": "RISK-002",
+                "description": "📝 GUIDE: Add more risks as you identify them during planning",
+                "probability": "low",
+                "impact": "high",
+                "mitigation": "The more risks you identify upfront, the better prepared you are"
+            }
+        ],
+        "assumptions": [
+            "📝 GUIDE: Assumption 1 - What are you assuming to be true? (e.g., Budget will be available)",
+            "📝 GUIDE: Assumption 2 - Team members are available full-time",
+            "📝 GUIDE: Assumption 3 - List all assumptions about resources, timeline, scope, etc."
+        ],
+        "constraints": [
+            "📝 GUIDE: Constraint 1 - What limitations do you have? (budget, timeline, resources, technical)",
+            "📝 GUIDE: Constraint 2 - Must be completed by deadline",
+            "📝 GUIDE: Constraint 3 - List all constraints that could impact the project"
+        ],
+        "dependencies": [
+            {
+                "id": "DEP-001",
+                "description": "📝 GUIDE: External or internal dependency (e.g., another project must complete first)",
+                "type": "external",
+                "status": "pending",
+                "owner": "📝 GUIDE: Who owns this dependency?"
+            }
+        ],
+        "quality_assurance": {
+            "testing_strategy": "📝 GUIDE: How will you ensure quality? (unit tests, integration tests, E2E tests, manual testing)",
+            "coverage_target": 80,
+            "performance_targets": {
+                "response_time": "📝 GUIDE: e.g., <200ms for 95% of requests",
+                "uptime": "📝 GUIDE: e.g., 99.9% availability",
+                "throughput": "📝 GUIDE: e.g., 1000 requests per second"
+            },
+            "browsers_supported": [
+                "📝 GUIDE: e.g., Chrome, Firefox, Safari (if web app)"
+            ],
+            "accessibility_standards": "📝 GUIDE: e.g., WCAG 2.1 AA"
+        },
+        "deployment_strategy": {
+            "environments": [
+                {
+                    "name": "Development",
+                    "description": "📝 GUIDE: Local development environment",
+                    "deployment_method": "Local"
+                },
+                {
+                    "name": "Staging",
+                    "description": "📝 GUIDE: Pre-production testing environment",
+                    "deployment_method": "📝 GUIDE: e.g., Docker, Kubernetes, AWS ECS"
+                },
+                {
+                    "name": "Production",
+                    "description": "📝 GUIDE: Live environment for end users",
+                    "deployment_method": "📝 GUIDE: How will you deploy to production?"
+                }
+            ],
+            "deployment_frequency": "📝 GUIDE: Weekly, daily, on-demand?",
+            "rollback_plan": "📝 GUIDE: How will you handle failed deployments or bugs in production?",
+            "monitoring": "📝 GUIDE: How will you monitor the application? (Sentry, New Relic, CloudWatch, etc.)"
+        },
+        "documentation": {
+            "user_docs": "📝 GUIDE: Will you create user guides or help documentation?",
+            "api_docs": "📝 GUIDE: If building an API, how will it be documented? (OpenAPI/Swagger, etc.)",
+            "architecture_docs": "📝 GUIDE: Document your system design for future developers",
+            "contributing_guide": "📝 GUIDE: If open source, how can others contribute?"
+        }
+    },
+    "customizationHints": {
+        "requiredCustomizations": [
+            "plan.project.name",
+            "plan.project.description"
+        ],
+        "optionalCustomizations": [
+            {
+                "field": "plan.project.goals",
+                "description": "Define your project's goals",
+                "guidance": "Clear goals help you stay focused and measure success"
+            },
+            {
+                "field": "plan.features",
+                "description": "Add your project's features",
+                "guidance": "Start with high-level features, then break them down into smaller tasks"
+            },
+            {
+                "field": "plan.timeline.phases",
+                "description": "Define project phases and milestones",
+                "guidance": "Realistic timelines help with resource planning"
+            },
+            {
+                "field": "plan.team",
+                "description": "Define team roles and responsibilities",
+                "guidance": "Clear role assignment prevents confusion and overlap"
+            },
+            {
+                "field": "plan.risks",
+                "description": "Identify potential risks early",
+                "guidance": "Proactive risk management helps avoid problems later"
+            }
+        ],
+        "tips": [
+            "💡 Start with the 'project' section - describe WHAT you're building and WHY",
+            "💡 Use the 'architecture' section to describe HOW you'll build it",
+            "💡 List features in priority order - critical first, nice-to-have last",
+            "💡 Be realistic with effort estimates - 1 feature = 6-40 hours typically",
+            "💡 Identify risks early - the more you anticipate, the better prepared you are",
+            "💡 Define success criteria BEFORE you start building - how will you know when you're done?",
+            "💡 Use the AI Assistant (💡 button) to get suggestions for your plan",
+            "💡 Once satisfied, the Plan Decomposition Engine will break this into executable tasks"
+        ],
+        "nextSteps": [
+            "1. Fill in the project name and description",
+            "2. Choose an architecture pattern or describe your own",
+            "3. List your main features in priority order",
+            "4. Define realistic timeline and milestones",
+            "5. Identify risks and success criteria",
+            "6. Click 'Complete Plan' to decompose into tasks",
+            "7. Review generated tasks and adjust as needed",
+            "8. Start building!"
+        ]
+    },
+    "guidance": {
+        "onboarding": "🎓 This is a guided template! Each section has 📝 GUIDE comments showing what to fill in. Delete the guide text and replace with your project details.",
+        "sections_overview": {
+            "project": "Define WHAT you're building - name, description, vision, and goals",
+            "architecture": "Describe HOW you'll build it - pattern, components, and technology stack",
+            "features": "List the features you need to build, with acceptance criteria for each",
+            "timeline": "Break project into phases and milestones with realistic dates",
+            "team": "Define roles, responsibilities, and who owns what",
+            "quality_assurance": "How will you ensure the project meets quality standards?",
+            "deployment": "Where and how will you deploy this project?",
+            "risks": "What could go wrong? How will you handle it?",
+            "success_criteria": "How will you measure if the project was successful?"
+        },
+        "quick_start": {
+            "step1": "Replace 'Project Name' with your actual project name",
+            "step2": "Write a 2-3 sentence description of what you're building",
+            "step3": "List 3-5 main features you want to build",
+            "step4": "Estimate how long this will take (days, weeks, months)",
+            "step5": "Click 'Complete Plan' to decompose into tasks"
+        }
+    }
+}
