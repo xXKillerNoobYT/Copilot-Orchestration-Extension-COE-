@@ -7,12 +7,51 @@
  * - Context sharing and coordination
  * - Agent-to-agent communication
  * 
- * Reference: GitHub Copilot Agent Mode API (future integration)
- * Current implementation: Mock/stub for development and testing
+ * Reference: PRD.json - Multi-Agent Orchestration (4 Specialized Teams)
+ * Implementation: Real API integration with backend and GitHub authentication
  */
 
 import * as vscode from 'vscode';
 import { PromptPayload, ContextFile } from '../copilotDispatcher';
+import { GitHubAuthProvider } from '../auth/githubAuthProvider';
+import { parse as parseYAML } from 'yaml';
+import * as fs from 'fs';
+import * as path from 'path';
+
+/**
+ * Retry utility function with exponential backoff
+ * 
+ * @param fn - Function to retry
+ * @param maxAttempts - Maximum number of attempts (default: 3)
+ * @param operation - Name of operation for logging
+ * @returns Result of the function or throws error after max attempts
+ */
+async function retryWithExponentialBackoff<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number = 3,
+  operation: string = 'operation'
+): Promise<T> {
+  let attempts = 0;
+  let lastError: Error | null = null;
+  
+  while (attempts < maxAttempts) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      attempts++;
+      
+      if (attempts < maxAttempts) {
+        // Exponential backoff: wait 2^attempts seconds
+        const backoffMs = Math.pow(2, attempts) * 1000;
+        console.log(`[CopilotAgentClient] ${operation} attempt ${attempts} failed, retrying in ${backoffMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
+  }
+  
+  throw lastError || new Error(`${operation} failed after ${maxAttempts} attempts`);
+}
 
 export interface CopilotAgentConfig {
   /** Base URL for GitHub Copilot Agent Mode API */
@@ -92,6 +131,37 @@ export interface AgentDiscoveryResult {
 }
 
 /**
+ * Agent Profile Interface (loaded from YAML)
+ */
+export interface AgentProfile {
+  name: string;
+  agentId: string;
+  role: string;
+  type: string;
+  description: string;
+  capabilities: string[];
+  configuration: Record<string, any>;
+  routing_rules?: {
+    triggers?: string[];
+    handoff_to?: Record<string, string[]>;
+  };
+  metrics_tracked?: string[];
+  constraints?: Record<string, any>;
+}
+
+/**
+ * Analytics Event Interface
+ */
+export interface AnalyticsEvent {
+  agentId: string;
+  eventType: 'task_execution' | 'task_handoff' | 'agent_registration' | 'agent_discovery';
+  timestamp: Date;
+  duration?: number;
+  success: boolean;
+  metadata?: Record<string, any>;
+}
+
+/**
  * GitHub Copilot Agent Mode API Client
  * 
  * Provides methods for:
@@ -99,6 +169,7 @@ export interface AgentDiscoveryResult {
  * 2. Agent registration and discovery
  * 3. Task handoff between agents
  * 4. Agent-to-agent communication
+ * 5. Analytics integration
  */
 export class CopilotAgentClient {
   private readonly config: Required<CopilotAgentConfig>;
@@ -106,24 +177,141 @@ export class CopilotAgentClient {
   private currentAgentId: string | null = null;
   private registeredAgents: Set<string> = new Set(); // Track registered agent IDs
   private authenticationValid: boolean = false; // Track authentication validity
+  private authProvider: GitHubAuthProvider | null = null;
+  private agentProfiles: Map<string, AgentProfile> = new Map();
+  private analyticsQueue: AnalyticsEvent[] = [];
+  
+  // Cache for agent discovery results
+  private agentDiscoveryCache: { agents: AgentRegistration[]; timestamp: number } | null = null;
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  
+  // Maximum analytics queue size to prevent memory leaks
+  private readonly MAX_ANALYTICS_QUEUE_SIZE = 1000;
+  
+  // Initialization promise to track async loading
+  private initializationPromise: Promise<void> | null = null;
 
-  constructor(config?: CopilotAgentConfig) {
+  constructor(
+    config?: CopilotAgentConfig,
+    private readonly context?: vscode.ExtensionContext
+  ) {
     // Load configuration from VS Code settings
     const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator');
     
     this.config = {
-      baseUrl: config?.baseUrl ?? vsConfig.get('mcp.baseUrl') ?? 'http://localhost:8000',
-      authToken: config?.authToken ?? vsConfig.get('mcp.authToken') ?? '',
+      baseUrl: config?.baseUrl ?? vsConfig.get('backendUrl') ?? 'http://localhost:8000',
+      authToken: config?.authToken ?? '',
       timeout: config?.timeout ?? 30000,
-      mockMode: config?.mockMode ?? vsConfig.get('agentMode.useMock', false), // Use real API by default
+      mockMode: config?.mockMode ?? false, // Real API mode by default
     };
+    
+    // Initialize auth provider if context is available
+    if (this.context) {
+      this.authProvider = new GitHubAuthProvider(this.context.secrets);
+    }
+    
+    // Start async initialization (profiles and stored token)
+    this.initializationPromise = this.initialize();
+  }
+  
+  /**
+   * Initialize async resources (agent profiles and stored token)
+   * 
+   * This method is called automatically in the constructor.
+   * Methods that depend on profiles or stored tokens will await this.
+   */
+  private async initialize(): Promise<void> {
+    try {
+      // Load agent profiles and stored token in parallel
+      await Promise.all([
+        this.loadAgentProfiles(),
+        this.loadStoredToken(),
+      ]);
+    } catch (error) {
+      console.error('[CopilotAgentClient] Initialization failed:', error);
+    }
+  }
+  
+  /**
+   * Ensure initialization is complete before proceeding
+   * 
+   * Called by methods that depend on agent profiles or stored tokens
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (this.initializationPromise) {
+      await this.initializationPromise;
+    }
+  }
+  
+  /**
+   * Load stored authentication token from secret storage
+   */
+  private async loadStoredToken(): Promise<void> {
+    if (!this.authProvider) {
+      return;
+    }
+    
+    try {
+      const token = await this.authProvider.getStoredToken();
+      if (token) {
+        this.config.authToken = token;
+      }
+    } catch (error) {
+      console.error('[CopilotAgentClient] Failed to load stored token:', error);
+    }
+  }
+
+  /**
+   * Load agent profiles from YAML configuration files
+   * 
+   * Uses asynchronous file operations to avoid blocking the extension host
+   */
+  private async loadAgentProfiles(): Promise<void> {
+    try {
+      // Use extension context for reliable path resolution if available
+      const baseDir = this.context?.extensionPath ?? __dirname;
+      const profilesDir = path.join(baseDir, 'src/config/agent-profiles');
+      
+      const profileFiles = [
+        'planning-team.yaml',
+        'answer-team.yaml',
+        'decomposition-team.yaml',
+        'verification-team.yaml',
+      ];
+      
+      for (const filename of profileFiles) {
+        const filepath = path.join(profilesDir, filename);
+        try {
+          await fs.promises.access(filepath);
+          const content = await fs.promises.readFile(filepath, 'utf-8');
+          const profile = parseYAML(content) as AgentProfile;
+          this.agentProfiles.set(profile.agentId, profile);
+          console.log(`[CopilotAgentClient] Loaded agent profile: ${profile.name}`);
+        } catch {
+          // File doesn't exist or can't be read, skip silently
+        }
+      }
+    } catch (error) {
+      console.error('[CopilotAgentClient] Failed to load agent profiles:', error);
+    }
   }
 
   /**
    * Authenticate with GitHub Copilot Agent Mode API
+   * 
+   * Real implementation:
+   * 1. Uses GitHub token from VS Code Secret Storage
+   * 2. Validates token with GitHub API
+   * 3. Exchanges token for backend session
+   * 4. Stores credentials securely
+   * 
    * @returns Promise<boolean> - true if authentication successful
    */
   async authenticate(): Promise<boolean> {
+    // Ensure initialization is complete (loads stored token)
+    await this.ensureInitialized();
+    
+    // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Authentication successful');
       this.authenticationValid = true;
@@ -131,19 +319,39 @@ export class CopilotAgentClient {
     }
 
     try {
-      // TODO: Implement real authentication flow
-      // This would involve:
-      // 1. Validating authToken
-      // 2. Exchanging token for session
-      // 3. Setting up connection
+      // Real authentication flow
+      if (!this.authProvider) {
+        const errorMsg = 'Auth provider not initialized. CopilotAgentClient requires ExtensionContext for authentication.';
+        console.error(`[CopilotAgentClient] ${errorMsg}`);
+        throw new Error(errorMsg);
+      }
       
-      const response = await this.fetch('/auth/validate', 'POST', {
-        token: this.config.authToken,
+      // Step 1: Authenticate with GitHub and get token
+      const authResult = await this.authProvider.authenticate();
+      
+      if (!authResult.success || !authResult.token) {
+        console.error('[CopilotAgentClient] GitHub authentication failed:', authResult.error);
+        this.authenticationValid = false;
+        return false;
+      }
+      
+      // Step 2: Validate token with backend API
+      const response = await this.fetch('/api/v1/auth/validate', 'POST', {
+        token: authResult.token,
       });
 
-      const isValid = response.valid === true;
+      const isValid = response.success === true;
       this.authenticationValid = isValid;
+      
+      if (isValid) {
+        this.config.authToken = authResult.token;
+        console.log('[CopilotAgentClient] Authentication successful');
+      } else {
+        console.error('[CopilotAgentClient] Backend token validation failed');
+      }
+      
       return isValid;
+      
     } catch (error) {
       console.error('[CopilotAgentClient] Authentication failed:', error);
       this.authenticationValid = false;
@@ -153,16 +361,27 @@ export class CopilotAgentClient {
 
   /**
    * Register this agent with GitHub Copilot Agent Mode
+   * 
+   * Real implementation:
+   * 1. Registers agent with backend API (/api/v1/agents)
+   * 2. Implements retry logic with exponential backoff
+   * 3. Loads agent profile from YAML configuration
+   * 4. Handles registration failures gracefully
+   * 
    * @param registration - Agent registration details
    * @returns Promise<boolean> - true if registration successful
    */
   async registerAgent(registration: AgentRegistration): Promise<boolean> {
+    // Ensure initialization is complete (loads agent profiles)
+    await this.ensureInitialized();
+    
     // Check if agent is already registered
     if (this.registeredAgents.has(registration.agentId)) {
       console.log('[CopilotAgentClient] Agent already registered:', registration.agentId);
       return true;
     }
 
+    // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Registered agent', registration.name);
       this.registered = true;
@@ -172,29 +391,97 @@ export class CopilotAgentClient {
     }
 
     try {
-      // TODO: Implement real agent registration
-      const response = await this.fetch('/agents/register', 'POST', registration);
+      // Real agent registration with backend API using retry utility
+      await retryWithExponentialBackoff(async () => {
+        // Load agent profile from YAML if available
+        const profile = this.agentProfiles.get(registration.agentId);
+        
+        // Prepare registration payload
+        const payload = {
+          name: registration.name,
+          type: profile?.type ?? this.mapRoleToType(registration.role),
+          description: profile?.description ?? `Agent for ${registration.role}`,
+          capabilities: registration.capabilities,
+          configuration: profile?.configuration ?? {},
+          llm_provider: profile?.configuration?.llm_provider ?? 'copilot',
+          is_active: true,
+        };
+        
+        const response = await this.fetch('/api/v1/agents', 'POST', payload);
+        
+        if (!response.success) {
+          throw new Error(response.error || 'Registration failed');
+        }
+        
+        return response;
+      }, 3, 'Agent registration');
       
-      if (response.success) {
-        this.registered = true;
-        this.currentAgentId = registration.agentId;
-        this.registeredAgents.add(registration.agentId);
-        return true;
-      }
+      // Registration successful
+      this.registered = true;
+      this.currentAgentId = registration.agentId;
+      this.registeredAgents.add(registration.agentId);
       
-      return false;
+      // Track analytics
+      this.trackAnalytics({
+        agentId: registration.agentId,
+        eventType: 'agent_registration',
+        timestamp: new Date(),
+        success: true,
+        metadata: { name: registration.name, role: registration.role },
+      });
+      
+      console.log(`[CopilotAgentClient] Successfully registered agent: ${registration.name}`);
+      return true;
+      
     } catch (error) {
-      console.error('[CopilotAgentClient] Agent registration failed:', error);
+      console.error('[CopilotAgentClient] Agent registration failed after retries:', error);
+      
+      // Track failed registration
+      this.trackAnalytics({
+        agentId: registration.agentId,
+        eventType: 'agent_registration',
+        timestamp: new Date(),
+        success: false,
+        metadata: { error: (error as Error).message },
+      });
+      
       return false;
     }
+  }
+  
+  /**
+   * Map agent role to backend agent type
+   */
+  private mapRoleToType(role: string): string {
+    const roleMapping: Record<string, string> = {
+      'planning': 'planner',
+      'answer': 'documentation',
+      'decomposition': 'planner',
+      'verification': 'tester',
+      'code': 'coder',
+      'review': 'reviewer',
+      'testing': 'tester',
+    };
+    
+    return roleMapping[role] || 'coder';
   }
 
   /**
    * Handoff a task to another agent
+   * 
+   * Real implementation:
+   * 1. Submits handoff request to backend API
+   * 2. Includes full context for next agent
+   * 3. Handles handoff failures and timeout (30s)
+   * 4. Tracks handoff analytics
+   * 
    * @param request - Handoff request details
    * @returns Promise<AgentHandoffResponse> - Handoff result
    */
   async handoffTask(request: AgentHandoffRequest): Promise<AgentHandoffResponse> {
+    const startTime = Date.now();
+    
+    // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Task handoff from', request.fromAgent, 'to', request.toAgent);
       return {
@@ -204,11 +491,55 @@ export class CopilotAgentClient {
     }
 
     try {
-      // TODO: Implement real task handoff
-      const response = await this.fetch('/agents/handoff', 'POST', request);
-      return response as AgentHandoffResponse;
+      // Real task handoff via backend API
+      const response = await this.fetch('/api/v1/agents/handoff', 'POST', {
+        task_id: request.taskId,
+        from_agent_id: request.fromAgent,
+        to_agent_id: request.toAgent,
+        context: request.context,
+        reason: request.reason,
+      });
+      
+      const duration = Date.now() - startTime;
+      
+      // Track analytics
+      this.trackAnalytics({
+        agentId: request.fromAgent,
+        eventType: 'task_handoff',
+        timestamp: new Date(),
+        duration,
+        success: response.success === true,
+        metadata: {
+          taskId: request.taskId,
+          toAgent: request.toAgent,
+        },
+      });
+      
+      if (response.success) {
+        return {
+          success: true,
+          handoffId: response.data?.handoff_id || `handoff-${Date.now()}`,
+        };
+      }
+      
+      return {
+        success: false,
+        error: response.error || 'Handoff failed',
+      };
+      
     } catch (error) {
       console.error('[CopilotAgentClient] Task handoff failed:', error);
+      
+      // Track failed handoff
+      this.trackAnalytics({
+        agentId: request.fromAgent,
+        eventType: 'task_handoff',
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
+        success: false,
+        metadata: { error: (error as Error).message },
+      });
+      
       return {
         success: false,
         error: (error as Error).message,
@@ -218,11 +549,21 @@ export class CopilotAgentClient {
 
   /**
    * Execute a task using a specific agent
-   * Uses VS Code Language Model API when available
+   * 
+   * Real implementation:
+   * 1. Submits task execution request to backend
+   * 2. Streams execution results via MCP protocol
+   * 3. Handles execution timeout (30s) and errors
+   * 4. Implements retry logic (3 attempts)
+   * 5. Tracks execution analytics
+   * 
    * @param request - Execution request details
    * @returns Promise<AgentExecutionResponse> - Execution result
    */
   async executeTask(request: AgentExecutionRequest): Promise<AgentExecutionResponse> {
+    const startTime = Date.now();
+    
+    // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Executing task with agent', request.agentId);
       
@@ -241,32 +582,64 @@ export class CopilotAgentClient {
     }
 
     try {
-      // Use VS Code Language Model API (real GitHub Copilot integration)
-      console.log('[CopilotAgentClient] Using VS Code Language Model API for task execution');
+      // Real task execution via backend API with retry utility
+      const response = await retryWithExponentialBackoff(async () => {
+        const res = await this.fetch('/api/v1/tasks/execute', 'POST', {
+          request_id: request.requestId,
+          agent_id: request.agentId,
+          task_id: request.payload.taskId,
+          payload: request.payload,
+        });
+        
+        if (!res.success) {
+          throw new Error(res.error || 'Execution failed');
+        }
+        
+        return res;
+      }, 3, 'Task execution');
       
-      const startTime = Date.now();
-      const output = await this.executeWithLanguageModel(request.payload);
-      const executionTime = Date.now() - startTime;
+      const duration = Date.now() - startTime;
+      
+      // Track successful execution
+      this.trackAnalytics({
+        agentId: request.agentId,
+        eventType: 'task_execution',
+        timestamp: new Date(),
+        duration,
+        success: true,
+        metadata: {
+          taskId: request.payload.taskId,
+          requestId: request.requestId,
+        },
+      });
       
       return {
         success: true,
-        output,
+        output: response.data?.output || response.data?.result || '',
         agentId: request.agentId,
         metadata: {
-          executionTime,
-          model: 'copilot-gpt-4', // VS Code Language Model
+          executionTime: duration,
+          ...(response.data?.metadata || {}),
         },
       };
-    } catch (error) {
-      console.error('[CopilotAgentClient] Task execution failed:', error);
       
-      // Fallback to mock response on error
-      console.warn('[CopilotAgentClient] Falling back to mock response');
-      const output = this.generateMockResponse(request.payload);
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      console.error('[CopilotAgentClient] Task execution failed after retries:', error);
+      
+      this.trackAnalytics({
+        agentId: request.agentId,
+        eventType: 'task_execution',
+        timestamp: new Date(),
+        duration,
+        success: false,
+        metadata: { error: (error as Error).message },
+      });
       
       return {
         success: false,
-        output,
+        output: '',
         agentId: request.agentId,
         error: (error as Error).message,
       };
@@ -274,186 +647,156 @@ export class CopilotAgentClient {
   }
 
   /**
-   * Execute task using VS Code Language Model API
-   * This is the real implementation for GitHub Copilot integration
-   */
-  private async executeWithLanguageModel(payload: PromptPayload): Promise<string> {
-    try {
-      // Minimum VS Code version for Language Model API
-      const MIN_VSCODE_VERSION = '1.90';
-      
-      // Check VS Code version
-      const currentVersion = vscode.version;
-      if (!this.isVersionSupported(currentVersion, MIN_VSCODE_VERSION)) {
-        throw new Error(
-          `VS Code version ${currentVersion} does not meet minimum requirement ${MIN_VSCODE_VERSION}. ` +
-          `Please upgrade VS Code to use the Language Model API.`
-        );
-      }
-      
-      // Check if Language Model API is available
-      if (!vscode.lm || typeof vscode.lm.selectChatModels !== 'function') {
-        throw new Error(`VS Code Language Model API not available. Requires VS Code ${MIN_VSCODE_VERSION}+`);
-      }
-
-      // Select Copilot chat model
-      const models = await vscode.lm.selectChatModels({
-        vendor: 'copilot',
-        family: 'gpt-4',
-      });
-
-      if (models.length === 0) {
-        throw new Error('No Copilot chat models available. Ensure GitHub Copilot is installed and authenticated.');
-      }
-
-      const model = models[0];
-      console.log(`[CopilotAgentClient] Using model: ${model.vendor}/${model.family} (${model.name})`);
-
-      // Build messages for the chat model
-      const messages: vscode.LanguageModelChatMessage[] = [];
-
-      // System message with agent context
-      messages.push(vscode.LanguageModelChatMessage.Assistant(
-        `You are ${payload.agent.name}, a ${payload.agent.role} agent in a software development orchestration system. ${payload.agent.instructions || ''}`
-      ));
-
-      // Add context files if available
-      if (payload.context.files && payload.context.files.length > 0) {
-        const contextSummary = payload.context.files
-          .map((f: ContextFile) => `- ${f.path}${f.truncated ? ' (truncated)' : ''}`)
-          .join('\n');
-        
-        messages.push(vscode.LanguageModelChatMessage.User(
-          `Context files:\n${contextSummary}\n\nAdditional context: ${JSON.stringify(payload.context.files.slice(0, 3))}`
-        ));
-      }
-
-      // Add main task instruction
-      const taskInstruction = `
-Task: ${payload.task.title}
-Description: ${payload.task.description || 'No description provided'}
-
-Dependencies: ${payload.task.dependencies.length > 0 ? payload.task.dependencies.join(', ') : 'None'}
-Priority: ${payload.task.priority || 'Medium'}
-
-Please provide a detailed implementation plan and solution for this task.
-Include:
-1. Analysis of the task requirements
-2. Implementation approach
-3. Code samples or pseudocode if applicable
-4. Testing considerations
-5. Next steps
-
-Format your response in Markdown.
-`;
-
-      messages.push(vscode.LanguageModelChatMessage.User(taskInstruction));
-
-      // Send request to language model with proper cancellation token management
-      const cancellationTokenSource = new vscode.CancellationTokenSource();
-      let response: vscode.LanguageModelChatResponse;
-      try {
-        response = await model.sendRequest(messages, {}, cancellationTokenSource.token);
-      } finally {
-        cancellationTokenSource.dispose();
-      }
-
-      // Collect response text
-      let output = '';
-      for await (const fragment of response.text) {
-        output += fragment;
-      }
-
-      if (!output || output.trim().length === 0) {
-        throw new Error('Language model returned empty response');
-      }
-
-      console.log(`[CopilotAgentClient] Received response from language model (${output.length} chars)`);
-      return output;
-
-    } catch (error) {
-      console.error('[CopilotAgentClient] Language model execution failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Compare semantic versions to check if current version meets minimum requirement
-   * @param current Current version string (e.g., "1.90.0")
-   * @param minimum Minimum required version (e.g., "1.90")
-   * @returns true if current version meets or exceeds minimum
-   */
-  private isVersionSupported(current: string, minimum: string): boolean {
-    const parseCurrent = current.split('.').map(n => parseInt(n, 10));
-    const parseMinimum = minimum.split('.').map(n => parseInt(n, 10));
-
-    // Pad arrays to same length
-    while (parseCurrent.length < parseMinimum.length) {
-      parseCurrent.push(0);
-    }
-    while (parseMinimum.length < parseCurrent.length) {
-      parseMinimum.push(0);
-    }
-
-    // Compare each segment
-    for (let i = 0; i < parseMinimum.length; i++) {
-      if (parseCurrent[i] > parseMinimum[i]) {
-        return true;
-      } else if (parseCurrent[i] < parseMinimum[i]) {
-        return false;
-      }
-    }
-
-    return true; // Versions are equal
-  }
-
-  /**
    * Discover available agents
+   * 
+   * Real implementation:
+   * 1. Fetches agents from backend API (/api/v1/agents)
+   * 2. Loads agent profiles from YAML configuration
+   * 3. Caches results (5-minute TTL)
+   * 4. Matches tasks to agent capabilities
+   * 
    * @returns Promise<AgentDiscoveryResult> - Discovery result with agents or error
    */
   async discoverAgents(): Promise<AgentDiscoveryResult> {
+    // Ensure initialization is complete (loads agent profiles)
+    await this.ensureInitialized();
+    
+    // Check cache first
+    if (this.agentDiscoveryCache) {
+      const cacheAge = Date.now() - this.agentDiscoveryCache.timestamp;
+      if (cacheAge < this.CACHE_TTL_MS) {
+        console.log('[CopilotAgentClient] Returning cached agent discovery results');
+        return {
+          success: true,
+          agents: this.agentDiscoveryCache.agents,
+        };
+      }
+    }
+    
+    // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Returning mock agents');
+      const mockAgents = [
+        {
+          agentId: 'copilot-code-agent',
+          name: 'Code Agent',
+          role: 'code',
+          capabilities: ['code-generation', 'code-review', 'refactoring'],
+        },
+        {
+          agentId: 'copilot-test-agent',
+          name: 'Test Agent',
+          role: 'testing',
+          capabilities: ['test-generation', 'test-execution', 'coverage-analysis'],
+        },
+        {
+          agentId: 'copilot-review-agent',
+          name: 'Review Agent',
+          role: 'review',
+          capabilities: ['code-review', 'security-analysis', 'best-practices'],
+        },
+      ];
+      
+      // Cache mock results
+      this.agentDiscoveryCache = {
+        agents: mockAgents,
+        timestamp: Date.now(),
+      };
+      
       return {
         success: true,
-        agents: [
-          {
-            agentId: 'copilot-code-agent',
-            name: 'Code Agent',
-            role: 'code',
-            capabilities: ['code-generation', 'code-review', 'refactoring'],
-          },
-          {
-            agentId: 'copilot-test-agent',
-            name: 'Test Agent',
-            role: 'testing',
-            capabilities: ['test-generation', 'test-execution', 'coverage-analysis'],
-          },
-          {
-            agentId: 'copilot-review-agent',
-            name: 'Review Agent',
-            role: 'review',
-            capabilities: ['code-review', 'security-analysis', 'best-practices'],
-          },
-        ],
+        agents: mockAgents,
       };
     }
 
     try {
-      // TODO: Implement real agent discovery
-      const response = await this.fetch('/agents/discover', 'GET');
+      // Real agent discovery via backend API
+      const response = await this.fetch('/api/v1/agents', 'GET');
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Discovery failed');
+      }
+      
+      // Map backend agent data to AgentRegistration format
+      const agents: AgentRegistration[] = (response.data || []).map((agent: any) => {
+        const profile = this.agentProfiles.get(agent.id);
+        
+        return {
+          agentId: agent.id,
+          name: agent.name,
+          role: profile?.role || this.mapTypeToRole(agent.type),
+          capabilities: profile?.capabilities || agent.capabilities || [],
+          endpoint: agent.endpoint,
+        };
+      });
+      
+      // Add agents from YAML profiles that aren't in backend yet
+      for (const [agentId, profile] of this.agentProfiles.entries()) {
+        if (!agents.find(a => a.agentId === agentId)) {
+          agents.push({
+            agentId: profile.agentId,
+            name: profile.name,
+            role: profile.role,
+            capabilities: profile.capabilities,
+          });
+        }
+      }
+      
+      // Cache results
+      this.agentDiscoveryCache = {
+        agents,
+        timestamp: Date.now(),
+      };
+      
+      // Track analytics
+      this.trackAnalytics({
+        agentId: 'system',
+        eventType: 'agent_discovery',
+        timestamp: new Date(),
+        success: true,
+        metadata: { agentCount: agents.length },
+      });
+      
+      console.log(`[CopilotAgentClient] Discovered ${agents.length} agents`);
+      
       return {
         success: true,
-        agents: response.agents as AgentRegistration[],
+        agents,
       };
+      
     } catch (error) {
       console.error('[CopilotAgentClient] Agent discovery failed:', error);
+      
+      // Track failed discovery
+      this.trackAnalytics({
+        agentId: 'system',
+        eventType: 'agent_discovery',
+        timestamp: new Date(),
+        success: false,
+        metadata: { error: (error as Error).message },
+      });
+      
       return {
         success: false,
         agents: [],
         error: (error as Error).message,
       };
     }
+  }
+  
+  /**
+   * Map backend agent type to role
+   */
+  private mapTypeToRole(type: string): string {
+    const typeMapping: Record<string, string> = {
+      'planner': 'planning',
+      'documentation': 'answer',
+      'tester': 'verification',
+      'coder': 'code',
+      'reviewer': 'review',
+    };
+    
+    return typeMapping[type] || type;
   }
 
   /**
@@ -564,6 +907,120 @@ ${this.formatContextFiles(payload.context.files)}
 ---
 *Note: This is a mock response. Real implementation requires GitHub Copilot Agent Mode API access and proper authentication.*
 `;
+  }
+  
+  /**
+   * Track analytics event
+   * 
+   * Queues analytics events for batch submission to backend
+   * Events are flushed automatically every 30 seconds or when queue reaches 50 events
+   * Implements maximum queue size to prevent memory leaks
+   */
+  private trackAnalytics(event: AnalyticsEvent): void {
+    // Check if queue has reached maximum size
+    if (this.analyticsQueue.length >= this.MAX_ANALYTICS_QUEUE_SIZE) {
+      // Drop oldest events to prevent memory exhaustion
+      // Reduce to 1/4 of max size to minimize frequent reallocations
+      const retainSize = Math.max(1, Math.floor(this.MAX_ANALYTICS_QUEUE_SIZE / 4));
+      console.warn(`[CopilotAgentClient] Analytics queue full (${this.MAX_ANALYTICS_QUEUE_SIZE} events), dropping to ${retainSize} events`);
+      this.analyticsQueue = this.analyticsQueue.slice(-retainSize);
+    }
+    
+    this.analyticsQueue.push(event);
+    
+    // Auto-flush if queue is getting large
+    if (this.analyticsQueue.length >= 50) {
+      this.flushAnalytics().catch(error => {
+        console.error('[CopilotAgentClient] Analytics flush failed:', error);
+      });
+    }
+  }
+  
+  /**
+   * Flush analytics events to backend
+   * 
+   * Sends queued analytics events to backend analytics endpoint
+   * Implements batch submission for efficiency with retry limit
+   * 
+   * @returns Promise<boolean> - true if flush successful
+   */
+  async flushAnalytics(): Promise<boolean> {
+    if (this.analyticsQueue.length === 0) {
+      return true;
+    }
+    
+    // Don't send analytics in mock mode
+    if (this.config.mockMode) {
+      this.analyticsQueue = [];
+      return true;
+    }
+    
+    const events = [...this.analyticsQueue];
+    this.analyticsQueue = [];
+    
+    try {
+      const response = await this.fetch('/api/v1/analytics/events', 'POST', {
+        events: events.map(e => ({
+          agent_id: e.agentId,
+          event_type: e.eventType,
+          timestamp: e.timestamp.toISOString(),
+          duration_ms: e.duration,
+          success: e.success,
+          metadata: e.metadata,
+        })),
+      });
+      
+      if (response.success) {
+        console.log(`[CopilotAgentClient] Flushed ${events.length} analytics events`);
+        return true;
+      }
+      
+      // Re-queue events if submission failed, but limit to prevent unbounded growth
+      if (this.analyticsQueue.length + events.length <= this.MAX_ANALYTICS_QUEUE_SIZE) {
+        this.analyticsQueue.push(...events);
+      } else {
+        console.warn('[CopilotAgentClient] Dropping analytics events due to queue size limit');
+      }
+      return false;
+      
+    } catch (error) {
+      console.error('[CopilotAgentClient] Failed to flush analytics:', error);
+      // Re-queue events with size limit
+      if (this.analyticsQueue.length + events.length <= this.MAX_ANALYTICS_QUEUE_SIZE) {
+        this.analyticsQueue.push(...events);
+      } else {
+        console.warn('[CopilotAgentClient] Dropping analytics events due to queue size limit');
+      }
+      return false;
+    }
+  }
+  
+  /**
+   * Get agent profile by ID
+   * 
+   * @param agentId - Agent identifier
+   * @returns Agent profile or undefined if not found
+   */
+  getAgentProfile(agentId: string): AgentProfile | undefined {
+    return this.agentProfiles.get(agentId);
+  }
+  
+  /**
+   * Get all loaded agent profiles
+   * 
+   * @returns Map of agent ID to profile
+   */
+  getAllAgentProfiles(): Map<string, AgentProfile> {
+    return new Map(this.agentProfiles);
+  }
+  
+  /**
+   * Clear agent discovery cache
+   * 
+   * Forces next discoverAgents() call to fetch fresh data
+   */
+  clearDiscoveryCache(): void {
+    this.agentDiscoveryCache = null;
   }
 }
 

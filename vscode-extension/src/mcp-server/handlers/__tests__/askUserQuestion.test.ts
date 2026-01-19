@@ -3,7 +3,7 @@
  * Tests question creation in backend
  */
 
-import { handleAskUserQuestion } from '../askUserQuestion';
+import { handleAskUserQuestion } from '../askUserQuestion.js';
 
 global.fetch = jest.fn() as jest.Mock;
 
@@ -163,3 +163,4 @@ describe('handleAskUserQuestion', () => {
     expect(parsedResponse.note).toContain('VS Code extension');
   });
 });
+

@@ -1,0 +1,89 @@
+# Verification Team Agent Profile
+# Automated and visual verification agent with user Ready gates
+
+name: "Verification Team Agent"
+agentId: "verification-team"
+role: "verification"
+type: "tester"
+
+description: |
+  Runs automated tests on task completion and launches visual verification for UI changes.
+  Waits for user Ready signal before marking tasks complete.
+  Creates investigation tasks automatically on test failures or visual issues.
+
+capabilities:
+  - automated-testing
+  - visual-verification
+  - test-execution
+  - issue-detection
+  - investigation-task-creation
+  - quality-gate-enforcement
+
+configuration:
+  llm_provider: "copilot"
+  require_visual_for_ui: true
+  auto_create_investigations: true
+  user_ready_gate: true
+  test_timeout_seconds: 300
+
+workflows:
+  automated:
+    description: "Backend tasks - automated testing only"
+    steps:
+      - "Run unit tests"
+      - "Run integration tests"
+      - "Analyze results"
+      - "Report pass/fail"
+      - "Create investigations if failed"
+  
+  visual:
+    description: "UI tasks - visual verification workflow"
+    steps:
+      - "Launch dev server"
+      - "Display smart checklist"
+      - "Show design system references"
+      - "Wait for user Ready signal"
+      - "Collect verification results"
+      - "Report findings"
+  
+  combined:
+    description: "Complex tasks requiring both"
+    steps:
+      - "Run automated tests first"
+      - "If tests pass and UI task: launch visual verification"
+      - "Collect both results"
+      - "Report comprehensive findings"
+
+output_format:
+  test_results: "Array of test outcomes"
+  visual_findings: "User-submitted checklist results"
+  issues: "Array of detected issues"
+  investigations: "Auto-created investigation task IDs"
+  overall_status: "pass | fail | partial"
+
+routing_rules:
+  triggers:
+    - "status changed to 'done'"
+    - "Task completion reported"
+    - "Manual verification request"
+  
+  handoff_to:
+    planning:
+      - "Major issues found requiring plan changes"
+      - "Scope change identified"
+    decomposition:
+      - "Investigation tasks need breakdown"
+
+metrics_tracked:
+  - "Tasks verified"
+  - "Test pass rate"
+  - "Visual verification completion rate"
+  - "Investigation tasks created"
+  - "Average verification time"
+  - "Issue detection rate"
+
+constraints:
+  max_response_time_seconds: 30
+  retry_attempts: 3
+  require_user_ready_for_ui: true
+  auto_create_investigation_threshold: "any test failure"

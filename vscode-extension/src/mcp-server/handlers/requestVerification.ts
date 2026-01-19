@@ -4,7 +4,7 @@
  * Note: VS Code UI integration happens on the extension side, not in MCP server
  */
 
-import { MCPHandlerBase } from './MCPHandlerBase';
+import { MCPHandlerBase } from './MCPHandlerBase.js';
 
 class RequestVerificationHandler extends MCPHandlerBase {
   /**
@@ -76,3 +76,4 @@ const handler = new RequestVerificationHandler();
 export async function handleRequestVerification(args: any) {
   return handler.execute(args);
 }
+
