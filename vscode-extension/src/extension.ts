@@ -26,8 +26,22 @@ import { MCPRouter } from './services/mcpRouter';
 import { ToolSelector } from './services/toolSelector';
 import { registerPlanAdjustmentCommands } from './commands/planAdjustmentCommands';
 import { registerMCPConfigCommands } from './commands/mcpConfigCommands';
+import { getAgentProfileWatcher, disposeAgentProfileWatcher } from './agentProfileWatcher';
 
 export function activate(context: vscode.ExtensionContext) {
+  // Initialize Agent Profile Watcher (Phase 5: Hot-reload for agent profiles)
+  const profileWatcher = getAgentProfileWatcher(context.extensionUri);
+  profileWatcher.start();
+  profileWatcher.onChange((event) => {
+    console.log(`[Extension] Agent profile ${event.changeType}: ${event.profileName}`);
+    vscode.window.showInformationMessage(
+      `Agent profile '${event.profileName}' ${event.changeType}`
+    );
+  });
+  context.subscriptions.push({
+    dispose: () => disposeAgentProfileWatcher(),
+  });
+
   // Initialize LLM IP Monitor (Background service for LLM connectivity)
   const llmIPMonitor = getLLMIPMonitor(context);
   llmIPMonitor.start();
