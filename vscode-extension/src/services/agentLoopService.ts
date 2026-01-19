@@ -74,7 +74,7 @@ export class AgentLoopService {
       ]);
 
       if (!response.ok) {
-        throw new Error(`Failed to start loop: ${response.status} ${response.statusText}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json() as { status: string; stats?: AgentLoopStatus };
@@ -83,13 +83,27 @@ export class AgentLoopService {
       return status;
     } catch (error) {
       // Enhanced error messaging for common issues
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      if (errorMessage.includes('fetch failed') || errorMessage.includes('ECONNREFUSED')) {
-        throw new Error(`Backend server is not running at ${this.config.baseUrl}. Please start the Laravel backend with 'php artisan serve' or configure the correct backend URL in settings.`);
-      }
-
-      throw new Error(`Start loop failed: ${errorMessage}`);
+      const { showAndLogError } = await import('../utils/errorMessages');
+      
+      showAndLogError({
+        operation: 'Start Agent Loop',
+        attemptedUrl: `${this.config.baseUrl}/api/v1/agent-loop/start`,
+        error,
+        possibleCauses: [
+          'Laravel backend not running',
+          'Incorrect backend URL in settings',
+          'Agent loop service not initialized',
+          'Network connectivity issue'
+        ],
+        solutions: [
+          'Start backend: php artisan serve',
+          'Check settings: copilot-orchestrator.backendUrl',
+          'Verify backend is running: curl ' + this.config.baseUrl + '/api/v1/agent-loop/status',
+          'Check Laravel logs for errors'
+        ]
+      });
+      
+      throw error;
     }
   }
 

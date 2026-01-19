@@ -40,16 +40,75 @@ export class PlansViewProvider implements vscode.TreeDataProvider<PlanItem> {
       ];
     }
 
-    // Look for plans in Docs/Plans/ directory
-    const plansDir = path.join(workspaceFolder.uri.fsPath, 'Docs', 'Plans');
+    // Look for plans in multiple locations
+    const searchLocations = [
+      path.join(workspaceFolder.uri.fsPath, 'Docs', 'Plans'),
+      path.join(workspaceFolder.uri.fsPath, '.vscode', 'plans'),
+    ];
     
-    if (!fs.existsSync(plansDir)) {
+    let allPlanFiles: PlanItem[] = [];
+    
+    // Search all locations
+    for (const plansDir of searchLocations) {
+      if (!fs.existsSync(plansDir)) {
+        continue;
+      }
+      
+      // List all .json files in Plans directory
+      const planFiles = fs
+        .readdirSync(plansDir)
+        .filter((file) => file.endsWith('.json'))
+        .map((file) => {
+          const planPath = path.join(plansDir, file);
+          let planData: any = {};
+          try {
+            planData = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+          } catch (err) {
+            // Invalid JSON
+          }
+
+          return new PlanItem(
+            planData.title || file.replace('.json', ''),
+            planPath,
+            vscode.TreeItemCollapsibleState.None,
+            'file-code',
+            `${planData.description || 'Project plan'}\nProgress: ${planData.progress || 0}%`
+          );
+        });
+      
+      allPlanFiles.push(...planFiles);
+    }
+
+    if (allPlanFiles.length === 0) {
+      // Show enhanced error message
+      const { logErrorToOutput } = await import('../utils/errorMessages');
+      
+      const errorMessage = [
+        '⚠️ No Plans Found\n',
+        'Searched locations:',
+        ...searchLocations.map(loc => `  - ${loc}`),
+        '',
+        'Possible causes:',
+        '  ✓ Plans directory does not exist',
+        '  ✓ No plan files created yet',
+        '  ✓ Searching in wrong workspace folder',
+        '',
+        'Solutions:',
+        '  1. Create your first plan using the Plan Builder',
+        '  2. Ensure plans are saved in Docs/Plans/ or .vscode/plans/',
+        '  3. Open the correct workspace folder',
+        '  4. Run: copilot-orchestrator.openPlanBuilder'
+      ].join('\n');
+      
+      logErrorToOutput(errorMessage);
+      
       return [
         new PlanItem(
           'No plans found',
           '',
           vscode.TreeItemCollapsibleState.None,
-          'info'
+          'info',
+          'Searched: ' + searchLocations.join(', ')
         ),
         new PlanItem(
           'Create your first plan',
@@ -61,40 +120,7 @@ export class PlansViewProvider implements vscode.TreeDataProvider<PlanItem> {
       ];
     }
 
-    // List all .json files in Plans directory
-    const planFiles = fs
-      .readdirSync(plansDir)
-      .filter((file) => file.endsWith('.json'))
-      .map((file) => {
-        const planPath = path.join(plansDir, file);
-        let planData: any = {};
-        try {
-          planData = JSON.parse(fs.readFileSync(planPath, 'utf8'));
-        } catch (err) {
-          // Invalid JSON
-        }
-
-        return new PlanItem(
-          planData.title || file.replace('.json', ''),
-          planPath,
-          vscode.TreeItemCollapsibleState.None,
-          'file-code',
-          `${planData.description || 'Project plan'}\nProgress: ${planData.progress || 0}%`
-        );
-      });
-
-    if (planFiles.length === 0) {
-      return [
-        new PlanItem(
-          'No plans found',
-          '',
-          vscode.TreeItemCollapsibleState.None,
-          'info'
-        ),
-      ];
-    }
-
-    return planFiles;
+    return allPlanFiles;
   }
 }
 

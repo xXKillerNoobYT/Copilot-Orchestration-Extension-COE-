@@ -30,8 +30,16 @@ import { getAgentProfileWatcher, disposeAgentProfileWatcher } from './agentProfi
 import { TasksViewProvider } from './views/tasksViewProvider';
 import { AgentsViewProvider } from './views/agentsViewProvider';
 import { PlansViewProvider } from './views/plansViewProvider';
+import { initializeErrorLogging, disposeErrorLogging } from './utils/errorMessages';
 
 export function activate(context: vscode.ExtensionContext) {
+  // Initialize Error Logging Output Channel
+  const errorOutputChannel = initializeErrorLogging();
+  context.subscriptions.push(errorOutputChannel);
+  context.subscriptions.push({
+    dispose: () => disposeErrorLogging(),
+  });
+  
   // Initialize Agent Profile Watcher (Phase 5: Hot-reload for agent profiles)
   const profileWatcher = getAgentProfileWatcher(context.extensionUri);
   profileWatcher.start();

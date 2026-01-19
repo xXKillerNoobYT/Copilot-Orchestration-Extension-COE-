@@ -308,10 +308,11 @@ export class VisualVerificationPanel {
    */
   async fetchChecklist(taskId: string): Promise<void> {
     try {
-      const response = await fetch(`${this.state.serverUrl}/api/v1/verification/checklist?taskId=${taskId}`);
+      const url = `${this.state.serverUrl}/api/v1/verification/checklist?taskId=${taskId}`;
+      const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch checklist: ${response.statusText}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json() as { checklist?: any[] };
@@ -329,10 +330,24 @@ export class VisualVerificationPanel {
         vscode.window.showInformationMessage(`Loaded ${data.checklist.length} checklist items`);
       }
     } catch (error) {
-      console.error('Failed to fetch checklist:', error);
-      vscode.window.showWarningMessage(
-        'Could not fetch checklist from backend. Using default checklist.'
-      );
+      const { showAndLogError } = await import('../utils/errorMessages');
+      
+      showAndLogError({
+        operation: 'Checklist Loading',
+        attemptedUrl: `${this.state.serverUrl}/api/v1/verification/checklist?taskId=${taskId}`,
+        error,
+        possibleCauses: [
+          'Laravel backend not running',
+          'Incorrect backend URL in settings',
+          'Network connectivity issue'
+        ],
+        solutions: [
+          'Start backend: php artisan serve',
+          'Check settings: copilot-orchestrator.backendUrl',
+          'Verify: curl ' + this.state.serverUrl + '/api/v1/verification/checklist'
+        ],
+        context: 'Using default checklist as fallback.'
+      });
     }
   }
 

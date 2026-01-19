@@ -405,7 +405,28 @@ export class MCPClient {
         )
       );
     } catch (error) {
-      showErrorMessage(error, 'MCP Request Failed');
+      // Enhanced error handling with actionable messages
+      const { showAndLogError } = await import('../utils/errorMessages');
+      
+      showAndLogError({
+        operation: 'MCP Request',
+        attemptedUrl: url,
+        error,
+        possibleCauses: [
+          'MCP server not running',
+          'WebSocket/MCP server port mismatch',
+          'Incorrect MCP URL in settings',
+          'Network connectivity issue'
+        ],
+        solutions: [
+          'Start MCP server if using Docker: docker-compose up -d',
+          'Check settings: copilot-orchestrator.mcp.baseUrl',
+          'Verify MCP server is accessible: curl ' + this.baseUrl,
+          'Check server logs for errors'
+        ],
+        context: `Method: ${method}`
+      });
+      
       throw error;
     }
   }
