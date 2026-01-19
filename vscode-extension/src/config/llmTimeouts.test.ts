@@ -23,16 +23,16 @@ describe('LLM Timeout Configuration', () => {
 
         it('should accept valid custom timeouts', () => {
             const config = {
-                get: (key: string) => {
+                get: <T>(key: string): T | undefined => {
                     switch (key) {
-                        case 'copilot-orchestrator.llm.timeouts.coldLoadMs': return 1200000; // 20 minutes
-                        case 'copilot-orchestrator.llm.timeouts.modelSwitchMs': return 1800000; // 30 minutes
-                        case 'copilot-orchestrator.llm.timeouts.testConnectionMs': return 300000; // 5 minutes
-                        case 'copilot-orchestrator.llm.timeouts.requestMs': return 60000; // 1 minute
-                        case 'copilot-orchestrator.llm.timeouts.queuedResponseMs': return 1200000; // 20 minutes
-                        case 'copilot-orchestrator.llm.timeouts.agentActivationMs': return 1800000; // 30 minutes
-                        case 'copilot-orchestrator.llm.timeouts.agentDeactivationMs': return 600000; // 10 minutes
-                        case 'copilot-orchestrator.llm.timeouts.maxQueueDepth': return 50;
+                        case 'copilot-orchestrator.llm.timeouts.coldLoadMs': return 1200000 as T; // 20 minutes
+                        case 'copilot-orchestrator.llm.timeouts.modelSwitchMs': return 1800000 as T; // 30 minutes
+                        case 'copilot-orchestrator.llm.timeouts.testConnectionMs': return 300000 as T; // 5 minutes
+                        case 'copilot-orchestrator.llm.timeouts.requestMs': return 60000 as T; // 1 minute
+                        case 'copilot-orchestrator.llm.timeouts.queuedResponseMs': return 1200000 as T; // 20 minutes
+                        case 'copilot-orchestrator.llm.timeouts.agentActivationMs': return 1800000 as T; // 30 minutes
+                        case 'copilot-orchestrator.llm.timeouts.agentDeactivationMs': return 600000 as T; // 10 minutes
+                        case 'copilot-orchestrator.llm.timeouts.maxQueueDepth': return 50 as T;
                         default: return undefined;
                     }
                 }
@@ -53,10 +53,10 @@ describe('LLM Timeout Configuration', () => {
 
         it('should clamp values below minimum', () => {
             const config = {
-                get: (key: string) => {
+                get: <T>(key: string): T | undefined => {
                     switch (key) {
-                        case 'copilot-orchestrator.llm.timeouts.coldLoadMs': return 1000; // Too low (min: 60000)
-                        case 'copilot-orchestrator.llm.timeouts.testConnectionMs': return 5000; // Too low (min: 30000)
+                        case 'copilot-orchestrator.llm.timeouts.coldLoadMs': return 1000 as T; // Too low (min: 60000)
+                        case 'copilot-orchestrator.llm.timeouts.testConnectionMs': return 5000 as T; // Too low (min: 30000)
                         default: return undefined;
                     }
                 }
@@ -72,10 +72,10 @@ describe('LLM Timeout Configuration', () => {
 
         it('should clamp values above maximum', () => {
             const config = {
-                get: (key: string) => {
+                get: <T>(key: string): T | undefined => {
                     switch (key) {
-                        case 'copilot-orchestrator.llm.timeouts.coldLoadMs': return 90000000; // Too high (max: 86400000 = 1 day)
-                        case 'copilot-orchestrator.llm.timeouts.requestMs': return 400000; // Too high (max: 300000 = 5 minutes)
+                        case 'copilot-orchestrator.llm.timeouts.coldLoadMs': return 90000000 as T; // Too high (max: 86400000 = 1 day)
+                        case 'copilot-orchestrator.llm.timeouts.requestMs': return 400000 as T; // Too high (max: 300000 = 5 minutes)
                         default: return undefined;
                     }
                 }
@@ -110,9 +110,9 @@ describe('LLM Timeout Configuration', () => {
 
         it('should validate queue depth range', () => {
             const config = {
-                get: (key: string) => {
+                get: <T>(key: string): T | undefined => {
                     switch (key) {
-                        case 'copilot-orchestrator.llm.timeouts.maxQueueDepth': return 150; // Too high (max: 100)
+                        case 'copilot-orchestrator.llm.timeouts.maxQueueDepth': return 150 as T; // Too high (max: 100)
                         default: return undefined;
                     }
                 }
@@ -126,9 +126,9 @@ describe('LLM Timeout Configuration', () => {
 
         it('should floor queue depth to integer', () => {
             const config = {
-                get: (key: string) => {
+                get: <T>(key: string): T | undefined => {
                     switch (key) {
-                        case 'copilot-orchestrator.llm.timeouts.maxQueueDepth': return 25.7;
+                        case 'copilot-orchestrator.llm.timeouts.maxQueueDepth': return 25.7 as T;
                         default: return undefined;
                     }
                 }

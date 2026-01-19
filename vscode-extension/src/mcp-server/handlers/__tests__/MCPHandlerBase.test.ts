@@ -3,7 +3,7 @@
  * Tests retry logic, timeout, error handling, and dead-letter queue
  */
 
-import { MCPHandlerBase, DEFAULT_ERROR_CONFIG } from '../MCPHandlerBase';
+import { MCPHandlerBase, DEFAULT_ERROR_CONFIG } from '../MCPHandlerBase.js';
 
 class TestHandler extends MCPHandlerBase {
   public async testExecuteWithRetry<T>(operation: () => Promise<T>, args: any): Promise<T> {
@@ -201,3 +201,4 @@ describe('MCPHandlerBase', () => {
     });
   });
 });
+
