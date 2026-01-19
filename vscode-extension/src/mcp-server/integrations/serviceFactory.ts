@@ -28,9 +28,9 @@ export function getGitHubIntegration(): GitHubIntegration {
   if (!githubIntegrationInstance) {
     // Read configuration from environment
     // If variables are missing, GitHubIntegration will report itself as unavailable
-    const owner = process.env.GITHUB_OWNER;
-    const repo = process.env.GITHUB_REPO;
-    const token = process.env.GITHUB_TOKEN;
+    const owner = process.env.GITHUB_OWNER || '';
+    const repo = process.env.GITHUB_REPO || '';
+    const token = process.env.GITHUB_TOKEN || '';
 
     githubIntegrationInstance = new GitHubIntegration({ owner, repo, token });
   }

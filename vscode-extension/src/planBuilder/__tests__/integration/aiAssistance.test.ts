@@ -345,7 +345,7 @@ describe('AI Assistance Integration Tests', () => {
   });
 
   describe('Debouncing', () => {
-    it('should debounce rapid suggestion requests', (done) => {
+    it('should debounce rapid suggestion requests', (done: () => void) => {
       const pages = framework.getPages();
       const firstPage = pages[0];
 
@@ -365,7 +365,7 @@ describe('AI Assistance Integration Tests', () => {
       setTimeout(() => {
         // Should only call once due to debouncing
         expect(callCount).toBe(1);
-        done();
+        if (done) done();
       }, 200);
     });
   });
