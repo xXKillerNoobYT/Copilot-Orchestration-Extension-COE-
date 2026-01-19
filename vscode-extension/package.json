@@ -609,7 +609,9 @@
     "test:integration:ci": "xvfb-run -a node scripts/runIntegrationTests.js",
     "test:all": "npm run test:unit && npm run test:wizard && npm run test",
     "demo": "npm run compile && node dist/taskGraphDemo.js",
-    "report:tests": "node scripts/report-tests.js"
+    "report:tests": "node scripts/report-tests.js",
+    "install-hooks": "git config core.hooksPath .githooks && echo 'Git hooks installed from .githooks/'",
+    "prepare": "npm run install-hooks || echo 'Warning: Could not install git hooks'"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
