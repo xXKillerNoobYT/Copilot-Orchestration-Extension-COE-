@@ -213,8 +213,8 @@ export class GitHubAuthProvider {
         if (!value || !value.trim()) {
           return 'Token is required';
         }
-        // Removed strict prefix validation - rely on GitHub API validation instead
-        // This allows for newer token formats that GitHub may introduce
+        // Keep rejecting empty/whitespace-only tokens, but remove strict prefix validation
+        // and rely on GitHub API validation for token format to allow newer token types
         return undefined;
       },
     });

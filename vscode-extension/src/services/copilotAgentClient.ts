@@ -251,13 +251,11 @@ export class CopilotAgentClient {
         'verification-team.yaml',
       ];
       
-      const fsPromises = fs.promises;
-      
       for (const filename of profileFiles) {
         const filepath = path.join(profilesDir, filename);
         try {
-          await fsPromises.access(filepath);
-          const content = await fsPromises.readFile(filepath, 'utf-8');
+          await fs.promises.access(filepath);
+          const content = await fs.promises.readFile(filepath, 'utf-8');
           const profile = parseYAML(content) as AgentProfile;
           this.agentProfiles.set(profile.agentId, profile);
           console.log(`[CopilotAgentClient] Loaded agent profile: ${profile.name}`);
@@ -885,8 +883,10 @@ ${this.formatContextFiles(payload.context.files)}
     // Check if queue has reached maximum size
     if (this.analyticsQueue.length >= this.MAX_ANALYTICS_QUEUE_SIZE) {
       // Drop oldest events to prevent memory exhaustion
-      console.warn(`[CopilotAgentClient] Analytics queue full (${this.MAX_ANALYTICS_QUEUE_SIZE} events), dropping oldest events`);
-      this.analyticsQueue = this.analyticsQueue.slice(-this.MAX_ANALYTICS_QUEUE_SIZE / 2);
+      // Reduce to 1/4 of max size to minimize frequent reallocations
+      const retainSize = Math.max(1, Math.floor(this.MAX_ANALYTICS_QUEUE_SIZE / 4));
+      console.warn(`[CopilotAgentClient] Analytics queue full (${this.MAX_ANALYTICS_QUEUE_SIZE} events), dropping to ${retainSize} events`);
+      this.analyticsQueue = this.analyticsQueue.slice(-retainSize);
     }
     
     this.analyticsQueue.push(event);
