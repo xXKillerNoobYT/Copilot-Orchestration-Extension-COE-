@@ -432,6 +432,30 @@
         "title": "Apply Plan Adjustment",
         "category": "Plan Adjustment",
         "icon": "$(check)"
+      },
+      {
+        "command": "copilot-orchestrator.planningPhase",
+        "title": "Planning Phase",
+        "category": "Copilot Orchestrator",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "copilot-orchestrator.aiDevPlanning",
+        "title": "AI Development Planning",
+        "category": "Copilot Orchestrator",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "copilot-orchestrator.guidanceExecution",
+        "title": "Guidance & Execution",
+        "category": "Copilot Orchestrator",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "copilot-orchestrator.reviewCompletion",
+        "title": "Review & Completion",
+        "category": "Copilot Orchestrator",
+        "icon": "$(checklist)"
       }
     ],
     "menus": {
