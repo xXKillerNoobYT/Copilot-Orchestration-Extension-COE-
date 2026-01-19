@@ -258,6 +258,7 @@ export class PlanPersistenceService {
 
   /**
    * Delete plan (soft delete to .deleted directory)
+   * Also calls backend API if plan has an ID
    */
   async deletePlan(filename: string, permanent: boolean = false): Promise<void> {
     try {
@@ -268,6 +269,31 @@ export class PlanPersistenceService {
       const plansDir = vscode.Uri.joinPath(this.workspaceRoot, this.PLANS_DIR);
       const filePath = vscode.Uri.joinPath(plansDir, filename);
 
+      // Try to load plan to get its ID for backend deletion
+      let planId: number | undefined;
+      try {
+        const plan = await this.loadPlan(filename);
+        // Check if plan has an ID (from backend)
+        if (typeof (plan as Record<string, unknown>).id === 'number') {
+          planId = (plan as Record<string, unknown>).id as number;
+        }
+      } catch (error) {
+        // Plan might not have an ID (local-only plan)
+        console.log('[PlanPersistence] Plan has no backend ID, skipping backend delete');
+      }
+
+      // Delete from backend if plan has an ID
+      if (planId) {
+        try {
+          await this.deleteBackendPlan(planId);
+        } catch (error) {
+          // Log backend delete error but continue with local deletion
+          // User explicitly requested deletion, so we don't want to block it
+          console.warn('[PlanPersistence] Backend delete failed, continuing with local deletion:', error);
+        }
+      }
+
+      // Delete local file
       if (permanent) {
         // Hard delete
         await vscode.workspace.fs.delete(filePath);
@@ -288,6 +314,57 @@ export class PlanPersistenceService {
       }
     } catch (error) {
       throw this.createError('DELETE_FAILED', `Failed to delete plan: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Delete plan from backend API
+   * Calls DELETE /api/v1/planning/{planId}
+   */
+  private async deleteBackendPlan(planId: number): Promise<void> {
+    try {
+      const config = vscode.workspace.getConfiguration('copilotOrchestration');
+      const backendUrl = config.get<string>('mcpServerUrl') || 'http://localhost:8000';
+
+      const url = `${backendUrl}/api/v1/planning/${planId}`;
+
+      console.log('[PlanPersistence] Deleting plan from backend:', planId);
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        
+        // If plan is already deleted or not found, that's OK
+        if (response.status === 404) {
+          console.log('[PlanPersistence] Plan already deleted from backend');
+          return;
+        }
+
+        // If plan is approved/implemented, warn but continue with local delete
+        if (response.status === 422) {
+          console.warn('[PlanPersistence] Backend rejected delete (plan may be approved/implemented)');
+          vscode.window.showWarningMessage(
+            `Backend did not delete plan: ${errorData.message || 'Plan may be approved or implemented'}`
+          );
+          return;
+        }
+
+        throw new Error(`Backend delete failed: ${errorData.message || response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('[PlanPersistence] Backend delete successful:', result.message);
+    } catch (error) {
+      // Re-throw error to allow caller to handle it appropriately
+      console.error('[PlanPersistence] Backend delete failed:', error);
+      throw error;
     }
   }
 

@@ -229,7 +229,80 @@ HTTP 204
 
 ---
 
-### 4. Load Plan
+### 4. Delete Plan
+**Endpoint:** `DELETE /api/v1/planning/{planId}`
+
+**Purpose:** Delete a plan from the backend (soft delete by default)
+
+**Path Parameters:**
+- `planId` (number): Plan identifier
+
+**Request Headers:**
+```
+Content-Type: application/json
+Accept: application/json
+```
+
+**Response Schema (Success - 200 OK):**
+```json
+{
+  "success": true,
+  "message": "Plan deleted successfully",
+  "planId": number,
+  "deletedAt": string  // ISO 8601 timestamp
+}
+```
+
+**Response Schema (Not Found - 404):**
+```json
+{
+  "success": false,
+  "message": "Plan not found",
+  "planId": number
+}
+```
+
+**Response Schema (Cannot Delete - 422 Unprocessable Entity):**
+```json
+{
+  "success": false,
+  "message": "Cannot delete plan: plan is approved or implemented",
+  "planId": number,
+  "status": string  // Current plan status
+}
+```
+
+**Business Rules:**
+- Only plans with status "draft" or "pending" can be deleted
+- Approved or implemented plans return 422 error
+- Soft delete by default (plan moved to archive)
+- Cascade delete handled by backend (related tasks/dependencies)
+
+**Timeout:** 10000 ms
+
+**Example Usage:**
+```typescript
+// Frontend integration
+const response = await fetch(`${baseUrl}/api/v1/planning/${planId}`, {
+  method: 'DELETE',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+if (response.status === 404) {
+  console.log('Plan already deleted');
+} else if (response.status === 422) {
+  console.warn('Cannot delete approved/implemented plan');
+} else if (response.ok) {
+  console.log('Plan deleted successfully');
+}
+```
+
+---
+
+### 5. Load Plan
 **Endpoint:** `GET /api/v1/mcp/loadPlan/{planId}`
 
 **Purpose:** Retrieve previously saved plan
