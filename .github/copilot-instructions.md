@@ -63,4 +63,4 @@
 - Follow the guidelines in `.github/issues/README.md` for creating and managing issues.
 - Use tools to make/update issues on GitHub. They will follow the process automatically.
 - NEED TO ADD MORE DETAILS LATER do so using the tools provided.
-- Cheak for comint messages for more details. use the tools provided. the issues 
+- Cheak for comint messages for more details. use the tools provided. the issues here `.github/issues/` dont have comint 
