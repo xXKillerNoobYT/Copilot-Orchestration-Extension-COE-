@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+/// <reference path="./types/vscode.d.ts" />
 import { ref, onErrorCaptured } from 'vue';
 
 const error = ref<Error | null>(null);
@@ -67,15 +68,6 @@ function reportError() {
       type: 'reportError',
       data: errorInfo
     });
-  }
-}
-
-// Type declaration for vscode API
-declare global {
-  interface Window {
-    vscode?: {
-      postMessage(message: unknown): void;
-    };
   }
 }
 </script>

@@ -14,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+/// <reference path="./types/vscode.d.ts" />
 import { ref, onMounted } from 'vue';
 import WizardContainer from './WizardContainer.vue';
 import ErrorBoundary from './ErrorBoundary.vue';
@@ -82,15 +83,6 @@ async function handlePlanCompletion(plan: Record<string, unknown>) {
         error: String(error)
       });
     }
-  }
-}
-
-// Type declaration for vscode API
-declare global {
-  interface Window {
-    vscode?: {
-      postMessage(message: unknown): void;
-    };
   }
 }
 </script>

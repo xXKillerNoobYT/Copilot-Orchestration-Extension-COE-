@@ -31,9 +31,20 @@ try {
 } catch (error) {
   console.error('[Plan Builder] Initialization failed:', error);
   
+  // Helper function to escape HTML to prevent XSS
+  const escapeHtml = (unsafe: string): string => {
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+  
   // Display error in DOM
   const appElement = document.getElementById('app');
   if (appElement) {
+    const errorMessage = escapeHtml(error instanceof Error ? error.message : String(error));
     appElement.innerHTML = `
       <div style="
         font-family: var(--vscode-font-family);
@@ -58,7 +69,7 @@ try {
             text-align: left;
             overflow-x: auto;
             font-size: 0.875rem;
-          ">${error instanceof Error ? error.message : String(error)}</pre>
+          ">${errorMessage}</pre>
         </div>
       </div>
     `;
