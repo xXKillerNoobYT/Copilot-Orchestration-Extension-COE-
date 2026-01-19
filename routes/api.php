@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\DesignColorController;
 use App\Http\Controllers\Api\DesignTypographyController;
 use App\Http\Controllers\Api\DesignSpacingController;
 use App\Http\Controllers\Api\PlanDecompositionController;
+use App\Http\Controllers\Api\PlanImportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -325,6 +326,10 @@ Route::prefix('v1')->group(function () {
     
     Route::post('/planning/{planId}/validate', [PlanningController::class, 'validate'])
         ->name('api.planning.validate');
+    
+    // Plan context import and analysis
+    Route::post('/plans/analyze-context', [PlanImportController::class, 'analyzeContext'])
+        ->name('api.plans.analyzeContext');
     
     // Plan queries
     Route::get('/projects/{projectId}/plans', [PlanningController::class, 'index'])
