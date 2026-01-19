@@ -51,10 +51,15 @@ export function getOutputChannel(): vscode.OutputChannel {
 export function buildEnhancedErrorMessage(options: ErrorMessageOptions): string {
   const { operation, attemptedUrl, error, possibleCauses, solutions, context } = options;
   
+  // Validate operation parameter
+  if (!operation || operation.trim().length === 0) {
+    throw new Error('Operation parameter is required and cannot be empty');
+  }
+  
   const parts: string[] = [];
   
   // Header
-  parts.push(`⚠️ ${operation} Failed\n`);
+  parts.push(`⚠️ ${operation.trim()} Failed\n`);
   
   // Error details
   if (context) {
@@ -91,20 +96,44 @@ export function buildEnhancedErrorMessage(options: ErrorMessageOptions): string 
 
 /**
  * Extract a clean error message from various error types
+ * Uses robust error detection with patterns and error codes
  */
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    // Handle fetch/network errors
-    if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
+    const msg = error.message;
+    
+    // Connection refused errors (check both message and errno if available)
+    if (msg.includes('ECONNREFUSED') || 
+        msg.includes('fetch failed') ||
+        msg.includes('connect ECONNREFUSED') ||
+        (error as any).code === 'ECONNREFUSED') {
       return 'ECONNREFUSED (Connection refused)';
     }
     
-    if (error.message.includes('ETIMEDOUT') || error.message.includes('timeout') || error.message.includes('timed out')) {
+    // Timeout errors (check multiple patterns and errno)
+    if (msg.includes('ETIMEDOUT') || 
+        /timeout/i.test(msg) || 
+        msg.includes('timed out') ||
+        (error as any).code === 'ETIMEDOUT') {
       return 'ETIMEDOUT (Connection timeout)';
     }
     
-    if (error.message.includes('ENOTFOUND')) {
+    // Host not found errors
+    if (msg.includes('ENOTFOUND') || 
+        (error as any).code === 'ENOTFOUND') {
       return 'ENOTFOUND (Host not found)';
+    }
+    
+    // Network unreachable
+    if (msg.includes('ENETUNREACH') || 
+        (error as any).code === 'ENETUNREACH') {
+      return 'ENETUNREACH (Network unreachable)';
+    }
+    
+    // Connection reset
+    if (msg.includes('ECONNRESET') || 
+        (error as any).code === 'ECONNRESET') {
+      return 'ECONNRESET (Connection reset)';
     }
     
     return error.message;

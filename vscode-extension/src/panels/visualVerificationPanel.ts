@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { MCPClient, MCPWebSocketListener } from '../services/mcpClient';
+import { showAndLogError } from '../utils/errorMessages';
 
 interface ChecklistItem {
   id: string;
@@ -330,8 +331,6 @@ export class VisualVerificationPanel {
         vscode.window.showInformationMessage(`Loaded ${data.checklist.length} checklist items`);
       }
     } catch (error) {
-      const { showAndLogError } = await import('../utils/errorMessages');
-      
       showAndLogError({
         operation: 'Checklist Loading',
         attemptedUrl: `${this.state.serverUrl}/api/v1/verification/checklist?taskId=${taskId}`,

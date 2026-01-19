@@ -19,7 +19,8 @@
  */
 
 import * as vscode from 'vscode';
-import { retryWithBackoff, withTimeout, CircuitBreaker, showErrorMessage, logError, createRetryHandler } from '../utils/errorHandler';
+import { retryWithBackoff, withTimeout, CircuitBreaker, createRetryHandler, logError } from '../utils/errorHandler';
+import { showAndLogError } from '../utils/errorMessages';
 
 /**
  * Centralized MCP endpoint paths
@@ -406,8 +407,6 @@ export class MCPClient {
       );
     } catch (error) {
       // Enhanced error handling with actionable messages
-      const { showAndLogError } = await import('../utils/errorMessages');
-      
       showAndLogError({
         operation: 'MCP Request',
         attemptedUrl: url,

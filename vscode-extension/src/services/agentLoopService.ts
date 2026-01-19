@@ -10,6 +10,7 @@
  */
 
 import { readLlmTimeoutConfig, LlmTimeoutConfig } from '../config/llmTimeouts';
+import { showAndLogError } from '../utils/errorMessages';
 
 export interface AgentLoopConfig {
   baseUrl: string;
@@ -83,8 +84,6 @@ export class AgentLoopService {
       return status;
     } catch (error) {
       // Enhanced error messaging for common issues
-      const { showAndLogError } = await import('../utils/errorMessages');
-      
       showAndLogError({
         operation: 'Start Agent Loop',
         attemptedUrl: `${this.config.baseUrl}/api/v1/agent-loop/start`,

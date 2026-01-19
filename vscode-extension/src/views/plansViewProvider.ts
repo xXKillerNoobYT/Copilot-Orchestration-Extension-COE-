@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { logErrorToOutput } from '../utils/errorMessages';
 
 /**
  * Tree data provider for the Plans view in the Copilot Orchestrator sidebar
@@ -81,8 +82,6 @@ export class PlansViewProvider implements vscode.TreeDataProvider<PlanItem> {
 
     if (allPlanFiles.length === 0) {
       // Show enhanced error message
-      const { logErrorToOutput } = await import('../utils/errorMessages');
-      
       const errorMessage = [
         '⚠️ No Plans Found\n',
         'Searched locations:',
