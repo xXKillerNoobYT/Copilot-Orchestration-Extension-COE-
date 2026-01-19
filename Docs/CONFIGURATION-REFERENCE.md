@@ -147,6 +147,63 @@ Environment variables can override any setting by prefixing with `COPILOT_`.
 
 ---
 
+### copilot-orchestrator.llm.timeouts.*
+
+**Purpose:** Configure timeouts for slow LLM systems with long model loading times
+
+**Complete Documentation:** See `vscode-extension/LLM-TIMEOUT-CONFIGURATION.md` for full details
+
+#### Quick Reference Table
+
+| Setting | Default | Range | Purpose |
+|---------|---------|-------|---------|
+| `coldLoadMs` | 600000 (10 min) | 1 min - 1 day | Cold model load (disk → RAM/VRAM) |
+| `modelSwitchMs` | 900000 (15 min) | 1 min - 1 day | Model switching (unload A, load B) |
+| `testConnectionMs` | 120000 (2 min) | 30 sec - 10 min | Test connection timeout |
+| `requestMs` | 30000 (30 sec) | 5 sec - 5 min | Standard request timeout |
+| `queuedResponseMs` | 900000 (15 min) | 1 min - 1 day | Wait time between queued requests |
+| `agentActivationMs` | 900000 (15 min) | 1 min - 1 day | Agent activation with model load |
+| `agentDeactivationMs` | 300000 (5 min) | 30 sec - 15 min | Agent deactivation with unload |
+| `maxQueueDepth` | 20 | 1 - 100 | Max queued requests before rejection |
+
+**Use Cases:**
+- **Slow systems**: CPU-only inference, large models, remote servers
+- **Multi-agent**: Multiple agents using different models with request queuing
+- **Queue wait calculation**: With 20 requests @ 15 min each = ~5 hour wait
+
+**Configuration Example (Default - Fast System):**
+```json
+{
+  "copilot-orchestrator.llm.timeouts.coldLoadMs": 600000,
+  "copilot-orchestrator.llm.timeouts.modelSwitchMs": 900000,
+  "copilot-orchestrator.llm.timeouts.testConnectionMs": 120000
+}
+```
+
+**Configuration Example (Slow System):**
+```json
+{
+  "copilot-orchestrator.llm.timeouts.coldLoadMs": 1800000,      // 30 minutes
+  "copilot-orchestrator.llm.timeouts.modelSwitchMs": 2700000,   // 45 minutes
+  "copilot-orchestrator.llm.timeouts.testConnectionMs": 600000, // 10 minutes
+  "copilot-orchestrator.llm.timeouts.requestMs": 120000,        // 2 minutes
+  "copilot-orchestrator.llm.timeouts.queuedResponseMs": 3600000,// 1 hour
+  "copilot-orchestrator.llm.timeouts.maxQueueDepth": 50
+}
+```
+
+**Common Issues:**
+- **"Connection test timeout"** → Increase `testConnectionMs`
+- **"Queue full"** → Increase `maxQueueDepth` or decrease `queuedResponseMs`
+- **"Agent activation timeout"** → Increase `agentActivationMs` and `coldLoadMs`
+
+**See Also:**
+- Full documentation: `vscode-extension/LLM-TIMEOUT-CONFIGURATION.md`
+- Implementation: `vscode-extension/LLM-TIMEOUT-IMPLEMENTATION-SUMMARY.md`
+- Quick fixes: `QUICK-REFERENCE.md` → LLM Connection Timeouts
+
+---
+
 ## MCP Configuration
 
 ### copilot-orchestrator.mcp.baseUrl

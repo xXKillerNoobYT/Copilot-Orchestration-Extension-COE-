@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import { ProgrammingOrchestratorManager } from './programmingOrchestratorTab';
 import { MCPClient } from '../services/mcpClient';
 import { ProviderFactory } from '../transport/transportManager';
+import { readLlmTimeoutConfig } from '../config/llmTimeouts';
 
 /**
  * Configuration for connection testing
@@ -171,6 +172,10 @@ export class SettingsPanel {
   }
 
   private async _testConnection(config: ConnectionConfig) {
+    // Get timeout configuration at function scope (used in catch block)
+    const timeoutConfig = readLlmTimeoutConfig();
+    const testTimeout = timeoutConfig.config.testConnectionMs;
+
     try {
       // Create a provider instance using the config from the webview
       // This runs in the extension host context, avoiding webview CSP restrictions
@@ -179,30 +184,57 @@ export class SettingsPanel {
         baseUrl: config.baseUrl,
         apiKey: config.apiKey,
         defaultModel: config.model,
-        // Note: testConnection() uses its own timeout (3000ms), so this is only for other operations
       });
 
-      // Use the provider's built-in testConnection method
-      const connected = await provider.testConnection();
+      // Show progress notification for long timeout
+      const timeoutMinutes = Math.floor(testTimeout / 60000);
+      const progressMessage = timeoutMinutes > 1
+        ? `Testing connection (timeout: ${timeoutMinutes} minutes)...`
+        : 'Testing connection...';
 
-      if (connected) {
-        this._panel.webview.postMessage({
-          command: 'connectionTestResult',
-          success: true,
-          message: 'Connection successful! Model responded.',
-        });
-      } else {
-        this._panel.webview.postMessage({
-          command: 'connectionTestResult',
-          success: false,
-          message: this._buildConnectionFailureMessage(config.baseUrl, config.model),
-        });
-      }
+      await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: progressMessage,
+        cancellable: false,
+      }, async () => {
+        // Use the provider's built-in testConnection method with custom timeout
+        const connected = await Promise.race([
+          provider.testConnection(),
+          new Promise<boolean>((_, reject) =>
+            setTimeout(() => reject(new Error(`Connection test timeout after ${testTimeout}ms`)), testTimeout)
+          )
+        ]);
+
+        return connected;
+      }).then((connected) => {
+        if (connected) {
+          this._panel.webview.postMessage({
+            command: 'connectionTestResult',
+            success: true,
+            message: 'Connection successful! Model responded.',
+          });
+        } else {
+          this._panel.webview.postMessage({
+            command: 'connectionTestResult',
+            success: false,
+            message: this._buildConnectionFailureMessage(config.baseUrl, config.model),
+          });
+        }
+      });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isTimeout = errorMessage.includes('timeout');
+
       this._panel.webview.postMessage({
         command: 'connectionTestResult',
         success: false,
-        message: `Connection test failed for ${config.baseUrl}: ${error instanceof Error ? error.message : String(error)}. Confirm network reachability and that the server exposes /v1/chat/completions.`,
+        message: isTimeout
+          ? `Connection test timeout after ${Math.floor(timeoutConfig.config.testConnectionMs / 1000)}s. This may indicate:\n` +
+          `• Model is still loading (can take up to 10 minutes for cold load)\n` +
+          `• Network connectivity issues\n` +
+          `• Server is not responding\n` +
+          `You can increase the timeout in settings: copilot-orchestrator.llm.timeouts.testConnectionMs`
+          : `Connection test failed for ${config.baseUrl}: ${errorMessage}. Confirm network reachability and that the server exposes /v1/chat/completions.`,
       });
     }
   }

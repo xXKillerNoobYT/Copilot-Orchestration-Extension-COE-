@@ -288,16 +288,16 @@ export class PlanAdjustmentService {
    * Bump semantic version based on change impact
    * - low impact -> patch version (1.0.0 -> 1.0.1)
    * - medium impact -> minor version (1.0.0 -> 1.1.0)
-   * - high impact -> major version (1.0.0 -> 2.0.0)
+   * - high/critical impact -> major version (1.0.0 -> 2.0.0)
    */
-  private bumpVersion(version: string, impact: 'low' | 'medium' | 'high'): string {
+  private bumpVersion(version: string, impact: 'low' | 'medium' | 'high' | 'critical'): string {
     const parts = version.split('.');
     const major = parseInt(parts[0] || '1', 10);
     const minor = parseInt(parts[1] || '0', 10);
     const patch = parseInt(parts[2] || '0', 10);
 
-    if (impact === 'high') {
-      // Breaking changes -> major version bump
+    if (impact === 'high' || impact === 'critical') {
+      // Breaking or critical changes -> major version bump
       return `${major + 1}.0.0`;
     } else if (impact === 'medium') {
       // Moderate changes -> minor version bump

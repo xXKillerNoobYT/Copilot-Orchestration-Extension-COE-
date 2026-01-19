@@ -6,7 +6,10 @@
  * - Tracks loop status and statistics
  * - Executes single cycles (for testing)
  * - Handles retries and error management
+ * - Applies LLM loading timeouts for model switches
  */
+
+import { readLlmTimeoutConfig, LlmTimeoutConfig } from '../config/llmTimeouts';
 
 export interface AgentLoopConfig {
   baseUrl: string;
@@ -35,9 +38,12 @@ export interface AgentCycleResult {
 export class AgentLoopService {
   private config: AgentLoopConfig;
   private loopStatusCallbacks: ((status: AgentLoopStatus) => void)[] = [];
+  private timeoutConfig: LlmTimeoutConfig;
 
   constructor(config: AgentLoopConfig) {
     this.config = config;
+    const llmTimeouts = readLlmTimeoutConfig();
+    this.timeoutConfig = llmTimeouts.config;
   }
 
   /**
@@ -47,14 +53,25 @@ export class AgentLoopService {
   async startLoop(maxCycles: number = 0): Promise<AgentLoopStatus> {
     try {
       const url = `${this.config.baseUrl}/api/v1/agent-loop/start`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ max_cycles: maxCycles }),
-      });
+
+      // Apply activation timeout for agent initialization
+      const timeoutMs = this.timeoutConfig.agentActivationMs;
+
+      const response = await Promise.race([
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            max_cycles: maxCycles,
+            model_load_timeout: this.timeoutConfig.coldLoadMs,
+            model_switch_timeout: this.timeoutConfig.modelSwitchMs,
+          }),
+        }),
+        this.createTimeoutPromise(timeoutMs, 'Agent activation'),
+      ]);
 
       if (!response.ok) {
         throw new Error(`Failed to start loop: ${response.status} ${response.statusText}`);
@@ -65,7 +82,14 @@ export class AgentLoopService {
       this.notifyStatusChange(status);
       return status;
     } catch (error) {
-      throw new Error(`Start loop failed: ${error instanceof Error ? error.message : String(error)}`);
+      // Enhanced error messaging for common issues
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      if (errorMessage.includes('fetch failed') || errorMessage.includes('ECONNREFUSED')) {
+        throw new Error(`Backend server is not running at ${this.config.baseUrl}. Please start the Laravel backend with 'php artisan serve' or configure the correct backend URL in settings.`);
+      }
+
+      throw new Error(`Start loop failed: ${errorMessage}`);
     }
   }
 
@@ -75,13 +99,20 @@ export class AgentLoopService {
   async stopLoop(): Promise<void> {
     try {
       const url = `${this.config.baseUrl}/api/v1/agent-loop/stop`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      });
+
+      // Apply deactivation timeout
+      const timeoutMs = this.timeoutConfig.agentDeactivationMs;
+
+      const response = await Promise.race([
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        }),
+        this.createTimeoutPromise(timeoutMs, 'Agent deactivation'),
+      ]);
 
       if (!response.ok) {
         throw new Error(`Failed to stop loop: ${response.status} ${response.statusText}`);
@@ -206,5 +237,28 @@ export class AgentLoopService {
         console.error('Error in status change callback:', error);
       }
     });
+  }
+
+  /**
+   * Create timeout promise for long-running operations
+   */
+  private createTimeoutPromise(timeoutMs: number, operation: string): Promise<never> {
+    return new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(
+          `${operation} timeout after ${timeoutMs}ms. ` +
+          `This may indicate model loading delays. ` +
+          `You can increase timeouts in settings: copilot-orchestrator.llm.timeouts`
+        ));
+      }, timeoutMs);
+    });
+  }
+
+  /**
+   * Refresh timeout configuration from settings
+   */
+  refreshTimeoutConfig(): void {
+    const llmTimeouts = readLlmTimeoutConfig();
+    this.timeoutConfig = llmTimeouts.config;
   }
 }

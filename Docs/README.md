@@ -9,6 +9,7 @@ This folder contains all technical documentation, plans, and architecture guides
 **Essential Reading**:
 - `PROJECT-RUNBOOK.md` — **START HERE**: Execution order, commands, task expectations
 - `QUICK-REFERENCE.md` — Quick commands, common fixes, test status
+- `CONFIGURATION-REFERENCE.md` — Complete settings guide including LLM timeout configuration
 - `GITHUB-ISSUES-PLAN.md` — Issue tracking and management
 - `README.md` — This file: Documentation navigation guide
 
@@ -30,9 +31,10 @@ Technical guides and implementation specifications.
 **Key Documents**:
 - Technical architecture guides
 - Component specifications
-- API documentation
+- API documentation (see `MCP-API-CONTRACTS.md`)
 - Database schemas
 - Integration guides
+- LLM timeout configuration (`../vscode-extension/LLM-TIMEOUT-CONFIGURATION.md`)
 
 ---
 

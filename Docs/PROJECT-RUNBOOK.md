@@ -452,8 +452,11 @@ After completing each issue, update:
 - **GITHUB-ISSUES-PLAN.md** - Detailed GitHub issues (copy-paste ready)
 - **CODE-MASTER-ALIGNMENT.md** - Architecture alignment audit
 - **PROJECT-EXECUTION-DASHBOARD.md** - Progress dashboard
+- **CONFIGURATION-REFERENCE.md** - Complete settings guide (including LLM timeouts)
+- **QUICK-REFERENCE.md** - Commands, fixes, and troubleshooting (including timeout issues)
 - **task-format-specification.md** - Task creation guidelines
 - **task-orchestration-flow.md** - Task workflow documentation
+- **vscode-extension/LLM-TIMEOUT-CONFIGURATION.md** - LLM timeout configuration for slow systems
 
 ---
 
@@ -492,6 +495,9 @@ After completing each issue, update:
 - **For Architecture Questions**: See CODE-MASTER-ALIGNMENT.md
 - **For Task Details**: Read GITHUB-ISSUES-PLAN.md
 - **For Workflow**: Read zen_tasks_workflow.md
+- **For Configuration**: See CONFIGURATION-REFERENCE.md
+- **For LLM Timeout Issues**: See vscode-extension/LLM-TIMEOUT-CONFIGURATION.md
+- **For Quick Fixes**: See QUICK-REFERENCE.md
 - **For Blocking Issues**: Create investigation task, mark as blocked
 - **For Requirements**: See Docs/Plan/detailed project description
 

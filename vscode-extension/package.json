@@ -128,6 +128,70 @@
           "markdownDescription": "Request timeout in milliseconds for LLM calls.",
           "scope": "window"
         },
+        "copilot-orchestrator.llm.timeouts.coldLoadMs": {
+          "type": "number",
+          "default": 600000,
+          "minimum": 60000,
+          "maximum": 86400000,
+          "markdownDescription": "Cold model load timeout (disk → RAM/VRAM) in milliseconds. Default: 10 minutes. Range: 1 minute - 1 day.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeouts.modelSwitchMs": {
+          "type": "number",
+          "default": 900000,
+          "minimum": 60000,
+          "maximum": 86400000,
+          "markdownDescription": "Model switch timeout (unload + load) in milliseconds. Default: 15 minutes. Range: 1 minute - 1 day.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeouts.testConnectionMs": {
+          "type": "number",
+          "default": 120000,
+          "minimum": 30000,
+          "maximum": 600000,
+          "markdownDescription": "Test connection timeout in milliseconds. Default: 2 minutes. Range: 30 seconds - 10 minutes.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeouts.requestMs": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 5000,
+          "maximum": 300000,
+          "markdownDescription": "Standard request timeout in milliseconds. Default: 30 seconds. Range: 5 seconds - 5 minutes.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeouts.queuedResponseMs": {
+          "type": "number",
+          "default": 900000,
+          "minimum": 60000,
+          "maximum": 86400000,
+          "markdownDescription": "Response wait time between queued requests in milliseconds. Default: 15 minutes. Range: 1 minute - 1 day. Used when multiple agents queue requests to same LLM.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeouts.agentActivationMs": {
+          "type": "number",
+          "default": 900000,
+          "minimum": 60000,
+          "maximum": 86400000,
+          "markdownDescription": "Agent activation timeout (includes model loading) in milliseconds. Default: 15 minutes. Range: 1 minute - 1 day.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeouts.agentDeactivationMs": {
+          "type": "number",
+          "default": 300000,
+          "minimum": 30000,
+          "maximum": 900000,
+          "markdownDescription": "Agent deactivation timeout (includes model unloading) in milliseconds. Default: 5 minutes. Range: 30 seconds - 15 minutes.",
+          "scope": "window"
+        },
+        "copilot-orchestrator.llm.timeouts.maxQueueDepth": {
+          "type": "number",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 100,
+          "markdownDescription": "Maximum queue depth before rejecting requests. Default: 20. Range: 1 - 100.",
+          "scope": "window"
+        },
         "copilot-orchestrator.mcp.baseUrl": {
           "type": "string",
           "default": "http://localhost:8000",

@@ -42,10 +42,13 @@ export class LLMIPMonitor {
   constructor(context: vscode.ExtensionContext) {
     this.context = context;
     this.outputChannel = vscode.window.createOutputChannel('LLM Monitor');
-    
-    // Load config
+
+    // Load config from storage first (may contain cached values)
     this.config = this.loadConfig(context);
-    
+
+    // Override with VS Code settings if present (settings take precedence)
+    this.updateConfigFromSettings();
+
     // Create status bar item
     this.statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
@@ -53,7 +56,7 @@ export class LLMIPMonitor {
     );
     this.statusBarItem.command = 'copilot-orchestrator.showLLMStatus';
     this.statusBarItem.tooltip = 'Click to see LLM connection details';
-    
+
     context.subscriptions.push(this.statusBarItem);
     context.subscriptions.push(this.outputChannel);
 
@@ -127,7 +130,7 @@ export class LLMIPMonitor {
         this.config.lastCheckedAt = now;
         this.updateStatus('unhealthy');
         this.log(`❌ LLM is unreachable at ${this.config.host}:${this.config.port}`);
-        
+
         // Attempt fallback recovery
         await this.attemptFallbackRecovery();
       }
@@ -149,13 +152,13 @@ export class LLMIPMonitor {
         this.log(`🔄 IP Address Change Detected!`);
         this.log(`   Old IP: ${this.config.lastKnownIP}`);
         this.log(`   New IP: ${newIP}`);
-        
+
         this.config.host = newIP;
         this.config.lastKnownIP = newIP;
-        
+
         // Save updated config
         this.saveConfig();
-        
+
         // Notify user
         vscode.window.showInformationMessage(
           `LLM IP changed from ${this.config.lastKnownIP} to ${newIP}. Configuration updated.`,
@@ -176,7 +179,7 @@ export class LLMIPMonitor {
   private async pingLLMServer(): Promise<boolean> {
     return new Promise((resolve) => {
       const socket = new net.Socket();
-      
+
       const timeout = setTimeout(() => {
         socket.destroy();
         resolve(false);
@@ -282,7 +285,7 @@ export class LLMIPMonitor {
     // Check a subset of IPs (200-220 range)
     for (let i = 200; i <= 220; i++) {
       const testIP = `${baseIP}.${i}`;
-      
+
       try {
         const isHealthy = await this.testConnection(testIP, port);
         if (isHealthy) {
@@ -312,7 +315,7 @@ export class LLMIPMonitor {
       this.saveConfig();
       this.log(`📝 IP configuration updated: ${newIP}`);
       vscode.window.showInformationMessage(`LLM IP updated to ${newIP}`);
-      
+
       // Re-check connectivity
       this.checkLLMConnectivity();
     }
@@ -353,7 +356,7 @@ export class LLMIPMonitor {
    */
   private loadConfig(context: vscode.ExtensionContext): LLMConfig {
     const stored = context.globalState.get('llmConfig') as LLMConfig | undefined;
-    
+
     return stored || {
       host: this.DEFAULT_HOST,
       port: this.DEFAULT_PORT,
@@ -375,12 +378,12 @@ export class LLMIPMonitor {
    */
   private onConfigurationChanged(): void {
     this.log('🔄 Configuration change detected - invalidating cache');
-    
+
     // Debounce configuration changes to prevent rapid re-checks
     if (this.configChangeDebounceTimer) {
       clearTimeout(this.configChangeDebounceTimer);
     }
-    
+
     this.configChangeDebounceTimer = setTimeout(() => {
       this.applyConfigurationChange();
       this.configChangeDebounceTimer = null;
@@ -394,15 +397,15 @@ export class LLMIPMonitor {
     // Clear cached configuration from globalState
     this.context.globalState.update('llmConfig', undefined);
     this.log('🗑️ Cache cleared from globalState');
-    
+
     // Reload configuration from VS Code settings
     const updated = this.updateConfigFromSettings();
     if (updated) {
       this.log(`📝 Config reloaded from settings: ${this.config.host}:${this.config.port}`);
-      
+
       // Persist the freshly loaded configuration back to globalState
       this.saveConfig();
-      
+
       // Re-check connectivity with new settings asynchronously, log any errors
       void this.checkLLMConnectivity().catch(error => {
         this.log(`⚠️ Error during connectivity check after config change: ${error}`);
@@ -418,7 +421,7 @@ export class LLMIPMonitor {
   private updateConfigFromSettings(): boolean {
     const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator.llm');
     const baseUrl = vsConfig.get<string>('baseUrl');
-    
+
     if (baseUrl) {
       try {
         const url = new URL(baseUrl);
@@ -436,7 +439,7 @@ export class LLMIPMonitor {
           this.config.lastCheckedAt = undefined;
           this.config.isHealthy = undefined;
         }
-        
+
         return true;
       } catch (error) {
         this.log(`⚠️ Failed to parse baseUrl: ${error}`);
