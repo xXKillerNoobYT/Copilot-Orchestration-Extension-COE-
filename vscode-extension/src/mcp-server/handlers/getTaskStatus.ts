@@ -3,7 +3,7 @@
  * Integrates with Laravel backend TaskRepository to fetch real task data
  */
 
-import { MCPHandlerBase } from './MCPHandlerBase';
+import { MCPHandlerBase } from './MCPHandlerBase.js';
 
 class GetTaskStatusHandler extends MCPHandlerBase {
   /**
@@ -78,3 +78,4 @@ const handler = new GetTaskStatusHandler();
 export async function handleGetTaskStatus(args: any) {
   return handler.execute(args);
 }
+

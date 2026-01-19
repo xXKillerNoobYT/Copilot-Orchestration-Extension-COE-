@@ -3,7 +3,7 @@
  * Integrates with Laravel backend AgentRepository and TaskQueueService
  */
 
-import { MCPHandlerBase } from './MCPHandlerBase';
+import { MCPHandlerBase } from './MCPHandlerBase.js';
 
 class GetAgentStateHandler extends MCPHandlerBase {
   /**
@@ -121,3 +121,4 @@ const handler = new GetAgentStateHandler();
 export async function handleGetAgentState(args: any) {
   return handler.execute(args);
 }
+

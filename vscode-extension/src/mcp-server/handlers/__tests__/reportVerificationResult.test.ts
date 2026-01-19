@@ -3,7 +3,7 @@
  * Tests verification result submission and task status updates
  */
 
-import { handleReportVerificationResult } from '../reportVerificationResult';
+import { handleReportVerificationResult } from '../reportVerificationResult.js';
 
 global.fetch = jest.fn() as jest.Mock;
 
@@ -309,3 +309,4 @@ describe('handleReportVerificationResult', () => {
     expect(result.nextSteps).toContain('Request re-verification');
   });
 });
+
