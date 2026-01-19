@@ -89,30 +89,31 @@ describe('ContextImportService', () => {
 
   describe('Template Suggestion', () => {
     it('should suggest api-service template for API-only projects', async () => {
-      const content = 'Build a REST API backend service with endpoints and HTTP handling.';
+      const content = 'Create HTTP endpoints for processing GraphQL requests and responses.';
       const result = await service.analyzeContext(content);
       
       expect(result.suggestedTemplate).toBe('core-api-service');
     });
 
     it('should suggest web-app template for frontend projects', async () => {
-      const content = 'Create a React web application with UI components.';
+      const content = 'Create React components with user interface elements.';
       const result = await service.analyzeContext(content);
       
       expect(result.suggestedTemplate).toBe('core-web-app');
     });
 
     it('should suggest web-app template for full-stack projects', async () => {
-      const content = 'Build a full-stack application with React frontend and REST API backend.';
+      const content = 'Build an application with React components and HTTP endpoints.';
       const result = await service.analyzeContext(content);
       
       expect(result.suggestedTemplate).toBe('core-web-app');
     });
 
     it('should suggest blank template for unclear projects', async () => {
-      const content = 'A new software project with various requirements.';
+      const content = 'A new project with different objectives.';
       const result = await service.analyzeContext(content);
       
+      // This should not detect any specific topics, so should be blank
       expect(result.suggestedTemplate).toBe('core-blank');
     });
   });

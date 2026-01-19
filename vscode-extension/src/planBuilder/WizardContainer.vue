@@ -1,5 +1,11 @@
 <template>
   <div class="wizard-container" :class="{ 'with-assistant': showAssistant, 'with-preview': showPreview }">
+    <!-- File Importer (shown before wizard starts) -->
+    <FileImporter
+      v-if="showFileImporter"
+      @contextImported="handleContextImported"
+    />
+    
     <!-- Template Selector Modal -->
     <TemplateSelector
       v-if="showTemplateSelector"
@@ -20,6 +26,14 @@
         </p>
       </div>
       <div class="header-actions">
+        <button 
+          v-if="currentStep === 0 && !appliedTemplateId && !importedContext"
+          class="import-btn"
+          @click="showFileImporter = true"
+          title="Import project context"
+        >
+          📁 Import Context
+        </button>
         <button 
           v-if="currentStep === 0 && !appliedTemplateId"
           class="template-btn"
@@ -149,6 +163,7 @@ import { AiAssistanceService, type AiSuggestion } from './aiAssistanceService';
 import ContextualAssistant from './ContextualAssistant.vue';
 import PreviewContainer from '../components/preview/PreviewContainer.vue';
 import TemplateSelector from './components/TemplateSelector.vue';
+import FileImporter from './components/FileImporter.vue';
 import { getTemplateService } from './services/TemplateService';
 import type { WizardState, PreviewRenderResult } from '../components/preview/PreviewEngine';
 
@@ -197,6 +212,10 @@ const autoSaveTimer = ref<ReturnType<typeof setInterval> | null>(null);
 // Template state
 const showTemplateSelector = ref(false);
 const appliedTemplateId = ref<string | undefined>(undefined);
+
+// File import state
+const showFileImporter = ref(false);
+const importedContext = ref<any>(null);
 
 // AI Assistant state
 const showAssistant = ref(false);
@@ -527,8 +546,38 @@ const handleTemplateSelected = async (templateId: string) => {
   }
 };
 
+// Handle context imported from FileImporter
+const handleContextImported = (context: any) => {
+  importedContext.value = context;
+  showFileImporter.value = false;
+  
+  // Store context for use throughout wizard
+  if (context.analysis) {
+    console.log('[Wizard] Context imported with analysis:', context.analysis);
+    
+    // If we have a suggested template, we could pre-select it or inform the user
+    if (context.analysis.suggestedTemplate) {
+      // Optionally auto-apply the suggested template
+      // handleTemplateSelected(context.analysis.suggestedTemplate);
+      
+      // Or just show a hint to the user
+      console.log('[Wizard] Suggested template:', context.analysis.suggestedTemplate);
+    }
+    
+    // Store the imported context in wizard metadata
+    if (wizardStore.metadata) {
+      wizardStore.metadata.importedContext = context;
+    }
+  }
+  
+  console.log('[Wizard] Context imported:', context.files.length, 'files');
+};
+
 const handleValidationError = (errors: string[]) => {
-  validationErrors.value[currentStep.value] = errors;
+  const question = getCurrentQuestion();
+  if (question) {
+    validationErrors.value[question.id] = errors;
+  }
 };
 
 // Handle navigation from summary to edit a specific question
