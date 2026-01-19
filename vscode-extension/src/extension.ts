@@ -382,11 +382,10 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   // Listen to task interaction events to update orchestrator workflow
-  taskInteractionAPI.onTaskInteraction((event: TaskInteractionEvent) => {
+  taskInteractionAPI.onTaskInteraction(async (event: TaskInteractionEvent) => {
     switch (event.type) {
       case 'executeTask':
-        vscode.window.showInformationMessage(`Task execution initiated: ${event.taskId}`);
-        // TODO: Connect to orchestrator workflow/backend API
+        await handleTaskExecution(event.taskId);
         break;
       case 'statusChanged':
         vscode.window.showInformationMessage(`Task status updated: ${event.newStatus}`);
@@ -405,6 +404,86 @@ export function activate(context: vscode.ExtensionContext) {
         break;
     }
   });
+
+  /**
+   * Handle task execution by connecting to orchestrator backend API via MCP
+   */
+  async function handleTaskExecution(taskId: string): Promise<void> {
+    try {
+      // Show progress indicator
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: `Executing task ${taskId}...`,
+          cancellable: true,
+        },
+        async (progress) => {
+          // Get MCP client instance
+          const mcpClient = MCPClient.getInstance();
+          
+          // Report task status to backend
+          progress.report({ increment: 30, message: 'Reporting task status to orchestrator...' });
+          const statusResponse = await mcpClient.reportTaskStatus({
+            taskId,
+            status: 'in-progress',
+            progressPercent: 50,
+            implementationNotes: 'Task execution initiated from VS Code extension',
+          });
+          
+          // Log observation for audit trail
+          progress.report({ increment: 20, message: 'Logging execution observation...' });
+          await mcpClient.reportObservation({
+            taskId,
+            type: 'discovery',
+            message: `Task execution started from VS Code extension at ${new Date().toISOString()}`,
+            severity: 'info',
+          });
+          
+          // Request next task details from orchestrator queue
+          progress.report({ increment: 30, message: 'Fetching task from orchestrator queue...' });
+          const nextTask = await mcpClient.getNextTask();
+          
+          progress.report({ increment: 20 });
+          
+          // Show success message with task details
+          if (nextTask) {
+            vscode.window.showInformationMessage(
+              `✓ Task ${taskId} execution started. Next task: ${nextTask.id}`,
+              'View Task', 'View Queue'
+            ).then((action) => {
+              if (action === 'View Task') {
+                // Open task details in Visual Verification panel
+                vscode.commands.executeCommand('copilot-orchestrator.openVisualVerification');
+              } else if (action === 'View Queue') {
+                // Open orchestrator dashboard
+                vscode.commands.executeCommand('copilot-orchestrator.openOrchestrator');
+              }
+            });
+          } else {
+            vscode.window.showInformationMessage(
+              `✓ Task ${taskId} execution started. No more tasks in queue.`
+            );
+          }
+        }
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to execute task: ${error instanceof Error ? error.message : String(error)}`
+      );
+      
+      // Report failure to backend
+      try {
+        const mcpClient = MCPClient.getInstance();
+        await mcpClient.reportTaskStatus({
+          taskId,
+          status: 'failed',
+          implementationNotes: `Task execution failed: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      } catch (reportError) {
+        console.error('Failed to report task failure:', reportError);
+      }
+    }
+  }
 
   // ============ End of .task.md File Support ============
 

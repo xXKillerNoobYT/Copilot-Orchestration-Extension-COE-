@@ -7,8 +7,8 @@
  * @date 2026-01-18
  */
 
-import { AgentProfileValidator, validateAgentProfile, formatValidationResult } from './agentProfileValidator.js';
-import { AgentProfile } from './agentProfiles.js';
+import { AgentProfileValidator, validateAgentProfile, formatValidationResult } from './agentProfileValidator';
+import { AgentProfile } from './agentProfiles';
 
 describe('AgentProfileValidator', () => {
     let validator: AgentProfileValidator;

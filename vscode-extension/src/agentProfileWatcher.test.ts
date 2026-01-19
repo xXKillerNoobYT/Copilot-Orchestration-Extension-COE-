@@ -7,9 +7,9 @@
  * @date 2026-01-18
  */
 
-import { AgentProfileWatcher, ProfileChangeEvent } from '../agentProfileWatcher';
+import { AgentProfileWatcher, ProfileChangeEvent } from './agentProfileWatcher';
 import * as vscode from 'vscode';
-import { AgentProfile } from '../agentProfiles';
+import { AgentProfile } from './agentProfiles';
 
 // Mock vscode
 jest.mock('vscode');

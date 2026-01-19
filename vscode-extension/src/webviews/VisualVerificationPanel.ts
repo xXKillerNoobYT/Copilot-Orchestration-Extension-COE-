@@ -304,7 +304,7 @@ export class VisualVerificationPanel {
 
             // Map status values to match MCP client expectations
             const mcpStatus = result.status === 'pass' ? 'passed' : result.status === 'fail' ? 'failed' : 'partial';
-            
+
             await this.mcpClient.reportVerificationResult({
                 verificationTaskId: this.currentTask.id + '-verification',
                 originalTaskId: this.currentTask.id,

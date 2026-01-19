@@ -124,6 +124,12 @@ export class SettingsPanel {
           case 'saveAdvancedSettings':
             await this._saveAdvancedSettings(message.settings);
             return;
+          case 'saveTeamConfiguration':
+            await this._saveTeamConfiguration(message.team, message.config);
+            return;
+          case 'loadTeamConfiguration':
+            await this._loadTeamConfiguration(message.team);
+            return;
         }
       },
       null,
@@ -1018,11 +1024,104 @@ description: "Agent description"
             break;
           case 'configure-team':
             const team = e.target.getAttribute('data-team');
-            console.log('Configure team:', team);
-            // TODO: Open team configuration dialog
+            openTeamConfigModal(team);
             break;
         }
       });
+    });
+
+    // Team Configuration Modal Functions
+    const modal = document.getElementById('teamConfigModal');
+    const modalClose = document.getElementById('modalClose');
+    const modalCancel = document.getElementById('modalCancel');
+    const modalSave = document.getElementById('modalSave');
+    let currentTeam = null;
+
+    function openTeamConfigModal(team) {
+      currentTeam = team;
+      const teamNameMap = {
+        planning: 'Planning',
+        answer: 'Answer',
+        decomposition: 'Decomposition',
+        verification: 'Verification'
+      };
+      
+      document.getElementById('teamModalTitle').textContent = teamNameMap[team] || team;
+      modal.classList.add('active');
+      
+      // Load existing configuration if available
+      vscode.postMessage({
+        command: 'loadTeamConfiguration',
+        team: team
+      });
+    }
+
+    function closeTeamConfigModal() {
+      modal.classList.remove('active');
+      currentTeam = null;
+    }
+
+    function saveTeamConfiguration() {
+      if (!currentTeam) return;
+
+      const config = {
+        profile: document.getElementById('profileYaml').value,
+        permissions: {
+          read: document.getElementById('perm-read').checked,
+          write: document.getElementById('perm-write').checked,
+          execute: document.getElementById('perm-execute').checked,
+          test: document.getElementById('perm-test').checked,
+          approve: document.getElementById('perm-approve').checked,
+        },
+        maxDepth: parseInt(document.getElementById('maxDepth').value, 10) || 3,
+        timeout: parseInt(document.getElementById('timeout').value, 10) || 300,
+      };
+
+      vscode.postMessage({
+        command: 'saveTeamConfiguration',
+        team: currentTeam,
+        config: config
+      });
+
+      closeTeamConfigModal();
+    }
+
+    modalClose.addEventListener('click', closeTeamConfigModal);
+    modalCancel.addEventListener('click', closeTeamConfigModal);
+    modalSave.addEventListener('click', saveTeamConfiguration);
+    
+    // Close modal when clicking outside content
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeTeamConfigModal();
+      }
+    });
+
+    // Handle messages for modal updates
+    window.addEventListener('message', (event) => {
+      const message = event.data;
+      
+      if (message.command === 'loadTeamConfiguration') {
+        // Populate modal with team configuration data
+        if (message.config) {
+          document.getElementById('profileYaml').value = message.config.profile || '';
+          document.getElementById('perm-read').checked = message.config.permissions?.read ?? true;
+          document.getElementById('perm-write').checked = message.config.permissions?.write ?? false;
+          document.getElementById('perm-execute').checked = message.config.permissions?.execute ?? false;
+          document.getElementById('perm-test').checked = message.config.permissions?.test ?? false;
+          document.getElementById('perm-approve').checked = message.config.permissions?.approve ?? false;
+          document.getElementById('maxDepth').value = message.config.constraints?.maxDepth ?? 3;
+          document.getElementById('timeout').value = message.config.constraints?.timeout ?? 300;
+        }
+      }
+
+      if (message.command === 'teamConfigurationSaved') {
+        vscode.window.showInformationMessage(\`Team configuration saved successfully!\`);
+      }
+
+      if (message.command === 'teamConfigurationError') {
+        vscode.window.showErrorMessage(\`Failed to save configuration: \${message.error}\`);
+      }
     });
   </script>
 </body>
@@ -1309,6 +1408,137 @@ description: "Agent description"
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to save advanced settings: ${error}`);
     }
+  }
+
+  /**
+   * Open Team Configuration Modal
+   * Allows user to configure agent profile, permissions, and constraints
+   */
+  private openTeamConfigurationModal(team: string): void {
+    // Post message to webview to open modal and populate with team data
+    this._panel.webview.postMessage({
+      command: 'openTeamConfigModal',
+      team: team,
+      teamName: this.getTeamDisplayName(team),
+    });
+
+    // Set up modal event listeners via postMessage
+    // The modal will send back configuration data when saved
+  }
+
+  /**
+   * Save Team Configuration
+   */
+  private async _saveTeamConfiguration(team: string, config: any): Promise<void> {
+    try {
+      const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator.teams');
+
+      // Save team-specific configuration
+      const teamConfig = {
+        profile: config.profile,
+        permissions: {
+          readFiles: config.permissions.read,
+          writeFiles: config.permissions.write,
+          executeCommands: config.permissions.execute,
+          runTests: config.permissions.test,
+          approveCompletion: config.permissions.approve,
+        },
+        constraints: {
+          maxDepth: config.maxDepth,
+          timeoutSeconds: config.timeout,
+        },
+      };
+
+      await vsConfig.update(team, teamConfig, vscode.ConfigurationTarget.Global);
+
+      // Notify orchestrator manager of changes
+      this.orchestratorManager.updateTeamStatus(team as any, {
+        status: 'idle', // Reset status after configuration change
+        tasksCompleted: 0,
+        activeTaskCount: 0,
+      });
+
+      vscode.window.showInformationMessage(`${this.getTeamDisplayName(team)} team configured successfully!`);
+
+      this._panel.webview.postMessage({
+        command: 'teamConfigurationSaved',
+        team: team,
+        success: true,
+      });
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to save team configuration: ${error}`);
+      this._panel.webview.postMessage({
+        command: 'teamConfigurationError',
+        team: team,
+        error: String(error),
+      });
+    }
+  }
+
+  /**
+   * Load Team Configuration
+   */
+  private async _loadTeamConfiguration(team: string): Promise<void> {
+    try {
+      const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator.teams');
+      const teamConfig = vsConfig.get(team) as any;
+
+      if (teamConfig) {
+        this._panel.webview.postMessage({
+          command: 'loadTeamConfiguration',
+          team: team,
+          config: {
+            profile: teamConfig.profile || '',
+            permissions: teamConfig.permissions || {
+              read: true,
+              write: false,
+              execute: false,
+              test: false,
+              approve: false,
+            },
+            constraints: teamConfig.constraints || {
+              maxDepth: 3,
+              timeout: 300,
+            },
+          },
+        });
+      } else {
+        // Load default configuration
+        this._panel.webview.postMessage({
+          command: 'loadTeamConfiguration',
+          team: team,
+          config: {
+            profile: '',
+            permissions: {
+              read: true,
+              write: false,
+              execute: false,
+              test: false,
+              approve: false,
+            },
+            constraints: {
+              maxDepth: 3,
+              timeout: 300,
+            },
+          },
+        });
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to load team configuration: ${error}`);
+    }
+  }
+
+  /**
+   * Get display name for team
+   */
+  private getTeamDisplayName(team: string): string {
+    const names: Record<string, string> = {
+      planning: 'Planning',
+      answer: 'Answer',
+      decomposition: 'Decomposition',
+      verification: 'Verification',
+    };
+    return names[team] || team;
   }
 
   public dispose() {

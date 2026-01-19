@@ -2,7 +2,10 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "Node16",
-    "lib": ["ES2020", "DOM"],
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
     "moduleResolution": "node16",
     "outDir": "dist",
     "sourceMap": true,
@@ -12,19 +15,24 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node", "jest"],
+    "types": [
+      "node",
+      "jest"
+    ],
     "typeRoots": [
       "./node_modules/@types",
       "./node_modules"
     ]
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*"
+  ],
   "exclude": [
-    "node_modules", 
+    "node_modules",
     ".vscode-test",
     "dist",
     "**/*.disabled",
-    "src/agentProfileValidator.test.ts",
-    "src/agentProfileWatcher.test.ts"
+    "src/integration/**",
+    "src/extension.agentLoop.test.ts"
   ]
 }

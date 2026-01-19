@@ -20,11 +20,11 @@ module.exports = {
         resolveJsonModule: true,
         skipLibCheck: true,
         isolatedModules: true,
-        types: ['node', 'jest'],
+        types: ['node', 'jest'],  // Only Jest types, not Mocha
       },
       diagnostics: {
         warnOnly: true,
-        ignoreCodes: [151002]
+        ignoreCodes: [151002, 2403]  // 2403 = Subsequent variable declarations conflict
       }
     }]
   },
@@ -45,6 +45,9 @@ module.exports = {
     '/dist/',
     '/out/',
     '\\.disabled\\.',
+    // Exclude Mocha-based integration tests (they need mocha runtime, not Jest)
+    'integration/',
+    'extension\\.agentLoop\\.test\\.ts',
     // Exclude Vitest-specific test files (they import from 'vitest')
     '/src/__tests__/sample\\.test\\.ts',  // Vitest-based sample test
     'planBuilder/__tests__/integration',
@@ -72,8 +75,6 @@ module.exports = {
     'panels/auditDashboardPanel\\.test\\.ts',
     'llm/promptCache\\.test\\.ts',
     // Exclude Mocha/assert-based tests
-    'extension\\.agentLoop\\.test\\.ts',
-    'integration/.*\\.test\\.ts',
     'planBuilder/designSystem/validator\\.test\\.ts',
     'planBuilder/designSystem/tokenGenerator\\.test\\.ts',
   ],

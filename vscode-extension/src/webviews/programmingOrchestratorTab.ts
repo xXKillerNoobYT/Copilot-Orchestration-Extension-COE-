@@ -123,7 +123,7 @@ export class ProgrammingOrchestratorManager {
   async getTeamState(): Promise<OrchestratorState['teamStatuses']> {
     // In production, this would call MCP endpoint: GET /api/v1/teams/status
     // For now, return current state with simulated refresh
-    
+
     return {
       planning: {
         ...this.state.teamStatuses.planning,
@@ -162,7 +162,7 @@ export class ProgrammingOrchestratorManager {
   }> {
     // In production, this would call MCP endpoint: POST /api/plans/{planId}/analyze-impact
     // For now, return simulated analysis
-    
+
     return {
       affectedTasks: 5,
       affectedComponents: ['SettingsPanel', 'OrchestratorManager', 'TaskQueue'],
@@ -460,7 +460,212 @@ export class ProgrammingOrchestratorManager {
             flex-direction: column;
             gap: 8px;
           }
+
+          /* Team Configuration Modal */
+          .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .modal.active {
+            display: flex;
+          }
+
+          .modal-content {
+            background: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 6px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          }
+
+          .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+          }
+
+          .modal-header h2 {
+            margin: 0;
+            color: var(--vscode-titleBar-activeForeground);
+            font-size: 16px;
+          }
+
+          .modal-close {
+            background: none;
+            border: none;
+            color: var(--vscode-foreground);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .modal-close:hover {
+            background: var(--vscode-list-hoverBackground);
+          }
+
+          .modal-section {
+            margin-bottom: 20px;
+          }
+
+          .modal-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--vscode-foreground);
+            font-size: 12px;
+            font-weight: 500;
+          }
+
+          .modal-section textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 8px;
+            border: 1px solid var(--vscode-input-border);
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border-radius: 2px;
+            resize: vertical;
+          }
+
+          .permissions-list {
+            display: grid;
+            gap: 10px;
+          }
+
+          .permission-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: var(--vscode-list-background);
+            border-radius: 2px;
+          }
+
+          .permission-item input {
+            margin-right: 8px;
+            cursor: pointer;
+          }
+
+          .permission-item label {
+            margin: 0;
+            flex: 1;
+            cursor: pointer;
+            font-size: 12px;
+          }
+
+          .modal-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 12px;
+            border-top: 1px solid var(--vscode-panel-border);
+          }
+
+          .btn-modal {
+            padding: 8px 16px;
+            border-radius: 2px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+          }
+
+          .btn-modal.primary {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+          }
+
+          .btn-modal.primary:hover {
+            background: var(--vscode-button-hoverBackground);
+          }
+
+          .btn-modal.secondary {
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+          }
+
+          .btn-modal.secondary:hover {
+            background: var(--vscode-button-secondaryHoverBackground);
+          }
         </style>
+
+        <!-- Team Configuration Modal -->
+        <div id="teamConfigModal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2>Configure <span id="teamModalTitle">Planning</span> Team</h2>
+              <button class="modal-close" id="modalClose">×</button>
+            </div>
+
+            <div class="modal-section">
+              <label for="profileYaml">Agent Profile (YAML)</label>
+              <textarea id="profileYaml" placeholder="Enter YAML profile configuration..."></textarea>
+            </div>
+
+            <div class="modal-section">
+              <label>Permissions</label>
+              <div class="permissions-list">
+                <div class="permission-item">
+                  <input type="checkbox" id="perm-read" checked>
+                  <label for="perm-read">Read files and context</label>
+                </div>
+                <div class="permission-item">
+                  <input type="checkbox" id="perm-write">
+                  <label for="perm-write">Write files and code changes</label>
+                </div>
+                <div class="permission-item">
+                  <input type="checkbox" id="perm-execute">
+                  <label for="perm-execute">Execute commands</label>
+                </div>
+                <div class="permission-item">
+                  <input type="checkbox" id="perm-test">
+                  <label for="perm-test">Run tests</label>
+                </div>
+                <div class="permission-item">
+                  <input type="checkbox" id="perm-approve">
+                  <label for="perm-approve">Approve task completion</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-section">
+              <label for="maxDepth">Max Task Depth</label>
+              <input type="number" id="maxDepth" min="1" max="10" value="3" style="width: 100%; padding: 8px; border: 1px solid var(--vscode-input-border); background: var(--vscode-input-background); color: var(--vscode-input-foreground);">
+            </div>
+
+            <div class="modal-section">
+              <label for="timeout">Execution Timeout (seconds)</label>
+              <input type="number" id="timeout" min="10" max="3600" value="300" style="width: 100%; padding: 8px; border: 1px solid var(--vscode-input-border); background: var(--vscode-input-background); color: var(--vscode-input-foreground);">
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-modal secondary" id="modalCancel">Cancel</button>
+              <button class="btn-modal primary" id="modalSave">Save Configuration</button>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
