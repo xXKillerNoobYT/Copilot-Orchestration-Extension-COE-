@@ -4,6 +4,7 @@
   "description": "Foundational VS Code extension scaffold for Copilot Orchestration with GitHub Issues sync.",
   "version": "0.0.1",
   "publisher": "your-publisher-id",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.90.0"
   },

@@ -407,20 +407,20 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   // ============ End of .task.md File Support ============
-  
+
   // Register Sidebar View Providers
   const treeDataProvider = new OrchestratorStatusProvider(context);
   vscode.window.registerTreeDataProvider('copilotOrchestrator.status', treeDataProvider);
-  
+
   const tasksViewProvider = new TasksViewProvider(context);
   vscode.window.registerTreeDataProvider('copilotOrchestrator.tasks', tasksViewProvider);
-  
+
   const agentsViewProvider = new AgentsViewProvider(context);
   vscode.window.registerTreeDataProvider('copilotOrchestrator.agents', agentsViewProvider);
-  
+
   const plansViewProvider = new PlansViewProvider(context);
   vscode.window.registerTreeDataProvider('copilotOrchestrator.plans', plansViewProvider);
-  
+
   // Refresh commands for each view
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.refreshTasks', async () => {
@@ -429,14 +429,14 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage('Tasks refreshed.');
     })
   );
-  
+
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.refreshAgents', async () => {
       agentsViewProvider.refresh();
       vscode.window.showInformationMessage('Agent status refreshed.');
     })
   );
-  
+
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.refreshPlans', async () => {
       plansViewProvider.refresh();

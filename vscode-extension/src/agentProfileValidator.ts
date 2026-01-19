@@ -421,49 +421,6 @@ export class AgentProfileValidator {
 
         return Math.max(0, Math.min(100, score));
     }
-
-    /**
-     * Handle profile file change (create or modify)
-     */
-    private async handleProfileChange(
-        uri: vscode.Uri,
-        changeType: 'created' | 'modified'
-    ): Promise<void> {
-        try {
-            // Extract profile name from filename
-            const fileName = path.basename(uri.fsPath, path.extname(uri.fsPath));
-
-            // Reload the specific profile
-            const profile = await defaultAgentProfileLoader.loadProfile(fileName);
-
-            if (!profile) {
-                throw new Error(`Failed to load profile from ${uri.fsPath}`);
-            }
-
-            // Update cache
-            this.profiles.set(profile.name.toLowerCase(), profile);
-
-            // Notify callbacks
-            const event: ProfileChangeEvent = {
-                profileName: profile.name,
-                profile,
-                changeType,
-                timestamp: new Date(),
-            };
-
-            this.notifyCallbacks(event);
-
-            // Show notification
-            vscode.window.showInformationMessage(
-                `✓ Agent profile '${profile.name}' ${changeType === 'created' ? 'created' : 'reloaded'}`
-            );
-        } catch (error) {
-            console.error(`[AgentProfileWatcher] Failed to handle ${changeType}:`, error);
-            vscode.window.showErrorMessage(
-                `Failed to ${changeType === 'created' ? 'create' : 'reload'} agent profile: ${error}`
-            );
-        }
-    }
 }
 
 /**
