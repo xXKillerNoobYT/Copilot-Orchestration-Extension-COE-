@@ -5,11 +5,12 @@ import * as path from 'path';
 /**
  * Tree data provider for the Tasks view in the Copilot Orchestrator sidebar
  */
-export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem> {
+export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem>, vscode.Disposable {
   private _onDidChangeTreeData = new vscode.EventEmitter<TaskItem | undefined | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
   private tasksSource: TasksSource | undefined;
   private fileWatcherDispose: (() => void) | undefined;
+  private hasShownValidationWarning = false;
 
   constructor(private context: vscode.ExtensionContext) {
     this.initializeTasksSource();
@@ -22,6 +23,7 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem> {
     // Get workspace root
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) {
+      console.log('[TasksViewProvider] No workspace folder available - tasks will not load');
       return;
     }
 
@@ -32,13 +34,39 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem> {
     const exists = await this.tasksSource.exists();
     if (exists) {
       // Load initial data
-      await this.tasksSource.load();
+      const state = await this.tasksSource.load();
+      
+      // Show validation warnings if any
+      if (!state.isValid && state.issues.length > 0) {
+        this.showValidationWarning(state.issues[0]);
+      }
+      
       this.refresh();
 
       // Set up file watcher for automatic updates
-      this.fileWatcherDispose = this.tasksSource.watch(() => {
+      this.fileWatcherDispose = this.tasksSource.watch((state) => {
+        // Reset warning flag when file changes
+        this.hasShownValidationWarning = false;
+        
+        // Show validation warnings if any
+        if (!state.isValid && state.issues.length > 0) {
+          this.showValidationWarning(state.issues[0]);
+        }
+        
         this.refresh();
       });
+    } else {
+      console.log('[TasksViewProvider] Tasks file not found at:', this.tasksSource.getTaskFilePath());
+    }
+  }
+
+  /**
+   * Show validation warning once per load
+   */
+  private showValidationWarning(issue: string): void {
+    if (!this.hasShownValidationWarning) {
+      vscode.window.showWarningMessage(`Tasks file has validation issues: ${issue}`);
+      this.hasShownValidationWarning = true;
     }
   }
 
@@ -105,16 +133,6 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem> {
 
     // Get cached tasks from the source
     const state = this.tasksSource.getCached();
-
-    // If there are validation issues, show a warning
-    if (!state.isValid && state.issues.length > 0) {
-      // Only show warning for the first category to avoid duplicate messages
-      if (category === 'ready') {
-        vscode.window.showWarningMessage(
-          `Tasks file has validation issues: ${state.issues[0]}`
-        );
-      }
-    }
 
     // Map task statuses to categories
     const tasks = state.tasks;
