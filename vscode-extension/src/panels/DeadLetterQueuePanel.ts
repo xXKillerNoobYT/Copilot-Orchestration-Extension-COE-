@@ -6,7 +6,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as Database from 'better-sqlite3';
 import { DeadLetterQueueService, DeadLetterEntry } from '../services/deadLetterQueue';
 
 export class DeadLetterQueuePanel {
@@ -186,7 +185,20 @@ export class DeadLetterQueuePanel {
       if (format === 'json') {
         content = JSON.stringify(this.entries, null, 2);
       } else {
-        // CSV format
+        // CSV format with RFC 4180 compliant escaping
+        const csvEscape = (value: unknown): string => {
+          if (value === null || value === undefined) {
+            return '';
+          }
+          const str = String(value);
+          const needsEscaping = /[",\r\n]/.test(str);
+          if (!needsEscaping) {
+            return str;
+          }
+          const escaped = str.replace(/"/g, '""');
+          return `"${escaped}"`;
+        };
+
         const headers = ['ID', 'Message ID', 'Type', 'Handler', 'Error', 'Retry Count', 'Status', 'Created At'];
         const rows = this.entries.map(entry => [
           entry.id,
@@ -199,7 +211,9 @@ export class DeadLetterQueuePanel {
           entry.firstFailedAt.toISOString()
         ]);
         
-        content = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        const headerLine = headers.map(csvEscape).join(',');
+        const dataLines = rows.map(row => row.map(csvEscape).join(','));
+        content = [headerLine, ...dataLines].join('\n');
       }
 
       await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf-8'));
@@ -217,6 +231,16 @@ export class DeadLetterQueuePanel {
       acc[entry.status] = (acc[entry.status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+
+    // HTML escape function to prevent XSS
+    const escapeHtml = (unsafe: string): string => {
+      return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
 
     return `
       <!DOCTYPE html>
@@ -367,11 +391,11 @@ export class DeadLetterQueuePanel {
           </select>
           <select id="handlerFilter" onchange="applyFilters()">
             <option value="">All Handlers</option>
-            ${this.getUniqueHandlers().map(h => `<option value="${h}">${h}</option>`).join('')}
+            ${this.getUniqueHandlers().map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}
           </select>
           <select id="typeFilter" onchange="applyFilters()">
             <option value="">All Types</option>
-            ${this.getUniqueTypes().map(t => `<option value="${t}">${t}</option>`).join('')}
+            ${this.getUniqueTypes().map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}
           </select>
         </div>
 
@@ -399,15 +423,15 @@ export class DeadLetterQueuePanel {
             <tbody>
               ${this.entries.map(entry => `
                 <tr>
-                  <td><code>${entry.messageId}</code></td>
-                  <td>${entry.messageType}</td>
-                  <td>${entry.handlerName || '-'}</td>
-                  <td class="error-message" title="${entry.errorMessage}">${entry.errorMessage}</td>
+                  <td><code>${escapeHtml(entry.messageId)}</code></td>
+                  <td>${escapeHtml(entry.messageType)}</td>
+                  <td>${escapeHtml(entry.handlerName || '-')}</td>
+                  <td class="error-message" title="${escapeHtml(entry.errorMessage)}">${escapeHtml(entry.errorMessage)}</td>
                   <td>${entry.retryCount}</td>
-                  <td><span class="status-badge status-${entry.status}">${entry.status}</span></td>
-                  <td>${new Date(entry.firstFailedAt).toLocaleString()}</td>
+                  <td><span class="status-badge status-${escapeHtml(entry.status)}">${escapeHtml(entry.status)}</span></td>
+                  <td>${escapeHtml(new Date(entry.firstFailedAt).toLocaleString())}</td>
                   <td>
-                    ${entry.status === 'failed' ? `<button onclick="replay('${entry.id}')">▶️ Replay</button>` : '-'}
+                    ${entry.status === 'failed' ? `<button onclick="replay('${escapeHtml(entry.id)}')">▶️ Replay</button>` : '-'}
                   </td>
                 </tr>
               `).join('')}

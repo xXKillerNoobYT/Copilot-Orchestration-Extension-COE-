@@ -527,8 +527,8 @@ describe('DeadLetterQueueService', () => {
       const queryTime = Date.now() - queryStart;
 
       expect(entries.length).toBe(100); // Limited to 100
-      expect(insertTime).toBeLessThan(10000); // Should complete in under 10 seconds
-      expect(queryTime).toBeLessThan(1000); // Query should be fast due to indexes
+      expect(insertTime).toBeLessThan(3000); // Should complete in under 3 seconds
+      expect(queryTime).toBeLessThan(200); // Query should be fast due to indexes
     });
   });
 });

@@ -34,6 +34,7 @@ export interface DeadLetterFilters {
   handlerName?: string;
   messageType?: string;
   since?: Date;
+  limit?: number;  // Maximum number of entries to return (default: 100)
 }
 
 export class DeadLetterQueueService {
@@ -163,7 +164,9 @@ export class DeadLetterQueueService {
         params.push(filters.since.toISOString());
       }
 
-      query += ' ORDER BY created_at DESC LIMIT 100';
+      // Use configurable limit with a default of 100
+      const limit = filters?.limit ?? 100;
+      query += ` ORDER BY created_at DESC LIMIT ${limit}`;
 
       const rows = this.db.prepare(query).all(...params) as any[];
       return rows.map(row => this.mapRow(row));

@@ -95,7 +95,6 @@ describe('MCPErrorHandler', () => {
     });
 
     it('should use exponential backoff between retries', async () => {
-      const delays: number[] = [];
       const operation = jest.fn()
         .mockRejectedValueOnce(new Error('Fail 1'))
         .mockRejectedValueOnce(new Error('Fail 2'))

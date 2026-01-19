@@ -584,10 +584,12 @@ WHERE status = 'replayed';
 
 | Role | Contact | Responsibility |
 |------|---------|---------------|
-| Platform Lead | @platform-lead | Escalation, architecture decisions |
-| On-Call Engineer | @platform-oncall | Incident response 24/7 |
-| Backend Team | @backend-team | MCP server issues |
-| Database Admin | @dba | SQLite performance tuning |
+| Extension Owner | GitHub Issues | Escalation, architecture decisions |
+| Development Team | GitHub Discussions | Feature requests and general support |
+| Bug Reports | GitHub Issues | Bug tracking and fixes |
+| Documentation | README.md | Setup and usage documentation |
+
+**Note:** Update this table with your team's actual contact information (Slack channels, email lists, etc.) before using in production.
 
 ---
 

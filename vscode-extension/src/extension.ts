@@ -36,6 +36,9 @@ import { PlansViewProvider } from './views/plansViewProvider';
 import { initializeErrorLogging, disposeErrorLogging } from './utils/errorMessages';
 import { HealthCheckService } from './services/healthCheck';
 
+// Module-level variable to track database for cleanup
+let dlqDatabase: Database.Database | null = null;
+
 export function activate(context: vscode.ExtensionContext) {
   // Initialize Error Logging Output Channel
   const errorOutputChannel = initializeErrorLogging();
@@ -289,8 +292,8 @@ export function activate(context: vscode.ExtensionContext) {
           const dbPath = path.join(context.globalStorageUri.fsPath, 'copilot-orchestrator.db');
           // Ensure directory exists
           await fs.mkdir(context.globalStorageUri.fsPath, { recursive: true });
-          const db = new Database(dbPath);
-          dlqService = new DeadLetterQueueService(db);
+          dlqDatabase = new Database(dbPath);
+          dlqService = new DeadLetterQueueService(dlqDatabase);
         }
         
         DeadLetterQueuePanel.createOrShow(context.extensionUri, dlqService);
@@ -818,6 +821,16 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   // Cleanup WebSocket connection on extension deactivation
   disposeWebSocketClient();
+  
+  // Close Dead Letter Queue database connection
+  if (dlqDatabase) {
+    try {
+      dlqDatabase.close();
+      dlqDatabase = null;
+    } catch (error) {
+      console.error('Failed to close DLQ database:', error);
+    }
+  }
 }
 
 
