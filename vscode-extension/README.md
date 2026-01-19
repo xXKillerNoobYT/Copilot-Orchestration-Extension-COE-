@@ -52,6 +52,34 @@ git push
 - **Copilot Orchestrator: Refresh Tasks** - Reload tasks from disk
 - **Copilot Orchestrator: Show Task Graph** - Visualize task dependencies as Mermaid diagram
 - **Copilot Orchestrator: Show Task Dependencies** - Display execution order and validation
+- **Copilot Orchestrator: Run Health Check** - Check extension prerequisites and configuration
+- **Copilot Orchestrator: Show Health Details** - Display detailed health diagnostics
+
+### 🏥 Health Check System
+
+The extension includes a comprehensive health check system that validates:
+
+- ✓ **Backend URL configured** - Ensures Laravel backend URL is set
+- ✓ **Backend reachable** - Pings backend server with response time
+- ✓ **Plans directory exists** - Validates `Docs/Plans/` directory
+- ✓ **Plans found** - Counts available plan files
+- ✓ **MCP server** - Checks MCP server connectivity (optional)
+- ✓ **WebSocket config** - Validates WebSocket settings (optional)
+- ✓ **VS Code version** - Ensures minimum version requirements
+
+**Health Status Indicators:**
+- 🟢 **Healthy** - All critical services operational
+- 🟡 **Degraded** - Some non-critical issues detected
+- 🔴 **Unhealthy** - Critical issues preventing proper function
+
+**Automatic Checks:**
+- Health check runs automatically on extension activation
+- Results are cached for 1 minute to avoid excessive checks
+- Status bar shows current health status
+- Click status bar icon to view detailed diagnostics
+
+**Manual Checks:**
+Run via Command Palette → "Run Health Check" to force a fresh check and view detailed results in the Output channel.
 
 ## Installation
 
@@ -453,6 +481,36 @@ Check that your task files:
 - Minimal memory footprint
 - Fast validation and analysis
 
+## Development
+
+### Command Registration
+
+This extension uses automated validation to ensure all commands are properly registered. See [COMMAND_REGISTRATION_GUIDE.md](./COMMAND_REGISTRATION_GUIDE.md) for details.
+
+**Quick checklist when adding commands:**
+1. Add to `package.json` contributions.commands
+2. Register in `extension.ts` or command file
+3. Run `npm run test:jest -- src/__tests__/command-registration.test.ts`
+4. Verify in VS Code Command Palette
+
+**Pre-commit hook:** Automatically validates command registrations before each commit. Install with:
+```bash
+npm run install-hooks
+```
+
+### Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test suite
+npm run test:jest -- src/__tests__/command-registration.test.ts
+
+# Run with coverage
+npm run test:jest:coverage
+```
+
 ## Future Enhancements
 
 - [ ] Interactive graph visualization
@@ -465,12 +523,16 @@ Check that your task files:
 
 ## Contributing
 
-Contributions welcome! Please:
+Contributions welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+Quick start:
 1. Fork the repository
 2. Create a feature branch
 3. Add tests for new functionality
 4. Ensure all tests pass
 5. Submit a pull request
+
+**Important:** When adding new commands, follow the [Command Registration Guide](./COMMAND_REGISTRATION_GUIDE.md).
 
 ## License
 
@@ -482,9 +544,60 @@ For issues or questions:
 - Check the [documentation](TASK-GRAPH-GENERATOR.md)
 - Review the [examples](src/taskGraphDemo.ts)
 - Run the [tests](src/taskGraphTest.ts)
+- See [Contributing Guide](./CONTRIBUTING.md)
+
+## Troubleshooting
+
+### Plan Builder Issues
+
+If the Interactive Plan Builder shows a blank screen or doesn't load correctly:
+
+1. **Check build output exists:**
+   ```bash
+   cd vscode-extension
+   ls -la dist/planBuilder/assets/
+   ```
+   You should see `main-*.css` and `main-*.js` files.
+
+2. **Rebuild the Vue app:**
+   ```bash
+   npm install
+   npm run build:vue
+   ```
+
+3. **Reload VS Code:**
+   Press `Ctrl+R` (Windows/Linux) or `Cmd+R` (Mac)
+
+4. **Check browser console:**
+   - Open Plan Builder panel
+   - Press `F1` → "Developer: Toggle Developer Tools"
+   - Check Console tab for errors
+   - Look for `[Plan Builder]` log messages
+
+**For detailed troubleshooting steps, see:**
+- **[Plan Builder Troubleshooting Guide](docs/PLAN_BUILDER_TROUBLESHOOTING.md)** - Complete diagnostic guide
+
+### Common Issues
+
+**"Plan Builder Not Built" error:**
+```bash
+cd vscode-extension
+npm run build:vue
+# Reload VS Code with Ctrl+R
+```
+
+**Extension not activating:**
+- Ensure VS Code version is 1.90.0+
+- Check extension is installed: `Extensions` panel → Search "Copilot Orchestrator"
+- View logs: `F1` → "Developer: Show Running Extensions"
+
+**LLM connection issues:**
+- Verify LLM endpoint is running (e.g., LM Studio at http://localhost:1234)
+- Check API key is configured correctly
+- Review timeout settings in extension configuration
 
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: January 6, 2026  
+**Last Updated**: January 19, 2026  
 **Status**: ✅ Production Ready

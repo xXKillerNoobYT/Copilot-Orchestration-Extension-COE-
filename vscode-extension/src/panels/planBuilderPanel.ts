@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import {
   processPlanCompletion,
   displayCompletionResults,
@@ -119,6 +120,47 @@ export class PlanBuilderPanel {
       case 'log':
         console.log('[PlanBuilder]', message.data);
         break;
+
+      case 'reportError':
+        this._handleErrorReport(message.data);
+        break;
+    }
+  }
+
+  private async _handleErrorReport(errorInfo: any): Promise<void> {
+    try {
+      // Log the error details
+      console.error('[PlanBuilder] User reported error:', errorInfo);
+      
+      // Format error message for user display
+      const errorSummary = [
+        `Error reported at ${errorInfo.timestamp}`,
+        `Message: ${errorInfo.message}`,
+        errorInfo.stack ? `\nStack trace available in console` : ''
+      ].filter(Boolean).join('\n');
+      
+      // Show error message to user with option to copy details
+      const action = await vscode.window.showErrorMessage(
+        `[Plan Builder] ${errorSummary}`,
+        'Copy Error Details',
+        'Dismiss'
+      );
+      
+      if (action === 'Copy Error Details') {
+        // Format full error details for clipboard
+        const fullDetails = [
+          `Plan Builder Error Report`,
+          `Timestamp: ${errorInfo.timestamp}`,
+          `Message: ${errorInfo.message}`,
+          `User Agent: ${errorInfo.userAgent}`,
+          errorInfo.stack ? `\nStack Trace:\n${errorInfo.stack}` : ''
+        ].filter(Boolean).join('\n');
+        
+        await vscode.env.clipboard.writeText(fullDetails);
+        vscode.window.showInformationMessage('Error details copied to clipboard');
+      }
+    } catch (error) {
+      console.error('[PlanBuilder] Failed to handle error report:', error);
     }
   }
 
@@ -312,23 +354,61 @@ export class PlanBuilderPanel {
   }
 
   private _getHtmlForWebview(webview: vscode.Webview): string {
-    // Get paths to resources as URIs
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, 'dist', 'planBuilder', 'assets', 'main-BGWyiIlE.css')
-    );
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, 'dist', 'planBuilder', 'assets', 'main--qTpEcUA.js')
-    );
+    // Get paths to resources as URIs using dynamic asset discovery
+    const assetsPath = vscode.Uri.joinPath(this._extensionUri, 'dist', 'planBuilder', 'assets');
+    
+    let styleUri: vscode.Uri | undefined;
+    let scriptUri: vscode.Uri | undefined;
+    
+    try {
+      // Dynamically discover CSS and JS files (handles hash changes from Vite builds)
+      const assetsDir = assetsPath.fsPath;
+      
+      if (fs.existsSync(assetsDir)) {
+        const files = fs.readdirSync(assetsDir);
+        
+        // Find main CSS file matching Vite's hashed output (e.g., main-XXXXXXXX.css or index-XXXXXXXX.css)
+        const cssFile = files.find((f: string) =>
+          /^(main|index)-[a-zA-Z0-9]+\.css$/.test(f)
+        );
+        
+        // Find main JS file matching Vite's hashed output (e.g., main-XXXXXXXX.js or index-XXXXXXXX.js)
+        const jsFile = files.find((f: string) =>
+          /^(main|index)-[a-zA-Z0-9]+\.js$/.test(f)
+        );
+        
+        if (cssFile) {
+          styleUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsPath, cssFile));
+        }
+        
+        if (jsFile) {
+          scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsPath, jsFile));
+        }
+      }
+    } catch (error) {
+      console.error('[PlanBuilder] Error discovering assets:', error);
+    }
+    
+    // Fallback: If assets not found, show helpful error message
+    if (!styleUri || !scriptUri) {
+      console.warn('[PlanBuilder] Plan Builder assets not found. Run "npm run build:vue" to build the Vue app.');
+      return this._getErrorHtml('Plan Builder Not Built', 
+        'The Plan Builder Vue app has not been built yet. Please run <code>npm run build:vue</code> in the vscode-extension directory, then reload VS Code.');
+    }
 
     // Use a nonce to only allow specific scripts to be run
     const nonce = getNonce();
 
+    // Note: CSP includes 'unsafe-eval' for Vue 3 runtime compilation
+    // This is required for Vue's template compiler but does reduce security.
+    // CSP includes 'unsafe-inline' for style-src to support Vue's runtime styles.
+    // Consider pre-compiling all templates in production builds for better security.
     return `<!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-eval'; img-src ${webview.cspSource} data:; font-src ${webview.cspSource};">
         <link rel="stylesheet" type="text/css" href="${styleUri}">
         <title>Interactive Plan Builder</title>
       </head>
@@ -336,8 +416,99 @@ export class PlanBuilderPanel {
         <div id="app"></div>
         <script nonce="${nonce}">
           window.vscode = acquireVsCodeApi();
+          console.log('[PlanBuilder] Webview initialized');
         </script>
         <script nonce="${nonce}" src="${scriptUri}"></script>
+      </body>
+      </html>`;
+  }
+
+  private _getErrorHtml(title: string, message: string): string {
+    // Escape HTML to prevent XSS vulnerabilities
+    const escapeHtml = (unsafe: string): string => {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
+
+    const safeTitle = escapeHtml(title);
+    const safeMessage = escapeHtml(message);
+
+    return `<!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+        <title>${safeTitle}</title>
+        <style>
+          body {
+            font-family: var(--vscode-font-family);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-editor-background);
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+          }
+          .error-container {
+            max-width: 600px;
+            text-align: center;
+          }
+          .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+          }
+          h1 {
+            color: var(--vscode-errorForeground);
+            margin-bottom: 1rem;
+          }
+          p {
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+          }
+          code {
+            background: var(--vscode-textCodeBlock-background);
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-family: var(--vscode-editor-font-family);
+          }
+          .instructions {
+            background: var(--vscode-editor-inactiveSelectionBackground);
+            border: 1px solid var(--vscode-panel-border);
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: left;
+          }
+          .instructions ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+          }
+          .instructions li {
+            margin: 0.5rem 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="error-container">
+          <div class="error-icon">⚠️</div>
+          <h1>${safeTitle}</h1>
+          <p>${safeMessage}</p>
+          <div class="instructions">
+            <h3>Build Instructions:</h3>
+            <ol>
+              <li>Open a terminal in the <code>vscode-extension</code> directory</li>
+              <li>Run: <code>npm run build:vue</code></li>
+              <li>Reload VS Code window (Ctrl+R or Cmd+R)</li>
+              <li>Open Plan Builder again</li>
+            </ol>
+          </div>
+        </div>
       </body>
       </html>`;
   }

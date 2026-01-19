@@ -202,7 +202,7 @@ export class TemplateService {
     }
 
     // Validate category
-    const validCategories = ['web-app', 'api-service', 'cli-tool', 'library', 'custom'];
+    const validCategories = ['blank', 'web-app', 'api-service', 'cli-tool', 'library', 'custom'];
     if (!validCategories.includes(template.metadata.category)) {
       errors.push({
         field: 'metadata.category',
