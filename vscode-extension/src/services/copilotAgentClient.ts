@@ -18,6 +18,41 @@ import { parse as parseYAML } from 'yaml';
 import * as fs from 'fs';
 import * as path from 'path';
 
+/**
+ * Retry utility function with exponential backoff
+ * 
+ * @param fn - Function to retry
+ * @param maxAttempts - Maximum number of attempts (default: 3)
+ * @param operation - Name of operation for logging
+ * @returns Result of the function or throws error after max attempts
+ */
+async function retryWithExponentialBackoff<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number = 3,
+  operation: string = 'operation'
+): Promise<T> {
+  let attempts = 0;
+  let lastError: Error | null = null;
+  
+  while (attempts < maxAttempts) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      attempts++;
+      
+      if (attempts < maxAttempts) {
+        // Exponential backoff: wait 2^attempts seconds
+        const backoffMs = Math.pow(2, attempts) * 1000;
+        console.log(`[CopilotAgentClient] ${operation} attempt ${attempts} failed, retrying in ${backoffMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
+  }
+  
+  throw lastError || new Error(`${operation} failed after ${maxAttempts} attempts`);
+}
+
 export interface CopilotAgentConfig {
   /** Base URL for GitHub Copilot Agent Mode API */
   baseUrl?: string;
@@ -149,6 +184,9 @@ export class CopilotAgentClient {
   // Cache for agent discovery results
   private agentDiscoveryCache: { agents: AgentRegistration[]; timestamp: number } | null = null;
   private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  
+  // Maximum analytics queue size to prevent memory leaks
+  private readonly MAX_ANALYTICS_QUEUE_SIZE = 1000;
 
   constructor(
     config?: CopilotAgentConfig,
@@ -167,18 +205,45 @@ export class CopilotAgentClient {
     // Initialize auth provider if context is available
     if (this.context) {
       this.authProvider = new GitHubAuthProvider(this.context.secrets);
+      // Load stored token if available
+      this.loadStoredToken();
     }
     
-    // Load agent profiles from YAML files
-    this.loadAgentProfiles();
+    // Load agent profiles from YAML files (async, non-blocking)
+    this.loadAgentProfiles().catch(err => {
+      console.error('[CopilotAgentClient] Failed to load agent profiles:', err);
+    });
+  }
+  
+  /**
+   * Load stored authentication token from secret storage
+   */
+  private async loadStoredToken(): Promise<void> {
+    if (!this.authProvider) {
+      return;
+    }
+    
+    try {
+      const token = await this.authProvider.getStoredToken();
+      if (token) {
+        this.config.authToken = token;
+      }
+    } catch (error) {
+      console.error('[CopilotAgentClient] Failed to load stored token:', error);
+    }
   }
 
   /**
    * Load agent profiles from YAML configuration files
+   * 
+   * Uses asynchronous file operations to avoid blocking the extension host
    */
-  private loadAgentProfiles(): void {
+  private async loadAgentProfiles(): Promise<void> {
     try {
-      const profilesDir = path.join(__dirname, '../config/agent-profiles');
+      // Use extension context for reliable path resolution if available
+      const baseDir = this.context?.extensionPath ?? __dirname;
+      const profilesDir = path.join(baseDir, 'src/config/agent-profiles');
+      
       const profileFiles = [
         'planning-team.yaml',
         'answer-team.yaml',
@@ -186,13 +251,18 @@ export class CopilotAgentClient {
         'verification-team.yaml',
       ];
       
+      const fsPromises = fs.promises;
+      
       for (const filename of profileFiles) {
         const filepath = path.join(profilesDir, filename);
-        if (fs.existsSync(filepath)) {
-          const content = fs.readFileSync(filepath, 'utf-8');
+        try {
+          await fsPromises.access(filepath);
+          const content = await fsPromises.readFile(filepath, 'utf-8');
           const profile = parseYAML(content) as AgentProfile;
           this.agentProfiles.set(profile.agentId, profile);
           console.log(`[CopilotAgentClient] Loaded agent profile: ${profile.name}`);
+        } catch {
+          // File doesn't exist or can't be read, skip silently
         }
       }
     } catch (error) {
@@ -222,8 +292,9 @@ export class CopilotAgentClient {
     try {
       // Real authentication flow
       if (!this.authProvider) {
-        console.error('[CopilotAgentClient] Auth provider not initialized');
-        return false;
+        const errorMsg = 'Auth provider not initialized. CopilotAgentClient requires ExtensionContext for authentication.';
+        console.error(`[CopilotAgentClient] ${errorMsg}`);
+        throw new Error(errorMsg);
       }
       
       // Step 1: Authenticate with GitHub and get token
@@ -288,66 +359,50 @@ export class CopilotAgentClient {
     }
 
     try {
-      // Real agent registration with backend API
-      // Retry logic: 3 attempts with exponential backoff
-      let attempts = 0;
-      const maxAttempts = 3;
-      let lastError: Error | null = null;
-      
-      while (attempts < maxAttempts) {
-        try {
-          // Load agent profile from YAML if available
-          const profile = this.agentProfiles.get(registration.agentId);
-          
-          // Prepare registration payload
-          const payload = {
-            name: registration.name,
-            type: profile?.type ?? this.mapRoleToType(registration.role),
-            description: profile?.description ?? `Agent for ${registration.role}`,
-            capabilities: registration.capabilities,
-            configuration: profile?.configuration ?? {},
-            llm_provider: profile?.configuration?.llm_provider ?? 'copilot',
-            is_active: true,
-          };
-          
-          const response = await this.fetch('/api/v1/agents', 'POST', payload);
-          
-          if (response.success) {
-            this.registered = true;
-            this.currentAgentId = registration.agentId;
-            this.registeredAgents.add(registration.agentId);
-            
-            // Track analytics
-            this.trackAnalytics({
-              agentId: registration.agentId,
-              eventType: 'agent_registration',
-              timestamp: new Date(),
-              success: true,
-              metadata: { name: registration.name, role: registration.role },
-            });
-            
-            console.log(`[CopilotAgentClient] Successfully registered agent: ${registration.name}`);
-            return true;
-          }
-          
-          lastError = new Error(response.error || 'Registration failed');
-          
-        } catch (error) {
-          lastError = error as Error;
+      // Real agent registration with backend API using retry utility
+      await retryWithExponentialBackoff(async () => {
+        // Load agent profile from YAML if available
+        const profile = this.agentProfiles.get(registration.agentId);
+        
+        // Prepare registration payload
+        const payload = {
+          name: registration.name,
+          type: profile?.type ?? this.mapRoleToType(registration.role),
+          description: profile?.description ?? `Agent for ${registration.role}`,
+          capabilities: registration.capabilities,
+          configuration: profile?.configuration ?? {},
+          llm_provider: profile?.configuration?.llm_provider ?? 'copilot',
+          is_active: true,
+        };
+        
+        const response = await this.fetch('/api/v1/agents', 'POST', payload);
+        
+        if (!response.success) {
+          throw new Error(response.error || 'Registration failed');
         }
         
-        attempts++;
-        
-        if (attempts < maxAttempts) {
-          // Exponential backoff: wait 2^attempts seconds
-          const backoffMs = Math.pow(2, attempts) * 1000;
-          console.log(`[CopilotAgentClient] Registration attempt ${attempts} failed, retrying in ${backoffMs}ms...`);
-          await new Promise(resolve => setTimeout(resolve, backoffMs));
-        }
-      }
+        return response;
+      }, 3, 'Agent registration');
       
-      // All attempts failed
-      console.error('[CopilotAgentClient] Agent registration failed after', maxAttempts, 'attempts:', lastError);
+      // Registration successful
+      this.registered = true;
+      this.currentAgentId = registration.agentId;
+      this.registeredAgents.add(registration.agentId);
+      
+      // Track analytics
+      this.trackAnalytics({
+        agentId: registration.agentId,
+        eventType: 'agent_registration',
+        timestamp: new Date(),
+        success: true,
+        metadata: { name: registration.name, role: registration.role },
+      });
+      
+      console.log(`[CopilotAgentClient] Successfully registered agent: ${registration.name}`);
+      return true;
+      
+    } catch (error) {
+      console.error('[CopilotAgentClient] Agent registration failed after retries:', error);
       
       // Track failed registration
       this.trackAnalytics({
@@ -355,13 +410,9 @@ export class CopilotAgentClient {
         eventType: 'agent_registration',
         timestamp: new Date(),
         success: false,
-        metadata: { error: lastError?.message },
+        metadata: { error: (error as Error).message },
       });
       
-      return false;
-      
-    } catch (error) {
-      console.error('[CopilotAgentClient] Agent registration failed:', error);
       return false;
     }
   }
@@ -499,91 +550,57 @@ export class CopilotAgentClient {
     }
 
     try {
-      // Real task execution via backend API with retry logic
-      let attempts = 0;
-      const maxAttempts = 3;
-      let lastError: Error | null = null;
-      
-      while (attempts < maxAttempts) {
-        try {
-          const response = await this.fetch('/api/v1/tasks/execute', 'POST', {
-            request_id: request.requestId,
-            agent_id: request.agentId,
-            task_id: request.payload.taskId,
-            payload: request.payload,
-          });
-          
-          const duration = Date.now() - startTime;
-          
-          if (response.success) {
-            // Track successful execution
-            this.trackAnalytics({
-              agentId: request.agentId,
-              eventType: 'task_execution',
-              timestamp: new Date(),
-              duration,
-              success: true,
-              metadata: {
-                taskId: request.payload.taskId,
-                requestId: request.requestId,
-              },
-            });
-            
-            return {
-              success: true,
-              output: response.data?.output || response.data?.result || '',
-              agentId: request.agentId,
-              metadata: {
-                executionTime: duration,
-                ...(response.data?.metadata || {}),
-              },
-            };
-          }
-          
-          lastError = new Error(response.error || 'Execution failed');
-          
-        } catch (error) {
-          lastError = error as Error;
+      // Real task execution via backend API with retry utility
+      const response = await retryWithExponentialBackoff(async () => {
+        const res = await this.fetch('/api/v1/tasks/execute', 'POST', {
+          request_id: request.requestId,
+          agent_id: request.agentId,
+          task_id: request.payload.taskId,
+          payload: request.payload,
+        });
+        
+        if (!res.success) {
+          throw new Error(res.error || 'Execution failed');
         }
         
-        attempts++;
-        
-        if (attempts < maxAttempts) {
-          // Exponential backoff
-          const backoffMs = Math.pow(2, attempts) * 1000;
-          console.log(`[CopilotAgentClient] Execution attempt ${attempts} failed, retrying in ${backoffMs}ms...`);
-          await new Promise(resolve => setTimeout(resolve, backoffMs));
-        }
-      }
+        return res;
+      }, 3, 'Task execution');
       
-      // All attempts failed
       const duration = Date.now() - startTime;
+      
+      // Track successful execution
+      this.trackAnalytics({
+        agentId: request.agentId,
+        eventType: 'task_execution',
+        timestamp: new Date(),
+        duration,
+        success: true,
+        metadata: {
+          taskId: request.payload.taskId,
+          requestId: request.requestId,
+        },
+      });
+      
+      return {
+        success: true,
+        output: response.data?.output || response.data?.result || '',
+        agentId: request.agentId,
+        metadata: {
+          executionTime: duration,
+          ...(response.data?.metadata || {}),
+        },
+      };
+      
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      console.error('[CopilotAgentClient] Task execution failed after retries:', error);
       
       this.trackAnalytics({
         agentId: request.agentId,
         eventType: 'task_execution',
         timestamp: new Date(),
         duration,
-        success: false,
-        metadata: { error: lastError?.message },
-      });
-      
-      console.error('[CopilotAgentClient] Task execution failed after', maxAttempts, 'attempts:', lastError);
-      return {
-        success: false,
-        output: '',
-        agentId: request.agentId,
-        error: lastError?.message || 'Execution failed after multiple attempts',
-      };
-      
-    } catch (error) {
-      console.error('[CopilotAgentClient] Task execution failed:', error);
-      
-      this.trackAnalytics({
-        agentId: request.agentId,
-        eventType: 'task_execution',
-        timestamp: new Date(),
-        duration: Date.now() - startTime,
         success: false,
         metadata: { error: (error as Error).message },
       });
@@ -862,8 +879,16 @@ ${this.formatContextFiles(payload.context.files)}
    * 
    * Queues analytics events for batch submission to backend
    * Events are flushed automatically every 30 seconds or when queue reaches 50 events
+   * Implements maximum queue size to prevent memory leaks
    */
   private trackAnalytics(event: AnalyticsEvent): void {
+    // Check if queue has reached maximum size
+    if (this.analyticsQueue.length >= this.MAX_ANALYTICS_QUEUE_SIZE) {
+      // Drop oldest events to prevent memory exhaustion
+      console.warn(`[CopilotAgentClient] Analytics queue full (${this.MAX_ANALYTICS_QUEUE_SIZE} events), dropping oldest events`);
+      this.analyticsQueue = this.analyticsQueue.slice(-this.MAX_ANALYTICS_QUEUE_SIZE / 2);
+    }
+    
     this.analyticsQueue.push(event);
     
     // Auto-flush if queue is getting large
@@ -878,7 +903,7 @@ ${this.formatContextFiles(payload.context.files)}
    * Flush analytics events to backend
    * 
    * Sends queued analytics events to backend analytics endpoint
-   * Implements batch submission for efficiency
+   * Implements batch submission for efficiency with retry limit
    * 
    * @returns Promise<boolean> - true if flush successful
    */
@@ -913,14 +938,22 @@ ${this.formatContextFiles(payload.context.files)}
         return true;
       }
       
-      // Re-queue events if submission failed
-      this.analyticsQueue.push(...events);
+      // Re-queue events if submission failed, but limit to prevent unbounded growth
+      if (this.analyticsQueue.length + events.length <= this.MAX_ANALYTICS_QUEUE_SIZE) {
+        this.analyticsQueue.push(...events);
+      } else {
+        console.warn('[CopilotAgentClient] Dropping analytics events due to queue size limit');
+      }
       return false;
       
     } catch (error) {
       console.error('[CopilotAgentClient] Failed to flush analytics:', error);
-      // Re-queue events
-      this.analyticsQueue.push(...events);
+      // Re-queue events with size limit
+      if (this.analyticsQueue.length + events.length <= this.MAX_ANALYTICS_QUEUE_SIZE) {
+        this.analyticsQueue.push(...events);
+      } else {
+        console.warn('[CopilotAgentClient] Dropping analytics events due to queue size limit');
+      }
       return false;
     }
   }

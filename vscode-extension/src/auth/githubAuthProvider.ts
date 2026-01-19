@@ -102,32 +102,53 @@ export class GitHubAuthProvider {
    */
   async validateToken(token: string): Promise<TokenValidationResult> {
     try {
-      const response = await fetch(`${GitHubAuthProvider.GITHUB_API_BASE}/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      });
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      if (!response.ok) {
+      try {
+        const response = await fetch(`${GitHubAuthProvider.GITHUB_API_BASE}/user`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          return {
+            valid: false,
+            error: `GitHub API returned ${response.status}: ${response.statusText}`,
+          };
+        }
+        
+        const user = await response.json();
+        
+        // Extract scopes from response headers
+        const scopesHeader = response.headers.get('x-oauth-scopes');
+        const scopes = scopesHeader ? scopesHeader.split(',').map(s => s.trim()) : [];
+        
         return {
-          valid: false,
-          error: `GitHub API returned ${response.status}: ${response.statusText}`,
+          valid: true,
+          login: user.login,
+          scopes,
         };
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        
+        // Check if error is timeout
+        if (error.name === 'AbortError') {
+          return {
+            valid: false,
+            error: 'GitHub API request timed out after 30 seconds',
+          };
+        }
+        
+        throw error;
       }
-      
-      const user = await response.json();
-      
-      // Extract scopes from response headers
-      const scopesHeader = response.headers.get('x-oauth-scopes');
-      const scopes = scopesHeader ? scopesHeader.split(',').map(s => s.trim()) : [];
-      
-      return {
-        valid: true,
-        login: user.login,
-        scopes,
-      };
       
     } catch (error) {
       return {
@@ -186,15 +207,14 @@ export class GitHubAuthProvider {
     const token = await vscode.window.showInputBox({
       prompt: 'Enter your GitHub Personal Access Token',
       password: true,
-      placeHolder: 'ghp_...',
+      placeHolder: 'ghp_... or github_pat_...',
       ignoreFocusOut: true,
       validateInput: (value) => {
-        if (!value) {
+        if (!value || !value.trim()) {
           return 'Token is required';
         }
-        if (!value.startsWith('ghp_') && !value.startsWith('github_pat_')) {
-          return 'Invalid token format. Expected format: ghp_... or github_pat_...';
-        }
+        // Removed strict prefix validation - rely on GitHub API validation instead
+        // This allows for newer token formats that GitHub may introduce
         return undefined;
       },
     });

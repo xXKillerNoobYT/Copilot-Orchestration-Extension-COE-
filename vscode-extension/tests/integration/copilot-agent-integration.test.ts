@@ -10,17 +10,52 @@ import { CopilotAgentClient, AgentRegistration } from '../../src/services/copilo
 // Mock global fetch for integration tests
 const originalFetch = global.fetch;
 
+// Mock VS Code extension context for tests
+const mockSecretStorage = {
+  get: jest.fn().mockResolvedValue(undefined),
+  store: jest.fn().mockResolvedValue(undefined),
+  delete: jest.fn().mockResolvedValue(undefined),
+  onDidChange: jest.fn(),
+};
+
+const mockExtensionContext = {
+  secrets: mockSecretStorage,
+  extensionPath: '/mock/extension/path',
+  subscriptions: [],
+  workspaceState: {} as any,
+  globalState: {} as any,
+  extensionUri: {} as any,
+  environmentVariableCollection: {} as any,
+  extensionMode: 3,
+  storageUri: undefined,
+  storagePath: undefined,
+  globalStorageUri: {} as any,
+  globalStoragePath: '/mock/global/storage',
+  logUri: {} as any,
+  logPath: '/mock/log',
+  asAbsolutePath: (relativePath: string) => `/mock/extension/${relativePath}`,
+  extension: {} as any,
+};
+
 describe('CopilotAgentClient Integration Tests', () => {
   let client: CopilotAgentClient;
   let mockFetch: jest.Mock;
 
   beforeEach(() => {
-    // Create client in real API mode (not mock)
-    client = new CopilotAgentClient({ mockMode: false, baseUrl: 'http://localhost:8000' });
+    // Create client in real API mode (not mock) with proper context
+    client = new CopilotAgentClient(
+      { mockMode: false, baseUrl: 'http://localhost:8000' },
+      mockExtensionContext as any
+    );
     
     // Mock fetch for controlled testing
     mockFetch = jest.fn();
     global.fetch = mockFetch as any;
+    
+    // Reset mock storage
+    mockSecretStorage.get.mockClear();
+    mockSecretStorage.store.mockClear();
+    mockSecretStorage.delete.mockClear();
   });
 
   afterEach(() => {
