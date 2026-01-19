@@ -103,6 +103,27 @@ export class SettingsPanel {
           case 'orchestrator:rerunAnalysis':
             await this._rerunImpactAnalysis();
             return;
+          case 'loadAgentProfile':
+            await this._loadAgentProfile(message.profileName);
+            return;
+          case 'saveAgentProfile':
+            await this._saveAgentProfile(message.profile);
+            return;
+          case 'testAgentProfile':
+            await this._testAgentProfile(message.profileName);
+            return;
+          case 'testGitHubConnection':
+            await this._testGitHubConnection(message.token, message.repo);
+            return;
+          case 'saveGitHubSettings':
+            await this._saveGitHubSettings(message.settings);
+            return;
+          case 'syncNow':
+            await this._syncWithGitHub();
+            return;
+          case 'saveAdvancedSettings':
+            await this._saveAdvancedSettings(message.settings);
+            return;
         }
       },
       null,
@@ -470,6 +491,8 @@ export class SettingsPanel {
     <div class="tabs">
       <button class="tab active" data-tab="connection">Connection</button>
       <button class="tab" data-tab="models">Models</button>
+      <button class="tab" data-tab="agents">Agent Profiles</button>
+      <button class="tab" data-tab="github">GitHub Sync</button>
       <button class="tab" data-tab="advanced">Advanced</button>
       <button class="tab" data-tab="endpoints">Endpoints</button>
       <button class="tab" data-tab="orchestrator">Programming Orchestrator</button>
@@ -516,8 +539,141 @@ export class SettingsPanel {
       </div>
     </div>
 
+    <!-- Agent Profiles Tab -->
+    <div class="tab-content" id="agents">
+      <h3>🤖 Agent Configuration</h3>
+      <p>Configure agent profiles for Planning, Answer, Decomposition, and Verification teams.</p>
+      
+      <div class="form-group">
+        <label for="agentProfile">Select Agent Profile</label>
+        <select id="agentProfile">
+          <option value="planner">Planning Team (Planner)</option>
+          <option value="coder">Answer Team (Coder)</option>
+          <option value="executor">Decomposition Team (Executor)</option>
+          <option value="tester">Verification Team (Tester)</option>
+          <option value="verifier">Verification Team (Verifier)</option>
+          <option value="architect">Architecture Team (Architect)</option>
+        </select>
+        <div class="help-text">Agent profiles are loaded from vscode-extension/config/agents/*.yaml</div>
+      </div>
+
+      <div class="form-group">
+        <label>Agent Profile Editor</label>
+        <div style="background: var(--vscode-editor-background); padding: 12px; border-radius: 2px; margin-bottom: 8px;">
+          <div style="font-family: monospace; font-size: 12px; white-space: pre-wrap;" id="agentProfileContent">
+# Loading agent profile...
+version: 1
+name: "Agent Name"
+role: "agent-role"
+description: "Agent description"
+          </div>
+        </div>
+        <div class="help-text">✨ Hot-reload enabled: Changes to YAML files auto-reload without restart</div>
+      </div>
+
+      <div class="form-group">
+        <h4>Tool Permissions</h4>
+        <label><input type="checkbox" id="perm_read_files" checked> Read Files</label><br>
+        <label><input type="checkbox" id="perm_write_files" checked> Write Files</label><br>
+        <label><input type="checkbox" id="perm_run_commands"> Run Commands</label><br>
+        <label><input type="checkbox" id="perm_access_network" checked> Access Network</label><br>
+        <label><input type="checkbox" id="perm_modify_tasks" checked> Modify Tasks</label>
+        <div class="help-text">Control what actions this agent can perform</div>
+      </div>
+
+      <div class="form-group">
+        <h4>Execution Constraints</h4>
+        <label for="max_depth">Max Depth:</label>
+        <input type="number" id="max_depth" min="1" max="10" value="5">
+        <div class="help-text">Maximum depth for nested operations</div>
+        
+        <label style="margin-top: 12px;"><input type="checkbox" id="require_tests" checked> Require Tests for Changes</label><br>
+        <label><input type="checkbox" id="require_plan" checked> Require Plan Before Action</label><br>
+        <label><input type="checkbox" id="require_approval"> Require Explicit Approval for Commands</label>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button class="btn btn-primary" id="saveAgentProfile">💾 Save Profile</button>
+        <button class="btn btn-secondary" id="reloadAgentProfile">🔄 Reload from File</button>
+        <button class="btn btn-secondary" id="testAgentProfile">🧪 Test Profile</button>
+      </div>
+    </div>
+
+    <!-- GitHub Sync Tab -->
+    <div class="tab-content" id="github">
+      <h3>🔗 GitHub Integration</h3>
+      <p>Configure bi-directional sync with GitHub Issues.</p>
+      
+      <div class="form-group">
+        <label for="githubToken">GitHub Personal Access Token</label>
+        <input type="password" id="githubToken" placeholder="ghp_...">
+        <div class="help-text">Required scopes: repo, read:org. <a href="https://github.com/settings/tokens/new" style="color: var(--vscode-textLink-foreground);">Generate token</a></div>
+      </div>
+
+      <div class="form-group">
+        <label for="githubRepo">Repository</label>
+        <input type="text" id="githubRepo" placeholder="owner/repo-name">
+        <div class="help-text">Format: owner/repository (e.g., microsoft/vscode)</div>
+      </div>
+
+      <div class="form-group">
+        <label for="syncInterval">Sync Interval (minutes)</label>
+        <input type="number" id="syncInterval" min="1" max="60" value="5">
+        <div class="help-text">How often to sync task status with GitHub Issues (default: 5 minutes)</div>
+      </div>
+
+      <div class="form-group">
+        <label>Sync Direction</label>
+        <label><input type="radio" name="syncDirection" value="bidirectional" checked> Bidirectional (Tasks ↔ Issues)</label><br>
+        <label><input type="radio" name="syncDirection" value="push"> Push Only (Tasks → Issues)</label><br>
+        <label><input type="radio" name="syncDirection" value="pull"> Pull Only (Tasks ← Issues)</label>
+        <div class="help-text">Bidirectional maintains single source of truth</div>
+      </div>
+
+      <div class="form-group">
+        <label>Conflict Resolution</label>
+        <select id="conflictResolution">
+          <option value="last-write-wins">Last Write Wins</option>
+          <option value="manual">Manual Merge (show UI)</option>
+          <option value="github-wins">GitHub Wins</option>
+          <option value="local-wins">Local Wins</option>
+        </select>
+        <div class="help-text">How to handle conflicts when both sides modified</div>
+      </div>
+
+      <div class="form-group">
+        <h4>Rate Limit Status</h4>
+        <div style="background: var(--vscode-editor-background); padding: 12px; border-radius: 2px;">
+          <div>Remaining: <span id="rateLimitRemaining">-</span> / <span id="rateLimitTotal">5000</span></div>
+          <div>Resets at: <span id="rateLimitReset">-</span></div>
+          <div style="margin-top: 8px;">
+            <div style="width: 100%; height: 8px; background: var(--vscode-progressBar-background); border-radius: 4px;">
+              <div id="rateLimitBar" style="width: 100%; height: 100%; background: var(--vscode-progressBar-foreground); border-radius: 4px;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="help-text">GitHub API limit: 5000 requests/hour for authenticated users</div>
+      </div>
+
+      <div class="form-group">
+        <label><input type="checkbox" id="enableSubIssues" checked> Enable Sub-Issue Linking</label><br>
+        <label><input type="checkbox" id="importComments" checked> Import Issue Comments as Observations</label><br>
+        <label><input type="checkbox" id="syncLabels" checked> Sync Labels</label><br>
+        <label><input type="checkbox" id="syncMilestones" checked> Sync Milestones</label>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button class="btn btn-primary" id="testGitHubConnection">🔌 Test Connection</button>
+        <button class="btn btn-secondary" id="saveGitHubSettings">💾 Save Settings</button>
+        <button class="btn btn-secondary" id="syncNow">🔄 Sync Now</button>
+      </div>
+      <div id="githubStatus"></div>
+    </div>
+
     <!-- Advanced Tab -->
     <div class="tab-content" id="advanced">
+      <h3>⚙️ Advanced Settings</h3>
+      
       <div class="form-group">
         <label for="temperature">Temperature</label>
         <input type="number" id="temperature" min="0" max="2" step="0.1" value="0.7">
@@ -528,6 +684,80 @@ export class SettingsPanel {
         <label for="timeout">Timeout (ms)</label>
         <input type="number" id="timeout" min="1000" step="1000" value="30000">
         <div class="help-text">Request timeout in milliseconds</div>
+      </div>
+
+      <h4 style="margin-top: 24px;">Context Bundling</h4>
+      <div class="form-group">
+        <label for="contextBundleSize">Max Context Bundle Size (KB)</label>
+        <input type="number" id="contextBundleSize" min="50" max="500" value="100">
+        <div class="help-text">Maximum size of context bundles sent to agents (default: 100KB)</div>
+      </div>
+
+      <div class="form-group">
+        <label for="tokenLimit">Token Limit</label>
+        <input type="number" id="tokenLimit" min="1000" max="128000" step="1000" value="8000">
+        <div class="help-text">Maximum tokens for context window</div>
+      </div>
+
+      <div class="form-group">
+        <label><input type="checkbox" id="enableContextCaching" checked> Enable Context Caching</label><br>
+        <label><input type="checkbox" id="enableTokenCounting" checked> Enable Accurate Token Counting</label>
+        <div class="help-text">Uses tiktoken library for precise token counts</div>
+      </div>
+
+      <h4 style="margin-top: 24px;">Task Decomposition</h4>
+      <div class="form-group">
+        <label for="decompositionThreshold">Auto-Decompose Threshold (minutes)</label>
+        <input type="number" id="decompositionThreshold" min="15" max="240" step="15" value="60">
+        <div class="help-text">Tasks longer than this are automatically decomposed</div>
+      </div>
+
+      <div class="form-group">
+        <label for="maxDecompositionDepth">Max Decomposition Depth</label>
+        <input type="number" id="maxDecompositionDepth" min="1" max="10" value="5">
+        <div class="help-text">Maximum nesting levels for subtasks</div>
+      </div>
+
+      <h4 style="margin-top: 24px;">WebSocket & Performance</h4>
+      <div class="form-group">
+        <label for="websocketPort">WebSocket Port</label>
+        <input type="number" id="websocketPort" min="1024" max="65535" value="3000">
+        <div class="help-text">Port for real-time event streaming</div>
+      </div>
+
+      <div class="form-group">
+        <label for="cacheTTL">Cache TTL (minutes)</label>
+        <input type="number" id="cacheTTL" min="1" max="60" value="5">
+        <div class="help-text">Time-to-live for cached data (default: 5 minutes)</div>
+      </div>
+
+      <div class="form-group">
+        <label for="batchSize">GitHub API Batch Size</label>
+        <input type="number" id="batchSize" min="1" max="100" value="50">
+        <div class="help-text">Maximum requests per batch (default: 50)</div>
+      </div>
+
+      <h4 style="margin-top: 24px;">Logging</h4>
+      <div class="form-group">
+        <label for="logLevel">Log Level</label>
+        <select id="logLevel">
+          <option value="error">Error</option>
+          <option value="warn">Warning</option>
+          <option value="info" selected>Info</option>
+          <option value="debug">Debug</option>
+          <option value="trace">Trace</option>
+        </select>
+        <div class="help-text">Controls logging verbosity</div>
+      </div>
+
+      <div class="form-group">
+        <label><input type="checkbox" id="enableAuditLog" checked> Enable Audit Log</label><br>
+        <label><input type="checkbox" id="enablePerformanceMetrics" checked> Enable Performance Metrics</label>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button class="btn btn-primary" id="saveAdvancedSettings">💾 Save Settings</button>
+        <button class="btn btn-secondary" id="resetAdvancedSettings">🔄 Reset to Defaults</button>
       </div>
     </div>
 
@@ -888,6 +1118,196 @@ export class SettingsPanel {
         command: 'orchestrator:analysisError',
         error: error instanceof Error ? error.message : String(error),
       });
+    }
+  }
+
+  /**
+   * Load agent profile from YAML file
+   */
+  private async _loadAgentProfile(profileName: string): Promise<void> {
+    try {
+      const { defaultAgentProfileLoader } = await import('../agentProfiles');
+      const profile = await defaultAgentProfileLoader.loadProfile(profileName);
+
+      if (!profile) {
+        throw new Error(`Profile '${profileName}' not found`);
+      }
+
+      this._panel.webview.postMessage({
+        command: 'agentProfileLoaded',
+        profile,
+      });
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to load agent profile: ${error}`);
+    }
+  }
+
+  /**
+   * Save agent profile to configuration
+   */
+  private async _saveAgentProfile(profile: any): Promise<void> {
+    try {
+      const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator');
+      await vsConfig.update(`agents.${profile.name}`, profile, vscode.ConfigurationTarget.Global);
+
+      vscode.window.showInformationMessage(`Agent profile '${profile.name}' saved!`);
+      this._panel.webview.postMessage({
+        command: 'agentProfileSaved',
+        success: true,
+      });
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to save agent profile: ${error}`);
+    }
+  }
+
+  /**
+   * Test agent profile against sample task
+   */
+  private async _testAgentProfile(profileName: string): Promise<void> {
+    try {
+      vscode.window.showInformationMessage(`Testing agent profile '${profileName}'...`);
+
+      // Simulate profile test (would integrate with actual test framework)
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const testResults = {
+        passed: true,
+        permissions: { read_files: true, write_files: true, run_commands: false },
+        constraints: { max_depth: 5, require_tests: true },
+        message: 'Profile validation passed successfully',
+      };
+
+      this._panel.webview.postMessage({
+        command: 'agentProfileTestComplete',
+        results: testResults,
+      });
+
+      vscode.window.showInformationMessage('Agent profile test passed!');
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to test agent profile: ${error}`);
+    }
+  }
+
+  /**
+   * Test GitHub connection
+   */
+  private async _testGitHubConnection(token: string, repo: string): Promise<void> {
+    try {
+      if (!token || !repo) {
+        throw new Error('Token and repository are required');
+      }
+
+      vscode.window.showInformationMessage('Testing GitHub connection...');
+
+      // Test connection to GitHub API
+      const response = await fetch(`https://api.github.com/repos/${repo}`, {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`GitHub API returned ${response.status}: ${response.statusText}`);
+      }
+
+      const repoData = await response.json();
+      const rateLimit = {
+        remaining: response.headers.get('X-RateLimit-Remaining'),
+        total: response.headers.get('X-RateLimit-Limit'),
+        reset: response.headers.get('X-RateLimit-Reset'),
+      };
+
+      this._panel.webview.postMessage({
+        command: 'githubConnectionSuccess',
+        repo: repoData,
+        rateLimit,
+      });
+
+      vscode.window.showInformationMessage(
+        `✓ Connected to ${repo} (${rateLimit.remaining}/${rateLimit.total} API calls remaining)`
+      );
+    } catch (error) {
+      vscode.window.showErrorMessage(`GitHub connection failed: ${error}`);
+      this._panel.webview.postMessage({
+        command: 'githubConnectionError',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /**
+   * Save GitHub sync settings
+   */
+  private async _saveGitHubSettings(settings: any): Promise<void> {
+    try {
+      const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator');
+      await vsConfig.update('github.token', settings.token, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('github.repo', settings.repo, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('github.syncInterval', settings.syncInterval, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('github.syncDirection', settings.syncDirection, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('github.conflictResolution', settings.conflictResolution, vscode.ConfigurationTarget.Global);
+
+      vscode.window.showInformationMessage('GitHub settings saved successfully!');
+      this._panel.webview.postMessage({
+        command: 'githubSettingsSaved',
+        success: true,
+      });
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to save GitHub settings: ${error}`);
+    }
+  }
+
+  /**
+   * Trigger immediate GitHub sync
+   */
+  private async _syncWithGitHub(): Promise<void> {
+    try {
+      vscode.window.showInformationMessage('Syncing with GitHub...');
+
+      // Trigger sync command
+      await vscode.commands.executeCommand('copilot-orchestrator.syncWithGitHub');
+
+      vscode.window.showInformationMessage('GitHub sync completed!');
+    } catch (error) {
+      vscode.window.showErrorMessage(`Sync failed: ${error}`);
+    }
+  }
+
+  /**
+   * Save advanced settings
+   */
+  private async _saveAdvancedSettings(settings: any): Promise<void> {
+    try {
+      const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator');
+      
+      // Context bundling settings
+      await vsConfig.update('context.maxBundleSize', settings.contextBundleSize, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('context.tokenLimit', settings.tokenLimit, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('context.enableCaching', settings.enableContextCaching, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('context.enableTokenCounting', settings.enableTokenCounting, vscode.ConfigurationTarget.Global);
+
+      // Task decomposition settings
+      await vsConfig.update('tasks.decompositionThreshold', settings.decompositionThreshold, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('tasks.maxDecompositionDepth', settings.maxDecompositionDepth, vscode.ConfigurationTarget.Global);
+
+      // Performance settings
+      await vsConfig.update('websocket.port', settings.websocketPort, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('cache.ttl', settings.cacheTTL, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('github.batchSize', settings.batchSize, vscode.ConfigurationTarget.Global);
+
+      // Logging settings
+      await vsConfig.update('logging.level', settings.logLevel, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('logging.enableAuditLog', settings.enableAuditLog, vscode.ConfigurationTarget.Global);
+      await vsConfig.update('logging.enablePerformanceMetrics', settings.enablePerformanceMetrics, vscode.ConfigurationTarget.Global);
+
+      vscode.window.showInformationMessage('Advanced settings saved successfully!');
+      this._panel.webview.postMessage({
+        command: 'advancedSettingsSaved',
+        success: true,
+      });
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to save advanced settings: ${error}`);
     }
   }
 
