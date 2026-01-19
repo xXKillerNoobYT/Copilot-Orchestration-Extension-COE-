@@ -132,7 +132,13 @@ describe('handleReportVerificationResult', () => {
         status: 201,
         json: async () => ({ task: { id: 'TASK-INV-2' } }),
       })
-      // Fourth call: update task status to blocked
+      // Fourth call: get current task status (terminal state check)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ task: { status: 'in-progress' } }),
+      })
+      // Fifth call: update task status to blocked
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -149,8 +155,8 @@ describe('handleReportVerificationResult', () => {
       ],
     });
 
-    // Should create 2 investigation tasks
-    expect(global.fetch).toHaveBeenCalledTimes(4);
+    // Should create 2 investigation tasks + check status + update status = 5 calls
+    expect(global.fetch).toHaveBeenCalledTimes(5);
     expect(global.fetch).toHaveBeenNthCalledWith(
       2,
       'http://localhost:8000/api/v1/tasks',
@@ -160,11 +166,19 @@ describe('handleReportVerificationResult', () => {
 
   it('should update task status to completed when verification passes', async () => {
     (global.fetch as jest.Mock)
+      // First call: submit verification result
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ verificationResult: { id: 'VERIFY-123' } }),
       })
+      // Second call: get current task status (terminal state check)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ task: { status: 'in-progress' } }),
+      })
+      // Third call: update task status to completed
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -188,9 +202,9 @@ describe('handleReportVerificationResult', () => {
       findings: [],
     });
 
-    // Second call should be updating task status to completed
+    // Third call should be updating task status to completed
     expect(global.fetch).toHaveBeenNthCalledWith(
-      2,
+      3,
       'http://localhost:8000/api/v1/tasks/TASK-456/status',
       expect.objectContaining({
         method: 'PATCH',
@@ -201,11 +215,19 @@ describe('handleReportVerificationResult', () => {
 
   it('should update task status to blocked when verification fails', async () => {
     (global.fetch as jest.Mock)
+      // First call: submit verification result
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({ verificationResult: { id: 'VERIFY-123' } }),
       })
+      // Second call: get current task status (terminal state check)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ task: { status: 'in-progress' } }),
+      })
+      // Third call: update task status to blocked
       .mockResolvedValueOnce({
         ok: true,
         status: 200,

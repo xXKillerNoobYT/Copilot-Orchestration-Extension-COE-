@@ -121,37 +121,18 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
 
   /**
    * Create investigation tasks for verification findings
-   * Creates tasks in parallel for better performance
+   * Creates tasks in parallel for better performance, with retry logic for reliability
    * @returns Number of successfully created tasks, or undefined if all failed
    */
   private async createInvestigationTasks(taskId: string, findings: any[], baseUrl: string): Promise<number | undefined> {
     try {
       // Create all investigation tasks in parallel for better performance
-      const createPromises = findings.map(finding => {
-        const investigationData = {
-          parent_task_id: taskId,
-          title: `Investigation: ${finding.description || 'Verification finding'}`,
-          description: finding.details || finding.description,
-          task_type: 'investigation',
-          priority: this.mapSeverityToPriority(finding.severity),
-          status: 'pending',
-        };
-
-        return fetch(`${baseUrl}/api/v1/tasks`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(investigationData),
-        }).catch(err => {
-          console.warn('[ReportVerificationResult] Failed to create investigation task:', err);
-          return null;
-        });
-      });
+      const createPromises = findings.map(finding => 
+        this.createSingleInvestigationTask(taskId, finding, baseUrl)
+      );
 
       const results = await Promise.all(createPromises);
-      const successCount = results.filter(r => r !== null && r.ok).length;
+      const successCount = results.filter(r => r === true).length;
       
       return successCount > 0 ? successCount : undefined;
     } catch (error) {
@@ -161,49 +142,117 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
   }
 
   /**
+   * Create a single investigation task with retry logic
+   */
+  private async createSingleInvestigationTask(taskId: string, finding: any, baseUrl: string): Promise<boolean> {
+    try {
+      const investigationData = {
+        parent_task_id: taskId,
+        title: `Investigation: ${finding.description || 'Verification finding'}`,
+        description: finding.details || finding.description,
+        task_type: 'investigation',
+        priority: this.mapSeverityToPriority(finding.severity),
+        status: 'pending',
+      };
+
+      // Use retry mechanism for reliability
+      await this.executeWithRetry(
+        async () => {
+          const response = await fetch(`${baseUrl}/api/v1/tasks`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(investigationData),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to create investigation task: ${response.status}`);
+          }
+
+          return response;
+        },
+        'createInvestigationTask',
+        { taskId, finding: finding.description }
+      );
+
+      return true;
+    } catch (error) {
+      console.warn('[ReportVerificationResult] Failed to create investigation task:', error);
+      return false;
+    }
+  }
+
+  /**
    * Update task status based on verification result
    * Checks current task status to avoid regressing terminal states
+   * Uses retry mechanism for reliability
    * @returns true if status was updated, false otherwise
    */
   private async updateTaskStatus(taskId: string, passed: boolean, baseUrl: string): Promise<boolean> {
     try {
-      // Check current task status to avoid regressing terminal states
-      const taskResponse = await fetch(`${baseUrl}/api/v1/tasks/${taskId}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
+      // Check current task status to avoid regressing terminal states (with retry)
+      const currentStatus = await this.executeWithRetry(
+        async () => {
+          const taskResponse = await fetch(`${baseUrl}/api/v1/tasks/${taskId}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+            },
+          });
+
+          if (!taskResponse.ok && taskResponse.status !== 404) {
+            throw new Error(`Failed to fetch task status: ${taskResponse.status}`);
+          }
+
+          if (taskResponse.ok) {
+            const taskData = await taskResponse.json();
+            return taskData?.task?.status?.toLowerCase();
+          }
+
+          return undefined;
         },
-      });
+        'checkTaskStatus',
+        { taskId }
+      );
 
-      if (taskResponse.ok) {
-        const taskData = await taskResponse.json();
-        const currentStatus = taskData?.task?.status?.toLowerCase();
-
-        // Skip update if task is already in a terminal state
-        if (currentStatus === 'completed' || currentStatus === 'cancelled') {
-          console.warn(
-            `[ReportVerificationResult] Skipping status update for task ${taskId} - already in terminal state: ${currentStatus}`
-          );
-          return false;
-        }
+      // Skip update if task is already in a terminal state
+      if (currentStatus === 'completed' || currentStatus === 'cancelled') {
+        console.warn(
+          `[ReportVerificationResult] Skipping status update for task ${taskId} - already in terminal state: ${currentStatus}`
+        );
+        return false;
       }
 
-      // Update task status
+      // Update task status (with retry)
       const statusData = {
         taskId,
         status: passed ? 'completed' : 'blocked',
       };
 
-      const updateResponse = await fetch(`${baseUrl}/api/v1/tasks/${taskId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(statusData),
-      });
+      await this.executeWithRetry(
+        async () => {
+          const updateResponse = await fetch(`${baseUrl}/api/v1/tasks/${taskId}/status`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(statusData),
+          });
 
-      return updateResponse.ok;
+          if (!updateResponse.ok) {
+            throw new Error(`Failed to update task status: ${updateResponse.status}`);
+          }
+
+          return updateResponse;
+        },
+        'updateTaskStatus',
+        { taskId, status: statusData.status }
+      );
+
+      return true;
     } catch (error) {
       console.warn('[ReportVerificationResult] Failed to update task status:', error);
       return false;
