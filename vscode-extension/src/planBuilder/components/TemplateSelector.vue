@@ -225,6 +225,7 @@ const previewedTemplate = ref<PlanTemplateMetadata | null>(null);
 // Categories configuration
 const categories = [
   { value: 'all' as const, label: 'All', icon: '📋' },
+  { value: 'blank' as const, label: 'Blank', icon: '✏️' },
   { value: 'web-app' as const, label: 'Web App', icon: '🌐' },
   { value: 'api-service' as const, label: 'API Service', icon: '🔌' },
   { value: 'cli-tool' as const, label: 'CLI Tool', icon: '⌨️' },

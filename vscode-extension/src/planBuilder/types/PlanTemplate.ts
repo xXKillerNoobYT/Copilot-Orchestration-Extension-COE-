@@ -10,7 +10,7 @@ import type { PlanJSON } from '../planGenerator';
 /**
  * Template categories for organizing and filtering templates
  */
-export type TemplateCategory = 'web-app' | 'api-service' | 'cli-tool' | 'library' | 'custom';
+export type TemplateCategory = 'blank' | 'web-app' | 'api-service' | 'cli-tool' | 'library' | 'custom';
 
 /**
  * Template metadata containing descriptive information
