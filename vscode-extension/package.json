@@ -627,6 +627,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
+    "better-sqlite3": "^12.6.2",
     "chart.js": "^4.5.1",
     "graphlib": "^2.1.8",
     "laravel-echo": "^2.3.0",
