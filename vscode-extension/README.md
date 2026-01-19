@@ -52,6 +52,34 @@ git push
 - **Copilot Orchestrator: Refresh Tasks** - Reload tasks from disk
 - **Copilot Orchestrator: Show Task Graph** - Visualize task dependencies as Mermaid diagram
 - **Copilot Orchestrator: Show Task Dependencies** - Display execution order and validation
+- **Copilot Orchestrator: Run Health Check** - Check extension prerequisites and configuration
+- **Copilot Orchestrator: Show Health Details** - Display detailed health diagnostics
+
+### 🏥 Health Check System
+
+The extension includes a comprehensive health check system that validates:
+
+- ✓ **Backend URL configured** - Ensures Laravel backend URL is set
+- ✓ **Backend reachable** - Pings backend server with response time
+- ✓ **Plans directory exists** - Validates `Docs/Plans/` directory
+- ✓ **Plans found** - Counts available plan files
+- ✓ **MCP server** - Checks MCP server connectivity (optional)
+- ✓ **WebSocket config** - Validates WebSocket settings (optional)
+- ✓ **VS Code version** - Ensures minimum version requirements
+
+**Health Status Indicators:**
+- 🟢 **Healthy** - All critical services operational
+- 🟡 **Degraded** - Some non-critical issues detected
+- 🔴 **Unhealthy** - Critical issues preventing proper function
+
+**Automatic Checks:**
+- Health check runs automatically on extension activation
+- Results are cached for 1 minute to avoid excessive checks
+- Status bar shows current health status
+- Click status bar icon to view detailed diagnostics
+
+**Manual Checks:**
+Run via Command Palette → "Run Health Check" to force a fresh check and view detailed results in the Output channel.
 
 ## Installation
 
