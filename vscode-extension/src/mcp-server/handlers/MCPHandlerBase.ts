@@ -37,14 +37,43 @@ export interface DeadLetterEntry {
 }
 
 /**
+ * Simple bounded queue implementation to prevent unbounded growth
+ * of the dead letter queue in long-running processes.
+ */
+class BoundedQueue<T> extends Array<T> {
+  private readonly maxSize: number;
+
+  constructor(maxSize: number) {
+    super();
+    this.maxSize = maxSize;
+  }
+
+  override push(...items: T[]): number {
+    const newLength = super.push(...items);
+
+    if (this.maxSize > 0 && this.length > this.maxSize) {
+      const overflow = this.length - this.maxSize;
+      // Remove the oldest entries to enforce the maximum size
+      this.splice(0, overflow);
+    }
+
+    return newLength;
+  }
+}
+
+/**
  * Base handler class with common backend integration functionality
  */
 export abstract class MCPHandlerBase {
   protected errorConfig: ErrorHandlingConfig;
-  protected deadLetterQueue: DeadLetterEntry[] = [];
+  protected deadLetterQueue: BoundedQueue<DeadLetterEntry>;
 
-  constructor(errorConfig: ErrorHandlingConfig = DEFAULT_ERROR_CONFIG) {
+  constructor(
+    errorConfig: ErrorHandlingConfig = DEFAULT_ERROR_CONFIG,
+    maxDeadLetterQueueSize: number = 1000
+  ) {
     this.errorConfig = errorConfig;
+    this.deadLetterQueue = new BoundedQueue<DeadLetterEntry>(maxDeadLetterQueueSize);
   }
 
   /**
@@ -86,12 +115,22 @@ export abstract class MCPHandlerBase {
    * Wrap a promise with timeout
    */
   private withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
-      ),
-    ]);
+    return new Promise<T>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Operation timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      promise.then(
+        (value) => {
+          clearTimeout(timeoutId);
+          resolve(value);
+        },
+        (error) => {
+          clearTimeout(timeoutId);
+          reject(error);
+        }
+      );
+    });
   }
 
   /**
@@ -178,6 +217,6 @@ export abstract class MCPHandlerBase {
    * Clear dead letter queue
    */
   public clearDeadLetterQueue(): void {
-    this.deadLetterQueue = [];
+    this.deadLetterQueue.length = 0; // Clear array while keeping BoundedQueue instance
   }
 }
