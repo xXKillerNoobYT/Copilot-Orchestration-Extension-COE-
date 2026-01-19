@@ -138,6 +138,7 @@ export class TestingAgent {
 
   /**
    * Parse function parameters from signature
+   * Handles complex TypeScript types including function types and nested parentheses
    */
   private parseParameters(paramStr: string): FunctionParameter[] {
     if (!paramStr.trim()) {
@@ -145,22 +146,99 @@ export class TestingAgent {
     }
 
     const params: FunctionParameter[] = [];
-    const paramParts = paramStr.split(',').map(p => p.trim());
-
-    for (const part of paramParts) {
-      // Parse: name: type = defaultValue or name: type or name
-      const match = part.match(/(\w+)(?:\s*:\s*([^=]+))?(?:\s*=\s*(.+))?/);
-      if (match) {
-        params.push({
-          name: match[1],
-          type: match[2]?.trim(),
-          defaultValue: match[3]?.trim(),
-          optional: !!match[3] || part.includes('?'),
-        });
+    
+    // More robust parameter parsing that handles nested parentheses and complex types
+    let currentParam = '';
+    let depth = 0;
+    let angleDepth = 0;
+    
+    for (let i = 0; i < paramStr.length; i++) {
+      const ch = paramStr[i];
+      
+      // Track parentheses depth (for function types like (arg: string) => void)
+      if (ch === '(') {
+        depth++;
+      } else if (ch === ')') {
+        depth--;
       }
+      
+      // Track angle brackets depth (for generics like Array<T>)
+      if (ch === '<') {
+        angleDepth++;
+      } else if (ch === '>') {
+        angleDepth--;
+      }
+      
+      // Only split on comma if we're at depth 0 (not inside nested structures)
+      if (ch === ',' && depth === 0 && angleDepth === 0) {
+        if (currentParam.trim()) {
+          params.push(this.parseSingleParameter(currentParam.trim()));
+        }
+        currentParam = '';
+      } else {
+        currentParam += ch;
+      }
+    }
+    
+    // Don't forget the last parameter
+    if (currentParam.trim()) {
+      params.push(this.parseSingleParameter(currentParam.trim()));
     }
 
     return params;
+  }
+
+  /**
+   * Parse a single parameter with its type and default value
+   */
+  private parseSingleParameter(paramStr: string): FunctionParameter {
+    // Handle optional parameters (name?: type)
+    const isOptional = paramStr.includes('?:') || paramStr.includes('?=');
+    
+    // Split by = to separate default value
+    let nameAndType = paramStr;
+    let defaultValue: string | undefined;
+    
+    // Find the = that's not inside a function type or generic
+    let depth = 0;
+    let angleDepth = 0;
+    let equalIndex = -1;
+    
+    for (let i = 0; i < paramStr.length; i++) {
+      const ch = paramStr[i];
+      if (ch === '(') depth++;
+      else if (ch === ')') depth--;
+      else if (ch === '<') angleDepth++;
+      else if (ch === '>') angleDepth--;
+      else if (ch === '=' && depth === 0 && angleDepth === 0) {
+        equalIndex = i;
+        break;
+      }
+    }
+    
+    if (equalIndex !== -1) {
+      nameAndType = paramStr.substring(0, equalIndex).trim();
+      defaultValue = paramStr.substring(equalIndex + 1).trim();
+    }
+    
+    // Split by : to separate name and type
+    const colonIndex = nameAndType.indexOf(':');
+    let name: string;
+    let type: string | undefined;
+    
+    if (colonIndex !== -1) {
+      name = nameAndType.substring(0, colonIndex).replace('?', '').trim();
+      type = nameAndType.substring(colonIndex + 1).trim();
+    } else {
+      name = nameAndType.replace('?', '').trim();
+    }
+    
+    return {
+      name,
+      type,
+      defaultValue,
+      optional: isOptional || !!defaultValue,
+    };
   }
 
   /**

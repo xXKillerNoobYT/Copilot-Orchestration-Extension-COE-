@@ -282,6 +282,15 @@ export class CopilotAgentClient {
       // Minimum VS Code version for Language Model API
       const MIN_VSCODE_VERSION = '1.90';
       
+      // Check VS Code version
+      const currentVersion = vscode.version;
+      if (!this.isVersionSupported(currentVersion, MIN_VSCODE_VERSION)) {
+        throw new Error(
+          `VS Code version ${currentVersion} does not meet minimum requirement ${MIN_VSCODE_VERSION}. ` +
+          `Please upgrade VS Code to use the Language Model API.`
+        );
+      }
+      
       // Check if Language Model API is available
       if (!vscode.lm || typeof vscode.lm.selectChatModels !== 'function') {
         throw new Error(`VS Code Language Model API not available. Requires VS Code ${MIN_VSCODE_VERSION}+`);
@@ -366,6 +375,36 @@ Format your response in Markdown.
       console.error('[CopilotAgentClient] Language model execution failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Compare semantic versions to check if current version meets minimum requirement
+   * @param current Current version string (e.g., "1.90.0")
+   * @param minimum Minimum required version (e.g., "1.90")
+   * @returns true if current version meets or exceeds minimum
+   */
+  private isVersionSupported(current: string, minimum: string): boolean {
+    const parseCurrent = current.split('.').map(n => parseInt(n, 10));
+    const parseMinimum = minimum.split('.').map(n => parseInt(n, 10));
+
+    // Pad arrays to same length
+    while (parseCurrent.length < parseMinimum.length) {
+      parseCurrent.push(0);
+    }
+    while (parseMinimum.length < parseCurrent.length) {
+      parseMinimum.push(0);
+    }
+
+    // Compare each segment
+    for (let i = 0; i < parseMinimum.length; i++) {
+      if (parseCurrent[i] > parseMinimum[i]) {
+        return true;
+      } else if (parseCurrent[i] < parseMinimum[i]) {
+        return false;
+      }
+    }
+
+    return true; // Versions are equal
   }
 
   /**
