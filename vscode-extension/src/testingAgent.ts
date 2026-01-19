@@ -279,7 +279,9 @@ export class TestingAgent {
     const classBody = code.slice(openBraceIndex + 1, endIndex);
     
     // Extract methods (public, private, static)
-    const methodRegex = /(public|private|protected)?\s*(static)?\s*(async)?\s*(\w+)\s*\(([^)]*)\)(?::\s*([^{;]+))?/g;
+    // Use a more conservative regex that captures the parameter section as-is
+    // Then rely on parseParameters() to handle complex types
+    const methodRegex = /(public|private|protected)?\s*(static)?\s*(async)?\s*(\w+)\s*\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)(?::\s*([^{;]+))?/g;
     let match;
     
     while ((match = methodRegex.exec(classBody)) !== null) {
@@ -408,10 +410,7 @@ ${testInputs.length > 0 && !sig.parameters.every(p => p.optional) ? `
       .filter(m => m.visibility === 'public')
       .map(m => {
         const asyncPrefix = m.isAsync ? 'async ' : '';
-        const awaitPrefix = m.isAsync ? 'await ' : '';
-        const staticPrefix = m.isStatic ? '' : 'instance.';
-        const testInputs = this.generateTestInputs(m.parameters);
-        const paramList = testInputs.map(input => input.value).join(', ');
+        const staticAccess = m.isStatic ? '' : 'instance.';
 
         return `
     it('should have ${m.name} method', ${asyncPrefix}() => {

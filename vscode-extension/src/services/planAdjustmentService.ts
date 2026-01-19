@@ -17,6 +17,19 @@ import { PlanDriftDetector, type TaskExecutionData, type DriftAnalysisResult } f
 import { PlanAdjustmentEngine, type AdjustmentSuggestion, type AdjustmentContext } from '../planBuilder/planAdjustmentEngine';
 import { getPlanPersistenceService } from '../services/planPersistence';
 import type { PlanJSON } from '../planBuilder/planGenerator';
+import { parseTasksFromDirectory, type ParsedTask } from '../taskParser';
+import * as path from 'path';
+import { getWebSocketClient } from './websocketClient';
+
+/**
+ * Parsed task with additional metadata fields for execution tracking
+ */
+interface ParsedTaskWithMetadata extends ParsedTask {
+  feature_id?: string;
+  actualHours?: number;
+  startedAt?: string | Date;
+  completedAt?: string | Date;
+}
 
 export interface PlanAdjustmentOptions {
   autoApply?: boolean;
@@ -318,7 +331,7 @@ export class PlanAdjustmentService {
   /**
    * Find a feature in the plan that matches the given task
    */
-  private findMatchingFeature(plan: PlanJSON, task: any): any {
+  private findMatchingFeature(plan: PlanJSON, task: ParsedTaskWithMetadata): any {
     // Try to match by feature ID in task metadata
     if (task.feature_id) {
       const feature = plan.features.find(f => f.id === task.feature_id);
@@ -398,7 +411,7 @@ export class PlanAdjustmentService {
    * Calculate actual hours spent on a task
    * In production, this would integrate with time tracking or Git history
    */
-  private calculateActualHours(task: any): number | undefined {
+  private calculateActualHours(task: ParsedTaskWithMetadata): number | undefined {
     // If task has explicit actual hours, use that
     if (task.actualHours !== undefined) {
       return task.actualHours;
@@ -537,10 +550,10 @@ export class PlanAdjustmentService {
         console.log('[PlanAdjustmentService] Received plan update broadcast:', data);
       });
 
-      // Note: The actual emit/publish would depend on the WebSocket implementation
-      // For Laravel Echo/Soketi, the backend would broadcast, and we just listen
-      // This is a placeholder for potential client-side broadcasting
-      console.log('[PlanAdjustmentService] Plan update event prepared:', eventData);
+      // Note: Client-side event publishing is not implemented in the current WebSocket setup
+      // The backend broadcasts plan updates, and clients only listen
+      // Future: If client-side broadcasting is needed, implement wsClient.emit() method
+      console.log('[PlanAdjustmentService] Subscribed to plan-updates channel. Event data logged for debugging:', eventData);
 
     } catch (error) {
       // Don't fail the update if WebSocket broadcast fails

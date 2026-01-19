@@ -284,7 +284,13 @@ export class PlanPersistenceService {
 
       // Delete from backend if plan has an ID
       if (planId) {
-        await this.deleteBackendPlan(planId);
+        try {
+          await this.deleteBackendPlan(planId);
+        } catch (error) {
+          // Log backend delete error but continue with local deletion
+          // User explicitly requested deletion, so we don't want to block it
+          console.warn('[PlanPersistence] Backend delete failed, continuing with local deletion:', error);
+        }
       }
 
       // Delete local file
@@ -356,7 +362,7 @@ export class PlanPersistenceService {
       const result = await response.json();
       console.log('[PlanPersistence] Backend delete successful:', result.message);
     } catch (error) {
-      // Log error but don't fail the local delete
+      // Re-throw error to allow caller to handle it appropriately
       console.error('[PlanPersistence] Backend delete failed:', error);
       throw error;
     }
