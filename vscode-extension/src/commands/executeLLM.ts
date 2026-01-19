@@ -160,9 +160,127 @@ async function showExecutionResult(options: {
 }
 
 /**
- * Execute with streaming responses (future enhancement)
- * Currently stubbed for structure
+ * Execute LLM task with streaming responses
+ * Provides real-time output display with progress indicators and stream controls
  */
 export async function executeLlmCommandStreaming(): Promise<void> {
-  void vscode.window.showInformationMessage('Streaming execution not yet implemented');
+  // Get task ID from user
+  const taskId = await vscode.window.showInputBox({
+    prompt: 'Enter task ID (e.g., TASK-mk530r89-86665)',
+    placeHolder: 'TASK-...',
+    ignoreFocusOut: true,
+  });
+
+  if (!taskId) {
+    return;
+  }
+
+  // Get agent name
+  const agentName = await vscode.window.showInputBox({
+    prompt: 'Enter agent name (coder, planner, tester)',
+    value: 'coder',
+    placeHolder: 'coder',
+    ignoreFocusOut: true,
+  });
+
+  if (!agentName) {
+    return;
+  }
+
+  // Check LLM configuration
+  const configState = readLlmConfig();
+  if (!configState.isConfigured) {
+    void vscode.window.showErrorMessage(`LLM configuration is incomplete: ${configState.issues.join('; ')}`);
+    return;
+  }
+
+  // Create streaming output channel
+  const { getStreamingOutputChannel } = await import('../ui/streamingOutputChannel');
+  const outputChannel = getStreamingOutputChannel();
+
+  // Show progress with cancellation support
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: `Streaming task ${taskId}...`,
+      cancellable: true,
+    },
+    async (progress, cancellationToken) => {
+      try {
+        progress.report({ message: 'Composing prompt...' });
+
+        // Compose prompt from task
+        const dispatcher = new CopilotDispatcher();
+        const payload = await dispatcher.composePrompt(taskId, {
+          agentName,
+          extraInstructions: 'Generate a detailed analysis and implementation plan.',
+        });
+
+        progress.report({ message: 'Starting stream...' });
+
+        // Start streaming output
+        outputChannel.startStream(taskId, agentName);
+
+        // Create streaming client
+        const { createStreamingClient } = await import('../services/streamingClient');
+        const streamingClient = createStreamingClient(configState.config);
+
+        let fullResponse = '';
+
+        // Execute streaming request
+        await streamingClient.streamChat(
+          payload.messages,
+          {
+            onChunk: (chunk) => {
+              if (chunk.type === 'text' && chunk.content) {
+                // Append to output channel
+                outputChannel.appendChunk(chunk.content);
+                fullResponse += chunk.content;
+              } else if (chunk.type === 'progress' && chunk.progress !== undefined) {
+                // Update progress indicator
+                outputChannel.updateProgress(chunk.progress);
+                progress.report({ 
+                  message: `Streaming... ${chunk.progress}%`,
+                  increment: chunk.progress
+                });
+              } else if (chunk.type === 'error' && chunk.error) {
+                // Handle error chunk
+                const error = new Error(chunk.error);
+                outputChannel.showError(error);
+              } else if (chunk.type === 'done') {
+                // Stream completed
+                progress.report({ message: 'Stream completed' });
+              }
+            },
+            onComplete: (response) => {
+              outputChannel.endStream(true);
+              void vscode.window.showInformationMessage(
+                `Streaming completed for ${taskId}. Check output channel for full response.`
+              );
+            },
+            onError: (error) => {
+              outputChannel.showError(error);
+              outputChannel.endStream(false);
+              void vscode.window.showErrorMessage(`Streaming failed: ${error.message}`);
+            },
+            onCancel: () => {
+              outputChannel.endStream(false);
+              void vscode.window.showWarningMessage('Streaming cancelled by user');
+            },
+          },
+          {
+            temperature: configState.config.temperature,
+            timeoutMs: configState.config.timeoutMs,
+            cancellationToken,
+          }
+        );
+
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        outputChannel.showError(error instanceof Error ? error : new Error(message));
+        outputChannel.endStream(false);
+        void vscode.window.showErrorMessage(`Streaming execution failed: ${message}`);
+      }
+    }
+  );
 }
