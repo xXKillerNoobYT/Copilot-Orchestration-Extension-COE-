@@ -45,8 +45,8 @@ fi
 # Run the command registration validation tests
 echo "Validating command registrations..."
 
-# Run just the command registration tests
-if npm run test:jest -- src/__tests__/command-registration.test.ts --silent 2>&1 | grep -q "PASS"; then
+# Run just the command registration tests and check exit code
+if npm run test:jest -- src/__tests__/command-registration.test.ts --silent 2>&1 > /dev/null; then
     echo -e "${GREEN}✓ Command registration validation passed${NC}"
     exit 0
 else

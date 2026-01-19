@@ -53,7 +53,8 @@ function extractRegisteredCommands(): string[] {
     // Regex patterns to match command registration
     // Matches: vscode.commands.registerCommand('copilot-orchestrator.commandName', ...)
     // Also matches: registerCommand('copilot-orchestrator.commandName', ...)
-    const registerCommandPattern = /(?:vscode\.commands\.)?registerCommand\s*\(\s*['"`]([^'"`]+)['"`]/g;
+    // Note: Non-global flag to avoid regex state issues with exec()
+    const registerCommandPattern = /(?:vscode\.commands\.)?registerCommand\s*\(\s*['"`]([^'"`]+)['"`]/;
 
     for (const filePath of filesToScan) {
         if (!fs.existsSync(filePath)) {
@@ -61,9 +62,12 @@ function extractRegisteredCommands(): string[] {
         }
 
         const content = fs.readFileSync(filePath, 'utf-8');
-        let match;
-
-        while ((match = registerCommandPattern.exec(content)) !== null) {
+        
+        // Find all matches by using matchAll with a global regex
+        const globalPattern = new RegExp(registerCommandPattern.source, 'g');
+        const matches = content.matchAll(globalPattern);
+        
+        for (const match of matches) {
             const commandId = match[1];
             if (commandId.startsWith('copilot-orchestrator.')) {
                 commands.add(commandId);
