@@ -29,6 +29,7 @@
 - Type-safe storage for task/agent contexts (JSON/YAML adapters, pruning policies, Zod validation). Main class `src/context-manager.ts`; storage adapters in `src/storage`. See `README.md` and `IMPLEMENTATION-SUMMARY.md` for API. Tests via Jest (`npm test`).
 
 ## Docs to consult first
+- **`Docs/Current-Status/`** ⭐ **NEW! AI AGENTS: READ THIS FIRST!** Live project state with READY-TO-WORK.md (what to do), BLOCKED-TASKS.md (what to avoid), OPEN-ISSUES.md (GitHub status), INCOMPLETE-WORK.md (all undone tasks), PRIORITY-QUEUE.md (what's next). Updated hourly from GitHub API.
 - `Docs/PROJECT-RUNBOOK.md` (execution order, task expectations, commands), `Docs/GITHUB-ISSUES-PLAN.md` (issue mappings), `Docs/README.md` (doc navigation), `COPILOT-WORKFLOW-QUICKSTART.md` (autonomous Copilot flow). Issues are mirrored in `.github/issues/` via GitHub Issues Sync.
 - PRD sources: prefer `PRD.json` (machine-readable for AI); `PRD.md` for human review; regenerate both via `PRD.ipynb` when upstream docs change.
 
