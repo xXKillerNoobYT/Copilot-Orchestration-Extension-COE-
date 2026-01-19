@@ -203,7 +203,7 @@ describe('AI Assistance Integration Tests', () => {
 
       const callArgs = mockMcpClient.askQuestion.mock.calls[0][0];
       expect(callArgs.context.relevantAnswers).toBeDefined();
-      
+
       // Should extract important keys
       expect(callArgs.context.answeredQuestions).toBe(4);
     });
