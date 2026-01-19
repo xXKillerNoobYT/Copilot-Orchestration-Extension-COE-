@@ -10,7 +10,7 @@ import type { PlanJSON } from '../planGenerator';
 /**
  * Template categories for organizing and filtering templates
  */
-export type TemplateCategory = 'web-app' | 'api-service' | 'cli-tool' | 'library' | 'custom';
+export type TemplateCategory = 'blank' | 'web-app' | 'api-service' | 'cli-tool' | 'library' | 'custom';
 
 /**
  * Template metadata containing descriptive information
@@ -72,11 +72,33 @@ export interface PlanTemplate {
     requiredCustomizations: string[];
 
     /** Suggested customizations with descriptions */
-    optionalCustomizations: Array<{
+    optionalCustomizations?: Array<{
       field: string;
       description: string;
       example?: string;
+      guidance?: string; // Added in v2.0 - backward compatible (optional)
     }>;
+
+    /** Helpful tips for using this template (Added in v2.0) */
+    tips?: string[];
+
+    /** Next steps after filling in the template (Added in v2.0) */
+    nextSteps?: string[];
+  };
+
+  /** 
+   * Optional guidance for using the template
+   * Added in v2.0 for enhanced blank template - backward compatible
+   */
+  guidance?: {
+    /** Onboarding text for first-time users */
+    onboarding?: string;
+
+    /** Overview of each section */
+    sections_overview?: Record<string, string>;
+
+    /** Quick start guide */
+    quick_start?: Record<string, string>;
   };
 }
 
