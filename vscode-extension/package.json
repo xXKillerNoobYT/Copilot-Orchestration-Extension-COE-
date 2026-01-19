@@ -328,6 +328,18 @@
         "icon": "$(debug-start)"
       },
       {
+        "command": "copilot-orchestrator.runHealthCheck",
+        "title": "Run Health Check",
+        "category": "Copilot Orchestrator",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "copilot-orchestrator.showHealthDetails",
+        "title": "Show Health Details",
+        "category": "Copilot Orchestrator",
+        "icon": "$(info)"
+      },
+      {
         "command": "copilot-orchestrator.openGitHubIssue",
         "title": "Open GitHub Issue",
         "category": "Task File"

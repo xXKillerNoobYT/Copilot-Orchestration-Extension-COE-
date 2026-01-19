@@ -31,6 +31,7 @@ import { TasksViewProvider } from './views/tasksViewProvider';
 import { AgentsViewProvider } from './views/agentsViewProvider';
 import { PlansViewProvider } from './views/plansViewProvider';
 import { initializeErrorLogging, disposeErrorLogging } from './utils/errorMessages';
+import { HealthCheckService } from './services/healthCheck';
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize Error Logging Output Channel
@@ -71,6 +72,27 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push({
     dispose: () => connectionMonitor.dispose(),
   });
+
+  // Initialize Health Check Service
+  const healthCheckService = HealthCheckService.getInstance();
+  context.subscriptions.push({
+    dispose: () => healthCheckService.dispose(),
+  });
+
+  // Health Check Status Bar Item (separate from unified status bar)
+  const healthStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  context.subscriptions.push(healthStatusBar);
+
+  // Run health check on activation
+  (async () => {
+    try {
+      const healthResult = await healthCheckService.runHealthCheck(false);
+      healthCheckService.updateStatusBar(healthResult, healthStatusBar);
+      healthCheckService.showWelcomeIfUnhealthy(healthResult);
+    } catch (error) {
+      console.error('[Extension] Health check failed:', error);
+    }
+  })();
 
   // Unified Status Bar Item
   const unifiedStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -151,7 +173,8 @@ export function activate(context: vscode.ExtensionContext) {
         { label: '$(rocket) Start Orchestrator', command: 'copilot-orchestrator.start' },
         { label: '$(gear) Configure LLM', command: 'copilot-orchestrator.configureLLM' },
         { label: '$(plug) Test LLM Connection', command: 'copilot-orchestrator.testConnection' },
-        { label: '$(server) Connection Details', command: 'copilot-orchestrator.showConnectionDetails' }
+        { label: '$(server) Connection Details', command: 'copilot-orchestrator.showConnectionDetails' },
+        { label: '$(pulse) Run Health Check', command: 'copilot-orchestrator.runHealthCheck' }
       ];
 
       const selection = await vscode.window.showQuickPick(items, { placeHolder: 'Orchestrator Status & Actions' });
@@ -164,6 +187,30 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showConnectionDetails', () => {
       showConnectionDetails();
+    })
+  );
+
+  // Health Check Commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.runHealthCheck', async () => {
+      try {
+        const healthResult = await healthCheckService.runHealthCheck(false); // Force fresh check
+        healthCheckService.displayResults(healthResult);
+        healthCheckService.updateStatusBar(healthResult, healthStatusBar);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Health check failed: ${error}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showHealthDetails', async () => {
+      try {
+        const healthResult = await healthCheckService.runHealthCheck(true); // Use cached
+        healthCheckService.displayResults(healthResult);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to show health details: ${error}`);
+      }
     })
   );
 
