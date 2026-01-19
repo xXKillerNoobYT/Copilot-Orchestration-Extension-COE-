@@ -4,10 +4,21 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
 class PlanImportControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Create and authenticate a user for all tests
+        $user = User::factory()->create();
+        Sanctum::actingAs($user, ['*']);
+    }
 
     /** @test */
     public function it_analyzes_api_only_context()
@@ -114,6 +125,8 @@ class PlanImportControllerTest extends TestCase
         
         $data = $response->json();
         $this->assertEquals('core-blank', $data['suggestedTemplate']);
+        // Should be 0.5 when no topics are detected
+        $this->assertSame(0.5, $data['confidence']);
     }
 
     /** @test */
@@ -258,8 +271,8 @@ class PlanImportControllerTest extends TestCase
         
         $data = $response->json();
         $this->assertArrayHasKey('confidence', $data);
-        $this->assertGreaterThanOrEqual(0, $data['confidence']);
-        $this->assertLessThanOrEqual(1, $data['confidence']);
+        // Should be 0.8 when topics are detected
+        $this->assertSame(0.8, $data['confidence']);
     }
 
     /** @test */
@@ -367,5 +380,146 @@ class PlanImportControllerTest extends TestCase
         $data = $response->json();
         $uniqueTopics = array_unique($data['topics']);
         $this->assertEquals(count($uniqueTopics), count($data['topics']));
+    }
+
+    /** @test */
+    public function it_validates_content_must_be_string()
+    {
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => 12345 // Non-string value
+        ]);
+        
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['content']);
+    }
+
+    /** @test */
+    public function it_estimates_duration_for_zero_topics()
+    {
+        $content = 'This is a very generic description without any technology keywords.';
+        
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => $content
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json();
+        $this->assertEquals('1-2 weeks', $data['estimatedDuration']);
+        $this->assertEquals(0, count($data['topics']));
+    }
+
+    /** @test */
+    public function it_estimates_team_size_for_complex_projects_without_devops()
+    {
+        $content = 'Build system with API, database, frontend, authentication, and monitoring.';
+        
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => $content
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json();
+        // Should have >4 topics without DevOps
+        $this->assertGreaterThan(4, count($data['topics']));
+        $this->assertNotContains('devops', $data['topics']);
+        $this->assertEquals(2, $data['recommendedTeamSize']);
+    }
+
+    /** @test */
+    public function it_generates_summary_without_sentence_delimiters()
+    {
+        $content = str_repeat('A long continuous text without any sentence delimiters ', 10);
+        
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => $content
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json();
+        $this->assertNotEmpty($data['summary']);
+        $this->assertLessThanOrEqual(203, strlen($data['summary'])); // 200 + "..."
+    }
+
+    /** @test */
+    public function it_generates_summary_for_truly_empty_content()
+    {
+        $content = '   '; // Whitespace only
+        
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => $content
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json();
+        $this->assertEquals('No content provided', $data['summary']);
+    }
+
+    /** @test */
+    public function it_suggests_web_app_template_for_mobile_only_projects()
+    {
+        $content = 'Build iOS and Android mobile application with React Native.';
+        
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => $content
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json();
+        $this->assertContains('mobile', $data['topics']);
+        $this->assertNotContains('frontend', $data['topics']);
+        $this->assertEquals('core-web-app', $data['suggestedTemplate']);
+    }
+
+    /** @test */
+    public function it_suggests_api_service_template_for_devops_only_projects()
+    {
+        $content = 'Setup Docker containers with Kubernetes orchestration and CI/CD pipeline deployment.';
+        
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => $content
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json();
+        $this->assertContains('devops', $data['topics']);
+        $this->assertNotContains('api', $data['topics']);
+        $this->assertNotContains('frontend', $data['topics']);
+        $this->assertEquals('core-api-service', $data['suggestedTemplate']);
+    }
+
+    /** @test */
+    public function it_detects_backend_keywords()
+    {
+        $content = 'Build a backend service with Node.js server and Python microservices.';
+        
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => $content
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json();
+        $this->assertContains('backend', $data['topics']);
+    }
+
+    /** @test */
+    public function it_detects_mobile_keywords()
+    {
+        $content = 'Develop mobile app for iOS and Android using Flutter framework.';
+        
+        $response = $this->postJson('/api/v1/plans/analyze-context', [
+            'content' => $content
+        ]);
+        
+        $response->assertStatus(200);
+        
+        $data = $response->json();
+        $this->assertContains('mobile', $data['topics']);
     }
 }
