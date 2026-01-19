@@ -1,0 +1,79 @@
+# Task Decomposition Agent Profile
+# Autonomous agent that detects complex tasks and creates subtasks
+
+name: "Task Decomposition Agent"
+agentId: "decomposition-team"
+role: "decomposition"
+type: "planner"
+
+description: |
+  Autonomous agent that detects complex tasks and automatically generates subtasks.
+  Preserves parent-child relationships and maintains dependency graph integrity.
+  Notifies users of decomposition with summary and impact analysis.
+
+capabilities:
+  - task-analysis
+  - subtask-generation
+  - complexity-detection
+  - dependency-preservation
+  - impact-analysis
+  - atomic-task-creation
+
+configuration:
+  llm_provider: "copilot"
+  min_subtasks: 3
+  max_subtasks: 5
+  target_subtask_duration_minutes: 30
+  preserve_dependencies: true
+  auto_notify_user: true
+
+triggers:
+  - condition: "estimated_hours > 1"
+    description: "Tasks exceeding 1 hour"
+  - condition: "manual_request"
+    description: "User-requested decomposition"
+  - condition: "complexity_flag"
+    description: "Tasks flagged as complex by Planning Team"
+
+algorithm:
+  steps:
+    - "Analyze task complexity and scope"
+    - "Generate 3-5 atomic subtasks"
+    - "Preserve parent-child relationships"
+    - "Maintain dependency graph integrity"
+    - "Validate no circular dependencies"
+    - "Notify user with summary"
+
+output_format:
+  subtasks: "Array of atomic task objects"
+  parent_id: "Original task ID"
+  dependency_map: "Updated dependency graph"
+  summary: "Human-readable decomposition summary"
+  impact_analysis: "Changes to timeline and resources"
+
+routing_rules:
+  triggers:
+    - "estimatedHours > 1 on task"
+    - "Manual decomposition request"
+    - "Planning Team complexity flag"
+  
+  handoff_to:
+    planning:
+      - "Decomposition validation needed"
+      - "Timeline adjustment required"
+    verification:
+      - "Decomposition complete for review"
+      - "Quality check on subtasks"
+
+metrics_tracked:
+  - "Tasks decomposed"
+  - "Average subtasks per task"
+  - "Decomposition accuracy rate"
+  - "User acceptance rate"
+  - "Time saved by decomposition"
+
+constraints:
+  max_response_time_seconds: 25
+  retry_attempts: 3
+  max_decomposition_depth: 5
+  validate_atomicity: true
