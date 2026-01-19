@@ -6,7 +6,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { promises as fs } from 'fs';
-import { MCPClient } from './mcpClient';
 import { WebSocketConfigManager } from './webSocketConfigManager';
 
 export type HealthStatus = 'healthy' | 'degraded' | 'unhealthy';
@@ -330,7 +329,6 @@ export class HealthCheckService {
     }
 
     try {
-      const mcpClient = MCPClient.getInstance();
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 

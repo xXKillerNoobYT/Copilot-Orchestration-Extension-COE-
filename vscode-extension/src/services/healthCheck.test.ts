@@ -5,6 +5,7 @@
 import { HealthCheckService, HealthStatus, OverallHealth } from './healthCheck';
 import * as vscode from 'vscode';
 import { promises as fs } from 'fs';
+import * as WebSocketConfigManagerModule from './webSocketConfigManager';
 
 // Mock vscode module
 jest.mock('vscode');
@@ -16,6 +17,9 @@ jest.mock('fs', () => ({
     readdir: jest.fn(),
   },
 }));
+
+// Mock WebSocketConfigManager
+jest.mock('./webSocketConfigManager');
 
 // Mock fetch globally
 global.fetch = jest.fn() as jest.Mock;
@@ -285,13 +289,13 @@ describe('HealthCheckService', () => {
   describe('WebSocket Configuration Check', () => {
     it('should pass with valid configuration', async () => {
       // Mock WebSocketConfigManager
-      const WebSocketConfigManager = require('./webSocketConfigManager').WebSocketConfigManager;
-      jest.spyOn(WebSocketConfigManager, 'getConfig').mockReturnValue({
+      const mockWebSocketConfigManager = WebSocketConfigManagerModule.WebSocketConfigManager as jest.Mocked<typeof WebSocketConfigManagerModule.WebSocketConfigManager>;
+      jest.spyOn(mockWebSocketConfigManager, 'getConfig').mockReturnValue({
         driver: 'soketi',
         appKey: 'test-key',
         host: 'localhost',
-      });
-      jest.spyOn(WebSocketConfigManager, 'validate').mockReturnValue(null);
+      } as any);
+      jest.spyOn(mockWebSocketConfigManager, 'validate').mockReturnValue(null);
 
       const result = await service.runHealthCheck(false);
       const wsCheck = result.checks.find(c => c.name === 'WebSocket Config');
