@@ -9,7 +9,7 @@ import { TaskFileDocumentWatcher } from './taskFileDocumentWatcher';
 import { TaskInteractionAPI, TaskInteractionEvent } from './taskInteractionAPI';
 import { TaskFileSyntaxHighlighter } from './taskFileSyntaxHighlighter';
 import { testConnectionCommand } from './commands/testConnection';
-import { executeLlmCommand } from './commands/executeLLM';
+import { executeLlmCommand, executeLlmCommandStreaming } from './commands/executeLLM';
 import { readLlmConfig } from './config/llmConfig';
 import { AutoAgentLoopCommand } from './commands/autoAgentLoop';
 import { SettingsPanel } from './webviews/settingsPanel';
@@ -351,6 +351,12 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.executeLLM', async () => {
       await executeLlmCommand();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.executeLLMStreaming', async () => {
+      await executeLlmCommandStreaming();
     })
   );
 

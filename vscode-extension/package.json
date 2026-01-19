@@ -380,6 +380,12 @@
         "icon": "$(play)"
       },
       {
+        "command": "copilot-orchestrator.executeLLMStreaming",
+        "title": "Copilot Orchestrator: Execute LLM Task (Streaming)",
+        "category": "Copilot Orchestrator",
+        "icon": "$(radio-tower)"
+      },
+      {
         "command": "copilot-orchestrator.showVisualVerification",
         "title": "Copilot Orchestrator: Show Visual Verification",
         "category": "Copilot Orchestrator",
