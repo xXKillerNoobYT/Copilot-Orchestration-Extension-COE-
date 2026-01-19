@@ -70,7 +70,7 @@ export class TestingAgent {
   }
 
   /**
-   * Analyze code to extract testable elements
+   * Analyze code to extract testable elements with signatures
    */
   private analyzeCode(code: string): CodeAnalysis {
     const analysis: CodeAnalysis = {
@@ -78,25 +78,52 @@ export class TestingAgent {
       classes: [],
       exports: [],
       imports: [],
+      functionSignatures: [],
+      classMethods: [],
     };
 
-    // Extract function declarations
-    const functionRegex = /(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(/g;
+    // Extract function declarations with parameters
+    const functionRegex = /(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?::\s*([^{]+))?/g;
     let match;
     while ((match = functionRegex.exec(code)) !== null) {
-      analysis.functions.push(match[1]);
+      const name = match[1];
+      const params = this.parseParameters(match[2]);
+      const returnType = match[3]?.trim();
+      
+      analysis.functions.push(name);
+      analysis.functionSignatures.push({
+        name,
+        parameters: params,
+        returnType,
+        isAsync: match[0].includes('async'),
+      });
     }
 
-    // Extract arrow function exports
-    const arrowFnRegex = /export\s+const\s+(\w+)\s*=\s*(?:async\s*)?\(/g;
+    // Extract arrow function exports with parameters
+    const arrowFnRegex = /export\s+const\s+(\w+)\s*=\s*(?:async\s*)?\(([^)]*)\)(?::\s*([^=]+))?=>/g;
     while ((match = arrowFnRegex.exec(code)) !== null) {
-      analysis.functions.push(match[1]);
+      const name = match[1];
+      const params = this.parseParameters(match[2]);
+      const returnType = match[3]?.trim();
+      
+      analysis.functions.push(name);
+      analysis.functionSignatures.push({
+        name,
+        parameters: params,
+        returnType,
+        isAsync: match[0].includes('async'),
+      });
     }
 
     // Extract class declarations
     const classRegex = /(?:export\s+)?class\s+(\w+)/g;
     while ((match = classRegex.exec(code)) !== null) {
-      analysis.classes.push(match[1]);
+      const className = match[1];
+      analysis.classes.push(className);
+      
+      // Extract class methods
+      const methods = this.extractClassMethods(code, className);
+      analysis.classMethods.push(...methods);
     }
 
     // Extract named exports
@@ -107,6 +134,78 @@ export class TestingAgent {
     }
 
     return analysis;
+  }
+
+  /**
+   * Parse function parameters from signature
+   */
+  private parseParameters(paramStr: string): FunctionParameter[] {
+    if (!paramStr.trim()) {
+      return [];
+    }
+
+    const params: FunctionParameter[] = [];
+    const paramParts = paramStr.split(',').map(p => p.trim());
+
+    for (const part of paramParts) {
+      // Parse: name: type = defaultValue or name: type or name
+      const match = part.match(/(\w+)(?:\s*:\s*([^=]+))?(?:\s*=\s*(.+))?/);
+      if (match) {
+        params.push({
+          name: match[1],
+          type: match[2]?.trim(),
+          defaultValue: match[3]?.trim(),
+          optional: !!match[3] || part.includes('?'),
+        });
+      }
+    }
+
+    return params;
+  }
+
+  /**
+   * Extract methods from a class definition
+   */
+  private extractClassMethods(code: string, className: string): ClassMethod[] {
+    const methods: ClassMethod[] = [];
+    
+    // Find the class body
+    const classMatch = code.match(new RegExp(`class\\s+${className}[^{]*\\{([^}]+)\\}`, 's'));
+    if (!classMatch) {
+      return methods;
+    }
+
+    const classBody = classMatch[1];
+    
+    // Extract methods (public, private, static)
+    const methodRegex = /(public|private|protected)?\s*(static)?\s*(async)?\s*(\w+)\s*\(([^)]*)\)(?::\s*([^{;]+))?/g;
+    let match;
+    
+    while ((match = methodRegex.exec(classBody)) !== null) {
+      const visibility = match[1] || 'public';
+      const isStatic = !!match[2];
+      const isAsync = !!match[3];
+      const methodName = match[4];
+      const params = this.parseParameters(match[5]);
+      const returnType = match[6]?.trim();
+
+      // Skip constructor for now (handled separately)
+      if (methodName === 'constructor') {
+        continue;
+      }
+
+      methods.push({
+        className,
+        name: methodName,
+        parameters: params,
+        returnType,
+        isAsync,
+        isStatic,
+        visibility,
+      });
+    }
+
+    return methods;
   }
 
   /**
@@ -124,14 +223,15 @@ export class TestingAgent {
 
     const testCases: string[] = [];
 
-    // Generate tests for functions
-    analysis.functions.forEach(fnName => {
-      testCases.push(this.generateFunctionTest(fnName, this.assertionLibrary));
+    // Generate tests for functions with signature information
+    analysis.functionSignatures.forEach(sig => {
+      testCases.push(this.generateTypedFunctionTest(sig, this.assertionLibrary));
     });
 
-    // Generate tests for classes
+    // Generate tests for classes with methods
     analysis.classes.forEach(className => {
-      testCases.push(this.generateClassTest(className, this.assertionLibrary));
+      const methods = analysis.classMethods.filter(m => m.className === className);
+      testCases.push(this.generateTypedClassTest(className, methods, this.assertionLibrary));
     });
 
     // If no specific functions/classes found, generate general tests
@@ -148,6 +248,163 @@ ${testCases.join('\n\n')}
 `;
 
     return testSuite;
+  }
+
+  /**
+   * Generate type-specific test for a function based on its signature
+   */
+  private generateTypedFunctionTest(sig: FunctionSignature, assertLib: 'chai' | 'assert'): string {
+    const assertion = assertLib === 'chai' ? 'expect' : 'assert.ok';
+    const existCheck = assertLib === 'chai' ? '.to.exist' : '';
+
+    // Generate test inputs based on parameter types
+    const testInputs = this.generateTestInputs(sig.parameters);
+    const paramList = testInputs.map(input => input.value).join(', ');
+
+    const asyncPrefix = sig.isAsync ? 'async ' : '';
+    const awaitPrefix = sig.isAsync ? 'await ' : '';
+
+    let typeAssertion = '';
+    if (sig.returnType) {
+      typeAssertion = this.generateTypeAssertion(sig.returnType, assertLib);
+    }
+
+    return `  describe('${sig.name}()', () => {
+    it('should be defined and callable', () => {
+      ${assertion}(target.${sig.name})${existCheck};
+      ${assertLib === 'chai' ? 'expect' : 'assert.strictEqual'}(typeof target.${sig.name}${assertLib === 'chai' ? ').to.equal' : ','} 'function');
+    });
+
+    it${sig.parameters.length > 0 ? ` ('should accept ${sig.parameters.length} parameter${sig.parameters.length > 1 ? 's' : ''}', ${asyncPrefix}() => {` : `('should execute without parameters', ${asyncPrefix}() => {`}
+      ${sig.parameters.length > 0 ? `// Test with: ${sig.parameters.map(p => `${p.name}: ${p.type || 'any'}`).join(', ')}` : '// No parameters required'}
+      const result = ${awaitPrefix}target.${sig.name}(${paramList});
+      ${assertion}(result)${existCheck};${typeAssertion}
+    });
+${testInputs.length > 0 && !sig.parameters.every(p => p.optional) ? `
+    it('should handle invalid inputs', ${asyncPrefix}() => {
+      try {
+        ${awaitPrefix}target.${sig.name}();
+        // If no error thrown, function handles missing params gracefully
+      } catch (error) {
+        ${assertion}(error)${existCheck};
+      }
+    });` : ''}
+  });`;
+  }
+
+  /**
+   * Generate type-specific test for a class with methods
+   */
+  private generateTypedClassTest(
+    className: string,
+    methods: ClassMethod[],
+    assertLib: 'chai' | 'assert'
+  ): string {
+    const assertion = assertLib === 'chai' ? 'expect' : 'assert.ok';
+    const existCheck = assertLib === 'chai' ? '.to.exist' : '';
+
+    const methodTests = methods
+      .filter(m => m.visibility === 'public')
+      .map(m => {
+        const asyncPrefix = m.isAsync ? 'async ' : '';
+        const awaitPrefix = m.isAsync ? 'await ' : '';
+        const staticPrefix = m.isStatic ? '' : 'instance.';
+        const testInputs = this.generateTestInputs(m.parameters);
+        const paramList = testInputs.map(input => input.value).join(', ');
+
+        return `
+    it('should have ${m.name} method', ${asyncPrefix}() => {
+      ${m.isStatic ? `${assertion}(target.${className}.${m.name})${existCheck};` : `const instance = new target.${className}();
+      ${assertion}(instance.${m.name})${existCheck};`}
+      ${assertLib === 'chai' ? 'expect' : 'assert.strictEqual'}(typeof ${m.isStatic ? `target.${className}.${m.name}` : `instance.${m.name}`}${assertLib === 'chai' ? ').to.equal' : ','} 'function');
+    });`;
+      })
+      .join('\n');
+
+    return `  describe('${className} class', () => {
+    it('should be defined and constructable', () => {
+      ${assertion}(target.${className})${existCheck};
+      ${assertLib === 'chai' ? 'expect' : 'assert.strictEqual'}(typeof target.${className}${assertLib === 'chai' ? ').to.equal' : ','} 'function');
+    });
+
+    it('should create instance without errors', () => {
+      try {
+        const instance = new target.${className}();
+        ${assertion}(instance)${existCheck};
+        ${assertLib === 'chai' ? 'expect' : 'assert.ok'}(instance instanceof target.${className});
+      } catch (error) {
+        // Constructor may require parameters
+        ${assertion}(error)${existCheck};
+      }
+    });${methodTests}
+  });`;
+  }
+
+  /**
+   * Generate test inputs based on parameter types
+   */
+  private generateTestInputs(params: FunctionParameter[]): Array<{ name: string; value: string }> {
+    return params.map(param => {
+      const type = param.type?.toLowerCase() || '';
+
+      // Use default value if available
+      if (param.defaultValue) {
+        return { name: param.name, value: param.defaultValue };
+      }
+
+      // Generate value based on type
+      if (type.includes('string')) {
+        return { name: param.name, value: `'test-${param.name}'` };
+      } else if (type.includes('number')) {
+        return { name: param.name, value: '42' };
+      } else if (type.includes('boolean') || type.includes('bool')) {
+        return { name: param.name, value: 'true' };
+      } else if (type.includes('array') || type.includes('[]')) {
+        return { name: param.name, value: '[]' };
+      } else if (type.includes('object') || type === 'any' || type === '') {
+        return { name: param.name, value: '{}' };
+      } else if (type.includes('function')) {
+        return { name: param.name, value: '() => {}' };
+      } else if (type.includes('promise')) {
+        return { name: param.name, value: 'Promise.resolve()' };
+      } else {
+        // Default to object for unknown types
+        return { name: param.name, value: '{}' };
+      }
+    });
+  }
+
+  /**
+   * Generate type assertion based on return type
+   */
+  private generateTypeAssertion(returnType: string, assertLib: 'chai' | 'assert'): string {
+    const type = returnType.toLowerCase().replace(/promise<|>/g, '').trim();
+
+    if (type.includes('void') || type.includes('undefined')) {
+      return '';
+    } else if (type.includes('string')) {
+      return assertLib === 'chai'
+        ? '\n      expect(typeof result).to.equal(\'string\');'
+        : '\n      assert.strictEqual(typeof result, \'string\');';
+    } else if (type.includes('number')) {
+      return assertLib === 'chai'
+        ? '\n      expect(typeof result).to.equal(\'number\');'
+        : '\n      assert.strictEqual(typeof result, \'number\');';
+    } else if (type.includes('boolean') || type.includes('bool')) {
+      return assertLib === 'chai'
+        ? '\n      expect(typeof result).to.equal(\'boolean\');'
+        : '\n      assert.strictEqual(typeof result, \'boolean\');';
+    } else if (type.includes('array') || type.includes('[]')) {
+      return assertLib === 'chai'
+        ? '\n      expect(Array.isArray(result)).to.be.true;'
+        : '\n      assert.ok(Array.isArray(result));';
+    } else if (type.includes('object')) {
+      return assertLib === 'chai'
+        ? '\n      expect(typeof result).to.equal(\'object\');'
+        : '\n      assert.strictEqual(typeof result, \'object\');';
+    }
+
+    return '';
   }
 
   /**
@@ -446,11 +703,37 @@ ${testCases.join('\n\n')}
   }
 }
 
+interface FunctionParameter {
+  name: string;
+  type?: string;
+  defaultValue?: string;
+  optional: boolean;
+}
+
+interface FunctionSignature {
+  name: string;
+  parameters: FunctionParameter[];
+  returnType?: string;
+  isAsync: boolean;
+}
+
+interface ClassMethod {
+  className: string;
+  name: string;
+  parameters: FunctionParameter[];
+  returnType?: string;
+  isAsync: boolean;
+  isStatic: boolean;
+  visibility: string;
+}
+
 interface CodeAnalysis {
   functions: string[];
   classes: string[];
   exports: string[];
   imports: string[];
+  functionSignatures: FunctionSignature[];
+  classMethods: ClassMethod[];
 }
 
 /**
