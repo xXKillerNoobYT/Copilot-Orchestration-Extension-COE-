@@ -343,7 +343,7 @@ export class VisualVerificationPanel {
         solutions: [
           'Start backend: php artisan serve',
           'Check settings: copilot-orchestrator.backendUrl',
-          'Verify: curl ' + this.state.serverUrl + '/api/v1/verification/checklist'
+          `Verify: curl "${this.state.serverUrl}/api/v1/verification/checklist"`
         ],
         context: 'Using default checklist as fallback.'
       });

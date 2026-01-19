@@ -209,15 +209,22 @@ Error: ECONNREFUSED
 
 ## Testing Coverage
 
-All error scenarios are covered by 18 passing unit tests:
+All error scenarios are covered by 26 passing unit tests:
 
 1. ✅ Complete error message structure
 2. ✅ Errors without URL
-3. ✅ Connection refused errors
-4. ✅ Timeout errors
-5. ✅ Host not found errors
-6. ✅ Backend-specific messages
-7. ✅ MCP-specific messages
+3. ✅ Operation parameter validation (empty and whitespace)
+4. ✅ Connection refused errors
+5. ✅ Connection refused via error code
+6. ✅ Timeout errors
+7. ✅ Timeout via error code
+8. ✅ Host not found errors
+9. ✅ Host not found via error code
+10. ✅ Network unreachable via error code
+11. ✅ Connection reset via error code
+12. ✅ Error code priority over message patterns
+13. ✅ Backend-specific messages
+14. ✅ MCP-specific messages
 8. ✅ Plans not found messages
 9. ✅ Output channel initialization
 10. ✅ Logging with timestamps

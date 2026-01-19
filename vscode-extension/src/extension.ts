@@ -34,17 +34,13 @@ import { initializeErrorLogging, disposeErrorLogging } from './utils/errorMessag
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize Error Logging Output Channel
-  // The channel is a Disposable, and disposeErrorLogging is called when it's disposed
   const errorOutputChannel = initializeErrorLogging();
   
-  // Override the dispose method to also clear our module-level reference
-  const originalDispose = errorOutputChannel.dispose.bind(errorOutputChannel);
-  errorOutputChannel.dispose = () => {
-    originalDispose();
-    disposeErrorLogging();
-  };
-  
+  // Register disposables separately to follow VS Code best practices
   context.subscriptions.push(errorOutputChannel);
+  context.subscriptions.push({
+    dispose: () => disposeErrorLogging(),
+  });
   
   // Initialize Agent Profile Watcher (Phase 5: Hot-reload for agent profiles)
   const profileWatcher = getAgentProfileWatcher(context.extensionUri);

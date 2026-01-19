@@ -97,7 +97,7 @@ export class AgentLoopService {
         solutions: [
           'Start backend: php artisan serve',
           'Check settings: copilot-orchestrator.backendUrl',
-          'Verify backend is running: curl ' + this.config.baseUrl + '/api/v1/agent-loop/status',
+          `Verify backend is running: curl "${this.config.baseUrl}/api/v1/agent-loop/status"`,
           'Check Laravel logs for errors'
         ]
       });

@@ -212,7 +212,7 @@ describe('Enhanced Error Messages', () => {
 
       // Should have specific commands
       expect(message).toContain('php artisan serve');
-      expect(message).toContain('ping localhost 8000');
+      expect(message).toContain('curl http://localhost:8000');
       
       // Should explain the issue
       expect(message).toContain('Laravel backend not running');

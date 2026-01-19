@@ -245,7 +245,8 @@ All errors are logged to the **Copilot Orchestrator** output channel:
 ```bash
 # Stop all services
 docker-compose down
-php artisan serve --stop
+# If you started Laravel with `php artisan serve`, stop it with Ctrl+C
+# in the terminal where it's running (or kill the process manually).
 
 # Start services
 docker-compose up -d

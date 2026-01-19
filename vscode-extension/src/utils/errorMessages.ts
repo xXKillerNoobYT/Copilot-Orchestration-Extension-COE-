@@ -227,7 +227,7 @@ export function buildBackendErrorMessage(
     solutions: [
       'Start backend: php artisan serve',
       'Check settings: copilot-orchestrator.backendUrl',
-      'Verify network: ping localhost 8000',
+      'Verify backend is reachable: curl http://localhost:8000',
       'Check firewall rules'
     ]
   });
