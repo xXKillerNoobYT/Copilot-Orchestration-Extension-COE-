@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/144</span>
+                <span class='fraction'>0/145</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/35</span>
+                <span class='fraction'>0/34</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/142</span>
+                <span class='fraction'>0/143</span>
             </div>
         
             
@@ -400,10 +400,7 @@
 <a name='L335'></a><a href='#L335'>335</a>
 <a name='L336'></a><a href='#L336'>336</a>
 <a name='L337'></a><a href='#L337'>337</a>
-<a name='L338'></a><a href='#L338'>338</a>
-<a name='L339'></a><a href='#L339'>339</a>
-<a name='L340'></a><a href='#L340'>340</a>
-<a name='L341'></a><a href='#L341'>341</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L338'></a><a href='#L338'>338</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -415,7 +412,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -483,17 +479,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -548,15 +538,18 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -712,6 +705,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -754,14 +748,13 @@
  * - Loop lifecycle (start → status → stop)
  */
 &nbsp;
-<span class="cstat-no" title="statement not covered" >import * as assert from 'assert';</span>
-import * as vscode from 'vscode';
+<span class="cstat-no" title="statement not covered" >import { describe, it, expect, beforeEach, vi } from 'vitest';</span>
 <span class="cstat-no" title="statement not covered" >import { AgentLoopService, AgentLoopStatus } from './services/agentLoopService';</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >describe('AgentLoopService', <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
   let service: AgentLoopService;
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  before(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  beforeEach(<span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    service = new AgentLoopService({</span>
       baseUrl: 'http://localhost:8000',
     });
@@ -772,32 +765,32 @@ import * as vscode from 'vscode';
 <span class="cstat-no" title="statement not covered" >      try {</span>
         // This test requires backend running
         const status = <span class="cstat-no" title="statement not covered" >await service.startLoop(3);</span> // Test with 3 cycles
-<span class="cstat-no" title="statement not covered" >        assert.strictEqual(status.running, true);</span>
+<span class="cstat-no" title="statement not covered" >        expect(status.running).toBe(true);</span>
       } catch (error) {
         // Skip if backend not available
-<span class="cstat-no" title="statement not covered" >        assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >        expect(error).toBeInstanceOf(Error);</span>
       }
     });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    it('should get current status', <span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
         const status = <span class="cstat-no" title="statement not covered" >await service.getStatus();</span>
-<span class="cstat-no" title="statement not covered" >        assert.ok(status.running !== undefined);</span>
-<span class="cstat-no" title="statement not covered" >        assert.ok(status.state !== undefined);</span>
+<span class="cstat-no" title="statement not covered" >        expect(status.running).toBeDefined();</span>
+<span class="cstat-no" title="statement not covered" >        expect(status.state).toBeDefined();</span>
       } catch (error) {
         // Skip if backend not available
-<span class="cstat-no" title="statement not covered" >        assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >        expect(error).toBeInstanceOf(Error);</span>
       }
     });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    it('should execute single cycle', <span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
         const result = <span class="cstat-no" title="statement not covered" >await service.executeCycle();</span>
-<span class="cstat-no" title="statement not covered" >        assert.ok(result.state);</span>
-<span class="cstat-no" title="statement not covered" >        assert.ok(result.message);</span>
+<span class="cstat-no" title="statement not covered" >        expect(result.state).toBeDefined();</span>
+<span class="cstat-no" title="statement not covered" >        expect(result.message).toBeDefined();</span>
       } catch (error) {
         // Skip if backend not available
-<span class="cstat-no" title="statement not covered" >        assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >        expect(error).toBeInstanceOf(Error);</span>
       }
     });
 &nbsp;
@@ -807,31 +800,25 @@ import * as vscode from 'vscode';
         // Give it a moment to process
 <span class="cstat-no" title="statement not covered" >        await new Promise(<span class="fstat-no" title="function not covered" >resolve </span>=&gt; <span class="cstat-no" title="statement not covered" >setTimeout(resolve, 500))</span>;</span>
         const status = <span class="cstat-no" title="statement not covered" >await service.getStatus();</span>
-<span class="cstat-no" title="statement not covered" >        assert.strictEqual(status.running, false);</span>
+<span class="cstat-no" title="statement not covered" >        expect(status.running).toBe(false);</span>
       } catch (error) {
         // Skip if backend not available
-<span class="cstat-no" title="statement not covered" >        assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >        expect(error).toBeInstanceOf(Error);</span>
       }
     });
   });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  describe('Status Callbacks', <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    it.skip('should register and notify status change listeners (requires backend events)', <span class="fstat-no" title="function not covered" >(d</span>one: Mocha.Done) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    it.skip('should register and notify status change listeners (requires backend events)', <span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
       const testStatus: AgentLoopStatus = <span class="cstat-no" title="statement not covered" >{</span>
         running: true,
         state: 'execution_ready',
         cycles_executed: 5,
       };
 &nbsp;
-      const unsubscribe = <span class="cstat-no" title="statement not covered" >service.onStatusChange(<span class="fstat-no" title="function not covered" >(s</span>tatus: AgentLoopStatus) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        assert.strictEqual(status.running, testStatus.running);</span>
-<span class="cstat-no" title="statement not covered" >        assert.strictEqual(status.state, testStatus.state);</span>
-<span class="cstat-no" title="statement not covered" >        unsubscribe();</span>
-<span class="cstat-no" title="statement not covered" >        done();</span>
-      });
-&nbsp;
-      // Simulate status change notification
-      // In real scenario, this would come from getStatus() or polling
+      const callback = <span class="cstat-no" title="statement not covered" >vi.fn();</span>
+      const unsubscribe = <span class="cstat-no" title="statement not covered" >service.onStatusChange(callback);</span>
+<span class="cstat-no" title="statement not covered" >      unsubscribe();</span>
     });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    it('should unsubscribe from status changes', <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
@@ -841,7 +828,7 @@ import * as vscode from 'vscode';
       });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      unsubscribe();</span>
-<span class="cstat-no" title="statement not covered" >      assert.strictEqual(callCount, 0);</span>
+<span class="cstat-no" title="statement not covered" >      expect(callCount).toBe(0);</span>
     });
   });
 &nbsp;
@@ -853,10 +840,10 @@ import * as vscode from 'vscode';
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        await failingService.getStatus();</span>
-<span class="cstat-no" title="statement not covered" >        assert.fail('Should have thrown error');</span>
+<span class="cstat-no" title="statement not covered" >        expect.fail('Should have thrown error');</span>
       } catch (error) {
-<span class="cstat-no" title="statement not covered" >        assert.ok(error instanceof Error);</span>
-<span class="cstat-no" title="statement not covered" >        assert.ok(error.message.includes('Failed'));</span>
+<span class="cstat-no" title="statement not covered" >        expect(error).toBeInstanceOf(Error);</span>
+<span class="cstat-no" title="statement not covered" >        expect((error as Error).message).toContain('Failed');</span>
       }
     });
 &nbsp;
@@ -875,11 +862,11 @@ import * as vscode from 'vscode';
         const results = <span class="cstat-no" title="statement not covered" >await service.pollStatus(1000, 3000);</span> // Poll every 1s, max 3s
         const duration = <span class="cstat-no" title="statement not covered" >Date.now() - startTime;</span>
         
-<span class="cstat-no" title="statement not covered" >        assert.ok(duration &gt;= 3000); </span>// Should run for at least 3 seconds
-<span class="cstat-no" title="statement not covered" >        assert.ok(results.length &gt; 0); </span>// Should have collected some results
+<span class="cstat-no" title="statement not covered" >        expect(duration).toBeGreaterThanOrEqual(3000); </span>// Should run for at least 3 seconds
+<span class="cstat-no" title="statement not covered" >        expect(results.length).toBeGreaterThan(0); </span>// Should have collected some results
       } catch (error) {
         // Skip if backend not available
-<span class="cstat-no" title="statement not covered" >        assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >        expect(error).toBeInstanceOf(Error);</span>
       }
     });
   });
@@ -893,10 +880,13 @@ import * as vscode from 'vscode';
       'copilot-orchestrator.autoLoopStatus',
       'copilot-orchestrator.executeSingleCycle',
     ];
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    commands.forEach(<span class="fstat-no" title="function not covered" >command </span>=&gt; {</span>
+    
+<span class="cstat-no" title="statement not covered" >    expect(commands.length).toBe(4);</span>
+    
+<span class="cstat-no" title="statement not covered" >    commands.forEach(<span class="fstat-no" title="function not covered" >(c</span>ommand: string) =&gt; {</span>
       // Verify command is registered in VS Code
       // This would require access to vscode.commands API in tests
+<span class="cstat-no" title="statement not covered" >      expect(command).toBeDefined();</span>
     });
   });
 &nbsp;
@@ -925,18 +915,18 @@ import * as vscode from 'vscode';
 <span class="cstat-no" title="statement not covered" >    try {</span>
       // Start loop with 3 cycles
       const status = <span class="cstat-no" title="statement not covered" >await service.startLoop(3);</span>
-<span class="cstat-no" title="statement not covered" >      assert.strictEqual(status.running, true);</span>
+<span class="cstat-no" title="statement not covered" >      expect(status.running).toBe(true);</span>
 &nbsp;
       // Poll for completion
       const results = <span class="cstat-no" title="statement not covered" >await service.pollStatus(2000, 120000);</span> // Poll every 2s, max 2 minutes
       
       // Verify final state
       const finalResult = <span class="cstat-no" title="statement not covered" >results[results.length - 1];</span>
-<span class="cstat-no" title="statement not covered" >      assert.strictEqual(finalResult.running, false);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(finalResult.cycles_executed &amp;&amp; finalResult.cycles_executed &gt;= 3);</span>
+<span class="cstat-no" title="statement not covered" >      expect(finalResult.running).toBe(false);</span>
+<span class="cstat-no" title="statement not covered" >      expect((finalResult.cycles_executed &amp;&amp; finalResult.cycles_executed &gt;= 3)).toBe(true);</span>
     } catch (error) {
       // Skip if backend not available
-<span class="cstat-no" title="statement not covered" >      assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >      expect(error instanceof Error).toBeTruthy();</span>
     }
   });
 &nbsp;
@@ -958,10 +948,10 @@ import * as vscode from 'vscode';
 &nbsp;
       // Verify stopped
       const status = <span class="cstat-no" title="statement not covered" >await service.getStatus();</span>
-<span class="cstat-no" title="statement not covered" >      assert.strictEqual(status.running, false);</span>
+<span class="cstat-no" title="statement not covered" >      expect(status.running).toBe(false);</span>
     } catch (error) {
       // Skip if backend not available
-<span class="cstat-no" title="statement not covered" >      assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >      expect(error instanceof Error).toBeTruthy();</span>
     }
   });
 &nbsp;
@@ -974,13 +964,13 @@ import * as vscode from 'vscode';
       const status = <span class="cstat-no" title="statement not covered" >await service.getStatus();</span>
       
       // Verify statistics are available
-<span class="cstat-no" title="statement not covered" >      assert.ok(status.cycles_executed !== undefined);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(status.successes !== undefined);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(status.errors !== undefined);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(status.avg_cycle_time !== undefined);</span>
+<span class="cstat-no" title="statement not covered" >      expect(status.cycles_executed !== undefined).toBeTruthy();</span>
+<span class="cstat-no" title="statement not covered" >      expect(status.successes !== undefined).toBeTruthy();</span>
+<span class="cstat-no" title="statement not covered" >      expect(status.errors !== undefined).toBeTruthy();</span>
+<span class="cstat-no" title="statement not covered" >      expect(status.avg_cycle_time !== undefined).toBeTruthy();</span>
     } catch (error) {
       // Skip if backend not available
-<span class="cstat-no" title="statement not covered" >      assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >      expect(error instanceof Error).toBeTruthy();</span>
     }
   });
 });
@@ -995,17 +985,17 @@ import * as vscode from 'vscode';
     // Action
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const startStatus = <span class="cstat-no" title="statement not covered" >await service.startLoop(5);</span>
-<span class="cstat-no" title="statement not covered" >      assert.strictEqual(startStatus.running, true);</span>
+<span class="cstat-no" title="statement not covered" >      expect(startStatus.running).toBe(true);</span>
 &nbsp;
       // Verify status
       const currentStatus = <span class="cstat-no" title="statement not covered" >await service.getStatus();</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(currentStatus.running);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(currentStatus.cycles_executed !== undefined);</span>
+<span class="cstat-no" title="statement not covered" >      expect(currentStatus.running).toBeTruthy();</span>
+<span class="cstat-no" title="statement not covered" >      expect(currentStatus.cycles_executed !== undefined).toBeTruthy();</span>
 &nbsp;
       // Cleanup
 <span class="cstat-no" title="statement not covered" >      await service.stopLoop();</span>
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >      expect(error instanceof Error).toBeTruthy();</span>
     }
   });
 &nbsp;
@@ -1018,11 +1008,11 @@ import * as vscode from 'vscode';
       const result = <span class="cstat-no" title="statement not covered" >await service.executeCycle();</span>
       
       // Verify cycle result structure
-<span class="cstat-no" title="statement not covered" >      assert.ok(result.state);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(['idle', 'planning_ready', 'execution_ready', 'done'].includes(result.state));</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(result.message);</span>
+<span class="cstat-no" title="statement not covered" >      expect(result.state).toBeTruthy();</span>
+<span class="cstat-no" title="statement not covered" >      expect(['idle', 'planning_ready', 'execution_ready', 'done'].includes(result.state)).toBe(true);</span>
+<span class="cstat-no" title="statement not covered" >      expect(result.message).toBeTruthy();</span>
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >      expect(error instanceof Error).toBe(true);</span>
     }
   });
 &nbsp;
@@ -1050,10 +1040,11 @@ import * as vscode from 'vscode';
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await service.startLoop(1);</span>
-<span class="cstat-no" title="statement not covered" >      assert.fail('Should have thrown error');</span>
-    } catch (error) {
-<span class="cstat-no" title="statement not covered" >      assert.ok(error instanceof Error);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(error.message.includes('Failed') || error.message.includes('connection'));</span>
+<span class="cstat-no" title="statement not covered" >      expect.fail('Should have thrown error');</span>
+    } catch (error: unknown) {
+      const err = <span class="cstat-no" title="statement not covered" >error as Error;</span>
+<span class="cstat-no" title="statement not covered" >      expect(err instanceof Error).toBe(true);</span>
+<span class="cstat-no" title="statement not covered" >      expect(err.message.includes('Failed') || err.message.includes('connection')).toBe(true);</span>
     }
   });
 &nbsp;
@@ -1072,14 +1063,14 @@ import * as vscode from 'vscode';
       
       // Verify all tasks were executed
       const finalStatus = <span class="cstat-no" title="statement not covered" >results[results.length - 1];</span>
-<span class="cstat-no" title="statement not covered" >      assert.strictEqual(finalStatus.running, false);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(finalStatus.cycles_executed &amp;&amp; finalStatus.cycles_executed &gt; 0);</span>
+<span class="cstat-no" title="statement not covered" >      expect(finalStatus.running).toBe(false);</span>
+<span class="cstat-no" title="statement not covered" >      expect((finalStatus.cycles_executed &amp;&amp; finalStatus.cycles_executed &gt; 0)).toBe(true);</span>
       
       // Verify success rate
       const successRate = <span class="cstat-no" title="statement not covered" >(finalStatus.successes || 0) / (finalStatus.cycles_executed || 1);</span>
-<span class="cstat-no" title="statement not covered" >      assert.ok(successRate &gt; 0.8); </span>// Expect &gt;80% success rate
+<span class="cstat-no" title="statement not covered" >      expect(successRate &gt; 0.8).toBe(true); </span>// Expect &gt;80% success rate
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      assert.ok(error instanceof Error);</span>
+<span class="cstat-no" title="statement not covered" >      expect(error instanceof Error).toBeTruthy();</span>
     }
   });
 });
@@ -1090,7 +1081,7 @@ import * as vscode from 'vscode';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-16T07:43:01.477Z
+                at 2026-01-19T02:30:03.279Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

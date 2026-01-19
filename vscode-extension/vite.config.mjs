@@ -22,5 +22,10 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src')
     }
+  },
+  // Suppress warnings about Node.js modules being externalized
+  // These imports are in service files that aren't used in the browser bundle
+  optimizeDeps: {
+    exclude: ['vscode', 'fs', 'path']
   }
 });

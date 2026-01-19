@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">4.58% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/131</span>
+                <span class='fraction'>6/131</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">4.61% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/130</span>
+                <span class='fraction'>6/130</span>
             </div>
         
             
@@ -458,7 +458,7 @@
 <a name='L393'></a><a href='#L393'>393</a>
 <a name='L394'></a><a href='#L394'>394</a>
 <a name='L395'></a><a href='#L395'>395</a>
-<a name='L396'></a><a href='#L396'>396</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L396'></a><a href='#L396'>396</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -486,7 +486,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -824,12 +824,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -840,20 +840,20 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import * as vscode from 'vscode';</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import * as vscode from 'vscode';
 &nbsp;
 /**
  * WebSocket Configuration
@@ -881,7 +881,7 @@ export interface WebSocketEvent {
  * WebSocket client for real-time event delivery from Laravel backend
  * Handles Soketi/Pusher/Redis broadcasting with automatic reconnection
  */
-<span class="cstat-no" title="statement not covered" >export class W</span>ebSocketClient {
+export class WebSocketClient {
   private connection: any;
   private <span class="cstat-no" title="statement not covered" >listeners: Map&lt;string, Set&lt;(data: any) =&gt; void&gt;&gt; = new Map();</span>
   private <span class="cstat-no" title="statement not covered" >subscriptions: Map&lt;string, any&gt; = new Map();</span>
@@ -1219,12 +1219,12 @@ export interface WebSocketEvent {
 /**
  * Global WebSocket client instance
  */
-let globalWebSocketClient: WebSocketClient | null = <span class="cstat-no" title="statement not covered" >null;</span>
+let globalWebSocketClient: WebSocketClient | null = null;
 &nbsp;
 /**
  * Initialize global WebSocket client
  */
-<span class="cstat-no" title="statement not covered" >export a</span>sync function <span class="fstat-no" title="function not covered" >initializeWebSocketClient(</span>
+export async function <span class="fstat-no" title="function not covered" >initializeWebSocketClient(</span>
   config: WebSocketConfig
 ): Promise&lt;WebSocketClient&gt; {
 <span class="cstat-no" title="statement not covered" >  globalWebSocketClient = new WebSocketClient(config);</span>
@@ -1235,14 +1235,14 @@ let globalWebSocketClient: WebSocketClient | null = <span class="cstat-no" title
 /**
  * Get global WebSocket client instance
  */
-<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >g</span>etWebSocketClient(</span>): WebSocketClient | null {
+export function <span class="fstat-no" title="function not covered" >getWebSocketClient(</span>): WebSocketClient | null {
 <span class="cstat-no" title="statement not covered" >  return globalWebSocketClient;</span>
 }
 &nbsp;
 /**
  * Dispose of global WebSocket client
  */
-<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >d</span>isposeWebSocketClient(</span>): void {
+export function <span class="fstat-no" title="function not covered" >disposeWebSocketClient(</span>): void {
 <span class="cstat-no" title="statement not covered" >  if (globalWebSocketClient) {</span>
 <span class="cstat-no" title="statement not covered" >    globalWebSocketClient.disconnect();</span>
 <span class="cstat-no" title="statement not covered" >    globalWebSocketClient = null;</span>
@@ -1255,7 +1255,7 @@ let globalWebSocketClient: WebSocketClient | null = <span class="cstat-no" title
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-16T07:43:01.477Z
+                at 2026-01-19T02:30:03.279Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

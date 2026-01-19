@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/275</span>
+                <span class='fraction'>0/280</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/24</span>
+                <span class='fraction'>0/26</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/275</span>
+                <span class='fraction'>0/280</span>
             </div>
         
             
@@ -643,7 +643,24 @@
 <a name='L578'></a><a href='#L578'>578</a>
 <a name='L579'></a><a href='#L579'>579</a>
 <a name='L580'></a><a href='#L580'>580</a>
-<a name='L581'></a><a href='#L581'>581</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L581'></a><a href='#L581'>581</a>
+<a name='L582'></a><a href='#L582'>582</a>
+<a name='L583'></a><a href='#L583'>583</a>
+<a name='L584'></a><a href='#L584'>584</a>
+<a name='L585'></a><a href='#L585'>585</a>
+<a name='L586'></a><a href='#L586'>586</a>
+<a name='L587'></a><a href='#L587'>587</a>
+<a name='L588'></a><a href='#L588'>588</a>
+<a name='L589'></a><a href='#L589'>589</a>
+<a name='L590'></a><a href='#L590'>590</a>
+<a name='L591'></a><a href='#L591'>591</a>
+<a name='L592'></a><a href='#L592'>592</a>
+<a name='L593'></a><a href='#L593'>593</a>
+<a name='L594'></a><a href='#L594'>594</a>
+<a name='L595'></a><a href='#L595'>595</a>
+<a name='L596'></a><a href='#L596'>596</a>
+<a name='L597'></a><a href='#L597'>597</a>
+<a name='L598'></a><a href='#L598'>598</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -712,6 +729,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -733,6 +756,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1107,14 +1131,24 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1292,27 +1326,34 @@ instructions: Test agent instructions
 &nbsp;
     // Initialize dispatcher with test directories
     const mockAgentLoader = <span class="cstat-no" title="statement not covered" >{</span>
-      loadProfile: <span class="fstat-no" title="function not covered" >async </span>(name: string) =&gt; (<span class="cstat-no" title="statement not covered" >{</span>
-        version: 1,
-        name: name || 'test-agent',
-        role: 'test-role',
-        instructions: 'You are a test agent.',
-        tool_permissions: {
-          read_files: true,
-          write_files: false,
-        } as any,
-        execution_constraints: {
-          max_depth: 5,
-          require_tests_for_changes: true,
-        } as any,
-        prompt_templates: {
-          system: 'Test system template',
-          planning: 'Analyze: {{task}}',
-        },
-        defaults: {
-          timeout: 30000,
-        },
-      } as AgentProfile),
+      loadProfile: <span class="fstat-no" title="function not covered" >async </span>(name: string) =&gt; {
+        // Return null for non-existent agents
+<span class="cstat-no" title="statement not covered" >        if (name === 'nonexistent-agent') {</span>
+<span class="cstat-no" title="statement not covered" >          return null;</span>
+        }
+        
+<span class="cstat-no" title="statement not covered" >        return {</span>
+          version: 1,
+          name: name || 'test-agent',
+          role: 'test-role',
+          instructions: 'You are a test agent.',
+          tool_permissions: {
+            read_files: true,
+            write_files: false,
+          } as any,
+          execution_constraints: {
+            max_depth: 5,
+            require_tests_for_changes: true,
+          } as any,
+          prompt_templates: {
+            system: 'Test system template',
+            planning: 'Analyze: {{task}}',
+          },
+          defaults: {
+            timeout: 30000,
+          },
+        } as AgentProfile;
+      },
       loadAllProfiles: <span class="fstat-no" title="function not covered" >async </span>() =&gt; <span class="cstat-no" title="statement not covered" >[],</span>
     } as any;
 &nbsp;
@@ -1603,8 +1644,8 @@ instructions: Test agent instructions
 <span class="cstat-no" title="statement not covered" >  describe('Memory Management', <span class="fstat-no" title="function not covered" >() =</span>&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    test('provided memory entries are preserved in payload', <span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
       const testMemory = <span class="cstat-no" title="statement not covered" >[</span>
-        { role: 'user' as const, content: 'First message' },
-        { role: 'assistant' as const, content: 'First response' },
+        { role: 'user' as const, content: 'First message', timestamp: new Date().toISOString() },
+        { role: 'assistant' as const, content: 'First response', timestamp: new Date().toISOString() },
       ];
 &nbsp;
       const payload = <span class="cstat-no" title="statement not covered" >await dispatcher.composePrompt('TASK-test-dispatcher', {</span>
@@ -1626,9 +1667,9 @@ instructions: Test agent instructions
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    test('metadata memoryCount reflects actual memory entries', <span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
       const testMemory = <span class="cstat-no" title="statement not covered" >[</span>
-        { role: 'user' as const, content: 'Message 1' },
-        { role: 'assistant' as const, content: 'Message 2' },
-        { role: 'user' as const, content: 'Message 3' },
+        { role: 'user' as const, content: 'Message 1', timestamp: new Date().toISOString() },
+        { role: 'assistant' as const, content: 'Message 2', timestamp: new Date().toISOString() },
+        { role: 'user' as const, content: 'Message 3', timestamp: new Date().toISOString() },
       ];
 &nbsp;
       const payload = <span class="cstat-no" title="statement not covered" >await dispatcher.composePrompt('TASK-test-dispatcher', {</span>
@@ -1694,8 +1735,18 @@ instructions: Test agent instructions
     });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    test('tasksDir option is stored in metadata', <span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
-      const customTasksDir = <span class="cstat-no" title="statement not covered" >'/custom/tasks';</span>
-      const payload = <span class="cstat-no" title="statement not covered" >await dispatcher.composePrompt('TASK-test-dispatcher', {</span>
+      const customTasksDir = <span class="cstat-no" title="statement not covered" >path.join(tempDir, 'custom-tasks');</span>
+<span class="cstat-no" title="statement not covered" >      await fs.mkdir(customTasksDir, { recursive: true });</span>
+      
+      // Create task in custom directory
+      const customTaskPath = <span class="cstat-no" title="statement not covered" >path.join(customTasksDir, 'TASK-custom.md');</span>
+<span class="cstat-no" title="statement not covered" >      await fs.writeFile(customTaskPath, `---</span>
+id: TASK-custom
+title: Test Custom Task
+---
+Test description for custom task dir.`);
+&nbsp;
+      const payload = <span class="cstat-no" title="statement not covered" >await dispatcher.composePrompt('TASK-custom', {</span>
         tasksDir: customTasksDir,
       });
 &nbsp;
@@ -1787,9 +1838,9 @@ instructions: Test agent instructions
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    test('memory role values are strictly typed', <span class="fstat-no" title="function not covered" >async </span>() =&gt; {</span>
       const testMemory = <span class="cstat-no" title="statement not covered" >[</span>
-        { role: 'user' as const, content: 'Message' },
-        { role: 'assistant' as const, content: 'Response' },
-        { role: 'system' as const, content: 'Context' },
+        { role: 'user' as const, content: 'Message', timestamp: new Date().toISOString() },
+        { role: 'assistant' as const, content: 'Response', timestamp: new Date().toISOString() },
+        { role: 'system' as const, content: 'Context', timestamp: new Date().toISOString() },
       ];
 &nbsp;
       const payload = <span class="cstat-no" title="statement not covered" >await dispatcher.composePrompt('TASK-test-dispatcher', {</span>
@@ -1810,7 +1861,7 @@ instructions: Test agent instructions
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-16T07:43:01.477Z
+                at 2026-01-19T02:30:03.279Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

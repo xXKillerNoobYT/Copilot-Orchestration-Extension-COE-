@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">17.64% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/17</span>
+                <span class='fraction'>3/17</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>0/9</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">16.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>2/12</span>
             </div>
         
             
@@ -162,14 +162,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -185,6 +179,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export interface TaskMetricsResponse {
   counts: {
     total: number;
@@ -223,29 +223,29 @@ export interface ErrorMetricsResponse {
   lastUpdated: string;
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class M</span>etricsService {
+export class MetricsService {
 <span class="fstat-no" title="function not covered" >  constructor(private readonly <span class="cstat-no" title="statement not covered" >b</span>aseUrl: string)</span> {}
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>getTaskMetrics(): Promise&lt;TaskMetricsResponse&gt; {
-    const res = <span class="cstat-no" title="statement not covered" >await fetch(`${this.baseUrl}/api/v1/metrics/tasks`);</span>
+<span class="fstat-no" title="function not covered" >  async </span>getTaskMetrics(timeRange: string = <span class="branch-0 cbranch-no" title="branch not covered" >'24h')</span>: Promise&lt;TaskMetricsResponse&gt; {
+    const res = <span class="cstat-no" title="statement not covered" >await fetch(`${this.baseUrl}/api/v1/metrics/tasks?range=${encodeURIComponent(timeRange)}`);</span>
 <span class="cstat-no" title="statement not covered" >    if (!res.ok) <span class="cstat-no" title="statement not covered" >throw new Error(`Failed to fetch task metrics (${res.status})`);</span></span>
 <span class="cstat-no" title="statement not covered" >    return res.json() as Promise&lt;TaskMetricsResponse&gt;;</span>
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>getAgentMetrics(): Promise&lt;AgentMetricsResponse&gt; {
-    const res = <span class="cstat-no" title="statement not covered" >await fetch(`${this.baseUrl}/api/v1/metrics/agents`);</span>
+<span class="fstat-no" title="function not covered" >  async </span>getAgentMetrics(timeRange: string = <span class="branch-0 cbranch-no" title="branch not covered" >'24h')</span>: Promise&lt;AgentMetricsResponse&gt; {
+    const res = <span class="cstat-no" title="statement not covered" >await fetch(`${this.baseUrl}/api/v1/metrics/agents?range=${encodeURIComponent(timeRange)}`);</span>
 <span class="cstat-no" title="statement not covered" >    if (!res.ok) <span class="cstat-no" title="statement not covered" >throw new Error(`Failed to fetch agent metrics (${res.status})`);</span></span>
 <span class="cstat-no" title="statement not covered" >    return res.json() as Promise&lt;AgentMetricsResponse&gt;;</span>
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>getErrorMetrics(): Promise&lt;ErrorMetricsResponse&gt; {
-    const res = <span class="cstat-no" title="statement not covered" >await fetch(`${this.baseUrl}/api/v1/metrics/errors`);</span>
+<span class="fstat-no" title="function not covered" >  async </span>getErrorMetrics(timeRange: string = <span class="branch-0 cbranch-no" title="branch not covered" >'24h')</span>: Promise&lt;ErrorMetricsResponse&gt; {
+    const res = <span class="cstat-no" title="statement not covered" >await fetch(`${this.baseUrl}/api/v1/metrics/errors?range=${encodeURIComponent(timeRange)}`);</span>
 <span class="cstat-no" title="statement not covered" >    if (!res.ok) <span class="cstat-no" title="statement not covered" >throw new Error(`Failed to fetch error metrics (${res.status})`);</span></span>
 <span class="cstat-no" title="statement not covered" >    return res.json() as Promise&lt;ErrorMetricsResponse&gt;;</span>
   }
 }
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >createMetricsService = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>b</span>aseUrl: string) =&gt; <span class="cstat-no" title="statement not covered" >new MetricsService(baseUrl);</span></span>
+export const createMetricsService = <span class="fstat-no" title="function not covered" >(b</span>aseUrl: string) =&gt; <span class="cstat-no" title="statement not covered" >new MetricsService(baseUrl);</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -253,7 +253,7 @@ export const <span class="cstat-no" title="statement not covered" >createMetrics
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-16T07:43:01.477Z
+                at 2026-01-19T02:30:03.279Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

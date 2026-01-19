@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/136</span>
+                <span class='fraction'>0/140</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/133</span>
+                <span class='fraction'>0/137</span>
             </div>
         
             
@@ -426,7 +426,11 @@
 <a name='L361'></a><a href='#L361'>361</a>
 <a name='L362'></a><a href='#L362'>362</a>
 <a name='L363'></a><a href='#L363'>363</a>
-<a name='L364'></a><a href='#L364'>364</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L364'></a><a href='#L364'>364</a>
+<a name='L365'></a><a href='#L365'>365</a>
+<a name='L366'></a><a href='#L366'>366</a>
+<a name='L367'></a><a href='#L367'>367</a>
+<a name='L368'></a><a href='#L368'>368</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -575,6 +579,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -616,6 +622,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -937,15 +945,17 @@
 <span class="cstat-no" title="statement not covered" >        await openDecompositionSummary(result);</span>
 &nbsp;
         // Optional: Offer to explore created tasks
+        const config = <span class="cstat-no" title="statement not covered" >vscode.workspace.getConfiguration('copilot-orchestrator');</span>
+        const issueFolder = <span class="cstat-no" title="statement not covered" >config.get&lt;string&gt;('task.issueFolder', '.vscode/github-issues');</span>
         const explore = <span class="cstat-no" title="statement not covered" >await vscode.window.showInformationMessage(</span>
-          `✓ Created ${result.taskCount} tasks. Open the _ZENTASKS folder?`,
+          `✓ Created ${result.taskCount} tasks. Open the ${issueFolder} folder?`,
           'Yes',
           'No'
         );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        if (explore === 'Yes') {</span>
-          const zenTasksUri = <span class="cstat-no" title="statement not covered" >vscode.Uri.file(path.join(workspaceRoot, '_ZENTASKS'));</span>
-<span class="cstat-no" title="statement not covered" >          await vscode.commands.executeCommand('revealFileInOS', zenTasksUri);</span>
+          const taskFolderUri = <span class="cstat-no" title="statement not covered" >vscode.Uri.file(path.join(workspaceRoot, issueFolder));</span>
+<span class="cstat-no" title="statement not covered" >          await vscode.commands.executeCommand('revealFileInOS', taskFolderUri);</span>
         }
       }
 &nbsp;
@@ -979,15 +989,17 @@
 <span class="cstat-no" title="statement not covered" >        await openDecompositionSummary(result);</span>
 &nbsp;
         // Optional: Offer to explore created tasks
+        const config = <span class="cstat-no" title="statement not covered" >vscode.workspace.getConfiguration('copilot-orchestrator');</span>
+        const issueFolder = <span class="cstat-no" title="statement not covered" >config.get&lt;string&gt;('task.issueFolder', '.vscode/github-issues');</span>
         const explore = <span class="cstat-no" title="statement not covered" >await vscode.window.showInformationMessage(</span>
-          `Created ${result.taskCount} tasks. Open the _ZENTASKS folder?`,
+          `Created ${result.taskCount} tasks. Open the ${issueFolder} folder?`,
           'Yes',
           'No'
         );
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        if (explore === 'Yes') {</span>
-          const zenTasksUri = <span class="cstat-no" title="statement not covered" >vscode.Uri.file(path.join(workspaceRoot, '_ZENTASKS'));</span>
-<span class="cstat-no" title="statement not covered" >          await vscode.commands.executeCommand('revealFileInOS', zenTasksUri);</span>
+          const taskFolderUri = <span class="cstat-no" title="statement not covered" >vscode.Uri.file(path.join(workspaceRoot, issueFolder));</span>
+<span class="cstat-no" title="statement not covered" >          await vscode.commands.executeCommand('revealFileInOS', taskFolderUri);</span>
         }
       }
 &nbsp;
@@ -1159,7 +1171,7 @@ function <span class="fstat-no" title="function not covered" >getNonce(</span>):
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-16T07:43:01.477Z
+                at 2026-01-19T02:30:03.279Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
