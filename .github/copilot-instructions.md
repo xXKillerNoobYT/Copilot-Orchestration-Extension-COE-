@@ -43,3 +43,24 @@
 
 ## How to get productive fast
 - Start from the relevant doc in `Docs/` (runbook/plan) to understand task intent, then open matching controller/service and Vue component. Use route names from `routes/api.php` with Ziggy in the frontend. For agent automation, follow commands in `COPILOT-WORKFLOW-QUICKSTART.md` and `.github/issues/README.md`.
+
+## PRD sources
+- Machine-readable: `PRD.json`
+- Human-readable: `PRD.md`
+- Regeneration notebook: `PRD.ipynb` Update when upstream docs change.
+
+## Doc
+- Main docs folder: `Docs/`
+- Runbook: `Docs/PROJECT-RUNBOOK.md`
+- GitHub Issues plan: `.vscode/githubissues` folder and `Docs/GITHUB-ISSUES-PLAN.md`
+- Keep docs updated when code or processes change.
+- keep the `./` folder clean and organized. minimize clutter.
+- keep documentation up to date with code changes.
+- Clean out Old and out of date Docs.
+
+## Issue management
+- Issues are mirrored in `.github/issues/` via GitHub Issues Sync.
+- Follow the guidelines in `.github/issues/README.md` for creating and managing issues.
+- Use tools to make/update issues on GitHub. They will follow the process automatically.
+- NEED TO ADD MORE DETAILS LATER do so using the tools provided.
+- Cheak for comint messages for more details. use the tools provided. the issues 
