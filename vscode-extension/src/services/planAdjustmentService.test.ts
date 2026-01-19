@@ -23,14 +23,18 @@ jest.mock('./planPersistence');
 jest.mock('../planBuilder/planDriftDetector');
 jest.mock('../planBuilder/planAdjustmentEngine');
 
+// Import mocked modules to set up return values
+import { getPlanPersistenceService } from './planPersistence';
+import { PlanDriftDetector } from '../planBuilder/planDriftDetector';
+import { PlanAdjustmentEngine } from '../planBuilder/planAdjustmentEngine';
+
 describe('PlanAdjustmentService', () => {
   let service: PlanAdjustmentService;
   let mockPlan: PlanJSON;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new PlanAdjustmentService();
-    
+
     // Reference: https://jestjs.io/docs/manual-mocks#using-a-mock-to-create-test-data
     mockPlan = {
       metadata: {
@@ -91,13 +95,50 @@ describe('PlanAdjustmentService', () => {
       assumptions: [],
       constraints: [],
     };
+
+    // Setup mock implementations
+    const mockPersistenceService = {
+      loadPlan: jest.fn<() => Promise<PlanJSON>>().mockResolvedValue(mockPlan),
+      savePlan: jest.fn<() => Promise<{ path: string; version: string; backup?: string }>>().mockResolvedValue({
+        path: '/test/plan.json',
+        version: '1.0.1',
+        backup: '/test/plan.backup.json',
+      }),
+    };
+
+    (getPlanPersistenceService as jest.Mock).mockReturnValue(mockPersistenceService);
+
+    // Setup PlanDriftDetector mock
+    (PlanDriftDetector as jest.Mock).mockImplementation(() => ({
+      detectDrift: jest.fn<() => Promise<any>>().mockResolvedValue({
+        hasDrift: false,
+        metrics: {},
+        recommendations: [],
+        suggestedActions: [],
+        timestamp: new Date(),
+      }),
+    }));
+
+    // Setup PlanAdjustmentEngine mock
+    (PlanAdjustmentEngine as jest.Mock).mockImplementation(() => ({
+      applyAdjustment: jest.fn().mockImplementation((plan: any) => ({
+        ...plan,
+        metadata: {
+          ...plan.metadata,
+          updated_at: new Date().toISOString(),
+        },
+      })),
+      generateAdjustments: jest.fn<() => Promise<any[]>>().mockResolvedValue([]),
+    }));
+
+    service = new PlanAdjustmentService();
   });
 
   describe('Drift Detection', () => {
     it('should detect drift when plan differs from execution', async () => {
       // This test verifies the integration with PlanDriftDetector
       const result = await service.adjustPlan('test-plan.json', { autoApply: false });
-      
+
       expect(result).toBeDefined();
       expect(result.driftAnalysis).toBeDefined();
     });
@@ -105,7 +146,7 @@ describe('PlanAdjustmentService', () => {
     it('should return no drift when execution matches plan', async () => {
       // Mock scenario where execution perfectly matches plan
       const result = await service.adjustPlan('test-plan.json', { autoApply: false });
-      
+
       // If no drift, should have no suggestions
       if (!result.driftAnalysis.hasDrift) {
         expect(result.suggestions).toHaveLength(0);
@@ -117,7 +158,7 @@ describe('PlanAdjustmentService', () => {
     it('should generate suggestions for detected drift', async () => {
       // Service should generate suggestions based on drift
       const result = await service.adjustPlan('test-plan.json', { autoApply: false });
-      
+
       if (result.driftAnalysis.hasDrift) {
         expect(result.suggestions.length).toBeGreaterThan(0);
       }
@@ -125,12 +166,12 @@ describe('PlanAdjustmentService', () => {
 
     it('should prioritize high-impact suggestions', async () => {
       const result = await service.adjustPlan('test-plan.json', { autoApply: false });
-      
+
       if (result.suggestions.length > 1) {
         // Suggestions should be sorted by impact
         const impacts = result.suggestions.map(s => s.impact);
         const impactOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-        
+
         for (let i = 1; i < impacts.length; i++) {
           expect(impactOrder[impacts[i - 1]]).toBeGreaterThanOrEqual(impactOrder[impacts[i]]);
         }
@@ -211,7 +252,7 @@ describe('PlanAdjustmentService', () => {
       const oldVersion = '1.0.0';
       const parts = oldVersion.split('.');
       const newVersion = `${parts[0]}.${parts[1]}.${parseInt(parts[2]) + 1}`;
-      
+
       expect(newVersion).toBe('1.0.1');
     });
 
@@ -221,7 +262,7 @@ describe('PlanAdjustmentService', () => {
       const oldVersion = '1.0.0';
       const parts = oldVersion.split('.');
       const newVersion = `${parts[0]}.${parseInt(parts[1]) + 1}.0`;
-      
+
       expect(newVersion).toBe('1.1.0');
     });
 
@@ -231,7 +272,7 @@ describe('PlanAdjustmentService', () => {
       const oldVersion = '1.0.0';
       const parts = oldVersion.split('.');
       const newVersion = `${parseInt(parts[0]) + 1}.0.0`;
-      
+
       expect(newVersion).toBe('2.0.0');
     });
   });
@@ -247,7 +288,7 @@ describe('PlanAdjustmentService', () => {
       // Workflow should complete successfully
       expect(result.success).toBe(true);
       expect(result.driftAnalysis).toBeDefined();
-      
+
       // If drift detected, should have suggestions
       if (result.driftAnalysis.hasDrift) {
         expect(result.suggestions.length).toBeGreaterThan(0);
@@ -274,15 +315,19 @@ describe('PlanAdjustmentService', () => {
     it('should return same instance', () => {
       const instance1 = getPlanAdjustmentService();
       const instance2 = getPlanAdjustmentService();
-      
+
       expect(instance1).toBe(instance2);
     });
   });
 
   describe('Error Handling', () => {
     it('should handle plan load failures gracefully', async () => {
+      // Override the mock to throw an error for this specific test
+      const mockPersistenceService = (getPlanPersistenceService as jest.Mock)() as any;
+      mockPersistenceService.loadPlan.mockRejectedValueOnce(new Error('Plan file not found'));
+
       const result = await service.adjustPlan('non-existent-plan.json', {});
-      
+
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -290,7 +335,7 @@ describe('PlanAdjustmentService', () => {
     it('should handle drift detection failures', async () => {
       // Mock a scenario where drift detection fails
       const result = await service.adjustPlan('invalid-plan.json', {});
-      
+
       if (!result.success) {
         expect(result.error).toBeDefined();
       }

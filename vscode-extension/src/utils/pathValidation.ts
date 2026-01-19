@@ -108,7 +108,7 @@ export async function validateFilePath(
     try {
       await fs.access(normalizedPath);
       const stats = await fs.stat(normalizedPath);
-      
+
       // Ensure it's a file, not a directory
       if (!stats.isFile()) {
         return {
@@ -181,11 +181,18 @@ export function normalizeFilePath(filePath: string | vscode.Uri, workspaceRoot?:
       );
     }
 
+    // Return the resolved path directly (don't prepend drive letter on Windows)
     cleanPath = resolvedPath;
+  } else if (!path.isAbsolute(cleanPath)) {
+    // For relative paths without workspace root, just normalize but don't modify
+    cleanPath = path.normalize(cleanPath);
+  } else {
+    // For absolute paths, just normalize path separators and resolve . and ..
+    cleanPath = path.normalize(cleanPath);
   }
 
   // Normalize path separators and resolve . and ..
-  return path.normalize(cleanPath);
+  return cleanPath;
 }
 
 /**
@@ -202,7 +209,7 @@ export async function validateFilePaths(
   // Use batch processing with concurrency limit to prevent resource exhaustion
   const BATCH_SIZE = 50; // Process 50 files at a time
   const results: PathValidationResult[] = [];
-  
+
   for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
     const batch = filePaths.slice(i, i + BATCH_SIZE);
     const batchResults = await Promise.all(
@@ -210,7 +217,7 @@ export async function validateFilePaths(
     );
     results.push(...batchResults);
   }
-  
+
   return results;
 }
 
@@ -224,8 +231,8 @@ export async function validateFilePaths(
  */
 export async function validateAndFilterFilePaths(
   filePaths: string[],
-  options: { 
-    checkExists?: boolean; 
+  options: {
+    checkExists?: boolean;
     workspaceRoot?: string;
     throwOnInvalid?: boolean;
     logInvalid?: boolean;
@@ -237,14 +244,14 @@ export async function validateAndFilterFilePaths(
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
-    
+
     if (result.valid && result.normalizedPath) {
       validPaths.push(result.normalizedPath);
     } else if (result.error) {
       if (logInvalid) {
         console.error(`Invalid file path: ${result.error.filePath} - ${result.error.message}`);
       }
-      
+
       if (throwOnInvalid) {
         throw result.error;
       }

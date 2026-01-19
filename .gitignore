@@ -19,16 +19,16 @@ yarn-error.log
 /.idea
 /.vscode
 
-# Ignore ZENTASKS dynamic files but allow scripts and task files
+# ZENTASKS dynamic files (allow scripts and task files)
 _ZENTASKS/tasks.json
 _ZENTASKS/sync_metadata.json
 _ZENTASKS/.env
 _ZENTASKS/__pycache__/
 
-# Ignore auto-generated Ziggy routes file
+# Auto-generated Ziggy routes file
 /resources/js/ziggy.js
 
-# Ignore test coverage reports (all packages)
+# Test coverage reports (all packages)
 coverage/
 **/coverage/
 .nyc_output/

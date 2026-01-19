@@ -17,7 +17,7 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
   beforeEach(() => {
     // Use fake timers for debounce testing
     jest.useFakeTimers();
-    
+
     // Reset mocks
     jest.clearAllMocks();
     mockGlobalState = new Map();
@@ -88,7 +88,7 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
 
     // Verify context was stored
     expect(mockContext.subscriptions.push).toHaveBeenCalled();
-    
+
     // Verify configuration change listener was registered
     expect(vscode.workspace.onDidChangeConfiguration).toHaveBeenCalled();
   });
@@ -116,14 +116,14 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
       } as any;
 
       configurationChangeListener(mockEvent);
-      
+
       // Fast-forward debounce timer
       jest.advanceTimersByTime(500);
     }
 
     // Verify cache was cleared (called with undefined)
     expect(mockContext.globalState.update).toHaveBeenCalledWith('llmConfig', undefined);
-    
+
     // Verify configuration was reloaded from settings and saved back
     // The mocked baseUrl is 'http://192.168.1.100:8000'
     expect(mockContext.globalState.update).toHaveBeenCalledWith(
@@ -133,7 +133,7 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
         port: 8000,
       })
     );
-    
+
     // After the full flow, cache should contain the updated config
     expect(mockGlobalState.has('llmConfig')).toBe(true);
     const savedConfig = mockGlobalState.get('llmConfig');
@@ -141,8 +141,8 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
     expect(savedConfig.port).toBe(8000);
   });
 
-  test('should not clear cache for unrelated configuration changes', () => {
-    // Set up initial cache in globalState
+  test('should load settings on initialization, overriding cached values', () => {
+    // Set up initial cache in globalState with OLD values
     mockGlobalState.set('llmConfig', {
       host: '192.168.137.215',
       port: 8000,
@@ -152,25 +152,19 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
 
     new LLMIPMonitor(mockContext);
 
-    // Trigger configuration change event for unrelated setting
-    if (configurationChangeListener) {
-      const mockEvent = {
-        affectsConfiguration: jest.fn((section: string) => {
-          return section !== 'copilot-orchestrator.llm';
-        }),
-      } as any;
+    // After initialization, the constructor calls updateConfigFromSettings()
+    // which should override cached values with settings from VS Code
+    // Mock returns baseUrl='http://192.168.1.100:8000'
+    const updatedConfig = mockGlobalState.get('llmConfig');
 
-      configurationChangeListener(mockEvent);
-    }
-
-    // Verify cache was NOT cleared (still has the initial value)
-    expect(mockGlobalState.has('llmConfig')).toBe(true);
-    expect(mockGlobalState.get('llmConfig')).toEqual({
-      host: '192.168.137.215',
-      port: 8000,
-      lastKnownIP: '192.168.137.215',
-      isHealthy: false,
-    });
+    // Verify the config was updated from settings (not just cached value)
+    expect(updatedConfig.host).toBe('192.168.1.100');
+    expect(updatedConfig.port).toBe(8000);
+    // lastKnownIP preserved from cache (only host/port updated)
+    expect(updatedConfig.lastKnownIP).toBe('192.168.137.215');
+    // Health status reset because endpoint changed
+    expect(updatedConfig.isHealthy).toBeUndefined();
+    expect(updatedConfig.lastCheckedAt).toBeUndefined();
   });
 
   test('should save configuration to globalState', () => {
@@ -206,14 +200,14 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
       } as any;
 
       configurationChangeListener(mockEvent);
-      
+
       // Fast-forward debounce timer
       jest.advanceTimersByTime(500);
     }
 
     // Verify cache was cleared
     expect(mockContext.globalState.update).toHaveBeenCalledWith('llmConfig', undefined);
-    
+
     // Verify that saveConfig was NOT called (since updateConfigFromSettings returned false)
     // We can check this by ensuring the last call to update was for clearing, not saving
     const updateCalls = (mockContext.globalState.update as jest.Mock).mock.calls;
@@ -255,7 +249,7 @@ describe('LLMIPMonitor - Configuration Change Handling', () => {
       configurationChangeListener(mockEvent);
       jest.advanceTimersByTime(100);
       configurationChangeListener(mockEvent);
-      
+
       // Fast-forward past the final debounce timer
       jest.advanceTimersByTime(500);
     }

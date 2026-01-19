@@ -51,12 +51,32 @@
 
 ## Doc
 - Main docs folder: `Docs/`
-- Runbook: `Docs/PROJECT-RUNBOOK.md`
+- Runbook: `Docs/PROJECT-RUNBOOK.md` (execution order, commands, status)
+- Quick Reference: `Docs/QUICK-REFERENCE.md` (commands, fixes, test status)
 - GitHub Issues plan: `.vscode/githubissues` folder and `Docs/GITHUB-ISSUES-PLAN.md`
-- Keep docs updated when code or processes change.
-- keep the `./` folder clean and organized. minimize clutter.
-- keep documentation up to date with code changes.
-- Clean out Old and out of date Docs.
+- Historical reports: `reports/` folder (sessions, builds, tests)
+
+## Documentation Practice
+- **UPDATE existing docs** - don't create new files unless specifically requested
+- Keep the `./` root folder clean and organized - minimize clutter
+- Session/build reports go to `reports/` folder only when explicitly requested
+- Update `Docs/PROJECT-RUNBOOK.md` for status changes
+- Update `Docs/QUICK-REFERENCE.md` for new commands/fixes
+- Keep documentation up to date with code changes
+- Clean out old and outdated docs
+
+## Reports Policy
+**Do NOT automatically create session reports, build summaries, or completion files.**
+
+Instead:
+- Update existing documentation in `Docs/`
+- Add dated sections to `PROJECT-RUNBOOK.md` or `QUICK-REFERENCE.md`
+- Use `git commit` messages for change tracking
+
+Only create reports in `reports/` when:
+1. User explicitly requests a session report
+2. Major milestone completions require formal documentation
+3. Audit/compliance requires historical records
 
 ## Issue management
 - Issues are mirrored in `.github/issues/` via GitHub Issues Sync.
@@ -90,4 +110,5 @@
 	- Coverage reports published to PR comments
 	- Failed tests fail the build
 - **Jest sanity-check**:
-	- 	Verify that the Jest sanity-check file runs and reports exactly one skipped test and one failing test. If either test does not appear in the Problems panel or Jest output, raise a red flag because the test runner is not functioning correctly.
+	- **Expected behavior**: The Jest sanity-check file should report exactly one intentionally failing test and one intentionally skipped test, both clearly labeled as sanity checks.
+	- **Troubleshooting**: If either sanity-check test does not appear in the VS Code Problems panel or Jest output, the test runner configuration is broken and must be fixed before proceeding.

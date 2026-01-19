@@ -231,18 +231,28 @@ export class MCPClient {
 
     while (attempt < maxAttempts) {
       try {
-        return await this.fetchWithRetry(`${this.baseUrl}/mcp/reportTaskStatus`, 'POST', data);
+        // Use direct fetch to bypass retry logic and handle 409 properly
+        const response = await this.fetch(`${this.baseUrl}/mcp/reportTaskStatus`, 'POST', data);
+        return response;
       } catch (error: any) {
-        // Retry only on explicit version conflict (HTTP 409)
+        // Check if this is a 409 version conflict
         if (error.status === 409 && error.error === 'version_conflict') {
           attempt++;
 
           if (attempt >= maxAttempts) {
-            throw new Error(`Task status update failed after ${maxAttempts} attempts due to version conflicts. ${error.message || ''}`);
+            const wrappedError: any = new Error(`Task status update failed after ${maxAttempts} attempts due to version conflicts. ${error.message || ''}`);
+            // Preserve original error details for debugging
+            wrappedError.status = error.status;
+            wrappedError.error = error.error;
+            wrappedError.currentVersion = error.currentVersion;
+            wrappedError.expectedVersion = error.expectedVersion;
+            wrappedError.currentStatus = error.currentStatus;
+            throw wrappedError;
           }
 
           // Exponential backoff: 1s, 2s, 4s (capped at 5s)
           const backoffMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`[MCPClient] Version conflict on attempt ${attempt}/${maxAttempts}, retrying in ${backoffMs}ms`);
           await new Promise(resolve => setTimeout(resolve, backoffMs));
 
           // Fetch latest task version for retry

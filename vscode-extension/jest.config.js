@@ -185,5 +185,12 @@ module.exports = {
    * See: https://jestjs.io/docs/configuration#verbose-boolean
    */
   verbose: true,
+
+  /**
+   * Custom Reporter for Problems Integration
+   * Reports skipped and failing tests so they appear in VS Code Problems panel
+   */
+  reporters: ['default', '<rootDir>/jest-problems-reporter.js'],
 };
+
 

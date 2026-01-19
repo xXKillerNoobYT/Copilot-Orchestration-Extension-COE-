@@ -71,7 +71,7 @@ export class PlanAdjustmentService {
   ): Promise<AdjustmentSuggestion[]> {
     try {
       const plan = await this.persistenceService.loadPlan(planFilename);
-      
+
       // Build adjustment context
       const context = await this.buildAdjustmentContext(plan);
 
@@ -104,10 +104,14 @@ export class PlanAdjustmentService {
       const engine = new PlanAdjustmentEngine(currentPlan, context);
       const updatedPlan = engine.applyAdjustment(currentPlan, suggestion);
 
-      // Update metadata
+      // Update metadata with new timestamp
       updatedPlan.metadata.updated_at = new Date().toISOString();
 
-      // Save with backup and version bump
+      // Increment version number for change tracking (semantic versioning)
+      const currentVersion = updatedPlan.metadata.version || '1.0.0';
+      updatedPlan.metadata.version = this.bumpVersion(currentVersion, suggestion.impact);
+
+      // Save with backup and new version
       const saveResult = await this.persistenceService.savePlan(updatedPlan, {
         version: updatedPlan.metadata.version,
         createBackup: options.createBackup ?? true,
@@ -235,7 +239,7 @@ export class PlanAdjustmentService {
     // 1. Scan workspace for .task.md files
     // 2. Parse task status and metadata
     // 3. Map to execution data structure
-    
+
     const executionData: TaskExecutionData[] = [];
 
     // For now, generate mock data based on plan features
@@ -281,6 +285,30 @@ export class PlanAdjustmentService {
   }
 
   /**
+   * Bump semantic version based on change impact
+   * - low impact -> patch version (1.0.0 -> 1.0.1)
+   * - medium impact -> minor version (1.0.0 -> 1.1.0)
+   * - high/critical impact -> major version (1.0.0 -> 2.0.0)
+   */
+  private bumpVersion(version: string, impact: 'low' | 'medium' | 'high' | 'critical'): string {
+    const parts = version.split('.');
+    const major = parseInt(parts[0] || '1', 10);
+    const minor = parseInt(parts[1] || '0', 10);
+    const patch = parseInt(parts[2] || '0', 10);
+
+    if (impact === 'high' || impact === 'critical') {
+      // Breaking or critical changes -> major version bump
+      return `${major + 1}.0.0`;
+    } else if (impact === 'medium') {
+      // Moderate changes -> minor version bump
+      return `${major}.${minor + 1}.0`;
+    } else {
+      // Minor changes -> patch version bump
+      return `${major}.${minor}.${patch + 1}`;
+    }
+  }
+
+  /**
    * Build adjustment context from plan and workspace
    */
   private async buildAdjustmentContext(plan: PlanJSON): Promise<AdjustmentContext> {
@@ -299,7 +327,7 @@ export class PlanAdjustmentService {
    */
   private determineProjectPhase(plan: PlanJSON): AdjustmentContext['projectPhase'] {
     const status = plan.metadata.status;
-    
+
     if (status === 'draft') {
       return 'planning';
     } else if (status === 'in-progress' || status === 'approved') {
