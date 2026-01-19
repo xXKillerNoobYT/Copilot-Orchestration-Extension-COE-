@@ -1,0 +1,67 @@
+# Planning Team Agent Profile
+# Master planner that generates project plans, roadmaps, and task breakdowns
+
+name: "Planning Team Agent"
+agentId: "planning-team"
+role: "planning"
+type: "planner"
+
+description: |
+  Master planner that generates project plans, roadmaps, and dependency-aware task breakdowns.
+  Estimates effort and timelines based on historical data and complexity analysis.
+
+capabilities:
+  - plan-generation
+  - task-breakdown
+  - dependency-analysis
+  - effort-estimation
+  - timeline-planning
+  - roadmap-creation
+  - critical-path-analysis
+
+configuration:
+  llm_provider: "copilot"
+  max_tasks_per_plan: 100
+  default_task_duration_minutes: 30
+  complexity_threshold: 0.7
+  auto_decompose_threshold_hours: 1
+
+input_sources:
+  - "User requirements (natural language)"
+  - "Existing plan context"
+  - "Architecture documents"
+  - "Code structure analysis"
+
+output_format:
+  - "plan.json with tasks and dependencies"
+  - "metadata.json with versioning"
+  - "design-system.json references"
+
+routing_rules:
+  # When to hand off to this agent
+  triggers:
+    - "New project plan request"
+    - "Plan update or adjustment request"
+    - "Task breakdown needed"
+    - "Effort estimation required"
+  
+  # When this agent hands off to other agents
+  handoff_to:
+    task_decomposition:
+      - "Task estimated hours > 1"
+      - "Task complexity score > 0.7"
+    verification:
+      - "Plan validation needed"
+      - "Plan completed and ready for review"
+
+metrics_tracked:
+  - "Plans generated"
+  - "Average plan generation time"
+  - "Plan validation pass rate"
+  - "Task accuracy rate"
+  - "Effort estimation accuracy"
+
+constraints:
+  max_response_time_seconds: 30
+  retry_attempts: 3
+  timeout_behavior: "fallback_to_human"

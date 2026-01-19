@@ -3,7 +3,7 @@
  * Tests environment-based configuration
  */
 
-import { handleGetWorkspaceConfig } from '../getWorkspaceConfig';
+import { handleGetWorkspaceConfig } from '../getWorkspaceConfig.js';
 
 describe('handleGetWorkspaceConfig', () => {
   beforeEach(() => {
@@ -111,3 +111,4 @@ describe('handleGetWorkspaceConfig', () => {
     expect(parsedResponse.project).toBeDefined();
   });
 });
+

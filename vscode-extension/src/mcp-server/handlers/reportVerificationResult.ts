@@ -11,7 +11,7 @@ import {
   formatAgentError,
   AgentErrors,
 } from '../agentValidation.js';
-import { MCPHandlerBase } from './MCPHandlerBase';
+import { MCPHandlerBase } from './MCPHandlerBase.js';
 
 class ReportVerificationResultHandler extends MCPHandlerBase {
   /**
@@ -284,3 +284,4 @@ const handler = new ReportVerificationResultHandler();
 export async function handleReportVerificationResult(args: any) {
   return handler.execute(args);
 }
+
