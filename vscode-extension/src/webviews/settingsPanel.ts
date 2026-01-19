@@ -1669,17 +1669,6 @@ description: "Agent description"
       vscode.window.showErrorMessage(`Failed to reset profile: ${error}`);
     }
   }
-            constraints: {
-              maxDepth: 3,
-              timeout: 300,
-            },
-          },
-        });
-      }
-    } catch (error) {
-      vscode.window.showErrorMessage(`Failed to load team configuration: ${error}`);
-    }
-  }
 
   /**
    * Get display name for team
