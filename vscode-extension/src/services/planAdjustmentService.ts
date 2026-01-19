@@ -17,9 +17,7 @@ import { PlanDriftDetector, type TaskExecutionData, type DriftAnalysisResult } f
 import { PlanAdjustmentEngine, type AdjustmentSuggestion, type AdjustmentContext } from '../planBuilder/planAdjustmentEngine';
 import { getPlanPersistenceService } from '../services/planPersistence';
 import type { PlanJSON } from '../planBuilder/planGenerator';
-import { parseTasksFromDirectory, type ParsedTask } from '../taskParser';
-import * as path from 'path';
-import { getWebSocketClient } from './websocketClient';
+import type { ParsedTask } from '../taskParser';
 
 /**
  * Parsed task with additional metadata fields for execution tracking
@@ -254,17 +252,16 @@ export class PlanAdjustmentService {
     const executionData: TaskExecutionData[] = [];
 
     try {
-      // Import task parser and vscode modules
-      const vscode = await import('vscode');
-      const { parseTasksFromDirectory } = await import('../taskParser');
-      const path = await import('path');
-
       // Get workspace root
       const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!workspaceRoot) {
         console.warn('[PlanAdjustmentService] No workspace folder found, using mock data');
         return this.generateMockExecutionData(plan);
       }
+
+      // Import task parser and path dynamically
+      const { parseTasksFromDirectory } = await import('../taskParser');
+      const path = await import('path');
 
       // Define common task directories to search
       const taskDirectories = [
@@ -331,7 +328,7 @@ export class PlanAdjustmentService {
   /**
    * Find a feature in the plan that matches the given task
    */
-  private findMatchingFeature(plan: PlanJSON, task: ParsedTaskWithMetadata): any {
+  private findMatchingFeature(plan: PlanJSON, task: ParsedTaskWithMetadata): PlanJSON['features'][number] | undefined {
     // Try to match by feature ID in task metadata
     if (task.feature_id) {
       const feature = plan.features.find(f => f.id === task.feature_id);
@@ -512,7 +509,7 @@ export class PlanAdjustmentService {
   ): Promise<void> {
     try {
       // Import WebSocket client dynamically to avoid circular dependencies
-      const { getWebSocketClient } = await import('./webSocketClient');
+      const { getWebSocketClient } = await import('./websocketClient');
       const wsClient = getWebSocketClient();
 
       if (!wsClient) {
@@ -550,9 +547,10 @@ export class PlanAdjustmentService {
         console.log('[PlanAdjustmentService] Received plan update broadcast:', data);
       });
 
-      // Note: Client-side event publishing is not implemented in the current WebSocket setup
-      // The backend broadcasts plan updates, and clients only listen
-      // Future: If client-side broadcasting is needed, implement wsClient.emit() method
+      // NOTE: This is currently a subscription-only WebSocket implementation.
+      // The backend broadcasts plan updates and clients only listen.
+      // TODO(EPIC-008): When client-side broadcasting is required, extend the WebSocket client
+      // (e.g. add wsClient.emit/publish) and invoke it here to send `eventData` to the server.
       console.log('[PlanAdjustmentService] Subscribed to plan-updates channel. Event data logged for debugging:', eventData);
 
     } catch (error) {

@@ -83,7 +83,8 @@ export class TestingAgent {
     };
 
     // Extract function declarations with parameters
-    const functionRegex = /(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?::\s*([^{]+))?/g;
+    // Use robust pattern to handle nested parentheses in parameter types
+    const functionRegex = /(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)(?::\s*([^{]+))?/g;
     let match;
     while ((match = functionRegex.exec(code)) !== null) {
       const name = match[1];
@@ -100,7 +101,8 @@ export class TestingAgent {
     }
 
     // Extract arrow function exports with parameters
-    const arrowFnRegex = /export\s+const\s+(\w+)\s*=\s*(?:async\s*)?\(([^)]*)\)(?::\s*([^=]+))?=>/g;
+    // Use robust pattern to handle nested parentheses in parameter types
+    const arrowFnRegex = /export\s+const\s+(\w+)\s*=\s*(?:async\s*)?\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)(?::\s*([^=]+))?=>/g;
     while ((match = arrowFnRegex.exec(code)) !== null) {
       const name = match[1];
       const params = this.parseParameters(match[2]);

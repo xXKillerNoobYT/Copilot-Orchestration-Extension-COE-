@@ -71,7 +71,8 @@ describe('TestingAgent', () => {
       
       expect(params).toHaveLength(1);
       expect(params[0]).toHaveProperty('name', 'handler');
-      expect(params[0].type).toContain('(data: (value: string) => number) => void');
+      // Use exact match for type to avoid whitespace variations
+      expect(params[0]).toHaveProperty('type', '(data: (value: string) => number) => void');
     });
 
     test('should parse generic types', () => {
