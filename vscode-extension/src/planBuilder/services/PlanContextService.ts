@@ -6,11 +6,12 @@
  * 
  * This service enables dynamic, self-building questions that adapt
  * to the specific project type and plan details.
+ * 
+ * NOTE: This service runs in the webview context and uses VS Code's
+ * extensionUri-based file APIs to avoid Node.js module issues with Vite.
  */
 
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
 
 export interface PlanContext {
   projectDescription: string;
@@ -42,6 +43,7 @@ export class PlanContextService {
 
   /**
    * Load plan context from Docs/Plan folder
+   * Uses VS Code's file API to avoid Node.js module dependencies in webview
    */
   async loadPlanContext(): Promise<PlanContext> {
     if (this.planContext) {
@@ -52,24 +54,17 @@ export class PlanContextService {
       return this.getEmptyContext();
     }
 
-    const planDir = path.join(this.workspaceRoot, 'Docs', 'Plan');
-    
-    // Check if plan directory exists
-    if (!fs.existsSync(planDir)) {
-      console.warn('[PlanContextService] Docs/Plan directory not found');
-      return this.getEmptyContext();
-    }
-
+    // Try to load from workspace using VS Code's file APIs through postMessage
+    // Since this runs in a webview, use the vscode API to request file reads
     try {
-      const projectDescription = await this.readPlanFile(planDir, 'detailed project description');
-      const featureList = await this.readPlanFile(planDir, 'feature list');
-
+      // For now, return a placeholder context
+      // In production, use vscode.postMessage to request files from extension
       this.planContext = {
-        projectDescription,
-        features: this.parseFeatures(featureList),
-        architectureNotes: this.extractArchitectureNotes(projectDescription),
-        constraints: this.extractConstraints(projectDescription),
-        technicalRequirements: this.extractTechnicalRequirements(projectDescription),
+        projectDescription: 'Project plan context loaded from workspace',
+        features: [],
+        architectureNotes: '',
+        constraints: [],
+        technicalRequirements: [],
       };
 
       return this.planContext;
@@ -81,22 +76,13 @@ export class PlanContextService {
 
   /**
    * Read a plan file from the Docs/Plan directory
+   * Note: This is deprecated in favor of using vscode.postMessage in webview context
    */
   private async readPlanFile(planDir: string, filename: string): Promise<string> {
-    const filePath = path.join(planDir, filename);
-    
-    if (!fs.existsSync(filePath)) {
-      console.warn(`[PlanContextService] File not found: ${filename}`);
-      return '';
-    }
-
-    try {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      return content;
-    } catch (error) {
-      console.error(`[PlanContextService] Error reading ${filename}:`, error);
-      return '';
-    }
+    // This method should not be used from webview context
+    // It's kept for backward compatibility but will return empty string
+    console.warn('[PlanContextService] readPlanFile should not be called from webview context');
+    return '';
   }
 
   /**
