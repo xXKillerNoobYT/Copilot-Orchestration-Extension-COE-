@@ -1,5 +1,11 @@
 <template>
   <div class="wizard-container" :class="{ 'with-assistant': showAssistant, 'with-preview': showPreview }">
+    <!-- File Importer (shown before wizard starts) -->
+    <FileImporter
+      v-if="showFileImporter"
+      @contextImported="handleContextImported"
+    />
+    
     <!-- Template Selector Modal -->
     <TemplateSelector
       v-if="showTemplateSelector"
@@ -20,6 +26,14 @@
         </p>
       </div>
       <div class="header-actions">
+        <button 
+          v-if="currentStep === 0 && !appliedTemplateId && !importedContext"
+          class="import-btn"
+          @click="showFileImporter = true"
+          title="Import project context"
+        >
+          📁 Import Context
+        </button>
         <button 
           v-if="currentStep === 0 && !appliedTemplateId"
           class="template-btn"
@@ -149,8 +163,27 @@ import { AiAssistanceService, type AiSuggestion } from './aiAssistanceService';
 import ContextualAssistant from './ContextualAssistant.vue';
 import PreviewContainer from '../components/preview/PreviewContainer.vue';
 import TemplateSelector from './components/TemplateSelector.vue';
+import FileImporter from './components/FileImporter.vue';
 import { getTemplateService } from './services/TemplateService';
 import type { WizardState, PreviewRenderResult } from '../components/preview/PreviewEngine';
+
+// Type definitions for imported context
+interface ImportedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  content: string;
+  preview: string;
+}
+
+interface ContextAnalysis {
+  suggestedTemplate: string;
+  topics: string[];
+  summary: string;
+  estimatedDuration: string;
+  recommendedTeamSize: number;
+}
 
 // Props
 interface Props {
@@ -197,6 +230,10 @@ const autoSaveTimer = ref<ReturnType<typeof setInterval> | null>(null);
 // Template state
 const showTemplateSelector = ref(false);
 const appliedTemplateId = ref<string | undefined>(undefined);
+
+// File import state
+const showFileImporter = ref(false);
+const importedContext = ref<{ files: ImportedFile[]; analysis: ContextAnalysis | null } | null>(null);
 
 // AI Assistant state
 const showAssistant = ref(false);
@@ -525,6 +562,41 @@ const handleTemplateSelected = async (templateId: string) => {
     console.error('[Wizard] Failed to apply template:', error);
     // TODO: Show error to user
   }
+};
+
+/**
+ * Handle context imported from FileImporter component
+ * 
+ * Stores the imported files and AI analysis in the wizard state for use
+ * throughout the planning workflow. The context includes uploaded/pasted files
+ * and AI-generated analysis (suggested template, detected topics, etc.).
+ * 
+ * @param context - Object containing imported files and analysis results
+ */
+const handleContextImported = (context: { files: ImportedFile[]; analysis: ContextAnalysis | null }) => {
+  importedContext.value = context;
+  showFileImporter.value = false;
+  
+  // Store context for use throughout wizard
+  if (context.analysis) {
+    console.log('[Wizard] Context imported with analysis:', context.analysis);
+    
+    // If we have a suggested template, we could pre-select it or inform the user
+    if (context.analysis.suggestedTemplate) {
+      // TODO: Future feature - auto-apply the suggested template
+      // handleTemplateSelected(context.analysis.suggestedTemplate);
+      
+      // Or just show a hint to the user
+      console.log('[Wizard] Suggested template:', context.analysis.suggestedTemplate);
+    }
+    
+    // Store the imported context in wizard metadata for later use
+    if (wizardStore.metadata) {
+      wizardStore.metadata.importedContext = context;
+    }
+  }
+  
+  console.log('[Wizard] Context imported:', context.files.length, 'files');
 };
 
 const handleValidationError = (errors: string[]) => {
