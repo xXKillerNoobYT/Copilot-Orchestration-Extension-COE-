@@ -4,9 +4,22 @@ This directory contains plan templates that users can use to quickly start new p
 
 ## Core Templates
 
-We provide 4 core templates out of the box:
+We provide 5 core templates out of the box:
 
-### 1. Web Application (`web-app-template.json`)
+### 1. Blank Project Guide (`blank-template.json`)
+**Use When:** Starting any unique project or learning how the plan builder works
+- **Category:** `blank`
+- **Estimated Duration:** Flexible
+- **Team Size:** 1+ people
+- **Features:**
+  - Comprehensive guided template with 📝 GUIDE comments
+  - Covers all plan sections (project, architecture, features, timeline, team, QA, deployment, risks, etc.)
+  - Helpful tips and quick-start guidance
+  - Onboarding instructions for first-time users
+  - Customization hints showing what to fill in
+- **Best For:** Custom projects, unique workflows, learning the plan builder, projects that don't fit standard templates
+
+### 2. Web Application (`web-app-template.json`)
 **Use When:** Building a full-stack web application with authentication, database, and rich UI
 - **Category:** `web-app`
 - **Estimated Duration:** 3-6 months
@@ -20,7 +33,7 @@ We provide 4 core templates out of the box:
   - Admin panel
 - **Best For:** SaaS products, dashboards, web platforms
 
-### 2. API Service (`api-service-template.json`)
+### 3. API Service (`api-service-template.json`)
 **Use When:** Creating a RESTful API or microservice
 - **Category:** `api-service`
 - **Estimated Duration:** 2-4 months
@@ -32,7 +45,7 @@ We provide 4 core templates out of the box:
   - Data validation & sanitization
 - **Best For:** Backend services, microservices, API-first applications
 
-### 3. CLI Tool (`cli-tool-template.json`)
+### 4. CLI Tool (`cli-tool-template.json`)
 **Use When:** Building a command-line tool or automation script
 - **Category:** `cli-tool`
 - **Estimated Duration:** 1-3 months
@@ -44,7 +57,7 @@ We provide 4 core templates out of the box:
   - Comprehensive help system
 - **Best For:** Developer tools, automation scripts, build tools
 
-### 4. Library/Package (`library-template.json`)
+### 5. Library/Package (`library-template.json`)
 **Use When:** Creating a reusable library or package for distribution
 - **Category:** `library`
 - **Estimated Duration:** 1-2 months

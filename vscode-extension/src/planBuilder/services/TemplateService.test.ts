@@ -54,6 +54,22 @@ describe('TemplateService', () => {
   });
 
   describe('Core Template Loading', () => {
+    it('should load blank template', async () => {
+      const template = await service.loadTemplate('core-blank');
+      
+      expect(template).toBeDefined();
+      expect(template.metadata.id).toBe('core-blank');
+      expect(template.metadata.name).toBe('Blank Project Guide');
+      expect(template.metadata.category).toBe('blank');
+      expect(template.metadata.isCore).toBe(true);
+      expect(template.plan).toBeDefined();
+      expect(template.plan.project).toBeDefined();
+      expect(template.plan.features).toBeDefined();
+      expect(Array.isArray(template.plan.features)).toBe(true);
+      expect(template.customizationHints).toBeDefined();
+      expect(template.guidance).toBeDefined();
+    });
+
     it('should load web-app template', async () => {
       const template = await service.loadTemplate('core-web-app');
       
@@ -119,9 +135,10 @@ describe('TemplateService', () => {
       
       expect(templates).toBeDefined();
       expect(Array.isArray(templates)).toBe(true);
-      expect(templates.length).toBeGreaterThanOrEqual(4);
+      expect(templates.length).toBeGreaterThanOrEqual(5);
       
       const templateIds = templates.map(t => t.id);
+      expect(templateIds).toContain('core-blank');
       expect(templateIds).toContain('core-web-app');
       expect(templateIds).toContain('core-api-service');
       expect(templateIds).toContain('core-cli-tool');
@@ -256,7 +273,7 @@ describe('TemplateService', () => {
     });
 
     it('should apply all core templates successfully', async () => {
-      const templateIds = ['core-web-app', 'core-api-service', 'core-cli-tool', 'core-library'];
+      const templateIds = ['core-blank', 'core-web-app', 'core-api-service', 'core-cli-tool', 'core-library'];
       
       for (const templateId of templateIds) {
         const plan = await service.applyTemplate(templateId);
