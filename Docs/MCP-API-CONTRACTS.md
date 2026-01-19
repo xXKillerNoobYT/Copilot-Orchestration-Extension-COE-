@@ -736,3 +736,371 @@ See `Docs/ERROR-CATALOG.md` for details.
 ---
 
 **End of MCP API Contracts**
+
+---
+
+## MCP Server Handler Implementation
+
+**Implementation Status:** ✅ COMPLETE  
+**Last Updated:** January 19, 2026  
+**Reference:** `vscode-extension/src/mcp-server/handlers/`
+
+### Architecture
+
+The MCP server handlers run as a standalone Node.js process, separate from the VS Code extension. This architecture enables:
+
+- **Standalone Operation**: No dependency on VS Code APIs
+- **Environment-Based Config**: All configuration via environment variables
+- **Clean Separation**: Backend logic separated from UI interactions
+- **Real-Time Updates**: WebSocket events bridge MCP server ↔ VS Code extension
+
+```
+GitHub Copilot → MCP Server Handler → Laravel Backend API → Database
+                       ↓
+                 WebSocket Event
+                       ↓
+              VS Code Extension → User UI
+```
+
+### Error Handling
+
+All handlers implement comprehensive error handling through `MCPHandlerBase`:
+
+#### Timeout Configuration
+- **Default Timeout:** 30 seconds per request
+- **Configurable:** Via `ErrorHandlingConfig` in handler constructor
+- **Behavior:** Request fails if backend doesn't respond within timeout
+
+#### Retry Mechanism
+- **Retry Attempts:** 3 attempts (configurable)
+- **Backoff Strategy:** Exponential backoff (1s, 2s, 4s, ...)
+- **Retry Triggers:** Network errors, 5xx responses, timeouts
+- **No Retry:** 4xx client errors (except 409 conflicts)
+
+#### Dead-Letter Queue
+- **Purpose:** Track permanently failed requests for debugging
+- **Storage:** In-memory array (TODO: persist to SQLite audit_log)
+- **Contents:** Handler name, args, error message, timestamp, retry count
+- **Access:** `handler.getDeadLetterQueue()` for monitoring
+
+### Environment Variables
+
+All handlers read configuration from environment variables:
+
+#### MCP Backend Configuration
+```bash
+MCP_BASE_URL=http://localhost:8000        # Laravel backend URL
+MCP_PROJECT_ID=default                     # Default project ID
+MCP_AUTH_TOKEN=<optional>                  # Optional auth token
+MCP_TIMEOUT=30000                          # Request timeout (ms)
+MCP_LOCAL_SERVER_ENABLED=true             # Enable local MCP server
+MCP_DOCKER_GATEWAY_ENABLED=false          # Enable Docker gateway
+```
+
+#### Workspace Configuration
+```bash
+WORKSPACE_TASK_ROOTS=_ZENTASKS,_TASKS    # Task root directories (comma-separated)
+WORKSPACE_ISSUE_FOLDER=.vscode/github-issues
+WORKSPACE_TOOL_REGISTRY=.github/copilot-tools.json
+WORKSPACE_ROOT=/path/to/workspace         # Workspace root path
+```
+
+#### LLM Configuration
+```bash
+LLM_BASE_URL=http://localhost:1234/v1
+LLM_MODEL=lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF
+LLM_TEMPERATURE=0.7
+LLM_TIMEOUT=30000
+```
+
+#### WebSocket Configuration
+```bash
+WEBSOCKET_DRIVER=soketi                   # Options: soketi, pusher, redis
+WEBSOCKET_HOST=localhost
+WEBSOCKET_PORT=6001
+WEBSOCKET_ENABLED=true
+```
+
+#### GitHub Configuration
+```bash
+GITHUB_SYNC_ENABLED=true
+GITHUB_SYNC_INTERVAL=300000               # 5 minutes (ms)
+GITHUB_RATE_LIMIT=5000
+```
+
+#### Project Configuration
+```bash
+PROJECT_NAME=My Project
+```
+
+### Handler Implementations
+
+#### 1. getTaskStatus
+**File:** `vscode-extension/src/mcp-server/handlers/getTaskStatus.ts`
+
+**Backend Integration:**
+```
+GET /api/v1/tasks/{taskId}
+```
+
+**Functionality:**
+- Fetches task from Laravel TaskRepository
+- Transforms backend response to MCP format
+- Converts progress_percent (0-100) to decimal (0-1)
+- Includes dependencies, blockers, linked GitHub issue
+- Returns version for optimistic locking
+
+**Error Codes:**
+- `404`: Task not found
+- `500`: Backend error (retries 3 times)
+
+#### 2. listActiveTasks
+**File:** `vscode-extension/src/mcp-server/handlers/listActiveTasks.ts`
+
+**Backend Integration:**
+```
+GET /api/v1/projects/{projectId}/tasks?status=X&priority=Y&assigned_agent=Z
+```
+
+**Functionality:**
+- Fetches filtered task list from backend
+- Applies query parameter filters (status, priority, assignee)
+- Uses `MCP_PROJECT_ID` or `projectId` parameter
+- Returns paginated results with metadata
+
+#### 3. getAgentState
+**File:** `vscode-extension/src/mcp-server/handlers/getAgentState.ts`
+
+**Backend Integration:**
+```
+GET /api/v1/agents
+GET /api/v1/agents?name=<agentName>
+```
+
+**Functionality:**
+- Fetches agent metrics from AgentRepository
+- Maps backend status to MCP format (working→active, idle→idle, error→error)
+- Calculates system status based on error rate:
+  - >50% error rate: `offline`
+  - >20% error rate: `degraded`
+  - Otherwise: `operational`
+- Returns queue depth, success rate, completed/active task counts
+
+#### 4. getWorkspaceConfig
+**File:** `vscode-extension/src/mcp-server/handlers/getWorkspaceConfig.ts`
+
+**Backend Integration:** None (reads environment variables)
+
+**Functionality:**
+- Returns configuration from environment variables
+- Masks auth tokens (`***`) in response
+- Optionally includes default agent profiles
+- Parses numeric/boolean environment variables correctly
+
+**Agent Profiles:**
+- Auto Zen (Autonomous executor)
+- Zen Planner (Strategic planner)
+- Testing Agent (QA & coverage)
+- Verification Agent (Visual/automated verification)
+
+#### 5. requestVerification
+**File:** `vscode-extension/src/mcp-server/handlers/requestVerification.ts`
+
+**Backend Integration:**
+```
+POST /api/v1/verifications
+```
+
+**Functionality:**
+- Creates verification request in backend database
+- Sets expiration time (24 hours default)
+- Returns verification ID for WebSocket notification
+- **Note:** VS Code extension handles UI via WebSocket events
+
+**WebSocket Flow:**
+1. Handler creates verification in database
+2. Backend broadcasts `verificationRequested` event
+3. VS Code extension receives event
+4. Extension shows verification panel to user
+5. User completes verification
+6. Extension updates backend with results
+
+#### 6. reportVerificationResult
+**File:** `vscode-extension/src/mcp-server/handlers/reportVerificationResult.ts`
+
+**Backend Integration:**
+```
+POST /api/v1/mcp/reportVerificationResult
+POST /api/v1/tasks (creates investigation tasks)
+PATCH /api/v1/tasks/{taskId}/status (updates task status)
+```
+
+**Functionality:**
+- Validates input with Zod schema
+- Submits verification results to backend
+- If `passed=false`: Creates investigation tasks for each finding
+- If `passed=true`: Updates task status to `completed`
+- If `passed=false`: Updates task status to `blocked`
+- Maps finding severity to task priority
+
+**Investigation Task Mapping:**
+- `critical` severity → `critical` priority
+- `major`/`high` severity → `high` priority
+- `minor` severity → `medium` priority
+- `low` severity → `low` priority
+
+#### 7. askUserQuestion
+**File:** `vscode-extension/src/mcp-server/handlers/askUserQuestion.ts`
+
+**Backend Integration:**
+```
+POST /api/v1/questions
+```
+
+**Functionality:**
+- Creates question in backend database
+- Calculates expiration time based on timeout parameter
+- Returns question ID for polling/WebSocket
+- **Note:** VS Code extension prompts user via WebSocket events
+
+**WebSocket Flow:**
+1. Handler creates question in database
+2. Backend broadcasts `questionAsked` event
+3. VS Code extension receives event
+4. Extension shows input box/quick pick to user
+5. User provides answer
+6. Extension updates backend with answer
+7. MCP can poll backend for answer
+
+### Response Format
+
+All handlers return responses in MCP protocol format:
+
+```typescript
+{
+  content: [
+    {
+      type: 'text',
+      text: JSON.stringify(data, null, 2)
+    }
+  ]
+}
+```
+
+**Success Response Example:**
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"taskId\": \"TASK-123\",\n  \"status\": \"in-progress\",\n  ...\n}"
+    }
+  ]
+}
+```
+
+**Error Response Example:**
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"error\": \"Task not found\",\n  \"timestamp\": \"2026-01-19T10:00:00Z\"\n}"
+    }
+  ]
+}
+```
+
+### Testing
+
+**Test Files:** `vscode-extension/src/mcp-server/handlers/__tests__/`
+
+**Coverage:** 56 comprehensive test cases across 8 test suites
+
+**Test Categories:**
+- Success scenarios with mocked backend responses
+- Error handling (404, 500, validation errors)
+- Retry mechanism with exponential backoff
+- Timeout handling (30s default)
+- Dead-letter queue for failed requests
+- Environment variable configuration
+- Data transformation (backend → MCP format)
+- Request validation with Zod schemas
+
+**Running Tests:**
+```bash
+cd vscode-extension
+
+# Run all handler tests
+npm run test:jest -- --testPathPatterns="handlers/__tests__"
+
+# Run specific test
+npm run test:jest -- getTaskStatus.test.ts
+
+# Run with coverage
+npm run test:jest:coverage -- --testPathPatterns="handlers/__tests__"
+```
+
+**Integration Testing:**
+Integration tests require Laravel backend running:
+```bash
+# 1. Start Laravel backend
+cd backend
+php artisan serve
+
+# 2. Run integration tests
+cd vscode-extension
+npm run test:integration
+```
+
+### Monitoring & Debugging
+
+#### Dead-Letter Queue Monitoring
+```typescript
+// Access dead-letter queue for debugging
+const handler = new GetTaskStatusHandler();
+const failedRequests = handler.getDeadLetterQueue();
+console.log('Failed requests:', failedRequests);
+```
+
+#### Logging
+All handlers log to console:
+- `console.log`: Normal operations
+- `console.warn`: Retry attempts, non-fatal errors
+- `console.error`: Fatal errors, dead-letter queue additions
+
+#### Common Issues
+
+**Issue: Timeout errors**
+- **Cause:** Backend not responding within 30 seconds
+- **Solution:** Check backend health, increase timeout via environment variable
+- **Debug:** Check Laravel logs for slow queries
+
+**Issue: All requests failing**
+- **Cause:** Backend not running or wrong URL
+- **Solution:** Verify `MCP_BASE_URL` environment variable
+- **Debug:** Check if Laravel is running on specified URL
+
+**Issue: 404 errors**
+- **Cause:** Task/agent/resource not found in database
+- **Solution:** Verify resource exists in Laravel database
+- **Debug:** Check Laravel database with `php artisan tinker`
+
+**Issue: Validation errors**
+- **Cause:** Invalid input to handler
+- **Solution:** Check Zod schema in `agentValidation.ts`
+- **Debug:** Review validation error details in response
+
+### Future Improvements
+
+- [ ] Persist dead-letter queue to SQLite `audit_log` table
+- [ ] Add circuit breaker pattern (pause after N consecutive failures)
+- [ ] Implement request deduplication (prevent duplicate requests)
+- [ ] Add metrics collection (request duration, success rate)
+- [ ] Support batch operations (fetch multiple tasks at once)
+- [ ] Add caching layer (reduce backend load)
+- [ ] Implement request prioritization (critical requests first)
+
+---
+
+**End of MCP API Contracts**
