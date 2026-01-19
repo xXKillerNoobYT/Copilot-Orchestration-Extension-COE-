@@ -8,6 +8,7 @@ import { ProgrammingOrchestratorManager } from './programmingOrchestratorTab';
 import { MCPClient } from '../services/mcpClient';
 import { ProviderFactory } from '../transport/transportManager';
 import { readLlmTimeoutConfig } from '../config/llmTimeouts';
+import { AgentProfileLoader, AgentTeamType } from '../services/agentProfileLoader';
 
 /**
  * Configuration for connection testing
@@ -25,6 +26,7 @@ export class SettingsPanel {
   private _disposables: vscode.Disposable[] = [];
   private orchestratorManager: ProgrammingOrchestratorManager;
   private mcpClient: MCPClient;
+  private agentProfileLoader: AgentProfileLoader;
 
   public static createOrShow(extensionUri: vscode.Uri) {
     const column = vscode.window.activeTextEditor
@@ -64,6 +66,9 @@ export class SettingsPanel {
 
     // Initialize MCP client
     this.mcpClient = MCPClient.getInstance();
+
+    // Initialize agent profile loader
+    this.agentProfileLoader = AgentProfileLoader.getInstance();
 
     // Set the webview's initial html content
     this._update();
@@ -130,6 +135,15 @@ export class SettingsPanel {
             return;
           case 'loadTeamConfiguration':
             await this._loadTeamConfiguration(message.team);
+            return;
+          case 'uploadTeamProfile':
+            await this._uploadTeamProfile(message.team);
+            return;
+          case 'downloadTeamProfile':
+            await this._downloadTeamProfile(message.team);
+            return;
+          case 'resetTeamProfile':
+            await this._resetTeamProfile(message.team);
             return;
         }
       },
@@ -1463,28 +1477,61 @@ description: "Agent description"
    */
   private async _saveTeamConfiguration(team: string, config: any): Promise<void> {
     try {
-      const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator.teams');
+      const teamType = team as AgentTeamType;
+      
+      // Load or create profile
+      let profile = await this.agentProfileLoader.loadFromWorkspace(teamType);
+      if (!profile) {
+        profile = this.agentProfileLoader.getDefaultProfile(teamType);
+      }
 
-      // Save team-specific configuration
-      const teamConfig = {
-        profile: config.profile,
-        permissions: {
-          readFiles: config.permissions.read,
-          writeFiles: config.permissions.write,
-          executeCommands: config.permissions.execute,
-          runTests: config.permissions.test,
-          approveCompletion: config.permissions.approve,
-        },
-        constraints: {
-          maxDepth: config.maxDepth,
-          timeoutSeconds: config.timeout,
-        },
-      };
+      // Update profile with new configuration
+      if (config.profileYaml) {
+        // If YAML is provided, parse and validate it
+        const result = await this.agentProfileLoader.loadFromYaml(config.profileYaml);
+        
+        if (result.errors.length > 0) {
+          // Show validation errors
+          const errorMessages = result.errors.map(e => `${e.field}: ${e.message}`).join('\n');
+          vscode.window.showErrorMessage(`Profile validation failed:\n${errorMessages}`);
+          
+          this._panel.webview.postMessage({
+            command: 'teamConfigurationError',
+            team: team,
+            errors: result.errors,
+          });
+          return;
+        }
+        
+        profile = result.profile!;
+      } else {
+        // Update individual fields from config
+        profile.config = {
+          ...profile.config,
+          timeout: config.timeout || profile.config?.timeout,
+          retryAttempts: config.retryAttempts || profile.config?.retryAttempts,
+          maxDepth: config.maxDepth || profile.config?.maxDepth,
+        };
 
-      await vsConfig.update(team, teamConfig, vscode.ConfigurationTarget.Global);
+        profile.permissions = {
+          ...profile.permissions,
+          read: config.permissions?.read ?? profile.permissions?.read,
+          write: config.permissions?.write ?? profile.permissions?.write,
+          execute: config.permissions?.execute ?? profile.permissions?.execute,
+          test: config.permissions?.test ?? profile.permissions?.test,
+          approve: config.permissions?.approve ?? profile.permissions?.approve,
+        };
+      }
+
+      // Save to workspace
+      const saveResult = await this.agentProfileLoader.saveToWorkspace(profile);
+      
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || 'Failed to save profile');
+      }
 
       // Notify orchestrator manager of changes
-      this.orchestratorManager.updateTeamStatus(team as any, {
+      this.orchestratorManager.updateTeamStatus(teamType, {
         status: 'idle', // Reset status after configuration change
         tasksCompleted: 0,
         activeTaskCount: 0,
@@ -1512,42 +1559,116 @@ description: "Agent description"
    */
   private async _loadTeamConfiguration(team: string): Promise<void> {
     try {
-      const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator.teams');
-      const teamConfig = vsConfig.get(team) as any;
-
-      if (teamConfig) {
+      const teamType = team as AgentTeamType;
+      
+      // Load profile from workspace or get default
+      const profile = await this.agentProfileLoader.loadFromWorkspace(teamType);
+      
+      if (profile) {
+        // Convert profile to YAML for display
+        const yamlContent = this.agentProfileLoader.exportToYaml(profile);
+        
         this._panel.webview.postMessage({
-          command: 'loadTeamConfiguration',
+          command: 'teamConfigurationLoaded',
           team: team,
           config: {
-            profile: teamConfig.profile || '',
-            permissions: teamConfig.permissions || {
-              read: true,
-              write: false,
-              execute: false,
-              test: false,
-              approve: false,
+            profileYaml: yamlContent,
+            permissions: {
+              read: profile.permissions?.read ?? true,
+              write: profile.permissions?.write ?? false,
+              execute: profile.permissions?.execute ?? false,
+              test: profile.permissions?.test ?? false,
+              approve: profile.permissions?.approve ?? false,
             },
-            constraints: teamConfig.constraints || {
-              maxDepth: 3,
-              timeout: 300,
-            },
+            maxDepth: profile.config?.maxDepth ?? 3,
+            timeout: profile.config?.timeout ?? 300,
           },
         });
-      } else {
-        // Load default configuration
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to load team configuration: ${error}`);
+      this._panel.webview.postMessage({
+        command: 'teamConfigurationError',
+        team: team,
+        error: String(error),
+      });
+    }
+  }
+
+  /**
+   * Upload team profile from YAML file
+   */
+  private async _uploadTeamProfile(team: string): Promise<void> {
+    try {
+      const result = await this.agentProfileLoader.uploadProfile();
+      
+      if (result.errors.length > 0) {
+        const errorMessages = result.errors.map(e => `${e.field}: ${e.message}`).join('\n');
+        vscode.window.showErrorMessage(`Profile upload failed:\n${errorMessages}`);
+        return;
+      }
+
+      if (result.profile) {
+        // Convert profile to YAML and send to webview
+        const yamlContent = this.agentProfileLoader.exportToYaml(result.profile);
+        
         this._panel.webview.postMessage({
-          command: 'loadTeamConfiguration',
+          command: 'teamProfileUploaded',
           team: team,
-          config: {
-            profile: '',
-            permissions: {
-              read: true,
-              write: false,
-              execute: false,
-              test: false,
-              approve: false,
-            },
+          profileYaml: yamlContent,
+        });
+        
+        vscode.window.showInformationMessage('Profile uploaded successfully!');
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to upload profile: ${error}`);
+    }
+  }
+
+  /**
+   * Download team profile to YAML file
+   */
+  private async _downloadTeamProfile(team: string): Promise<void> {
+    try {
+      const teamType = team as AgentTeamType;
+      const profile = await this.agentProfileLoader.loadFromWorkspace(teamType);
+      
+      if (!profile) {
+        vscode.window.showWarningMessage('No profile to download. Using default profile.');
+        const defaultProfile = this.agentProfileLoader.getDefaultProfile(teamType);
+        await this.agentProfileLoader.downloadProfile(defaultProfile);
+      } else {
+        await this.agentProfileLoader.downloadProfile(profile);
+      }
+      
+      vscode.window.showInformationMessage('Profile downloaded successfully!');
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to download profile: ${error}`);
+    }
+  }
+
+  /**
+   * Reset team profile to defaults
+   */
+  private async _resetTeamProfile(team: string): Promise<void> {
+    try {
+      const teamType = team as AgentTeamType;
+      const defaultProfile = this.agentProfileLoader.getDefaultProfile(teamType);
+      
+      // Convert to YAML and send to webview
+      const yamlContent = this.agentProfileLoader.exportToYaml(defaultProfile);
+      
+      this._panel.webview.postMessage({
+        command: 'teamProfileReset',
+        team: team,
+        profileYaml: yamlContent,
+      });
+      
+      vscode.window.showInformationMessage(`${this.getTeamDisplayName(team)} profile reset to defaults!`);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to reset profile: ${error}`);
+    }
+  }
             constraints: {
               maxDepth: 3,
               timeout: 300,
