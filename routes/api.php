@@ -329,6 +329,7 @@ Route::prefix('v1')->group(function () {
     
     // Plan context import and analysis
     Route::post('/plans/analyze-context', [PlanImportController::class, 'analyzeContext'])
+        ->middleware('auth:sanctum')
         ->name('api.plans.analyzeContext');
     
     // Plan queries

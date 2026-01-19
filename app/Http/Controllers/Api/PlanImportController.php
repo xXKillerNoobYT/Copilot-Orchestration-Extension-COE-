@@ -100,6 +100,11 @@ class PlanImportController extends Controller
      */
     private function generateSummary(string $content): string
     {
+        // Handle empty content
+        if (empty(trim($content))) {
+            return 'No content provided';
+        }
+
         // Extract first few sentences (split by period, exclamation, or question mark)
         $sentences = preg_split('/[.!?]+/', $content);
         
@@ -107,8 +112,14 @@ class PlanImportController extends Controller
         $sentences = array_filter($sentences, function($s) {
             return trim($s) !== '';
         });
-        $sentences = array_slice($sentences, 0, 3);
         
+        // If no sentences found after filtering, use first 200 chars of raw content
+        if (empty($sentences)) {
+            $rawSummary = substr(trim($content), 0, 200);
+            return strlen(trim($content)) > 200 ? $rawSummary . '...' : $rawSummary;
+        }
+        
+        $sentences = array_slice($sentences, 0, 3);
         $fullSummary = implode('. ', $sentences);
         
         // Truncate to 200 characters if needed

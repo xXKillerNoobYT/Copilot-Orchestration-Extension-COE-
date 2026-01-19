@@ -195,10 +195,7 @@ export class ContextImportService {
     if (topics.includes('api') && !topics.includes('frontend')) {
       return 'core-api-service';
     }
-    if (topics.includes('frontend') && !topics.includes('api')) {
-      return 'core-web-app';
-    }
-    if (topics.includes('frontend') && topics.includes('api')) {
+    if (topics.includes('frontend')) {
       return 'core-web-app';
     }
     if (topics.includes('mobile')) {
@@ -228,7 +225,10 @@ export class ContextImportService {
     if (topics.length > 3) {
       return '1-3 months';
     }
-    return '2-4 weeks';
+    if (topics.length > 0) {
+      return '2-4 weeks';
+    }
+    return '1-2 weeks';
   }
 
   /**

@@ -167,6 +167,24 @@ import FileImporter from './components/FileImporter.vue';
 import { getTemplateService } from './services/TemplateService';
 import type { WizardState, PreviewRenderResult } from '../components/preview/PreviewEngine';
 
+// Type definitions for imported context
+interface ImportedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  content: string;
+  preview: string;
+}
+
+interface ContextAnalysis {
+  suggestedTemplate: string;
+  topics: string[];
+  summary: string;
+  estimatedDuration: string;
+  recommendedTeamSize: number;
+}
+
 // Props
 interface Props {
   extensionPath: string;
@@ -215,7 +233,7 @@ const appliedTemplateId = ref<string | undefined>(undefined);
 
 // File import state
 const showFileImporter = ref(false);
-const importedContext = ref<any>(null);
+const importedContext = ref<{ files: ImportedFile[]; analysis: ContextAnalysis | null } | null>(null);
 
 // AI Assistant state
 const showAssistant = ref(false);
@@ -546,8 +564,16 @@ const handleTemplateSelected = async (templateId: string) => {
   }
 };
 
-// Handle context imported from FileImporter
-const handleContextImported = (context: any) => {
+/**
+ * Handle context imported from FileImporter component
+ * 
+ * Stores the imported files and AI analysis in the wizard state for use
+ * throughout the planning workflow. The context includes uploaded/pasted files
+ * and AI-generated analysis (suggested template, detected topics, etc.).
+ * 
+ * @param context - Object containing imported files and analysis results
+ */
+const handleContextImported = (context: { files: ImportedFile[]; analysis: ContextAnalysis | null }) => {
   importedContext.value = context;
   showFileImporter.value = false;
   
@@ -557,14 +583,14 @@ const handleContextImported = (context: any) => {
     
     // If we have a suggested template, we could pre-select it or inform the user
     if (context.analysis.suggestedTemplate) {
-      // Optionally auto-apply the suggested template
+      // TODO: Future feature - auto-apply the suggested template
       // handleTemplateSelected(context.analysis.suggestedTemplate);
       
       // Or just show a hint to the user
       console.log('[Wizard] Suggested template:', context.analysis.suggestedTemplate);
     }
     
-    // Store the imported context in wizard metadata
+    // Store the imported context in wizard metadata for later use
     if (wizardStore.metadata) {
       wizardStore.metadata.importedContext = context;
     }

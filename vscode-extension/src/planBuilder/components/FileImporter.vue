@@ -247,7 +247,9 @@ function handleDropFiles(event: DragEvent) {
 async function handleFiles(files: File[]) {
   // Validate file count
   if (importedFiles.value.length + files.length > 5) {
-    alert('Maximum 5 files allowed');
+    processingMessage.value = 'Maximum 5 files allowed';
+    isProcessing.value = true;
+    setTimeout(() => { isProcessing.value = false; }, 2000);
     return;
   }
 
@@ -279,7 +281,9 @@ async function handleFiles(files: File[]) {
     }
   } catch (error) {
     console.error('Error importing files:', error);
-    alert('Error importing files. Please try again.');
+    processingMessage.value = 'Error importing files. Please try again.';
+    setTimeout(() => { isProcessing.value = false; }, 2000);
+    return;
   } finally {
     isProcessing.value = false;
   }
@@ -287,8 +291,8 @@ async function handleFiles(files: File[]) {
 
 async function importFile(file: File) {
   const content = await file.text();
-  const snippet = content.substring(0, 150).replace(/\n/g, ' ');
-  const preview = content.length > 150 ? snippet + '...' : snippet;
+  const previewContent = content.substring(0, 150).replace(/\n/g, ' ');
+  const preview = content.length > 150 ? previewContent + '...' : previewContent;
   
   importedFiles.value.push({
     id: Math.random().toString(36).substring(2),
@@ -308,8 +312,8 @@ async function processPastedContent() {
   
   try {
     const content = pastedContent.value;
-    const previewContent = content.substring(0, 150);
-    const preview = content.length > 150 ? previewContent + '...' : previewContent;
+    const snippet = content.substring(0, 150).replace(/\n/g, ' ');
+    const preview = content.length > 150 ? snippet + '...' : snippet;
 
     importedFiles.value.push({
       id: Math.random().toString(36).substring(2),
@@ -356,7 +360,9 @@ async function processWorkspaceFiles() {
         type: 'file',
         size: content.length,
         content,
-        preview: content.length > 150 ? content.substring(0, 150) + '...' : content
+        preview: content.length > 150
+          ? content.substring(0, 150).replace(/\n/g, ' ') + '...'
+          : content.replace(/\n/g, ' ')
       });
     }
     
@@ -364,7 +370,8 @@ async function processWorkspaceFiles() {
     await analyzeImportedContext();
   } catch (error) {
     console.error('Error processing workspace files:', error);
-    alert('Error processing workspace files. Please try again.');
+    processingMessage.value = 'Error processing workspace files. Please try again.';
+    setTimeout(() => { isProcessing.value = false; }, 2000);
   } finally {
     isProcessing.value = false;
   }
@@ -386,12 +393,26 @@ async function analyzeImportedContext() {
   }
 }
 
+let analyzeContextTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleContextReanalysis() {
+  if (analyzeContextTimeout !== null) {
+    clearTimeout(analyzeContextTimeout);
+  }
+
+  analyzeContextTimeout = setTimeout(() => {
+    if (importedFiles.value.length > 0) {
+      void analyzeImportedContext();
+    }
+  }, 300);
+}
+
 function removeFile(id: string) {
   importedFiles.value = importedFiles.value.filter(f => f.id !== id);
   
-  // Re-analyze if files still exist
+  // Re-analyze if files still exist, but debounce to avoid repeated work
   if (importedFiles.value.length > 0) {
-    analyzeImportedContext();
+    scheduleContextReanalysis();
   } else {
     contextAnalysis.value = null;
   }
