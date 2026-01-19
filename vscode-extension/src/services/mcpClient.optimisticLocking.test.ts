@@ -1,6 +1,10 @@
 /**
  * Tests for MCPClient optimistic locking and version conflict handling
  * Focus: Task status updates with version checking and retry logic
+ * 
+ * Reference: https://jestjs.io/docs/timer-mocks
+ * Reference: https://jestjs.io/docs/asynchronous for Promise and timer handling
+ * See: https://jestjs.io/docs/setup-teardown for test lifecycle
  */
 
 import { MCPClient } from './mcpClient';
@@ -15,6 +19,16 @@ describe('MCPClient - Optimistic Locking', () => {
     jest.clearAllMocks();
     MCPClient.invalidateInstance(); // Clear any previous instance
     mcpClient = MCPClient.initialize({ baseUrl: 'http://localhost:8000' });
+    // Use fake timers for exponential backoff testing
+    // Reference: https://jestjs.io/docs/timer-mocks#enable-fake-timers
+    jest.useFakeTimers();
+  });
+
+  // Reference: https://jestjs.io/docs/setup-teardown#cleanup
+  afterEach(() => {
+    // CRITICAL: Clean up fake timers to prevent open handle errors
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
   });
 
   describe('reportTaskStatus with version conflicts', () => {
@@ -47,8 +61,8 @@ describe('MCPClient - Optimistic Locking', () => {
     });
 
     it('should retry on 409 version conflict with exponential backoff', async () => {
-      jest.useFakeTimers();
-
+      // Reference: https://jestjs.io/docs/timer-mocks#runalltimersasync
+      
       const conflictResponse = {
         success: false,
         error: 'version_conflict',
@@ -100,6 +114,7 @@ describe('MCPClient - Optimistic Locking', () => {
       });
 
       // Fast-forward through backoff delay
+      // See: https://jestjs.io/docs/timer-mocks#runalltimersasync
       await jest.runAllTimersAsync();
 
       const result = await resultPromise;
@@ -107,13 +122,11 @@ describe('MCPClient - Optimistic Locking', () => {
       expect(result.success).toBe(true);
       expect(result.version).toBe(3);
       expect(global.fetch).toHaveBeenCalledTimes(3); // conflict + fetch latest + success
-
-      jest.useRealTimers();
     });
 
     it('should throw error after max attempts on persistent conflicts', async () => {
-      jest.useFakeTimers();
-
+      // Reference: https://jestjs.io/docs/asynchronous#promises
+      
       const conflictResponse = {
         success: false,
         error: 'version_conflict',

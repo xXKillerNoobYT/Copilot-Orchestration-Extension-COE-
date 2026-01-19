@@ -301,11 +301,24 @@ Task description`,
   });
 
   describe('addFilesToContextBundle', () => {
+    // Reference: https://jestjs.io/docs/manual-mocks
+    // Reference: https://jestjs.io/docs/setup-teardown#order-of-execution
+    
     beforeEach(() => {
       // Mock vscode.workspace
       (vscode.workspace as any).workspaceFolders = [
         { uri: { fsPath: '/test/workspace' } }
       ];
+      
+      // Properly initialize mocks for file operations
+      // See: https://jestjs.io/docs/mock-functions for mock setup
+      const mockWriteFile = jest.fn().mockResolvedValue(undefined);
+      const mockReadFile = jest.fn();
+      (vscode.workspace as any).fs = {
+        writeFile: mockWriteFile,
+        readFile: mockReadFile,
+      };
+      (vscode.Uri as any).file = jest.fn((path: string) => ({ fsPath: path }));
     });
 
     it('should add valid files to an existing bundle', async () => {

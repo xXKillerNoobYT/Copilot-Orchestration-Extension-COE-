@@ -10,9 +10,13 @@
 import { AgentProfileWatcher, ProfileChangeEvent } from './agentProfileWatcher';
 import * as vscode from 'vscode';
 import { AgentProfile } from './agentProfiles';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 // Mock vscode
 jest.mock('vscode');
+jest.mock('fs/promises');
+jest.mock('path');
 
 describe('AgentProfileWatcher', () => {
     let watcher: AgentProfileWatcher;
@@ -24,6 +28,20 @@ describe('AgentProfileWatcher', () => {
         mockExtensionUri = {
             fsPath: '/mock/extension/path',
         } as vscode.Uri;
+
+        // Mock file system to return sample profiles
+        const mockProfiles = [
+            {
+                name: 'Planner',
+                role: 'planner',
+                description: 'Test planner',
+                capabilities: []
+            }
+        ];
+
+        (fs.readdir as jest.Mock).mockResolvedValue(['planner.json']);
+        (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockProfiles[0]));
+        (path.join as jest.Mock).mockImplementation((...args) => args.join('/'));
 
         watcher = new AgentProfileWatcher(mockExtensionUri);
     });
@@ -176,7 +194,7 @@ describe('AgentProfileWatcher Singleton', () => {
     it('should return same instance', () => {
         const mockUri = { fsPath: '/mock' } as vscode.Uri;
 
-        const { getAgentProfileWatcher } = require('../agentProfileWatcher');
+        const { getAgentProfileWatcher } = require('./agentProfileWatcher');
         const watcher1 = getAgentProfileWatcher(mockUri);
         const watcher2 = getAgentProfileWatcher(mockUri);
 

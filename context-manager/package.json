@@ -7,9 +7,11 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "jest --watch --coverage --maxWorkers=1",
+    "test:watch": "jest --watch --coverage --maxWorkers=1",
+    "test:ci": "jest --runInBand --detectOpenHandles --forceExit --coverage",
+    "test:unit": "jest --runInBand --detectOpenHandles --forceExit",
+    "test:coverage": "jest --coverage --runInBand --detectOpenHandles --forceExit",
     "lint": "eslint src/**/*.ts",
     "clean": "rimraf dist"
   },

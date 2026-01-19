@@ -4,7 +4,12 @@
     "scripts": {
         "dev": "vite",
         "build": "vue-tsc && vite build && vite build --ssr",
-        "test": "jest",
+        "test": "npm run test:all",
+        "test:all": "npm run test:context-manager && npm run test:extension && npm run test:report",
+        "test:laravel": "php artisan test --parallel --bail",
+        "test:context-manager": "echo === Context Manager Tests === && cd context-manager && npm test -- --coverage && cd ..",
+        "test:extension": "echo === VS Code Extension Tests === && cd vscode-extension && npm run test:unit -- --coverage && cd ..",
+        "test:report": "node scripts/test-reporter.js",
         "test:jest": "jest",
         "test:watch": "jest --watch",
         "test:coverage": "jest --coverage"

@@ -1,6 +1,10 @@
 /**
  * Tests for OrchestratorPanel Dashboard Enhancements
  * Focus: Team status cards, live metrics, and coordination controls
+ * 
+ * Reference: https://jestjs.io/docs/timer-mocks
+ * Reference: https://jestjs.io/docs/setup-teardown
+ * See: https://jestjs.io/docs/manual-mocks for vscode mocking
  */
 
 import { OrchestratorPanelProvider } from './orchestratorPanel';
@@ -62,8 +66,24 @@ function mockWebview(): any {
 describe('OrchestratorPanel Dashboard Enhancements', () => {
   let provider: OrchestratorPanelProvider;
 
+  // Reference: https://jestjs.io/docs/timer-mocks#setup-and-teardown
   beforeEach(() => {
     jest.clearAllMocks();
+    // Use fake timers to control setInterval
+    jest.useFakeTimers();
+  });
+
+  // Reference: https://jestjs.io/docs/setup-teardown#order-of-execution
+  afterEach(() => {
+    // Critical: Clean up timers to avoid open handles
+    // See: https://jestjs.io/docs/timer-mocks#cleanup
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+    
+    // Dispose provider if it exists to clean up intervals
+    if (provider && (provider as any).wsUpdateInterval) {
+      clearInterval((provider as any).wsUpdateInterval);
+    }
   });
 
   describe('HTML Generation', () => {

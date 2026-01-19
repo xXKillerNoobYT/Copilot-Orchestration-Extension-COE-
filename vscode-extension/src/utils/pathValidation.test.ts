@@ -39,20 +39,29 @@ describe('Path Validation Utilities', () => {
   });
 
   describe('normalizeFilePath', () => {
+    // Reference: https://nodejs.org/api/path.html#path_path_normalize_p
+    // Note: path.normalize() behaves differently on Windows vs Unix
+    // See: https://jestjs.io/docs/setup-teardown for platform-specific testing
+    
     it('should normalize an absolute path', () => {
       const absolutePath = '/home/user/project/file.txt';
       const normalized = normalizeFilePath(absolutePath);
+      // On Windows, this may include drive letters; use path.normalize for comparison
       expect(normalized).toBe(path.normalize(absolutePath));
     });
 
     it('should resolve relative paths with workspace root', () => {
-      const workspaceRoot = '/home/user/project';
+      // Reference: https://nodejs.org/api/path.html#path_path_resolve_paths
+      // path.resolve() is platform-aware and handles both Windows and Unix paths
+      const workspaceRoot = path.normalize('/home/user/project');
       const relativePath = 'src/file.txt';
       const normalized = normalizeFilePath(relativePath, workspaceRoot);
-      expect(normalized).toBe(path.normalize('/home/user/project/src/file.txt'));
+      const expected = path.normalize(path.join(workspaceRoot, relativePath));
+      expect(normalized).toBe(expected);
     });
 
     it('should handle file:// URIs', () => {
+      // Reference: https://nodejs.org/api/url.html for URL handling
       const fileUri = 'file:///home/user/project/file.txt';
       const normalized = normalizeFilePath(fileUri);
       // Result depends on platform, just check it doesn't throw

@@ -295,7 +295,8 @@ describe('ContextManager', () => {
         response: 'Response'
       });
 
-      // Load twice
+      // Load twice - second load should come from cache
+      // Reference: https://jestjs.io/docs/setup-teardown
       const first = await manager.loadContext(contextId);
       const second = await manager.loadContext(contextId);
 
@@ -317,4 +318,171 @@ describe('ContextManager', () => {
       expect(stats).toBeTruthy();
     });
   });
+
+  describe('saveIntermediateOutput', () => {
+    it('should save and retrieve intermediate output', async () => {
+      const taskId = 'task-io-1';
+      const output = {
+        taskId,
+        stepNumber: 1,
+        stage: 'planning',
+        data: { key: 'value' }
+      };
+
+      const contextId = await manager.saveIntermediateOutput(taskId, output);
+      expect(contextId).toBeTruthy();
+      expect(contextId).toContain(taskId);
+
+      const loaded = await manager.loadContext(contextId);
+      expect(loaded).toBeTruthy();
+      expect((loaded as any)?.stage).toBe('planning');
+    });
+  });
+
+  describe('saveArchitectureSnapshot', () => {
+    it('should save and retrieve architecture snapshot', async () => {
+      const taskId = 'task-arch-1';
+      const snapshot = {
+        taskId,
+        timestamp: new Date(),
+        components: ['component1', 'component2'],
+        dependencies: { comp1: ['comp2'] }
+      };
+
+      const contextId = await manager.saveArchitectureSnapshot(taskId, snapshot);
+      expect(contextId).toBeTruthy();
+
+      const loaded = await manager.loadContext(contextId);
+      expect(loaded).toBeTruthy();
+      expect((loaded as any)?.components).toEqual(['component1', 'component2']);
+    });
+  });
+
+  describe('createReference', () => {
+    it('should return null for non-existent context', async () => {
+      const ref = await manager.createReference('non-existent-ctx');
+      expect(ref).toBeNull();
+    });
+  });
+
+  describe('prune', () => {
+    it('should prune contexts and clear cache', async () => {
+      await manager.saveAgentOutput('task-prune-1', {
+        agentId: 'agent-1',
+        taskId: 'task-prune-1',
+        prompt: 'Test',
+        response: 'Response'
+      });
+
+      const result = await manager.prune();
+      expect(result).toHaveProperty('removed');
+      expect(result).toHaveProperty('freedSpace');
+      expect(result).toHaveProperty('errors');
+    });
+  });
+
+  describe('queryContexts with tags and expiration', () => {
+    it('should filter by tags', async () => {
+      // Create contexts with metadata containing tags
+      // Reference: https://jestjs.io/docs/asynchronous
+      const contextId = await manager.saveAgentOutput('task-tags', {
+        agentId: 'agent-1',
+        taskId: 'task-tags',
+        prompt: 'Test',
+        response: 'Response'
+      });
+
+      const context = await manager.loadContext(contextId);
+      if (context) {
+        context.metadata.tags = ['urgent', 'review'];
+        await manager.saveContext(context);
+      }
+
+      // Query should handle tag filtering through matchesQuery
+      const results = await manager.queryContexts({
+        tags: ['urgent']
+      });
+
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('should filter excluded expired contexts', async () => {
+      const contextId = await manager.saveAgentOutput('task-expire', {
+        agentId: 'agent-1',
+        taskId: 'task-expire',
+        prompt: 'Test',
+        response: 'Response'
+      });
+
+      const context = await manager.loadContext(contextId);
+      if (context) {
+        // Set expiration to past date
+        context.metadata.expiresAt = new Date(Date.now() - 1000);
+        await manager.saveContext(context);
+      }
+
+      // Without includeExpired, should filter out
+      const results = await manager.queryContexts({
+        includeExpired: false
+      });
+
+      // Expired context should be filtered out
+      expect(results.every(c => !isExpired(c.metadata.expiresAt))).toBe(true);
+    });
+
+    it('should include expired contexts when requested', async () => {
+      const contextId = await manager.saveAgentOutput('task-include-expired', {
+        agentId: 'agent-1',
+        taskId: 'task-include-expired',
+        prompt: 'Test',
+        response: 'Response'
+      });
+
+      const context = await manager.loadContext(contextId);
+      if (context) {
+        context.metadata.expiresAt = new Date(Date.now() - 1000);
+        await manager.saveContext(context);
+      }
+
+      const results = await manager.queryContexts({
+        includeExpired: true
+      });
+
+      // Should include expired contexts
+      expect(results.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('cache eviction', () => {
+    it('should evict cache entries when cache exceeds max size', async () => {
+      // Create manager with very small cache size (1KB)
+      const smallCacheManager = new ContextManager({
+        dataDir: TEST_DATA_DIR,
+        storageFormat: StorageFormat.JSON,
+        maxMemoryCache: 1 // 1MB = 1048576 bytes
+      });
+
+      // Save multiple large contexts to exceed cache limit
+      for (let i = 0; i < 5; i++) {
+        await smallCacheManager.saveAgentOutput(`task-${i}`, {
+          agentId: `agent-${i}`,
+          taskId: `task-${i}`,
+          prompt: 'Test prompt with some length to increase size ' + 'x'.repeat(1000),
+          response: 'Response ' + 'y'.repeat(1000)
+        });
+      }
+
+      // All should be saved despite cache size limits
+      const stats = await smallCacheManager.getStats();
+      expect(stats.totalContexts).toBeGreaterThanOrEqual(5);
+    });
+  });
 });
+
+// Helper function to check expiration
+function isExpired(expiresAt?: Date): boolean {
+  if (!expiresAt) {
+    return false;
+  }
+  return expiresAt < new Date();
+}

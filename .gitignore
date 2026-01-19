@@ -27,3 +27,10 @@ _ZENTASKS/__pycache__/
 
 # Ignore auto-generated Ziggy routes file
 /resources/js/ziggy.js
+
+# Ignore test coverage reports (all packages)
+coverage/
+**/coverage/
+.nyc_output/
+lcov.info
+*.lcov

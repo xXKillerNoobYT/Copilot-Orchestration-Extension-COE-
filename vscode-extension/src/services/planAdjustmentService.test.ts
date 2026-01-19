@@ -7,6 +7,10 @@
  * - Adjustment application
  * - Version bumping
  * - One-click update
+ * 
+ * Reference: https://jestjs.io/docs/mock-functions
+ * Reference: https://jestjs.io/docs/setup-teardown
+ * See: https://jestjs.io/docs/manual-mocks for dependency mocking
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
@@ -24,8 +28,10 @@ describe('PlanAdjustmentService', () => {
   let mockPlan: PlanJSON;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     service = new PlanAdjustmentService();
     
+    // Reference: https://jestjs.io/docs/manual-mocks#using-a-mock-to-create-test-data
     mockPlan = {
       metadata: {
         version: '1.0.0',

@@ -63,4 +63,31 @@
 - Follow the guidelines in `.github/issues/README.md` for creating and managing issues.
 - Use tools to make/update issues on GitHub. They will follow the process automatically.
 - NEED TO ADD MORE DETAILS LATER do so using the tools provided.
-- Cheak for comint messages for more details. use the tools provided. the issues here `.github/issues/` dont have comint 
+- Check for commit messages for more details. Use the tools provided. The issues here `.github/issues/` don't have commit messages.
+
+## Testing/CI expectations
+- **Default mode**: Jest runs in **watch mode with coverage on save** for immediate feedback during development
+- **Required**: All suites must be green before commits:
+	- Laravel: `php artisan test` 
+	- Root Jest: `npm test`
+	- context-manager Jest: `npm test` (in context-manager/)
+	- vscode-extension Jest: `npm run test:jest`
+- **Coverage targets**:
+	- context-manager: **80%+ branches/lines** (enforced in jest.config.js)
+	- vscode-extension: 50%+ (gradual improvement expected)
+- **Build hygiene**: Keep TypeScript/Vite builds clean:
+	- `npm run build` (Vite SSR + CSR)
+	- `npm run compile` (vscode-extension webpack)
+	- `npx tsc --noEmit` (type checking)
+- **Test failures**: 
+	- ❌ **Failing tests are PROBLEMS** - reported via VS Code Problems panel (visible with `get_errors`)
+	- ⏭️ **Skipped tests are PROBLEMS** - must be documented in test file with JIRA/issue link and timeline
+	- 🔴 **Fix promptly**: Failing/skipped tests block PR approval
+	- 📊 **Report all test failures** as problems so they appear alongside code errors
+- **CI/CD**:
+	- Keep pipelines green and efficient
+	- Tests run on every PR (GitHub Actions)
+	- Coverage reports published to PR comments
+	- Failed tests fail the build
+- **Jest sanity-check**:
+	- 	Verify that the Jest sanity-check file runs and reports exactly one skipped test and one failing test. If either test does not appear in the Problems panel or Jest output, raise a red flag because the test runner is not functioning correctly.

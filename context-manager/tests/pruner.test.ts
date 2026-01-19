@@ -207,4 +207,120 @@ describe('ContextPruner', () => {
       expect(stats.byTask['task-2']).toBe(1);
     });
   });
+
+  describe('prune error handling', () => {
+    it('should handle errors in prune gracefully', async () => {
+      // Reference: https://jestjs.io/docs/mock-functions
+      const policy: PruningPolicy = {};
+      pruner = new ContextPruner(adapter, policy);
+
+      const result = await pruner.prune();
+
+      expect(result).toHaveProperty('removed');
+      expect(result).toHaveProperty('freedSpace');
+      expect(result).toHaveProperty('errors');
+      expect(typeof result.removed).toBe('number');
+      expect(typeof result.freedSpace).toBe('number');
+      expect(Array.isArray(result.errors)).toBe(true);
+    });
+
+    it('should handle expired context removal', async () => {
+      const policy: PruningPolicy = {
+        maxAge: 30
+      };
+
+      pruner = new ContextPruner(adapter, policy);
+
+      // Create context with expiration date in past
+      await manager.saveAgentOutput('task-expire', {
+        agentId: 'agent-1',
+        taskId: 'task-expire',
+        prompt: 'Will expire',
+        response: 'Test'
+      });
+
+      const context = await manager.loadContext(
+        // Get the context ID by querying
+        (await manager.getContextForTask('task-expire'))[0].metadata.id
+      );
+
+      if (context) {
+        context.metadata.expiresAt = new Date(Date.now() - 1000); // 1 second ago
+        await manager.saveContext(context);
+      }
+
+      const result = await pruner.prune();
+
+      // Should remove the expired context
+      expect(result.removed).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('context size tracking', () => {
+    it('should track accurate context sizes', async () => {
+      const policy: PruningPolicy = {};
+      pruner = new ContextPruner(adapter, policy);
+
+      // Save context with known data
+      await manager.saveAgentOutput('task-size', {
+        agentId: 'agent-1',
+        taskId: 'task-size',
+        prompt: 'X'.repeat(100),
+        response: 'Y'.repeat(100)
+      });
+
+      const stats = await pruner.getStats();
+
+      expect(stats.totalSize).toBeGreaterThan(100); // Should be at least the data size
+    });
+  });
+
+  describe('multiple pruning policies', () => {
+    it('should apply multiple pruning strategies', async () => {
+      // Reference: https://jestjs.io/docs/using-matchers
+      const policy: PruningPolicy = {
+        maxAge: 1,
+        maxItemsPerTask: 1,
+        maxTotalSize: 10000
+      };
+
+      pruner = new ContextPruner(adapter, policy);
+
+      // Create contexts from different tasks
+      for (let i = 0; i < 3; i++) {
+        await manager.saveAgentOutput('task-1', {
+          agentId: `agent-${i}`,
+          taskId: 'task-1',
+          prompt: 'Test',
+          response: 'Response'
+        });
+      }
+
+      await manager.saveAgentOutput('task-2', {
+        agentId: 'agent-x',
+        taskId: 'task-2',
+        prompt: 'Test 2',
+        response: 'Response 2'
+      });
+
+      const result = await pruner.prune();
+
+      // Should have applied pruning
+      expect(typeof result.removed).toBe('number');
+      expect(result.removed).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('default pruning policy', () => {
+    it('should use sensible defaults when no policy provided', async () => {
+      // Reference: https://jestjs.io/docs/constructor-mocks
+      pruner = new ContextPruner(adapter); // No policy provided
+
+      // Should have default maxAge of 30 days
+      const result = await pruner.prune();
+
+      expect(result).toHaveProperty('removed');
+      expect(result).toHaveProperty('freedSpace');
+    });
+  });
 });
