@@ -128,7 +128,8 @@ export abstract class MCPHandlerBase {
     this.deadLetterQueue.push(entry);
     console.error('[DeadLetterQueue] Added entry:', entry);
 
-    // TODO: Implement persistence to SQLite audit_log table
+    // Note: Dead letter entries are currently stored in-memory only.
+    // Future enhancement: persist to SQLite audit_log table (see GitHub issue #XXX)
   }
 
   /**

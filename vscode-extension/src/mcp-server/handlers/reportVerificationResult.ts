@@ -57,13 +57,24 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
         const data = await response.json();
         const verificationResult = data.verificationResult || data;
 
+        const warnings: string[] = [];
+
         // If verification failed, create investigation tasks
+        let investigationTasksCreated: number | undefined;
         if (!passed && findings && findings.length > 0) {
-          await this.createInvestigationTasks(taskId, findings, baseUrl);
+          investigationTasksCreated = await this.createInvestigationTasks(taskId, findings, baseUrl);
+          if (investigationTasksCreated === undefined) {
+            warnings.push('Failed to create investigation tasks for verification findings');
+          } else if (investigationTasksCreated < findings.length) {
+            warnings.push(`Only ${investigationTasksCreated} of ${findings.length} investigation tasks created successfully`);
+          }
         }
 
         // Update task status based on verification result
-        await this.updateTaskStatus(taskId, passed, baseUrl);
+        const statusUpdated = await this.updateTaskStatus(taskId, passed, baseUrl);
+        if (!statusUpdated) {
+          warnings.push('Failed to update task status - task may already be in terminal state or update failed');
+        }
 
         // Determine next workflow step
         const nextAction = passed
@@ -74,7 +85,7 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
           ? ['Update task status to done', 'Close related issues', 'Merge pull request']
           : ['Address verification findings', 'Request re-verification', 'Update task priority'];
 
-        return formatAgentSuccess({
+        const result: any = {
           verificationResult: {
             id: verificationResult.id || `VERIFY-${Date.now()}`,
             taskId,
@@ -89,7 +100,19 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
           message: `Verification ${passed ? 'passed' : 'failed'} for task ${taskId}`,
           nextAction,
           nextSteps,
-        });
+        };
+
+        // Add warnings if any non-critical operations failed
+        if (warnings.length > 0) {
+          result.warnings = warnings;
+        }
+
+        // Add investigation task count if created
+        if (investigationTasksCreated !== undefined) {
+          result.investigationTasksCreated = investigationTasksCreated;
+        }
+
+        return formatAgentSuccess(result);
       },
       'handleReportVerificationResult',
       args
@@ -98,10 +121,13 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
 
   /**
    * Create investigation tasks for verification findings
+   * Creates tasks in parallel for better performance
+   * @returns Number of successfully created tasks, or undefined if all failed
    */
-  private async createInvestigationTasks(taskId: string, findings: any[], baseUrl: string): Promise<void> {
+  private async createInvestigationTasks(taskId: string, findings: any[], baseUrl: string): Promise<number | undefined> {
     try {
-      for (const finding of findings) {
+      // Create all investigation tasks in parallel for better performance
+      const createPromises = findings.map(finding => {
         const investigationData = {
           parent_task_id: taskId,
           title: `Investigation: ${finding.description || 'Verification finding'}`,
@@ -111,32 +137,64 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
           status: 'pending',
         };
 
-        await fetch(`${baseUrl}/api/v1/tasks`, {
+        return fetch(`${baseUrl}/api/v1/tasks`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
           body: JSON.stringify(investigationData),
+        }).catch(err => {
+          console.warn('[ReportVerificationResult] Failed to create investigation task:', err);
+          return null;
         });
-      }
+      });
+
+      const results = await Promise.all(createPromises);
+      const successCount = results.filter(r => r !== null && r.ok).length;
+      
+      return successCount > 0 ? successCount : undefined;
     } catch (error) {
       console.warn('[ReportVerificationResult] Failed to create investigation tasks:', error);
-      // Don't fail the verification report if investigation creation fails
+      return undefined;
     }
   }
 
   /**
    * Update task status based on verification result
+   * Checks current task status to avoid regressing terminal states
+   * @returns true if status was updated, false otherwise
    */
-  private async updateTaskStatus(taskId: string, passed: boolean, baseUrl: string): Promise<void> {
+  private async updateTaskStatus(taskId: string, passed: boolean, baseUrl: string): Promise<boolean> {
     try {
+      // Check current task status to avoid regressing terminal states
+      const taskResponse = await fetch(`${baseUrl}/api/v1/tasks/${taskId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (taskResponse.ok) {
+        const taskData = await taskResponse.json();
+        const currentStatus = taskData?.task?.status?.toLowerCase();
+
+        // Skip update if task is already in a terminal state
+        if (currentStatus === 'completed' || currentStatus === 'cancelled') {
+          console.warn(
+            `[ReportVerificationResult] Skipping status update for task ${taskId} - already in terminal state: ${currentStatus}`
+          );
+          return false;
+        }
+      }
+
+      // Update task status
       const statusData = {
         taskId,
         status: passed ? 'completed' : 'blocked',
       };
 
-      await fetch(`${baseUrl}/api/v1/tasks/${taskId}/status`, {
+      const updateResponse = await fetch(`${baseUrl}/api/v1/tasks/${taskId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -144,9 +202,11 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
         },
         body: JSON.stringify(statusData),
       });
+
+      return updateResponse.ok;
     } catch (error) {
       console.warn('[ReportVerificationResult] Failed to update task status:', error);
-      // Don't fail the verification report if status update fails
+      return false;
     }
   }
 

@@ -37,7 +37,7 @@ class GetWorkspaceConfigHandler extends MCPHandlerBase {
             timeout: parseInt(process.env.LLM_TIMEOUT || '30000'),
           },
           websocket: {
-            driver: (process.env.WEBSOCKET_DRIVER || 'soketi') as 'soketi' | 'pusher' | 'redis',
+            driver: this.validateWebSocketDriver(process.env.WEBSOCKET_DRIVER),
             host: process.env.WEBSOCKET_HOST || 'localhost',
             port: parseInt(process.env.WEBSOCKET_PORT || '6001'),
             enabled: process.env.WEBSOCKET_ENABLED !== 'false',
@@ -63,6 +63,24 @@ class GetWorkspaceConfigHandler extends MCPHandlerBase {
       'handleGetWorkspaceConfig',
       args
     );
+  }
+
+  /**
+   * Validate WebSocket driver environment variable
+   * @returns Valid driver name or default 'soketi'
+   */
+  private validateWebSocketDriver(value?: string): 'soketi' | 'pusher' | 'redis' {
+    const validDrivers: Array<'soketi' | 'pusher' | 'redis'> = ['soketi', 'pusher', 'redis'];
+    
+    if (value && validDrivers.includes(value as any)) {
+      return value as 'soketi' | 'pusher' | 'redis';
+    }
+
+    if (value) {
+      console.warn(`[GetWorkspaceConfig] Invalid WEBSOCKET_DRIVER value: "${value}". Falling back to "soketi".`);
+    }
+
+    return 'soketi';
   }
 
   /**

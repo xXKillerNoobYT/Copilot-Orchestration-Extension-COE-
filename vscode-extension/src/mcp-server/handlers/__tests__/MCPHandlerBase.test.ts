@@ -80,13 +80,20 @@ describe('MCPHandlerBase', () => {
 
   describe('Timeout Handling', () => {
     it('should timeout long-running operations', async () => {
+      jest.useFakeTimers();
+
       const slowOperation = () =>
         new Promise((resolve) => setTimeout(() => resolve('too slow'), 35000));
 
-      await expect(handler.testExecuteWithRetry(slowOperation as any, {})).rejects.toThrow(
-        'Operation timed out'
-      );
-    }, 35000);
+      const promise = handler.testExecuteWithRetry(slowOperation as any, {});
+
+      // Advance time to trigger timeout
+      jest.advanceTimersByTime(31000); // Just past the 30s timeout
+
+      await expect(promise).rejects.toThrow('Operation timed out');
+
+      jest.useRealTimers();
+    });
 
     it('should complete fast operations before timeout', async () => {
       const fastOperation = () =>
