@@ -28,8 +28,7 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
 
     return this.executeWithRetry(
       async () => {
-        const config = require('vscode').workspace.getConfiguration('copilot-orchestrator');
-        const baseUrl = config.get<string>('mcp.baseUrl', 'http://localhost:8000');
+        const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
 
         // Submit verification result to backend
         const resultData = {
@@ -65,14 +64,6 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
 
         // Update task status based on verification result
         await this.updateTaskStatus(taskId, passed, baseUrl);
-
-        // Broadcast WebSocket event for UI updates
-        await this.broadcastEvent('verifications', 'verificationCompleted', {
-          taskId,
-          passed,
-          findingsCount: findings?.length || 0,
-          timestamp: new Date().toISOString(),
-        });
 
         // Determine next workflow step
         const nextAction = passed

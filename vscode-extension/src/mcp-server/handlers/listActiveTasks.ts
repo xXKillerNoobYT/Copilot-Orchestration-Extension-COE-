@@ -14,9 +14,8 @@ class ListActiveTasksHandler extends MCPHandlerBase {
 
     return this.executeWithRetry(
       async () => {
-        // Fetch tasks from Laravel backend
-        const config = require('vscode').workspace.getConfiguration('copilot-orchestrator');
-        const baseUrl = config.get<string>('mcp.baseUrl', 'http://localhost:8000');
+        // Get backend URL from environment or use default
+        const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
         
         // Build query parameters for filtering
         const params = new URLSearchParams();
@@ -24,8 +23,8 @@ class ListActiveTasksHandler extends MCPHandlerBase {
         if (priority) params.append('priority', priority);
         if (assignee) params.append('assigned_agent', assignee);
         
-        // Use project ID if provided, otherwise get default from workspace
-        const effectiveProjectId = projectId || config.get<string>('project.id', 'default');
+        // Use project ID if provided, otherwise use default or from environment
+        const effectiveProjectId = projectId || process.env.MCP_PROJECT_ID || 'default';
         
         const url = `${baseUrl}/api/v1/projects/${effectiveProjectId}/tasks?${params.toString()}`;
         
@@ -58,13 +57,6 @@ class ListActiveTasksHandler extends MCPHandlerBase {
           createdAt: task.created_at,
           updatedAt: task.updated_at,
         }));
-
-        // Broadcast WebSocket event for UI updates
-        await this.broadcastEvent('tasks', 'taskListQueried', {
-          filters: { status, priority, assignee },
-          count: transformedTasks.length,
-          timestamp: new Date().toISOString(),
-        });
 
         return this.formatSuccess({
           tasks: transformedTasks,

@@ -1,65 +1,61 @@
 /**
  * Handler for copilot_orchestrator_get_workspace_config tool
- * Reads actual VS Code workspace configuration and agent profiles
+ * Returns workspace configuration from environment variables
+ * Note: In MCP server context, configuration comes from environment, not VS Code settings
  */
 
 import { MCPHandlerBase } from './MCPHandlerBase';
-import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 
 class GetWorkspaceConfigHandler extends MCPHandlerBase {
   /**
-   * Get workspace configuration from VS Code settings and YAML files
+   * Get workspace configuration from environment variables
    */
   async execute(args: any) {
     const { includeAgentProfiles = false } = args || {};
 
     return this.executeWithRetry(
       async () => {
-        const config = vscode.workspace.getConfiguration('copilot-orchestrator');
-        
-        // Build workspace configuration from actual VS Code settings
+        // Build workspace configuration from environment variables
         const workspaceConfig: any = {
           workspace: {
-            taskRoots: config.get<string[]>('workspace.taskRoots', ['_ZENTASKS']),
-            issueFolder: config.get<string>('workspace.issueFolder', '.vscode/github-issues'),
-            toolRegistryPath: config.get<string>('workspace.toolRegistryPath', '.github/copilot-tools.json'),
-            rootPath: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+            taskRoots: (process.env.WORKSPACE_TASK_ROOTS || '_ZENTASKS').split(','),
+            issueFolder: process.env.WORKSPACE_ISSUE_FOLDER || '.vscode/github-issues',
+            toolRegistryPath: process.env.WORKSPACE_TOOL_REGISTRY || '.github/copilot-tools.json',
+            rootPath: process.env.WORKSPACE_ROOT || process.cwd(),
           },
           mcp: {
-            baseUrl: config.get<string>('mcp.baseUrl', 'http://localhost:8000'),
-            authToken: config.get<string>('mcp.authToken') ? '***' : undefined, // Don't expose actual token
-            timeout: config.get<number>('mcp.timeout', 30000),
-            localServerEnabled: config.get<boolean>('mcp.localServerEnabled', true),
-            dockerGatewayEnabled: config.get<boolean>('mcp.dockerGatewayEnabled', false),
+            baseUrl: process.env.MCP_BASE_URL || 'http://localhost:8000',
+            authToken: process.env.MCP_AUTH_TOKEN ? '***' : undefined, // Don't expose actual token
+            timeout: parseInt(process.env.MCP_TIMEOUT || '30000'),
+            localServerEnabled: process.env.MCP_LOCAL_SERVER_ENABLED !== 'false',
+            dockerGatewayEnabled: process.env.MCP_DOCKER_GATEWAY_ENABLED === 'true',
           },
           llm: {
-            baseUrl: config.get<string>('llm.baseUrl', 'http://localhost:1234/v1'),
-            model: config.get<string>('llm.model', 'lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF'),
-            temperature: config.get<number>('llm.temperature', 0.7),
-            timeout: config.get<number>('llm.timeout', 30000),
+            baseUrl: process.env.LLM_BASE_URL || 'http://localhost:1234/v1',
+            model: process.env.LLM_MODEL || 'lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF',
+            temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.7'),
+            timeout: parseInt(process.env.LLM_TIMEOUT || '30000'),
           },
           websocket: {
-            driver: config.get<string>('websocket.driver', 'soketi'),
-            host: config.get<string>('websocket.host', 'localhost'),
-            port: config.get<number>('websocket.port', 6001),
-            enabled: config.get<boolean>('websocket.enabled', true),
+            driver: (process.env.WEBSOCKET_DRIVER || 'soketi') as 'soketi' | 'pusher' | 'redis',
+            host: process.env.WEBSOCKET_HOST || 'localhost',
+            port: parseInt(process.env.WEBSOCKET_PORT || '6001'),
+            enabled: process.env.WEBSOCKET_ENABLED !== 'false',
           },
           github: {
-            syncEnabled: config.get<boolean>('github.syncEnabled', true),
-            syncInterval: config.get<number>('github.syncInterval', 300000), // 5 minutes
-            rateLimit: config.get<number>('github.rateLimit', 5000),
+            syncEnabled: process.env.GITHUB_SYNC_ENABLED !== 'false',
+            syncInterval: parseInt(process.env.GITHUB_SYNC_INTERVAL || '300000'), // 5 minutes
+            rateLimit: parseInt(process.env.GITHUB_RATE_LIMIT || '5000'),
           },
           project: {
-            id: config.get<string>('project.id', 'default'),
-            name: config.get<string>('project.name', 'Untitled Project'),
+            id: process.env.MCP_PROJECT_ID || 'default',
+            name: process.env.PROJECT_NAME || 'Untitled Project',
           },
         };
 
         // Load agent profiles if requested
         if (includeAgentProfiles) {
-          workspaceConfig.agentProfiles = await this.loadAgentProfiles();
+          workspaceConfig.agentProfiles = this.getDefaultAgentProfiles();
         }
 
         return this.formatSuccess(workspaceConfig);
@@ -70,80 +66,7 @@ class GetWorkspaceConfigHandler extends MCPHandlerBase {
   }
 
   /**
-   * Load agent profiles from YAML files in workspace
-   */
-  private async loadAgentProfiles(): Promise<Record<string, any>> {
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!workspaceRoot) {
-      console.warn('[GetWorkspaceConfig] No workspace folder found');
-      return this.getDefaultAgentProfiles();
-    }
-
-    // Try to load from .github/agents/*.yaml or configured location
-    const config = vscode.workspace.getConfiguration('copilot-orchestrator');
-    const profilesPath = config.get<string>('agents.profilesPath', '.github/agents');
-    const fullPath = path.join(workspaceRoot, profilesPath);
-
-    try {
-      if (!fs.existsSync(fullPath)) {
-        console.warn(`[GetWorkspaceConfig] Agent profiles directory not found: ${fullPath}`);
-        return this.getDefaultAgentProfiles();
-      }
-
-      const profiles: Record<string, any> = {};
-      const files = fs.readdirSync(fullPath);
-
-      for (const file of files) {
-        if (file.endsWith('.yaml') || file.endsWith('.yml')) {
-          const filePath = path.join(fullPath, file);
-          const content = fs.readFileSync(filePath, 'utf8');
-          
-          // Simple YAML parsing - in production, use a proper YAML parser
-          const agentName = file.replace(/\.(yaml|yml)$/, '');
-          profiles[agentName] = this.parseSimpleYAML(content);
-        }
-      }
-
-      return Object.keys(profiles).length > 0 ? profiles : this.getDefaultAgentProfiles();
-    } catch (error) {
-      console.warn('[GetWorkspaceConfig] Failed to load agent profiles:', error);
-      return this.getDefaultAgentProfiles();
-    }
-  }
-
-  /**
-   * Simple YAML parser for agent profiles (basic key-value extraction)
-   * In production, use js-yaml or similar library
-   */
-  private parseSimpleYAML(content: string): any {
-    const profile: any = {};
-    const lines = content.split('\n');
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-
-      const colonIndex = trimmed.indexOf(':');
-      if (colonIndex > 0) {
-        const key = trimmed.substring(0, colonIndex).trim();
-        const value = trimmed.substring(colonIndex + 1).trim();
-        
-        // Handle arrays
-        if (value.startsWith('[') && value.endsWith(']')) {
-          profile[key] = value.slice(1, -1).split(',').map(v => v.trim().replace(/['"]/g, ''));
-        } else if (value.match(/^\d+$/)) {
-          profile[key] = parseInt(value);
-        } else {
-          profile[key] = value.replace(/['"]/g, '');
-        }
-      }
-    }
-
-    return profile;
-  }
-
-  /**
-   * Get default agent profiles if YAML files not found
+   * Get default agent profiles
    */
   private getDefaultAgentProfiles(): Record<string, any> {
     return {

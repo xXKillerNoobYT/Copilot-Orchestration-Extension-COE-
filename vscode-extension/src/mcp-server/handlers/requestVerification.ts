@@ -1,14 +1,14 @@
 /**
  * Handler for copilot_orchestrator_request_verification tool
- * Integrates with VerificationService and launches Visual Verification Panel
+ * Integrates with VerificationService to create verification requests
+ * Note: VS Code UI integration happens on the extension side, not in MCP server
  */
 
 import { MCPHandlerBase } from './MCPHandlerBase';
-import * as vscode from 'vscode';
 
 class RequestVerificationHandler extends MCPHandlerBase {
   /**
-   * Create verification request and launch verification panel
+   * Create verification request in backend
    */
   async execute(args: any) {
     const { taskId, verificationType, checklist } = args;
@@ -19,8 +19,7 @@ class RequestVerificationHandler extends MCPHandlerBase {
 
     return this.executeWithRetry(
       async () => {
-        const config = vscode.workspace.getConfiguration('copilot-orchestrator');
-        const baseUrl = config.get<string>('mcp.baseUrl', 'http://localhost:8000');
+        const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
         
         // Create verification request in backend
         const requestData = {
@@ -47,27 +46,6 @@ class RequestVerificationHandler extends MCPHandlerBase {
         const data = await response.json();
         const verification = data.verification || data;
 
-        // Launch Visual Verification Panel in VS Code
-        await this.launchVerificationPanel(taskId, verification);
-
-        // Broadcast WebSocket event to notify UI
-        await this.broadcastEvent('verifications', 'verificationRequested', {
-          taskId,
-          verificationId: verification.id,
-          type: verificationType,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Send VS Code notification
-        vscode.window.showInformationMessage(
-          `Verification requested for task ${taskId}. Please review in the Verification panel.`,
-          'Open Panel'
-        ).then(selection => {
-          if (selection === 'Open Panel') {
-            vscode.commands.executeCommand('copilotOrchestrator.showVerificationPanel', taskId);
-          }
-        });
-
         return this.formatSuccess({
           success: true,
           verificationRequest: {
@@ -79,30 +57,13 @@ class RequestVerificationHandler extends MCPHandlerBase {
             createdAt: verification.created_at || new Date().toISOString(),
             expiresAt: verification.expires_at,
           },
-          message: `Verification request created for task ${taskId}. User will be notified.`,
+          message: `Verification request created for task ${taskId}. User will be notified via WebSocket event.`,
+          note: 'VS Code extension will receive WebSocket notification and launch verification panel.',
         });
       },
       'handleRequestVerification',
       args
     );
-  }
-
-  /**
-   * Launch Visual Verification Panel WebView
-   */
-  private async launchVerificationPanel(taskId: string, verification: any): Promise<void> {
-    try {
-      // Execute VS Code command to show verification panel
-      await vscode.commands.executeCommand('copilotOrchestrator.showVerificationPanel', {
-        taskId,
-        verificationId: verification.id,
-        verificationType: verification.verification_type,
-        checklist: verification.checklist,
-      });
-    } catch (error) {
-      console.warn('[RequestVerification] Failed to launch verification panel:', error);
-      // Don't fail the request if panel launch fails
-    }
   }
 }
 

@@ -14,8 +14,7 @@ class GetAgentStateHandler extends MCPHandlerBase {
 
     return this.executeWithRetry(
       async () => {
-        const config = require('vscode').workspace.getConfiguration('copilot-orchestrator');
-        const baseUrl = config.get<string>('mcp.baseUrl', 'http://localhost:8000');
+        const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
         
         // Fetch agent state from backend
         // If agentName is provided, get specific agent; otherwise get all agents
@@ -61,12 +60,6 @@ class GetAgentStateHandler extends MCPHandlerBase {
         if (agentName && Object.keys(agentStates).length === 0) {
           throw new Error(`Agent '${agentName}' not found`);
         }
-
-        // Broadcast WebSocket event for UI updates
-        await this.broadcastEvent('agents', 'agentStateQueried', {
-          agentName,
-          timestamp: new Date().toISOString(),
-        });
 
         return this.formatSuccess({
           agents: agentName ? { [agentName]: agentStates[agentName] } : agentStates,
