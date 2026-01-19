@@ -340,8 +340,14 @@ Format your response in Markdown.
 
       messages.push(vscode.LanguageModelChatMessage.User(taskInstruction));
 
-      // Send request to language model
-      const response = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+      // Send request to language model with proper cancellation token management
+      const cancellationTokenSource = new vscode.CancellationTokenSource();
+      let response: vscode.LanguageModelChatResponse;
+      try {
+        response = await model.sendRequest(messages, {}, cancellationTokenSource.token);
+      } finally {
+        cancellationTokenSource.dispose();
+      }
 
       // Collect response text
       let output = '';

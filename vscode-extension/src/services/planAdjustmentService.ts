@@ -262,7 +262,7 @@ export class PlanAdjustmentService {
       ];
 
       // Collect all tasks from all directories
-      const allTasks: any[] = [];
+      const allTasks: Awaited<ReturnType<typeof parseTasksFromDirectory>> = [];
       for (const dir of taskDirectories) {
         try {
           const tasks = await parseTasksFromDirectory(dir, {
@@ -508,8 +508,9 @@ export class PlanAdjustmentService {
       }
 
       // Prepare event data
+      const planWithId = updatedPlan as PlanJSON & { id?: number };
       const eventData = {
-        plan_id: (updatedPlan as any).id,
+        plan_id: planWithId.id,
         plan_name: updatedPlan.project.name,
         version: updatedPlan.metadata.version,
         updated_at: updatedPlan.metadata.updated_at,

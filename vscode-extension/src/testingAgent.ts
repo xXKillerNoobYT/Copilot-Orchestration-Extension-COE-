@@ -169,13 +169,36 @@ export class TestingAgent {
   private extractClassMethods(code: string, className: string): ClassMethod[] {
     const methods: ClassMethod[] = [];
     
-    // Find the class body
-    const classMatch = code.match(new RegExp(`class\\s+${className}[^{]*\\{([^}]+)\\}`, 's'));
-    if (!classMatch) {
+    // Find the class body by locating the opening brace and then balancing braces
+    const classStartRegex = new RegExp(`class\\s+${className}[^{]*\\{`, 's');
+    const startMatch = classStartRegex.exec(code);
+    if (!startMatch) {
       return methods;
     }
 
-    const classBody = classMatch[1];
+    // Index of the opening brace for the class body
+    const openBraceIndex = startMatch.index + startMatch[0].lastIndexOf('{');
+    let depth = 0;
+    let endIndex = -1;
+
+    for (let i = openBraceIndex; i < code.length; i++) {
+      const ch = code[i];
+      if (ch === '{') {
+        depth++;
+      } else if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          endIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (endIndex === -1) {
+      return methods;
+    }
+
+    const classBody = code.slice(openBraceIndex + 1, endIndex);
     
     // Extract methods (public, private, static)
     const methodRegex = /(public|private|protected)?\s*(static)?\s*(async)?\s*(\w+)\s*\(([^)]*)\)(?::\s*([^{;]+))?/g;
