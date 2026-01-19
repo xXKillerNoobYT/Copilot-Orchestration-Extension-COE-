@@ -76,17 +76,20 @@ export interface PlanTemplate {
       field: string;
       description: string;
       example?: string;
-      guidance?: string;
+      guidance?: string; // Added in v2.0 - backward compatible (optional)
     }>;
 
-    /** Helpful tips for using this template */
+    /** Helpful tips for using this template (Added in v2.0) */
     tips?: string[];
 
-    /** Next steps after filling in the template */
+    /** Next steps after filling in the template (Added in v2.0) */
     nextSteps?: string[];
   };
 
-  /** Optional guidance for using the template */
+  /** 
+   * Optional guidance for using the template
+   * Added in v2.0 for enhanced blank template - backward compatible
+   */
   guidance?: {
     /** Onboarding text for first-time users */
     onboarding?: string;

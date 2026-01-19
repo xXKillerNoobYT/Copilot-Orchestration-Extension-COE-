@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import {
   processPlanCompletion,
   displayCompletionResults,
@@ -320,8 +321,6 @@ export class PlanBuilderPanel {
     
     try {
       // Dynamically discover CSS and JS files (handles hash changes from Vite builds)
-      const fs = require('fs');
-      const path = require('path');
       const assetsDir = assetsPath.fsPath;
       
       if (fs.existsSync(assetsDir)) {
@@ -359,6 +358,9 @@ export class PlanBuilderPanel {
     // Use a nonce to only allow specific scripts to be run
     const nonce = getNonce();
 
+    // Note: CSP includes 'unsafe-eval' for Vue 3 runtime compilation
+    // This is required for Vue's template compiler but does reduce security.
+    // Consider pre-compiling all templates in production builds for better security.
     return `<!DOCTYPE html>
       <html lang="en">
       <head>

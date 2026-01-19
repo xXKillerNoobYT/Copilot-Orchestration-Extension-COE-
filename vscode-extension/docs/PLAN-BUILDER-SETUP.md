@@ -17,15 +17,22 @@ The Plan Builder uses a Vue 3 app that must be built before it can run in the VS
 ```bash
 cd vscode-extension
 npm install
-npm run build:vue
-npm run compile
+npm run build:vue  # Build just the Vue app
+```
+
+Or use the all-in-one command:
+
+```bash
+npm run compile  # Builds extension + Vue app + MCP server
 ```
 
 ### What Each Command Does
 
 1. **`npm install`** - Installs all dependencies (Vue, Vite, TypeScript, etc.)
 2. **`npm run build:vue`** - Builds the Vue app with Vite, outputs to `dist/planBuilder/`
-3. **`npm run compile`** - Compiles the TypeScript extension code with Webpack
+3. **`npm run compile`** - Builds everything: Webpack extension + Vue app + MCP server
+
+**Note:** `npm run compile` already includes `build:vue`, so you don't need to run both.
 
 ### Build Scripts Explained
 
