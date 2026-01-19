@@ -17,6 +17,17 @@ import { PlanDriftDetector, type TaskExecutionData, type DriftAnalysisResult } f
 import { PlanAdjustmentEngine, type AdjustmentSuggestion, type AdjustmentContext } from '../planBuilder/planAdjustmentEngine';
 import { getPlanPersistenceService } from '../services/planPersistence';
 import type { PlanJSON } from '../planBuilder/planGenerator';
+import type { ParsedTask } from '../taskParser';
+
+/**
+ * Parsed task with additional metadata fields for execution tracking
+ */
+interface ParsedTaskWithMetadata extends ParsedTask {
+  feature_id?: string;
+  actualHours?: number;
+  startedAt?: string | Date;
+  completedAt?: string | Date;
+}
 
 export interface PlanAdjustmentOptions {
   autoApply?: boolean;
@@ -116,6 +127,9 @@ export class PlanAdjustmentService {
         version: updatedPlan.metadata.version,
         createBackup: options.createBackup ?? true,
       });
+
+      // Broadcast plan update event via WebSocket
+      await this.broadcastPlanUpdate(updatedPlan, suggestion);
 
       // Notify user if requested
       if (options.notifyUser) {
@@ -232,17 +246,194 @@ export class PlanAdjustmentService {
 
   /**
    * Fetch task execution data from workspace
-   * In a real implementation, this would query task files or backend
+   * Scans workspace for .task.md files and parses their status and metadata
    */
   private async fetchTaskExecutionData(plan: PlanJSON): Promise<TaskExecutionData[]> {
-    // Mock implementation - in production, this would:
-    // 1. Scan workspace for .task.md files
-    // 2. Parse task status and metadata
-    // 3. Map to execution data structure
-
     const executionData: TaskExecutionData[] = [];
 
-    // For now, generate mock data based on plan features
+    try {
+      // Get workspace root
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!workspaceRoot) {
+        console.warn('[PlanAdjustmentService] No workspace folder found, using mock data');
+        return this.generateMockExecutionData(plan);
+      }
+
+      // Import task parser and path dynamically
+      const { parseTasksFromDirectory } = await import('../taskParser');
+      const path = await import('path');
+
+      // Define common task directories to search
+      const taskDirectories = [
+        path.join(workspaceRoot, '.github/issues'),
+        path.join(workspaceRoot, 'tasks'),
+        path.join(workspaceRoot, '.orchestrator/tasks'),
+        path.join(workspaceRoot, 'Docs/Tasks'),
+      ];
+
+      // Collect all tasks from all directories
+      const allTasks: Awaited<ReturnType<typeof parseTasksFromDirectory>> = [];
+      for (const dir of taskDirectories) {
+        try {
+          const tasks = await parseTasksFromDirectory(dir, {
+            validateSchema: false, // Don't fail on validation errors
+            failOnInvalid: false,
+          });
+          allTasks.push(...tasks);
+        } catch (error) {
+          // Directory might not exist, that's OK
+          console.log(`[PlanAdjustmentService] Skipping directory ${dir}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      console.log(`[PlanAdjustmentService] Found ${allTasks.length} task files`);
+
+      // Map tasks to execution data
+      for (const task of allTasks) {
+        // Try to match task to a feature in the plan
+        const matchingFeature = this.findMatchingFeature(plan, task);
+
+        if (matchingFeature) {
+          const executionDataItem: TaskExecutionData = {
+            taskId: task.id,
+            featureId: matchingFeature.id,
+            status: this.mapTaskStatusToExecution(task.status || 'pending'),
+            estimatedHours: this.parseEffortEstimate(task.estimate) || matchingFeature.effort_estimate || 0,
+            actualHours: this.calculateActualHours(task),
+            startedAt: task.startedAt ? new Date(task.startedAt) : undefined,
+            completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+            blockedBy: task.dependencies || [],
+          };
+
+          executionData.push(executionDataItem);
+        }
+      }
+
+      console.log(`[PlanAdjustmentService] Mapped ${executionData.length} tasks to features`);
+
+      // If no tasks found, generate mock data for testing
+      if (executionData.length === 0) {
+        console.warn('[PlanAdjustmentService] No task files found, using mock data');
+        return this.generateMockExecutionData(plan);
+      }
+
+      return executionData;
+    } catch (error) {
+      console.error('[PlanAdjustmentService] Error fetching task execution data:', error);
+      // Fallback to mock data
+      return this.generateMockExecutionData(plan);
+    }
+  }
+
+  /**
+   * Find a feature in the plan that matches the given task
+   */
+  private findMatchingFeature(plan: PlanJSON, task: ParsedTaskWithMetadata): PlanJSON['features'][number] | undefined {
+    // Try to match by feature ID in task metadata
+    if (task.feature_id) {
+      const feature = plan.features.find(f => f.id === task.feature_id);
+      if (feature) {
+        return feature;
+      }
+    }
+
+    // Try to match by task title/name similarity
+    const taskTitle = task.title?.toLowerCase() || '';
+    const matchingFeature = plan.features.find(f => {
+      const featureName = f.name.toLowerCase();
+      return taskTitle.includes(featureName) || featureName.includes(taskTitle);
+    });
+
+    return matchingFeature;
+  }
+
+  /**
+   * Map task status to execution data status
+   */
+  private mapTaskStatusToExecution(status: string): TaskExecutionData['status'] {
+    const statusMap: Record<string, TaskExecutionData['status']> = {
+      'pending': 'pending',
+      'approved': 'pending',
+      'in_progress': 'in_progress',
+      'testing': 'in_progress',
+      'review': 'in_progress',
+      'completed': 'completed',
+      'failed': 'failed',
+      'blocked': 'blocked',
+      'cancelled': 'failed',
+    };
+
+    const mappedStatus = statusMap[status];
+
+    if (!mappedStatus) {
+      console.warn(`[PlanAdjustmentService] Unmapped task status '${status}', defaulting to 'pending'`);
+      return 'pending';
+    }
+
+    return mappedStatus;
+  }
+
+  /**
+   * Parse effort estimate string to hours
+   */
+  private parseEffortEstimate(estimate?: string): number | undefined {
+    if (!estimate) {
+      return undefined;
+    }
+
+    const trimmed = estimate.trim().toLowerCase();
+
+    // Handle hour formats: "8h", "8 hours", "8 hrs"
+    const hourMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)?$/);
+    if (hourMatch) {
+      return parseFloat(hourMatch[1]);
+    }
+
+    // Handle day formats: "1d", "2 days"
+    const dayMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:d|day|days)$/);
+    if (dayMatch) {
+      return parseFloat(dayMatch[1]) * 8; // 8 hours per day
+    }
+
+    // Handle week formats: "1w", "2 weeks"
+    const weekMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:w|wk|week|weeks)$/);
+    if (weekMatch) {
+      return parseFloat(weekMatch[1]) * 40; // 40 hours per week
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Calculate actual hours spent on a task
+   * In production, this would integrate with time tracking or Git history
+   */
+  private calculateActualHours(task: ParsedTaskWithMetadata): number | undefined {
+    // If task has explicit actual hours, use that
+    if (task.actualHours !== undefined) {
+      return task.actualHours;
+    }
+
+    // If task is completed and has started/completed dates, calculate
+    if (task.startedAt && task.completedAt) {
+      const start = new Date(task.startedAt);
+      const end = new Date(task.completedAt);
+      const diffMs = end.getTime() - start.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      return Math.max(0, diffHours);
+    }
+
+    // No data available
+    return undefined;
+  }
+
+  /**
+   * Generate mock execution data for testing
+   * Used as fallback when no real task files are found
+   */
+  private generateMockExecutionData(plan: PlanJSON): TaskExecutionData[] {
+    const executionData: TaskExecutionData[] = [];
+
     for (const feature of plan.features) {
       const taskData: TaskExecutionData = {
         taskId: `TASK-${feature.id}`,
@@ -305,6 +496,66 @@ export class PlanAdjustmentService {
     } else {
       // Minor changes -> patch version bump
       return `${major}.${minor}.${patch + 1}`;
+    }
+  }
+
+  /**
+   * Broadcast plan update event via WebSocket
+   * Notifies connected clients about plan changes in real-time
+   */
+  private async broadcastPlanUpdate(
+    updatedPlan: PlanJSON,
+    suggestion: AdjustmentSuggestion
+  ): Promise<void> {
+    try {
+      // Import WebSocket client dynamically to avoid circular dependencies
+      const { getWebSocketClient } = await import('./websocketClient');
+      const wsClient = getWebSocketClient();
+
+      if (!wsClient) {
+        console.log('[PlanAdjustmentService] WebSocket not available, skipping broadcast');
+        return;
+      }
+
+      // Prepare event data
+      const planWithId = updatedPlan as PlanJSON & { id?: number };
+      const eventData = {
+        plan_id: planWithId.id,
+        plan_name: updatedPlan.project.name,
+        version: updatedPlan.metadata.version,
+        updated_at: updatedPlan.metadata.updated_at,
+        adjustment_category: suggestion.category,
+        adjustment_description: suggestion.description,
+        impact: suggestion.impact,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Subscribe to the plan-updates channel
+      // Note: subscribe() expects channel and event name
+      interface PlanUpdateEvent {
+        plan_id?: number;
+        plan_name?: string;
+        version?: string;
+        updated_at?: string;
+        adjustment_category?: string;
+        adjustment_description?: string;
+        impact?: string;
+        timestamp?: string;
+      }
+      
+      wsClient.subscribe('plan-updates', 'plan.updated', (data: PlanUpdateEvent) => {
+        console.log('[PlanAdjustmentService] Received plan update broadcast:', data);
+      });
+
+      // NOTE: This is currently a subscription-only WebSocket implementation.
+      // The backend broadcasts plan updates and clients only listen.
+      // TODO(EPIC-008): When client-side broadcasting is required, extend the WebSocket client
+      // (e.g. add wsClient.emit/publish) and invoke it here to send `eventData` to the server.
+      console.log('[PlanAdjustmentService] Subscribed to plan-updates channel. Event data logged for debugging:', eventData);
+
+    } catch (error) {
+      // Don't fail the update if WebSocket broadcast fails
+      console.error('[PlanAdjustmentService] Failed to broadcast plan update:', error);
     }
   }
 

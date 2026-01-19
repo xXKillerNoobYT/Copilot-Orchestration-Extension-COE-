@@ -390,4 +390,41 @@ describe('CopilotAgentClient', () => {
       expect(result).toBe(true);
     });
   });
+
+  describe('Version Checking', () => {
+    test('should validate version correctly for equal versions', () => {
+      // Access private method via type assertion for testing
+      const clientAny = client as any;
+      expect(clientAny.isVersionSupported('1.90.0', '1.90')).toBe(true);
+      expect(clientAny.isVersionSupported('1.90', '1.90')).toBe(true);
+    });
+
+    test('should validate version correctly for newer versions', () => {
+      const clientAny = client as any;
+      expect(clientAny.isVersionSupported('1.91.0', '1.90')).toBe(true);
+      expect(clientAny.isVersionSupported('2.0.0', '1.90')).toBe(true);
+      expect(clientAny.isVersionSupported('1.90.1', '1.90.0')).toBe(true);
+    });
+
+    test('should validate version correctly for older versions', () => {
+      const clientAny = client as any;
+      expect(clientAny.isVersionSupported('1.89.0', '1.90')).toBe(false);
+      expect(clientAny.isVersionSupported('1.85.0', '1.90')).toBe(false);
+      expect(clientAny.isVersionSupported('0.90.0', '1.90')).toBe(false);
+    });
+
+    test('should handle version strings with different segment counts', () => {
+      const clientAny = client as any;
+      expect(clientAny.isVersionSupported('1.90', '1.90.0')).toBe(true);
+      expect(clientAny.isVersionSupported('1.90.0', '1.90')).toBe(true);
+      expect(clientAny.isVersionSupported('1.90.0.5', '1.90')).toBe(true);
+    });
+
+    test('should handle edge cases in version comparison', () => {
+      const clientAny = client as any;
+      expect(clientAny.isVersionSupported('1.90.0', '1.90.0')).toBe(true);
+      expect(clientAny.isVersionSupported('1.89.9', '1.90.0')).toBe(false);
+      expect(clientAny.isVersionSupported('1.90.1', '1.90.0')).toBe(true);
+    });
+  });
 });

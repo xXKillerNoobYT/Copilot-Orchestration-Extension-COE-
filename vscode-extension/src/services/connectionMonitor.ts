@@ -157,9 +157,35 @@ export class ConnectionMonitor {
    */
   private async checkWebSocketConnection(): Promise<void> {
     try {
-      // TODO: Implement WebSocket health check
-      // For now, assume connected if MCP is connected
-      this.state.websocket = this.state.mcp === 'connected' ? 'connected' : 'disconnected';
+      // Import WebSocket client dynamically to avoid circular dependencies
+      const { getWebSocketClient } = await import('./webSocketClient');
+      const wsClient = getWebSocketClient();
+
+      if (!wsClient) {
+        // WebSocket not initialized
+        this.state.websocket = 'disconnected';
+        this.state.wsError = 'WebSocket client not initialized';
+        this.state.lastWsCheck = new Date().toISOString();
+        return;
+      }
+
+      // Get WebSocket status
+      const status = wsClient.getStatus();
+
+      if (status.connected) {
+        this.state.websocket = 'connected';
+        this.state.wsError = undefined;
+      } else if (status.reconnectAttempts > 0 && status.reconnectAttempts < 3) {
+        // Auto-reconnecting
+        this.state.websocket = 'degraded';
+        this.state.wsError = `Reconnecting (attempt ${status.reconnectAttempts})`;
+      } else {
+        this.state.websocket = 'disconnected';
+        this.state.wsError = status.reconnectAttempts >= 3 
+          ? 'Max reconnect attempts reached' 
+          : 'Connection lost';
+      }
+
       this.state.lastWsCheck = new Date().toISOString();
 
     } catch (error) {
@@ -267,6 +293,80 @@ export class ConnectionMonitor {
     console.log('[ConnectionMonitor] Manual retry triggered');
     this.state.retryCount = 0;
     await this.checkConnections();
+  }
+
+  /**
+   * Get detailed health status for API exposure
+   * Returns comprehensive health information about all connections
+   */
+  getHealthStatus(): {
+    overall: 'healthy' | 'degraded' | 'unhealthy';
+    timestamp: string;
+    connections: {
+      mcp: { status: ConnectionStatus; error?: string; lastCheck: string };
+      websocket: { status: ConnectionStatus; error?: string; lastCheck: string };
+      docker: { status: ConnectionStatus; error?: string; lastCheck: string; authRequired?: boolean };
+    };
+    retryInfo: {
+      count: number;
+      max: number;
+      canRetry: boolean;
+    };
+  } {
+    const overall = this.calculateOverallHealth();
+
+    return {
+      overall,
+      timestamp: new Date().toISOString(),
+      connections: {
+        mcp: {
+          status: this.state.mcp,
+          error: this.state.mcpError,
+          lastCheck: this.state.lastMcpCheck,
+        },
+        websocket: {
+          status: this.state.websocket,
+          error: this.state.wsError,
+          lastCheck: this.state.lastWsCheck,
+        },
+        docker: {
+          status: this.state.docker,
+          error: this.state.dockerError,
+          lastCheck: this.state.lastDockerCheck,
+          authRequired: this.state.dockerAuthRequired,
+        },
+      },
+      retryInfo: {
+        count: this.state.retryCount,
+        max: this.MAX_AUTO_RETRY,
+        canRetry: this.state.retryCount < this.MAX_AUTO_RETRY,
+      },
+    };
+  }
+
+  /**
+   * Calculate overall system health based on individual connection states
+   */
+  private calculateOverallHealth(): 'healthy' | 'degraded' | 'unhealthy' {
+    // MCP connection is critical
+    if (this.state.mcp === 'disconnected') {
+      return 'unhealthy';
+    }
+
+    // Count degraded or disconnected connections
+    const degradedCount = [
+      this.state.mcp === 'degraded',
+      this.state.websocket === 'degraded' || this.state.websocket === 'disconnected',
+      this.state.docker === 'degraded' || this.state.docker === 'disconnected',
+    ].filter(Boolean).length;
+
+    if (degradedCount === 0) {
+      return 'healthy';
+    } else if (degradedCount <= 1) {
+      return 'degraded';
+    } else {
+      return 'unhealthy';
+    }
   }
 
   /**

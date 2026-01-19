@@ -115,7 +115,7 @@ export class CopilotAgentClient {
       baseUrl: config?.baseUrl ?? vsConfig.get('mcp.baseUrl') ?? 'http://localhost:8000',
       authToken: config?.authToken ?? vsConfig.get('mcp.authToken') ?? '',
       timeout: config?.timeout ?? 30000,
-      mockMode: config?.mockMode ?? true, // Default to mock mode until real API is available
+      mockMode: config?.mockMode ?? vsConfig.get('agentMode.useMock', false), // Use real API by default
     };
   }
 
@@ -218,6 +218,7 @@ export class CopilotAgentClient {
 
   /**
    * Execute a task using a specific agent
+   * Uses VS Code Language Model API when available
    * @param request - Execution request details
    * @returns Promise<AgentExecutionResponse> - Execution result
    */
@@ -240,18 +241,170 @@ export class CopilotAgentClient {
     }
 
     try {
-      // TODO: Implement real task execution via Agent Mode API
-      const response = await this.fetch('/agents/execute', 'POST', request);
-      return response as AgentExecutionResponse;
+      // Use VS Code Language Model API (real GitHub Copilot integration)
+      console.log('[CopilotAgentClient] Using VS Code Language Model API for task execution');
+      
+      const startTime = Date.now();
+      const output = await this.executeWithLanguageModel(request.payload);
+      const executionTime = Date.now() - startTime;
+      
+      return {
+        success: true,
+        output,
+        agentId: request.agentId,
+        metadata: {
+          executionTime,
+          model: 'copilot-gpt-4', // VS Code Language Model
+        },
+      };
     } catch (error) {
       console.error('[CopilotAgentClient] Task execution failed:', error);
+      
+      // Fallback to mock response on error
+      console.warn('[CopilotAgentClient] Falling back to mock response');
+      const output = this.generateMockResponse(request.payload);
+      
       return {
         success: false,
-        output: '',
+        output,
         agentId: request.agentId,
         error: (error as Error).message,
       };
     }
+  }
+
+  /**
+   * Execute task using VS Code Language Model API
+   * This is the real implementation for GitHub Copilot integration
+   */
+  private async executeWithLanguageModel(payload: PromptPayload): Promise<string> {
+    try {
+      // Minimum VS Code version for Language Model API
+      const MIN_VSCODE_VERSION = '1.90';
+      
+      // Check VS Code version
+      const currentVersion = vscode.version;
+      if (!this.isVersionSupported(currentVersion, MIN_VSCODE_VERSION)) {
+        throw new Error(
+          `VS Code version ${currentVersion} does not meet minimum requirement ${MIN_VSCODE_VERSION}. ` +
+          `Please upgrade VS Code to use the Language Model API.`
+        );
+      }
+      
+      // Check if Language Model API is available
+      if (!vscode.lm || typeof vscode.lm.selectChatModels !== 'function') {
+        throw new Error(`VS Code Language Model API not available. Requires VS Code ${MIN_VSCODE_VERSION}+`);
+      }
+
+      // Select Copilot chat model
+      const models = await vscode.lm.selectChatModels({
+        vendor: 'copilot',
+        family: 'gpt-4',
+      });
+
+      if (models.length === 0) {
+        throw new Error('No Copilot chat models available. Ensure GitHub Copilot is installed and authenticated.');
+      }
+
+      const model = models[0];
+      console.log(`[CopilotAgentClient] Using model: ${model.vendor}/${model.family} (${model.name})`);
+
+      // Build messages for the chat model
+      const messages: vscode.LanguageModelChatMessage[] = [];
+
+      // System message with agent context
+      messages.push(vscode.LanguageModelChatMessage.Assistant(
+        `You are ${payload.agent.name}, a ${payload.agent.role} agent in a software development orchestration system. ${payload.agent.instructions || ''}`
+      ));
+
+      // Add context files if available
+      if (payload.context.files && payload.context.files.length > 0) {
+        const contextSummary = payload.context.files
+          .map((f: ContextFile) => `- ${f.path}${f.truncated ? ' (truncated)' : ''}`)
+          .join('\n');
+        
+        messages.push(vscode.LanguageModelChatMessage.User(
+          `Context files:\n${contextSummary}\n\nAdditional context: ${JSON.stringify(payload.context.files.slice(0, 3))}`
+        ));
+      }
+
+      // Add main task instruction
+      const taskInstruction = `
+Task: ${payload.task.title}
+Description: ${payload.task.description || 'No description provided'}
+
+Dependencies: ${payload.task.dependencies.length > 0 ? payload.task.dependencies.join(', ') : 'None'}
+Priority: ${payload.task.priority || 'Medium'}
+
+Please provide a detailed implementation plan and solution for this task.
+Include:
+1. Analysis of the task requirements
+2. Implementation approach
+3. Code samples or pseudocode if applicable
+4. Testing considerations
+5. Next steps
+
+Format your response in Markdown.
+`;
+
+      messages.push(vscode.LanguageModelChatMessage.User(taskInstruction));
+
+      // Send request to language model with proper cancellation token management
+      const cancellationTokenSource = new vscode.CancellationTokenSource();
+      let response: vscode.LanguageModelChatResponse;
+      try {
+        response = await model.sendRequest(messages, {}, cancellationTokenSource.token);
+      } finally {
+        cancellationTokenSource.dispose();
+      }
+
+      // Collect response text
+      let output = '';
+      for await (const fragment of response.text) {
+        output += fragment;
+      }
+
+      if (!output || output.trim().length === 0) {
+        throw new Error('Language model returned empty response');
+      }
+
+      console.log(`[CopilotAgentClient] Received response from language model (${output.length} chars)`);
+      return output;
+
+    } catch (error) {
+      console.error('[CopilotAgentClient] Language model execution failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Compare semantic versions to check if current version meets minimum requirement
+   * @param current Current version string (e.g., "1.90.0")
+   * @param minimum Minimum required version (e.g., "1.90")
+   * @returns true if current version meets or exceeds minimum
+   */
+  private isVersionSupported(current: string, minimum: string): boolean {
+    const parseCurrent = current.split('.').map(n => parseInt(n, 10));
+    const parseMinimum = minimum.split('.').map(n => parseInt(n, 10));
+
+    // Pad arrays to same length
+    while (parseCurrent.length < parseMinimum.length) {
+      parseCurrent.push(0);
+    }
+    while (parseMinimum.length < parseCurrent.length) {
+      parseMinimum.push(0);
+    }
+
+    // Compare each segment
+    for (let i = 0; i < parseMinimum.length; i++) {
+      if (parseCurrent[i] > parseMinimum[i]) {
+        return true;
+      } else if (parseCurrent[i] < parseMinimum[i]) {
+        return false;
+      }
+    }
+
+    return true; // Versions are equal
   }
 
   /**
