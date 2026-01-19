@@ -521,7 +521,18 @@ export class PlanAdjustmentService {
 
       // Subscribe to the plan-updates channel
       // Note: subscribe() expects channel and event name
-      wsClient.subscribe('plan-updates', 'plan.updated', (data: any) => {
+      interface PlanUpdateEvent {
+        plan_id?: number;
+        plan_name?: string;
+        version?: string;
+        updated_at?: string;
+        adjustment_category?: string;
+        adjustment_description?: string;
+        impact?: string;
+        timestamp?: string;
+      }
+      
+      wsClient.subscribe('plan-updates', 'plan.updated', (data: PlanUpdateEvent) => {
         console.log('[PlanAdjustmentService] Received plan update broadcast:', data);
       });
 

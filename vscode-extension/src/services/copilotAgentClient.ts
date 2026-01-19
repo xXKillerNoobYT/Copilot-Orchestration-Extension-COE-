@@ -279,9 +279,12 @@ export class CopilotAgentClient {
    */
   private async executeWithLanguageModel(payload: PromptPayload): Promise<string> {
     try {
+      // Minimum VS Code version for Language Model API
+      const MIN_VSCODE_VERSION = '1.90';
+      
       // Check if Language Model API is available
       if (!vscode.lm || typeof vscode.lm.selectChatModels !== 'function') {
-        throw new Error('VS Code Language Model API not available. Requires VS Code 1.90+');
+        throw new Error(`VS Code Language Model API not available. Requires VS Code ${MIN_VSCODE_VERSION}+`);
       }
 
       // Select Copilot chat model
