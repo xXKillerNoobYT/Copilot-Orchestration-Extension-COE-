@@ -302,15 +302,19 @@ export class VisualVerificationPanel {
             const passedCount = this.checklist.filter((i) => i.status === 'pass').length;
             const failedCount = this.checklist.filter((i) => i.status === 'fail').length;
 
+            // Map status values to match MCP client expectations
+            const mcpStatus = result.status === 'pass' ? 'passed' : result.status === 'fail' ? 'failed' : 'partial';
+            
             await this.mcpClient.reportVerificationResult({
-                taskId: this.currentTask.id,
-                result: result.status,
-                issues: result.issues,
-                checklist: {
-                    total: this.checklist.length,
-                    passed: passedCount,
-                    failed: failedCount,
-                },
+                verificationTaskId: this.currentTask.id + '-verification',
+                originalTaskId: this.currentTask.id,
+                status: mcpStatus,
+                issuesFound: result.issues,
+                checklist: this.checklist.map((item) => ({
+                    id: item.id,
+                    text: item.text,
+                    status: item.status,
+                })),
             });
 
             vscode.window.showInformationMessage(

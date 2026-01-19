@@ -137,6 +137,19 @@ export class MCPClient {
     return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_VERIFICATION_RESULT}`, 'POST', data);
   }
 
+  /**
+   * POST /api/v1/mcp/reportTestFailure
+   * Report test failures and create investigation tasks
+   */
+  async reportTestFailure(data: {
+    taskId: string;
+    test: string;
+    error: string;
+    severity: 'critical' | 'major' | 'minor';
+  }): Promise<any> {
+    return this.fetch(`${this.baseUrl}${MCP_ENDPOINTS.REPORT_TEST_FAILURE}`, 'POST', data);
+  }
+
   static initialize(config: MCPConfig): MCPClient {
     MCPClient.instance = new MCPClient(config);
     return MCPClient.instance;

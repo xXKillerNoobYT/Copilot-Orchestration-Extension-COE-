@@ -7,8 +7,8 @@
  * @date 2026-01-18
  */
 
-import { AgentProfileValidator, validateAgentProfile, formatValidationResult } from '../agentProfileValidator';
-import { AgentProfile } from '../agentProfiles';
+import { AgentProfileValidator, validateAgentProfile, formatValidationResult } from './agentProfileValidator.js';
+import { AgentProfile } from './agentProfiles.js';
 
 describe('AgentProfileValidator', () => {
     let validator: AgentProfileValidator;
@@ -65,7 +65,7 @@ describe('AgentProfileValidator', () => {
             const result = validator.validate(profile);
 
             expect(result.valid).toBe(false);
-            expect(result.errors.some((e) => e.field === 'role')).toBe(true);
+            expect(result.errors.some((e: any) => e.field === 'role')).toBe(true);
         });
     });
 
@@ -104,7 +104,7 @@ describe('AgentProfileValidator', () => {
 
             const result = validator.validate(profile);
 
-            expect(result.warnings.some((w) => w.field === 'goals')).toBe(true);
+            expect(result.warnings.some((w: any) => w.field === 'goals')).toBe(true);
         });
     });
 
@@ -159,7 +159,7 @@ describe('AgentProfileValidator', () => {
 
             const result = validator.validate(profile);
 
-            expect(result.warnings.some((w) => w.field === 'tool_permissions')).toBe(true);
+            expect(result.warnings.some((w: any) => w.field === 'tool_permissions')).toBe(true);
         });
 
         it('should warn when both run_commands and write_files enabled', () => {

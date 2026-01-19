@@ -365,7 +365,7 @@ export class ContextBuilder {
     /**
      * Extract context from task
      */
-    private extractTaskContext(task: Task): { files: any[]; metadata: any } {
+    private extractTaskContext(task: any): { files: any[]; metadata: any } {
         // Simplified version - would do sophisticated context extraction
         return {
             files: [],
@@ -388,16 +388,7 @@ export class ContextBuilder {
         return [];
     }
 
-    /**
-     * Analyze a single file
-     */
-    private analyzeFile(filePath: string): any {
-        // Simplified version - would read and analyze file
-        return {
-            path: filePath,
-            type: this.determineFileType(filePath),
-        };
-    }
+
 }
 
 /**

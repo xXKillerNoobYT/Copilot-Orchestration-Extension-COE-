@@ -23,6 +23,8 @@
     "node_modules", 
     ".vscode-test",
     "dist",
-    "**/*.disabled"
+    "**/*.disabled",
+    "src/agentProfileValidator.test.ts",
+    "src/agentProfileWatcher.test.ts"
   ]
 }
