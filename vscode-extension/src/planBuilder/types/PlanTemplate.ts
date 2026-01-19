@@ -72,11 +72,30 @@ export interface PlanTemplate {
     requiredCustomizations: string[];
 
     /** Suggested customizations with descriptions */
-    optionalCustomizations: Array<{
+    optionalCustomizations?: Array<{
       field: string;
       description: string;
       example?: string;
+      guidance?: string;
     }>;
+
+    /** Helpful tips for using this template */
+    tips?: string[];
+
+    /** Next steps after filling in the template */
+    nextSteps?: string[];
+  };
+
+  /** Optional guidance for using the template */
+  guidance?: {
+    /** Onboarding text for first-time users */
+    onboarding?: string;
+
+    /** Overview of each section */
+    sections_overview?: Record<string, string>;
+
+    /** Quick start guide */
+    quick_start?: Record<string, string>;
   };
 }
 
