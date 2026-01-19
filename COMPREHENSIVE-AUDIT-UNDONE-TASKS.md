@@ -72,10 +72,11 @@ This audit identified **85+ deferred tasks** across the codebase, categorized in
 **Status**: ✅ **COMPLETE** - Fully implemented with streaming support
 
 **Implementation Details**:
-- **StreamingClient** (`src/services/streamingClient.ts`): SSE and WebSocket streaming support
+- **StreamingClient** (`src/services/streamingClient.ts`): SSE streaming support
 - **StreamingOutputChannel** (`src/ui/streamingOutputChannel.ts`): Real-time output display
 - **Features**: Progress indicators, cancellation, error handling, stream statistics
 - **Tests**: 10 comprehensive test cases in `src/services/streamingClient.test.ts`
+- **Note**: Only SSE transport is currently supported; WebSocket planned for future release
 
 **Old Code**:
 ```typescript
@@ -88,7 +89,7 @@ async function streamLLMExecution() {
 - Real-time SSE streaming from OpenAI-compatible endpoints
 - Live output channel with progress indicators and statistics
 - Cancellation support via VS Code cancellation tokens
-- Comprehensive error handling and retry logic
+- Comprehensive error handling
 - Integration with existing `executeLLM` command infrastructure
 
 **Command**: `copilot-orchestrator.executeLLMStreaming` available in command palette

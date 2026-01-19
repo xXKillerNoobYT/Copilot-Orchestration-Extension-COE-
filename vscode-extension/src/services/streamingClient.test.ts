@@ -1,7 +1,8 @@
 /**
  * Tests for StreamingClient
  * 
- * Tests SSE and WebSocket streaming functionality with mock servers
+ * Tests SSE streaming functionality with mock servers
+ * Note: WebSocket tests are not included as WebSocket support is not yet implemented
  */
 
 import { StreamingClient, createStreamingClient, StreamChunk, StreamCallbacks } from './streamingClient';

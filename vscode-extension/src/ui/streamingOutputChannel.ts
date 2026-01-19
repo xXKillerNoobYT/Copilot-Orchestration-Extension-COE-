@@ -31,8 +31,6 @@ export interface StreamControlOptions {
   showProgress?: boolean;
   /** Show stream statistics */
   showStats?: boolean;
-  /** Enable syntax highlighting */
-  enableSyntaxHighlight?: boolean;
   /** Auto-scroll to bottom */
   autoScroll?: boolean;
 }
@@ -99,15 +97,23 @@ export class StreamingOutputChannel {
     lines.push('║                      LLM STREAMING EXECUTION                                 ║');
     lines.push('╠══════════════════════════════════════════════════════════════════════════════╣');
     
+    const maxFieldWidth = 67;
+    const safePad = (value: string): string => {
+      if (value.length > maxFieldWidth) {
+        return value.slice(0, maxFieldWidth - 1) + '…';
+      }
+      return value.padEnd(maxFieldWidth);
+    };
+    
     if (taskId) {
-      lines.push(`║  Task ID: ${taskId.padEnd(67)}║`);
+      lines.push(`║  Task ID: ${safePad(taskId)}║`);
     }
     if (agentName) {
-      lines.push(`║  Agent:   ${agentName.padEnd(67)}║`);
+      lines.push(`║  Agent:   ${safePad(agentName)}║`);
     }
     
     const timestamp = new Date().toLocaleString();
-    lines.push(`║  Started: ${timestamp.padEnd(67)}║`);
+    lines.push(`║  Started: ${safePad(timestamp)}║`);
     lines.push('╚══════════════════════════════════════════════════════════════════════════════╝');
     
     return lines.join('\n');
@@ -217,13 +223,12 @@ export class StreamingOutputChannel {
 
   /**
    * Start periodic progress updates
+   * Note: Currently not updating the output channel to avoid excessive writes.
+   * Progress tracking is maintained internally via statistics.
    */
   private startProgressUpdates(): void {
-    this.statsUpdateInterval = setInterval(() => {
-      if (this.isStreaming) {
-        // Background update - rotate spinner
-      }
-    }, 100);
+    // No-op: Progress is tracked via statistics without active interval updates
+    // to prevent unnecessary CPU usage and output channel writes.
   }
 
   /**
@@ -294,7 +299,6 @@ export function getStreamingOutputChannel(): StreamingOutputChannel {
     globalStreamingChannel = new StreamingOutputChannel('LLM Streaming', {
       showProgress: true,
       showStats: true,
-      enableSyntaxHighlight: true,
       autoScroll: true,
     });
   }

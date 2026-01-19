@@ -2,12 +2,11 @@
  * Streaming Client for LLM Execution
  * 
  * Provides real-time streaming of LLM responses using Server-Sent Events (SSE)
- * or WebSocket connections for live feedback during AI operations.
+ * for live feedback during AI operations.
  * 
  * Features:
- * - SSE/WebSocket streaming support
+ * - SSE streaming support (WebSocket planned for future)
  * - Progress tracking and cancellation
- * - Automatic reconnection on failure
  * - Token-by-token response delivery
  */
 
@@ -16,8 +15,8 @@ import { LlmConfig } from '../config/llmConfig';
 import { ChatMessage } from '../llm/openaiClient';
 
 export interface StreamingOptions {
-  /** Stream transport: SSE (Server-Sent Events) or WebSocket */
-  transport?: 'sse' | 'websocket';
+  /** Stream transport: only SSE supported (WebSocket not implemented) */
+  transport?: 'sse';
   /** Temperature for sampling (0-2) */
   temperature?: number;
   /** Timeout in milliseconds */
@@ -61,23 +60,29 @@ export class StreamingClient {
   constructor(private config: LlmConfig) {}
 
   /**
-   * Stream LLM response using SSE or WebSocket
+   * Stream LLM response using SSE
    * @param messages Chat messages to send
    * @param callbacks Callbacks for stream events
    * @param options Streaming options
+   * @throws Error if client is already streaming
    */
   async streamChat(
     messages: ChatMessage[],
     callbacks: StreamCallbacks,
     options?: StreamingOptions
   ): Promise<void> {
+    // Prevent concurrent streams on the same client instance
+    if (this.isActive) {
+      throw new Error('StreamingClient is already active. Create a new instance or wait for the current stream to complete.');
+    }
+    
     const transport = options?.transport || 'sse';
     
-    if (transport === 'sse') {
-      await this.streamWithSSE(messages, callbacks, options);
-    } else {
-      await this.streamWithWebSocket(messages, callbacks, options);
+    if (transport !== 'sse') {
+      throw new Error('Only SSE transport is currently supported. WebSocket support is planned for a future release.');
     }
+    
+    await this.streamWithSSE(messages, callbacks, options);
   }
 
   /**
@@ -130,9 +135,9 @@ export class StreamingClient {
         },
         body: JSON.stringify(body),
         signal: this.abortController.signal,
+      }).finally(() => {
+        clearTimeout(timeoutId);
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -247,118 +252,6 @@ export class StreamingClient {
     } finally {
       reader.releaseLock();
     }
-  }
-
-  /**
-   * Stream using WebSocket connection
-   * For custom streaming servers that prefer WebSocket over SSE
-   */
-  private async streamWithWebSocket(
-    messages: ChatMessage[],
-    callbacks: StreamCallbacks,
-    options?: StreamingOptions
-  ): Promise<void> {
-    this.isActive = true;
-    this.accumulatedResponse = '';
-
-    return new Promise((resolve, reject) => {
-      const baseUrl = this.config.baseUrl.replace(/^http/, 'ws').replace(/\/$/, '');
-      const wsUrl = `${baseUrl}/stream`;
-
-      const ws = new WebSocket(wsUrl);
-      let connectionTimeout: NodeJS.Timeout;
-
-      // Setup timeout
-      const timeoutMs = options?.timeoutMs ?? this.config.timeoutMs;
-      connectionTimeout = setTimeout(() => {
-        ws.close();
-        reject(new Error('WebSocket connection timeout'));
-      }, timeoutMs);
-
-      // Listen for cancellation
-      if (options?.cancellationToken) {
-        options.cancellationToken.onCancellationRequested(() => {
-          ws.close();
-          callbacks.onCancel?.();
-          resolve();
-        });
-      }
-
-      ws.onopen = () => {
-        clearTimeout(connectionTimeout);
-        console.log('[StreamingClient] WebSocket connected');
-
-        // Send request
-        const model = this.config.defaultModel === 'custom'
-          ? this.config.customModel
-          : this.config.defaultModel;
-
-        ws.send(JSON.stringify({
-          type: 'chat',
-          model,
-          messages,
-          temperature: options?.temperature ?? this.config.temperature,
-        }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-
-          if (data.type === 'chunk' && data.content) {
-            this.accumulatedResponse += data.content;
-            
-            callbacks.onChunk?.({
-              type: 'text',
-              content: data.content,
-              metadata: data.metadata,
-            });
-          } else if (data.type === 'progress') {
-            callbacks.onChunk?.({
-              type: 'progress',
-              progress: data.progress,
-            });
-          } else if (data.type === 'done') {
-            callbacks.onChunk?.({ type: 'done' });
-            this.isActive = false;
-            callbacks.onComplete?.(this.accumulatedResponse);
-            ws.close();
-            resolve();
-          } else if (data.type === 'error') {
-            const error = new Error(data.error || 'Stream error');
-            callbacks.onError?.(error);
-            ws.close();
-            reject(error);
-          }
-        } catch (parseError) {
-          console.warn('[StreamingClient] Failed to parse WebSocket message:', event.data);
-        }
-      };
-
-      ws.onerror = (error) => {
-        clearTimeout(connectionTimeout);
-        const wsError = new Error('WebSocket error - check server connection');
-        callbacks.onError?.(wsError);
-        reject(wsError);
-      };
-
-      ws.onclose = (event) => {
-        clearTimeout(connectionTimeout);
-        this.isActive = false;
-
-        if (!event.wasClean) {
-          const closeError = new Error(`WebSocket closed unexpectedly: ${event.reason}`);
-          callbacks.onError?.(closeError);
-          reject(closeError);
-        } else if (this.accumulatedResponse) {
-          // Normal close with response
-          callbacks.onComplete?.(this.accumulatedResponse);
-          resolve();
-        } else {
-          resolve();
-        }
-      };
-    });
   }
 
   /**

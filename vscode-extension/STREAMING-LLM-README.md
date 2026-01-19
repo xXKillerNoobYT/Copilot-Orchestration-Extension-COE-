@@ -8,8 +8,10 @@ Real-time streaming of LLM responses for live feedback during AI operations.
 ✅ **Progress Indicators**: Spinner and percentage tracking  
 ✅ **Stream Statistics**: Duration, tokens, and throughput metrics  
 ✅ **Cancellation Support**: Cancel streams via VS Code cancellation  
-✅ **Error Handling**: Automatic retry and detailed error messages  
-✅ **Multiple Transports**: SSE (Server-Sent Events) and WebSocket support  
+✅ **Error Handling**: Detailed error messages and graceful failure  
+✅ **SSE Transport**: Compatible with OpenAI-style streaming endpoints  
+
+**Note**: WebSocket support is planned for a future release.  
 
 ## Usage
 
@@ -182,13 +184,13 @@ npm run test:jest -- src/services/streamingClient.test.ts
 
 ## Future Enhancements
 
-Planned improvements (not yet implemented):
+Planned improvements not yet implemented:
 - [ ] Syntax highlighting in output channel
 - [ ] Save stream to file
 - [ ] Pause/Resume streaming
 - [ ] Multiple concurrent streams
-- [ ] WebSocket reconnection logic
-- [ ] Custom transport plugins
+- [ ] WebSocket transport support (currently only SSE is supported)
+- [ ] Automatic retry logic for failed streams
 
 ## API Reference
 

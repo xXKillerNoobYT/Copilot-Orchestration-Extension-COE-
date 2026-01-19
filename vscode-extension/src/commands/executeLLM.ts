@@ -225,9 +225,8 @@ export async function executeLlmCommandStreaming(): Promise<void> {
         const { createStreamingClient } = await import('../services/streamingClient');
         const streamingClient = createStreamingClient(configState.config);
 
-        let fullResponse = '';
-
         // Execute streaming request
+        let previousProgress = 0;
         await streamingClient.streamChat(
           payload.messages,
           {
@@ -235,13 +234,14 @@ export async function executeLlmCommandStreaming(): Promise<void> {
               if (chunk.type === 'text' && chunk.content) {
                 // Append to output channel
                 outputChannel.appendChunk(chunk.content);
-                fullResponse += chunk.content;
               } else if (chunk.type === 'progress' && chunk.progress !== undefined) {
                 // Update progress indicator
                 outputChannel.updateProgress(chunk.progress);
+                const increment = chunk.progress - previousProgress;
+                previousProgress = chunk.progress;
                 progress.report({ 
                   message: `Streaming... ${chunk.progress}%`,
-                  increment: chunk.progress
+                  increment: increment > 0 ? increment : undefined
                 });
               } else if (chunk.type === 'error' && chunk.error) {
                 // Handle error chunk
