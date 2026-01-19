@@ -456,6 +456,54 @@
         "title": "Review & Completion",
         "category": "Copilot Orchestrator",
         "icon": "$(checklist)"
+      },
+      {
+        "command": "copilot-orchestrator.configureWebSocket",
+        "title": "Configure WebSocket",
+        "category": "Copilot Orchestrator",
+        "icon": "$(server)"
+      },
+      {
+        "command": "copilot-orchestrator.connectWebSocket",
+        "title": "Connect WebSocket",
+        "category": "Copilot Orchestrator",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "copilot-orchestrator.disconnectWebSocket",
+        "title": "Disconnect WebSocket",
+        "category": "Copilot Orchestrator",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "copilot-orchestrator.refreshAgents",
+        "title": "Refresh Agents",
+        "category": "Copilot Orchestrator",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "copilot-orchestrator.refreshPlans",
+        "title": "Refresh Plans",
+        "category": "Copilot Orchestrator",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "copilot-orchestrator.showConnectionDetails",
+        "title": "Show Connection Details",
+        "category": "Copilot Orchestrator",
+        "icon": "$(info)"
+      },
+      {
+        "command": "copilot-orchestrator.startPlanBuilder",
+        "title": "Start Plan Builder",
+        "category": "Copilot Orchestrator",
+        "icon": "$(pencil)"
+      },
+      {
+        "command": "copilot-orchestrator.testWebSocket",
+        "title": "Test WebSocket",
+        "category": "Copilot Orchestrator",
+        "icon": "$(debug-start)"
       }
     ],
     "menus": {
@@ -561,7 +609,9 @@
     "test:integration:ci": "xvfb-run -a node scripts/runIntegrationTests.js",
     "test:all": "npm run test:unit && npm run test:wizard && npm run test",
     "demo": "npm run compile && node dist/taskGraphDemo.js",
-    "report:tests": "node scripts/report-tests.js"
+    "report:tests": "node scripts/report-tests.js",
+    "install-hooks": "git config core.hooksPath .githooks && echo 'Git hooks installed from .githooks/'",
+    "prepare": "npm run install-hooks || echo 'Warning: Could not install git hooks'"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",

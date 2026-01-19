@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# Root-level pre-commit hook that delegates to vscode-extension hook
+#
+# This allows the vscode-extension to have its own validation
+# while still being part of a monorepo
+
+set -e
+
+# Check if we have changes in vscode-extension
+if git diff --cached --name-only | grep -q "^vscode-extension/"; then
+    # Change to vscode-extension directory and run its pre-commit hook
+    if [ -f "vscode-extension/.githooks/pre-commit" ]; then
+        echo "Running vscode-extension pre-commit validation..."
+        cd vscode-extension
+        ./.githooks/pre-commit
+        exit_code=$?
+        cd ..
+        
+        if [ $exit_code -ne 0 ]; then
+            exit $exit_code
+        fi
+    fi
+fi
+
+exit 0

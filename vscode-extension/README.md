@@ -453,6 +453,36 @@ Check that your task files:
 - Minimal memory footprint
 - Fast validation and analysis
 
+## Development
+
+### Command Registration
+
+This extension uses automated validation to ensure all commands are properly registered. See [COMMAND_REGISTRATION_GUIDE.md](./COMMAND_REGISTRATION_GUIDE.md) for details.
+
+**Quick checklist when adding commands:**
+1. Add to `package.json` contributions.commands
+2. Register in `extension.ts` or command file
+3. Run `npm run test:jest -- src/__tests__/command-registration.test.ts`
+4. Verify in VS Code Command Palette
+
+**Pre-commit hook:** Automatically validates command registrations before each commit. Install with:
+```bash
+npm run install-hooks
+```
+
+### Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test suite
+npm run test:jest -- src/__tests__/command-registration.test.ts
+
+# Run with coverage
+npm run test:jest:coverage
+```
+
 ## Future Enhancements
 
 - [ ] Interactive graph visualization
@@ -465,12 +495,16 @@ Check that your task files:
 
 ## Contributing
 
-Contributions welcome! Please:
+Contributions welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+Quick start:
 1. Fork the repository
 2. Create a feature branch
 3. Add tests for new functionality
 4. Ensure all tests pass
 5. Submit a pull request
+
+**Important:** When adding new commands, follow the [Command Registration Guide](./COMMAND_REGISTRATION_GUIDE.md).
 
 ## License
 
@@ -482,9 +516,10 @@ For issues or questions:
 - Check the [documentation](TASK-GRAPH-GENERATOR.md)
 - Review the [examples](src/taskGraphDemo.ts)
 - Run the [tests](src/taskGraphTest.ts)
+- See [Contributing Guide](./CONTRIBUTING.md)
 
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: January 6, 2026  
+**Last Updated**: January 19, 2026  
 **Status**: ✅ Production Ready
