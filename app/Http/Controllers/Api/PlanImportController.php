@@ -113,7 +113,7 @@ class PlanImportController extends Controller
         
         // Truncate to 200 characters if needed
         if (strlen($fullSummary) > 200) {
-            return substr($fullSummary, 0, 197) . '...';
+            return substr($fullSummary, 0, 200) . '...';
         }
         
         return $fullSummary;

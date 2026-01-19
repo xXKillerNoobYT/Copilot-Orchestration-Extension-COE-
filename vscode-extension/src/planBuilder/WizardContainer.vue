@@ -574,10 +574,7 @@ const handleContextImported = (context: any) => {
 };
 
 const handleValidationError = (errors: string[]) => {
-  const question = getCurrentQuestion();
-  if (question) {
-    validationErrors.value[question.id] = errors;
-  }
+  validationErrors.value[currentStep.value] = errors;
 };
 
 // Handle navigation from summary to edit a specific question

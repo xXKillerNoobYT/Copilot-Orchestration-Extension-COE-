@@ -287,7 +287,8 @@ async function handleFiles(files: File[]) {
 
 async function importFile(file: File) {
   const content = await file.text();
-  const preview = content.substring(0, 150).replace(/\n/g, ' ') + '...';
+  const snippet = content.substring(0, 150).replace(/\n/g, ' ');
+  const preview = content.length > 150 ? snippet + '...' : snippet;
   
   importedFiles.value.push({
     id: Math.random().toString(36).substring(2),
@@ -306,13 +307,17 @@ async function processPastedContent() {
   processingMessage.value = 'Processing pasted content...';
   
   try {
+    const content = pastedContent.value;
+    const previewContent = content.substring(0, 150);
+    const preview = content.length > 150 ? previewContent + '...' : previewContent;
+
     importedFiles.value.push({
       id: Math.random().toString(36).substring(2),
       name: 'Pasted Content',
       type: 'text/plain',
-      size: pastedContent.value.length,
-      content: pastedContent.value,
-      preview: pastedContent.value.substring(0, 150) + '...'
+      size: content.length,
+      content,
+      preview
     });
     
     pastedContent.value = '';
@@ -351,7 +356,7 @@ async function processWorkspaceFiles() {
         type: 'file',
         size: content.length,
         content,
-        preview: content.substring(0, 150) + '...'
+        preview: content.length > 150 ? content.substring(0, 150) + '...' : content
       });
     }
     
