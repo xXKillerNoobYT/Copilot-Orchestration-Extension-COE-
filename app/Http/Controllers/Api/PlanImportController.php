@@ -109,16 +109,14 @@ class PlanImportController extends Controller
         });
         $sentences = array_slice($sentences, 0, 3);
         
-        $summary = implode('. ', $sentences);
+        $fullSummary = implode('. ', $sentences);
         
-        // Truncate to 200 characters
-        if (strlen($summary) > 200) {
-            $summary = substr($summary, 0, 197) . '...';
-        } else {
-            $summary .= '...';
+        // Truncate to 200 characters if needed
+        if (strlen($fullSummary) > 200) {
+            return substr($fullSummary, 0, 197) . '...';
         }
         
-        return $summary;
+        return $fullSummary;
     }
 
     /**

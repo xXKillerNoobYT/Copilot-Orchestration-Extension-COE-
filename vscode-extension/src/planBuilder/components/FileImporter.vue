@@ -414,9 +414,9 @@ async function startWizardWithContext() {
 
 function getFileIcon(filename: string): string {
   const lower = filename.toLowerCase();
-  if (lower.includes('.json')) return '📊';
-  if (lower.includes('.md') || lower.includes('.txt')) return '📝';
-  if (lower.includes('.yaml') || lower.includes('.yml')) return '⚙️';
+  if (lower.endsWith('.json')) return '📊';
+  if (lower.endsWith('.md') || lower.endsWith('.txt')) return '📝';
+  if (lower.endsWith('.yaml') || lower.endsWith('.yml')) return '⚙️';
   return '📦';
 }
 

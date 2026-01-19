@@ -214,7 +214,8 @@ export class ContextImportService {
     // Extract first few sentences
     const sentences = content.split(/[.!?]+/).slice(0, 3).join('. ');
     const summary = sentences.substring(0, 200);
-    return summary + (summary.length >= 200 ? '...' : '');
+    // Only add ellipsis if content was actually truncated
+    return summary.length < sentences.length ? summary + '...' : summary;
   }
 
   /**
