@@ -50,6 +50,7 @@ export interface TaskFilters {
 
 export class TaskService {
   private baseUrl!: string;
+  private authToken?: string;
   private cache: Map<string, { tasks: Task[]; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 30000; // 30 seconds
   private static instance: TaskService;
@@ -64,6 +65,7 @@ export class TaskService {
   private loadConfig(): void {
     const config = vscode.workspace.getConfiguration('copilot-orchestrator');
     this.baseUrl = config.get<string>('backendUrl', 'http://localhost:8000');
+    this.authToken = config.get<string>('authToken') || process.env.COPILOT_AUTH_TOKEN;
   }
 
   static getInstance(): TaskService {
@@ -111,6 +113,7 @@ export class TaskService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          ...(this.authToken ? { 'Authorization': `Bearer ${this.authToken}` } : {}),
         },
       });
 
@@ -151,6 +154,7 @@ export class TaskService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          ...(this.authToken ? { 'Authorization': `Bearer ${this.authToken}` } : {}),
         },
       });
 

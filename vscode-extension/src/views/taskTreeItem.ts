@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Task } from '../services/taskService';
-import { formatMinutesToHours } from '../utils/taskFormatters';
+import { formatMinutesToHours, formatMinutesToDuration } from '../utils/taskFormatters';
 
 /**
  * Task Tree Item
@@ -47,8 +47,8 @@ export class TaskTreeItem extends vscode.TreeItem {
     lines.push(`**Type:** ${this.formatTaskType(this.task.task_type)}`);
     
     if (this.task.estimated_effort) {
-      const estimated = this.formatMinutes(this.task.estimated_effort);
-      const actual = this.task.actual_effort ? this.formatMinutes(this.task.actual_effort) : 'N/A';
+      const estimated = formatMinutesToDuration(this.task.estimated_effort);
+      const actual = this.task.actual_effort ? formatMinutesToDuration(this.task.actual_effort) : 'N/A';
       lines.push(`**Effort:** ${estimated} (estimated) / ${actual} (actual)`);
     }
     
@@ -79,7 +79,8 @@ export class TaskTreeItem extends vscode.TreeItem {
     
     // Show effort if available
     if (this.task.estimated_effort) {
-      parts.push(this.formatMinutesToHours(this.task.estimated_effort));
+      const hours = formatMinutesToHours(this.task.estimated_effort);
+      parts.push(`${hours}h`);
     }
     
     // Show dependency count
@@ -158,29 +159,6 @@ export class TaskTreeItem extends vscode.TreeItem {
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-  }
-
-  /**
-   * Format minutes to human-readable duration
-   */
-  private formatMinutes(minutes: number): string {
-    if (minutes < 60) {
-      return `${minutes}m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    if (remainingMinutes === 0) {
-      return `${hours}h`;
-    }
-    return `${hours}h ${remainingMinutes}m`;
-  }
-
-  /**
-   * Format minutes to hours (for description display)
-   */
-  private formatMinutesToHours(minutes: number): string {
-    const hours = formatMinutesToHours(minutes);
-    return `${hours}h`;
   }
 
   /**

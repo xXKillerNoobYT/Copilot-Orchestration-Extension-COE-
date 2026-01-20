@@ -623,7 +623,7 @@ export function activate(context: vscode.ExtensionContext) {
         '',
         `**Created**: ${new Date(task.created_at).toLocaleString()}`,
         `**Updated**: ${new Date(task.updated_at).toLocaleString()}`,
-      ].filter(line => !!line).join('\n');
+      ].filter(Boolean).join('\n');
 
       const doc = await vscode.workspace.openTextDocument({
         content,

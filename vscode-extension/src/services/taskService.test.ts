@@ -307,7 +307,6 @@ describe('TaskService', () => {
 
       // Pre-populate cache
       await taskService.getTasks('test-project-id', { status: 'pending' });
-      const initialCallCount = (global.fetch as jest.Mock).mock.calls.length;
 
       // Clear and refresh
       jest.clearAllMocks();
