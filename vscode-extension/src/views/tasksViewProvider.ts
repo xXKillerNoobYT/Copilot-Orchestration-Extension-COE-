@@ -1,128 +1,154 @@
 import * as vscode from 'vscode';
+import { TaskService } from '../services/taskService';
+import { TaskTreeItem, CategoryTreeItem } from './taskTreeItem';
+import { getWebSocketClient } from '../services/webSocketClient';
 
 /**
  * Tree data provider for the Tasks view in the Copilot Orchestrator sidebar
  */
-export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem> {
-  private _onDidChangeTreeData = new vscode.EventEmitter<TaskItem | undefined | void>();
+export class TasksViewProvider implements vscode.TreeDataProvider<TaskTreeItem | CategoryTreeItem> {
+  private _onDidChangeTreeData = new vscode.EventEmitter<TaskTreeItem | CategoryTreeItem | undefined | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+  private taskService: TaskService;
+  private lastRefresh = 0;
+  private readonly REFRESH_DEBOUNCE_MS = 1000; // Max 1 refresh per second
+  private refreshTimeout?: NodeJS.Timeout;
 
-  constructor(private context: vscode.ExtensionContext) {}
+  constructor(private context: vscode.ExtensionContext) {
+    this.taskService = TaskService.getInstance();
+    this.setupWebSocketListeners();
+  }
 
+  /**
+   * Set up WebSocket listeners for real-time task updates
+   */
+  private setupWebSocketListeners(): void {
+    const wsClient = getWebSocketClient();
+    if (!wsClient) {
+      console.warn('[TasksViewProvider] WebSocket client not available. Real-time updates disabled.');
+      return;
+    }
+
+    // Subscribe to task events
+    wsClient.subscribe('tasks', 'taskCreated', () => this.debouncedRefresh());
+    wsClient.subscribe('tasks', 'taskUpdated', () => this.debouncedRefresh());
+    wsClient.subscribe('tasks', 'taskCompleted', () => this.debouncedRefresh());
+    wsClient.subscribe('tasks', 'taskStatusChanged', () => this.debouncedRefresh());
+    
+    console.log('[TasksViewProvider] WebSocket listeners registered');
+  }
+
+  /**
+   * Refresh with debouncing (max 1 refresh per second)
+   */
+  private debouncedRefresh(): void {
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
+    }
+
+    const timeSinceLastRefresh = Date.now() - this.lastRefresh;
+    const delay = Math.max(0, this.REFRESH_DEBOUNCE_MS - timeSinceLastRefresh);
+
+    this.refreshTimeout = setTimeout(() => {
+      this.refresh();
+    }, delay);
+  }
+
+  /**
+   * Force refresh the tree view
+   */
   refresh(): void {
+    this.lastRefresh = Date.now();
     this._onDidChangeTreeData.fire();
   }
 
-  getTreeItem(element: TaskItem): vscode.TreeItem {
+  /**
+   * Refresh and clear cache
+   */
+  async refreshWithClear(): Promise<void> {
+    this.taskService.clearCache();
+    const projectId = this.taskService.getProjectId();
+    await this.taskService.refreshProject(projectId);
+    this.refresh();
+  }
+
+  getTreeItem(element: TaskTreeItem | CategoryTreeItem): vscode.TreeItem {
     return element;
   }
 
-  async getChildren(element?: TaskItem): Promise<TaskItem[]> {
+  async getChildren(element?: TaskTreeItem | CategoryTreeItem): Promise<(TaskTreeItem | CategoryTreeItem)[]> {
     if (!element) {
       // Root level - show task categories
       return [
-        new TaskItem(
+        new CategoryTreeItem(
           'Ready Tasks',
           'ready',
           vscode.TreeItemCollapsibleState.Expanded,
-          '$(check-all)'
+          'check-all'
         ),
-        new TaskItem(
+        new CategoryTreeItem(
           'In Progress',
           'in-progress',
           vscode.TreeItemCollapsibleState.Expanded,
-          '$(sync~spin)'
+          'sync~spin'
         ),
-        new TaskItem(
+        new CategoryTreeItem(
           'Blocked Tasks',
           'blocked',
           vscode.TreeItemCollapsibleState.Collapsed,
-          '$(error)'
+          'error'
         ),
-        new TaskItem(
+        new CategoryTreeItem(
+          'Testing',
+          'testing',
+          vscode.TreeItemCollapsibleState.Collapsed,
+          'beaker'
+        ),
+        new CategoryTreeItem(
           'Completed',
           'completed',
           vscode.TreeItemCollapsibleState.Collapsed,
-          '$(pass)'
+          'pass'
         ),
       ];
-    } else {
+    } else if (element instanceof CategoryTreeItem) {
       // Get tasks for this category
       return this.getTasksForCategory(element.categoryId);
     }
+    
+    // TaskTreeItem has no children
+    return [];
   }
 
-  private async getTasksForCategory(category: string): Promise<TaskItem[]> {
-    // TODO: Load actual tasks from workspace or backend
-    // For now, return sample data
-    const sampleTasks: Record<string, TaskItem[]> = {
-      ready: [
-        new TaskItem(
-          'Implement user authentication',
-          'task-1',
-          vscode.TreeItemCollapsibleState.None,
-          '$(play)',
-          'Execute this task'
-        ),
-        new TaskItem(
-          'Add API endpoint for tasks',
-          'task-2',
-          vscode.TreeItemCollapsibleState.None,
-          '$(play)',
-          'Execute this task'
-        ),
-      ],
-      'in-progress': [
-        new TaskItem(
-          'Setup database schema',
-          'task-3',
-          vscode.TreeItemCollapsibleState.None,
-          '$(loading~spin)',
-          'Currently executing'
-        ),
-      ],
-      blocked: [],
-      completed: [
-        new TaskItem(
-          'Project setup',
-          'task-0',
-          vscode.TreeItemCollapsibleState.None,
-          '$(check)',
-          'Completed'
-        ),
-      ],
-    };
-
-    return sampleTasks[category] || [];
+  /**
+   * Get tasks for a specific category from the backend
+   */
+  private async getTasksForCategory(category: string): Promise<TaskTreeItem[]> {
+    try {
+      const projectId = this.taskService.getProjectId();
+      const tasks = await this.taskService.getTasksByCategory(projectId, category);
+      
+      return tasks.map(task => 
+        new TaskTreeItem(task, vscode.TreeItemCollapsibleState.None)
+      );
+    } catch (error) {
+      console.error(`[TasksViewProvider] Failed to load tasks for category ${category}:`, error);
+      
+      // Show user-friendly error in tree view
+      vscode.window.showErrorMessage(
+        `Failed to load ${category} tasks. Is the backend server running?`
+      );
+      
+      return [];
+    }
   }
-}
 
-export class TaskItem extends vscode.TreeItem {
-  constructor(
-    public readonly label: string,
-    public readonly categoryId: string,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-    public readonly iconId?: string,
-    public readonly tooltip?: string
-  ) {
-    super(label, collapsibleState);
-
-    if (iconId) {
-      this.iconPath = new vscode.ThemeIcon(iconId.replace('$(', '').replace(')', ''));
-    }
-
-    if (tooltip) {
-      this.tooltip = tooltip;
-    }
-
-    // Set context value for menu contributions
-    if (collapsibleState === vscode.TreeItemCollapsibleState.None) {
-      this.contextValue = 'task';
-      this.command = {
-        command: 'copilot-orchestrator.executeTask',
-        title: 'Execute Task',
-        arguments: [this],
-      };
+  /**
+   * Clean up resources
+   */
+  dispose(): void {
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
     }
   }
 }

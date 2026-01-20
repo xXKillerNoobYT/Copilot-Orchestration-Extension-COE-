@@ -591,6 +591,47 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Command to view task details
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.viewTaskDetails', async (task: any) => {
+      if (!task || !task.id) {
+        vscode.window.showErrorMessage('Invalid task selected.');
+        return;
+      }
+
+      // Create a document with task details
+      const content = [
+        `# Task: ${task.name}`,
+        '',
+        `**ID**: ${task.id}`,
+        `**Status**: ${task.status}`,
+        `**Priority**: ${task.priority}`,
+        `**Type**: ${task.task_type}`,
+        '',
+        '## Description',
+        task.description || 'No description provided.',
+        '',
+        '## Details',
+        `- **Estimated Effort**: ${task.estimated_effort ? Math.round(task.estimated_effort / 60 * 10) / 10 + ' hours' : 'N/A'}`,
+        `- **Actual Effort**: ${task.actual_effort ? Math.round(task.actual_effort / 60 * 10) / 10 + ' hours' : 'N/A'}`,
+        `- **Dependencies**: ${task.dependencyCount || 0}`,
+        `- **Subtasks**: ${task.subtaskCount || 0}`,
+        '',
+        task.assigned_agent ? `**Assigned Agent**: ${task.assigned_agent}` : '',
+        task.github_issue_url ? `**GitHub Issue**: ${task.github_issue_url}` : '',
+        '',
+        `**Created**: ${new Date(task.created_at).toLocaleString()}`,
+        `**Updated**: ${new Date(task.updated_at).toLocaleString()}`,
+      ].filter(line => line !== undefined).join('\n');
+
+      const doc = await vscode.workspace.openTextDocument({
+        content,
+        language: 'markdown',
+      });
+      await vscode.window.showTextDocument(doc, { preview: true });
+    })
+  );
+
   const refreshDisposable = vscode.commands.registerCommand('copilot-orchestrator.refreshTasks', async () => {
     await treeDataProvider.refreshFromDisk();
     vscode.window.showInformationMessage('Copilot Orchestrator tasks refreshed.');
