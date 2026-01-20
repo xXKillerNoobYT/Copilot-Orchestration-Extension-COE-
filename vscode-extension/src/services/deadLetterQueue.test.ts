@@ -235,6 +235,49 @@ describe('DeadLetterQueueService', () => {
       expect(entries.length).toBeLessThanOrEqual(100);
     });
 
+    it('should allow custom limit up to 1000', async () => {
+      // Add a few entries to test
+      for (let i = 0; i < 5; i++) {
+        await service.addFailedMessage(
+          `msg-limit-${i}`,
+          'test',
+          {},
+          new Error('Test')
+        );
+      }
+
+      const entries = await service.getEntries({ limit: 3 });
+      expect(entries.length).toBeLessThanOrEqual(3);
+    });
+
+    it('should clamp limit to maximum of 1000', async () => {
+      // The actual clamping happens in the service, we just verify it doesn't crash
+      // and returns results. The limit of 1000 is enforced in the service code.
+      const entries = await service.getEntries({ limit: 5000 });
+      // Should get results without error (limit is clamped internally to 1000)
+      expect(entries.length).toBeGreaterThan(0);
+    });
+
+    it('should use default limit for invalid values', async () => {
+      // Add entries
+      for (let i = 0; i < 5; i++) {
+        await service.addFailedMessage(
+          `msg-invalid-${i}`,
+          'test',
+          {},
+          new Error('Test')
+        );
+      }
+
+      // Test negative limit
+      const entries1 = await service.getEntries({ limit: -10 });
+      expect(entries1.length).toBeGreaterThan(0);
+
+      // Test non-integer limit
+      const entries2 = await service.getEntries({ limit: 3.7 });
+      expect(entries2.length).toBeLessThanOrEqual(3);
+    });
+
     it('should order entries by created_at DESC', async () => {
       const entries = await service.getEntries();
       

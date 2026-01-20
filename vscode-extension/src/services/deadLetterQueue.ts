@@ -164,9 +164,17 @@ export class DeadLetterQueueService {
         params.push(filters.since.toISOString());
       }
 
-      // Use configurable limit with a default of 100
-      const limit = filters?.limit ?? 100;
-      query += ` ORDER BY created_at DESC LIMIT ${limit}`;
+      // Use configurable limit with a default of 100, validate and clamp to prevent abuse
+      let limit = 100;
+      if (filters?.limit !== undefined && filters.limit !== null) {
+        const parsedLimit = Number(filters.limit);
+        if (Number.isFinite(parsedLimit) && parsedLimit > 0) {
+          // Ensure integer and cap at a reasonable maximum
+          limit = Math.min(Math.floor(parsedLimit), 1000);
+        }
+      }
+      query += ' ORDER BY created_at DESC LIMIT ?';
+      params.push(limit);
 
       const rows = this.db.prepare(query).all(...params) as any[];
       return rows.map(row => this.mapRow(row));

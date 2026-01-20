@@ -1194,10 +1194,11 @@ async getEntries(filters?: {
   handlerName?: string;
   messageType?: string;
   since?: Date;
+  limit?: number;  // Maximum entries to return (default: 100, max: 1000)
 }): Promise<DeadLetterEntry[]>
 ```
 
-Retrieves DLQ entries with optional filtering. Limited to 100 entries per query.
+Retrieves DLQ entries with optional filtering. Limited to 100 entries per query by default, configurable up to 1000.
 
 #### Replay Message
 ```typescript

@@ -224,6 +224,18 @@ export class DeadLetterQueuePanel {
   }
 
   /**
+   * HTML escape function to prevent XSS
+   */
+  private escapeHtml(unsafe: string): string {
+    return unsafe
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  /**
    * Get HTML content for the panel
    */
   private getHtmlContent(): string {
@@ -231,16 +243,6 @@ export class DeadLetterQueuePanel {
       acc[entry.status] = (acc[entry.status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
-    // HTML escape function to prevent XSS
-    const escapeHtml = (unsafe: string): string => {
-      return unsafe
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    };
 
     return `
       <!DOCTYPE html>
@@ -391,11 +393,11 @@ export class DeadLetterQueuePanel {
           </select>
           <select id="handlerFilter" onchange="applyFilters()">
             <option value="">All Handlers</option>
-            ${this.getUniqueHandlers().map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}
+            ${this.getUniqueHandlers().map(h => `<option value="${this.escapeHtml(h)}">${this.escapeHtml(h)}</option>`).join('')}
           </select>
           <select id="typeFilter" onchange="applyFilters()">
             <option value="">All Types</option>
-            ${this.getUniqueTypes().map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}
+            ${this.getUniqueTypes().map(t => `<option value="${this.escapeHtml(t)}">${this.escapeHtml(t)}</option>`).join('')}
           </select>
         </div>
 
@@ -423,15 +425,15 @@ export class DeadLetterQueuePanel {
             <tbody>
               ${this.entries.map(entry => `
                 <tr>
-                  <td><code>${escapeHtml(entry.messageId)}</code></td>
-                  <td>${escapeHtml(entry.messageType)}</td>
-                  <td>${escapeHtml(entry.handlerName || '-')}</td>
-                  <td class="error-message" title="${escapeHtml(entry.errorMessage)}">${escapeHtml(entry.errorMessage)}</td>
+                  <td><code>${this.escapeHtml(entry.messageId)}</code></td>
+                  <td>${this.escapeHtml(entry.messageType)}</td>
+                  <td>${this.escapeHtml(entry.handlerName || '-')}</td>
+                  <td class="error-message" title="${this.escapeHtml(entry.errorMessage)}">${this.escapeHtml(entry.errorMessage)}</td>
                   <td>${entry.retryCount}</td>
-                  <td><span class="status-badge status-${escapeHtml(entry.status)}">${escapeHtml(entry.status)}</span></td>
-                  <td>${escapeHtml(new Date(entry.firstFailedAt).toLocaleString())}</td>
+                  <td><span class="status-badge status-${this.escapeHtml(entry.status)}">${this.escapeHtml(entry.status)}</span></td>
+                  <td>${this.escapeHtml(new Date(entry.firstFailedAt).toLocaleString())}</td>
                   <td>
-                    ${entry.status === 'failed' ? `<button onclick="replay('${escapeHtml(entry.id)}')">▶️ Replay</button>` : '-'}
+                    ${entry.status === 'failed' ? `<button onclick="replay('${this.escapeHtml(entry.id)}')">▶️ Replay</button>` : '-'}
                   </td>
                 </tr>
               `).join('')}
@@ -532,7 +534,7 @@ export class DeadLetterQueuePanel {
       </head>
       <body>
         <h1>⚠️ Error</h1>
-        <div class="error">${errorMessage}</div>
+        <div class="error">${this.escapeHtml(errorMessage)}</div>
       </body>
       </html>
     `;
