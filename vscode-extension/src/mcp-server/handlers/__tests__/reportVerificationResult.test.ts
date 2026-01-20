@@ -285,8 +285,8 @@ describe('handleReportVerificationResult', () => {
       passed: true,
     });
 
-    expect(result.nextSteps).toContain('Update task status to done');
-    expect(result.nextSteps).toContain('Merge pull request');
+    expect(result.content[0].text).toContain('Update task status to done');
+    expect(result.content[0].text).toContain('Merge pull request');
 
     // Test failed verification
     (validateInput as jest.Mock).mockReturnValue({
@@ -305,8 +305,8 @@ describe('handleReportVerificationResult', () => {
       findings: ['Issue'],
     });
 
-    expect(result.nextSteps).toContain('Address verification findings');
-    expect(result.nextSteps).toContain('Request re-verification');
+    expect(result.content[0].text).toContain('Address verification findings');
+    expect(result.content[0].text).toContain('Request re-verification');
   });
 });
 

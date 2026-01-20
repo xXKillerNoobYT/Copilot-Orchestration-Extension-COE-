@@ -23,6 +23,7 @@ describe('StreamingClient', () => {
       customModel: '',
       temperature: 0.7,
       timeoutMs: 30000,
+      taskRoots: ['_ZENTASKS'],
     };
     client = createStreamingClient(config);
     jest.clearAllMocks();

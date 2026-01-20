@@ -274,8 +274,8 @@ export class PlanPersistenceService {
       try {
         const plan = await this.loadPlan(filename);
         // Check if plan has an ID (from backend)
-        if (typeof (plan as Record<string, unknown>).id === 'number') {
-          planId = (plan as Record<string, unknown>).id as number;
+        if (typeof (plan as unknown as Record<string, unknown>).id === 'number') {
+          planId = (plan as unknown as Record<string, unknown>).id as number;
         }
       } catch (error) {
         // Plan might not have an ID (local-only plan)

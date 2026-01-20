@@ -48,6 +48,8 @@ export interface ParsedTask {
   format_version?: string;
   rawFrontMatter: Record<string, unknown>;
   source?: string;
+  startedAt?: string;
+  completedAt?: string;
 }
 
 export interface ValidationError {
