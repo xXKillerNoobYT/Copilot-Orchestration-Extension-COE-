@@ -33,7 +33,7 @@ describe('MCPErrorHandler', () => {
   describe('Configuration', () => {
     it('should use default configuration', () => {
       const config = handler.getConfig();
-      
+
       expect(config.maxRetries).toBe(DEFAULT_RETRY_CONFIG.maxRetries);
       expect(config.initialDelay).toBe(DEFAULT_RETRY_CONFIG.initialDelay);
       expect(config.maxDelay).toBe(DEFAULT_RETRY_CONFIG.maxDelay);
@@ -54,7 +54,7 @@ describe('MCPErrorHandler', () => {
 
     it('should allow configuration updates', () => {
       handler.updateConfig({ maxRetries: 10 });
-      
+
       const config = handler.getConfig();
       expect(config.maxRetries).toBe(10);
     });
@@ -101,7 +101,7 @@ describe('MCPErrorHandler', () => {
         .mockResolvedValue('success');
 
       const startTime = Date.now();
-      
+
       await handler.executeWithRetry(
         operation,
         'msg-001',
@@ -111,7 +111,7 @@ describe('MCPErrorHandler', () => {
       );
 
       const totalTime = Date.now() - startTime;
-      
+
       // Should have waited at least 1000ms + 2000ms = 3000ms
       // (initial delay + second delay with backoff multiplier 2)
       expect(totalTime).toBeGreaterThanOrEqual(2900); // Allow small margin
@@ -144,7 +144,7 @@ describe('MCPErrorHandler', () => {
 
     it('should timeout long-running operations', async () => {
       const customHandler = new MCPErrorHandler(dlq, { timeout: 100, maxRetries: 1 });
-      
+
       const operation = () => new Promise(resolve => setTimeout(resolve, 500));
 
       await expect(
@@ -292,7 +292,7 @@ describe('MCPErrorHandler', () => {
         .mockResolvedValue('success');
 
       const startTime = Date.now();
-      
+
       await handler.executeWithRetry(
         operation,
         'msg-001',
@@ -302,7 +302,7 @@ describe('MCPErrorHandler', () => {
       );
 
       const elapsed = Date.now() - startTime;
-      
+
       // Expected delays: 1000ms (first retry), 2000ms (second retry)
       // Total should be at least 3000ms
       expect(elapsed).toBeGreaterThanOrEqual(2900);
@@ -322,7 +322,7 @@ describe('MCPErrorHandler', () => {
         .mockResolvedValue('success');
 
       const startTime = Date.now();
-      
+
       await customHandler.executeWithRetry(
         operation,
         'msg-001',
@@ -332,7 +332,7 @@ describe('MCPErrorHandler', () => {
       );
 
       const elapsed = Date.now() - startTime;
-      
+
       // Even with high multiplier, delays should be capped at maxDelay (2000ms)
       // First retry: 1000ms, second retry: min(10000, 2000) = 2000ms
       expect(elapsed).toBeLessThan(5000);
@@ -425,7 +425,7 @@ describe('MCPErrorHandler', () => {
       // Verify entry in database
       const entries = await dlq.getEntries();
       expect(entries.length).toBe(1);
-      
+
       // Verify can replay
       await dlq.replayMessage(entries[0].id);
       const replayed = await dlq.getEntry(entries[0].id);

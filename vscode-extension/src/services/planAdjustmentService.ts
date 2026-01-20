@@ -542,7 +542,7 @@ export class PlanAdjustmentService {
         impact?: string;
         timestamp?: string;
       }
-      
+
       wsClient.subscribe('plan-updates', 'plan.updated', (data: PlanUpdateEvent) => {
         console.log('[PlanAdjustmentService] Received plan update broadcast:', data);
       });

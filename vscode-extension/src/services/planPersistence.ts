@@ -340,7 +340,7 @@ export class PlanPersistenceService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        
+
         // If plan is already deleted or not found, that's OK
         if (response.status === 404) {
           console.log('[PlanPersistence] Plan already deleted from backend');
@@ -580,7 +580,7 @@ export class PlanPersistenceService {
       const backendUrl = config.get<string>('mcpServerUrl') || 'http://localhost:8000';
 
       const url = `${backendUrl}/api/v1/mcp/plans/${planId}/decompose`;
-      
+
       // Prepare request body
       const requestBody = {
         options: {

@@ -42,13 +42,13 @@ let dlqDatabase: Database.Database | null = null;
 export function activate(context: vscode.ExtensionContext) {
   // Initialize Error Logging Output Channel
   const errorOutputChannel = initializeErrorLogging();
-  
+
   // Register disposables separately to follow VS Code best practices
   context.subscriptions.push(errorOutputChannel);
   context.subscriptions.push({
     dispose: () => disposeErrorLogging(),
   });
-  
+
   // Initialize Agent Profile Watcher (Phase 5: Hot-reload for agent profiles)
   const profileWatcher = getAgentProfileWatcher(context.extensionUri);
   profileWatcher.start();
@@ -283,7 +283,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Dead Letter Queue Panel
   let dlqService: DeadLetterQueueService | null = null;
-  
+
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showDeadLetterQueue', async () => {
       try {
@@ -295,7 +295,7 @@ export function activate(context: vscode.ExtensionContext) {
           dlqDatabase = new Database(dbPath);
           dlqService = new DeadLetterQueueService(dlqDatabase);
         }
-        
+
         DeadLetterQueuePanel.createOrShow(context.extensionUri, dlqService);
       } catch (error) {
         vscode.window.showErrorMessage(
@@ -518,7 +518,7 @@ export function activate(context: vscode.ExtensionContext) {
         async (progress) => {
           // Get MCP client instance
           const mcpClient = MCPClient.getInstance();
-          
+
           // Report task status to backend
           progress.report({ increment: 30, message: 'Reporting task status to orchestrator...' });
           const statusResponse = await mcpClient.reportTaskStatus({
@@ -527,7 +527,7 @@ export function activate(context: vscode.ExtensionContext) {
             progressPercent: 50,
             implementationNotes: 'Task execution initiated from VS Code extension',
           });
-          
+
           // Log observation for audit trail
           progress.report({ increment: 20, message: 'Logging execution observation...' });
           await mcpClient.reportObservation({
@@ -536,13 +536,13 @@ export function activate(context: vscode.ExtensionContext) {
             message: `Task execution started from VS Code extension at ${new Date().toISOString()}`,
             severity: 'info',
           });
-          
+
           // Request next task details from orchestrator queue
           progress.report({ increment: 30, message: 'Fetching task from orchestrator queue...' });
           const nextTask = await mcpClient.getNextTask();
-          
+
           progress.report({ increment: 20 });
-          
+
           // Show success message with task details
           if (nextTask) {
             vscode.window.showInformationMessage(
@@ -568,7 +568,7 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showErrorMessage(
         `Failed to execute task: ${error instanceof Error ? error.message : String(error)}`
       );
-      
+
       // Report failure to backend
       try {
         const mcpClient = MCPClient.getInstance();
@@ -827,11 +827,11 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   // Cleanup WebSocket connection on extension deactivation
   disposeWebSocketClient();
-  
+
   // Cleanup streaming output channel on extension deactivation
   const { disposeStreamingOutputChannel } = require('./ui/streamingOutputChannel');
   disposeStreamingOutputChannel();
-  
+
   // Close Dead Letter Queue database connection
   if (dlqDatabase) {
     try {

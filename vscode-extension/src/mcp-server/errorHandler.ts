@@ -107,7 +107,7 @@ export class MCPErrorHandler {
           this.config.timeout,
           `Operation timeout after ${this.config.timeout}ms`
         );
-        
+
         // Success - return result
         if (attempt > 0) {
           console.log(`[MCP] ${handlerName} succeeded on retry ${attempt + 1}`);
@@ -116,7 +116,7 @@ export class MCPErrorHandler {
 
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         console.warn(
           `[MCP] ${handlerName} attempt ${attempt + 1}/${this.config.maxRetries} failed:`,
           lastError.message

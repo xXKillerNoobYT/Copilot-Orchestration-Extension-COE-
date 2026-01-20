@@ -24,7 +24,7 @@ describe('handleReportVerificationResult', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.MCP_BASE_URL = 'http://localhost:8000';
-    
+
     // Default successful validation
     (validateInput as jest.Mock).mockReturnValue({
       valid: true,
