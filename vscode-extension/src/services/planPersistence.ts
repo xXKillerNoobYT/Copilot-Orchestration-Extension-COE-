@@ -8,6 +8,13 @@ import { PlanJSON } from '../planBuilder/planGenerator';
  * Uses VS Code workspace APIs for file operations
  */
 
+/**
+ * PlanJSON with optional backend ID for plans synced with the backend
+ */
+export interface PlanJSONWithBackendId extends PlanJSON {
+  id?: number;
+}
+
 export interface SaveOptions {
   version?: string;
   createBackup?: boolean;
@@ -274,8 +281,9 @@ export class PlanPersistenceService {
       try {
         const plan = await this.loadPlan(filename);
         // Check if plan has an ID (from backend)
-        if (typeof (plan as Record<string, unknown>).id === 'number') {
-          planId = (plan as Record<string, unknown>).id as number;
+        const planWithId = plan as PlanJSONWithBackendId;
+        if (typeof planWithId.id === 'number') {
+          planId = planWithId.id;
         }
       } catch (error) {
         // Plan might not have an ID (local-only plan)
