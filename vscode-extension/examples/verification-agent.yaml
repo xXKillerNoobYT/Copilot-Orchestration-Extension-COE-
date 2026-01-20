@@ -1,0 +1,44 @@
+# Verification Team Agent Profile Example
+# This profile configures the Verification Team for automated and visual verification
+
+name: Verification Team
+type: verification
+version: 1.0.0
+description: Automated and visual verification agent with user Ready gates
+
+config:
+  timeout: 600
+  retryAttempts: 3
+  priority: high
+  maxConcurrentTasks: 3
+  requireVisualVerification: true
+
+permissions:
+  read: true
+  write: false
+  execute: false
+  test: true
+  approve: true
+  apiAccess:
+    - /api/v1/tests
+    - /api/v1/verification
+  filePatterns:
+    - "**/*"
+  excludePatterns:
+    - "node_modules/**"
+    - ".git/**"
+    - "dist/**"
+
+constraints:
+  maxTokensPerRequest: 8000
+  maxContextSize: 100000
+  allowedOperations:
+    - run_tests
+
+metadata:
+  author: Copilot Orchestration Team
+  createdAt: "2026-01-19T12:00:00Z"
+  tags:
+    - verification
+    - testing
+    - quality-assurance

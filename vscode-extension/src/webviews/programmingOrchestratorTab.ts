@@ -622,6 +622,11 @@ export class ProgrammingOrchestratorManager {
             <div class="modal-section">
               <label for="profileYaml">Agent Profile (YAML)</label>
               <textarea id="profileYaml" placeholder="Enter YAML profile configuration..."></textarea>
+              <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button class="btn-modal secondary" id="uploadProfile">Upload YAML</button>
+                <button class="btn-modal secondary" id="downloadProfile">Download YAML</button>
+                <button class="btn-modal secondary" id="resetProfile">Reset to Defaults</button>
+              </div>
             </div>
 
             <div class="modal-section">
@@ -660,12 +665,215 @@ export class ProgrammingOrchestratorManager {
               <input type="number" id="timeout" min="10" max="3600" value="300" style="width: 100%; padding: 8px; border: 1px solid var(--vscode-input-border); background: var(--vscode-input-background); color: var(--vscode-input-foreground);">
             </div>
 
+            <div class="modal-section">
+              <label for="retryAttempts">Retry Attempts</label>
+              <input type="number" id="retryAttempts" min="0" max="10" value="3" style="width: 100%; padding: 8px; border: 1px solid var(--vscode-input-border); background: var(--vscode-input-background); color: var(--vscode-input-foreground);">
+              <p class="help-text">Default: 3 (from AgentProfileLoader.DEFAULT_CONFIG_VALUES)</p>
+            </div>
+
             <div class="modal-footer">
               <button class="btn-modal secondary" id="modalCancel">Cancel</button>
               <button class="btn-modal primary" id="modalSave">Save Configuration</button>
             </div>
           </div>
         </div>
+
+        <script>
+          (function() {
+            const vscode = acquireVsCodeApi();
+            let currentTeam = null;
+
+            // Modal controls
+            const modal = document.getElementById('teamConfigModal');
+            const modalClose = document.getElementById('modalClose');
+            const modalCancel = document.getElementById('modalCancel');
+            const modalSave = document.getElementById('modalSave');
+            const teamModalTitle = document.getElementById('teamModalTitle');
+
+            // Form elements
+            const profileYaml = document.getElementById('profileYaml');
+            const permRead = document.getElementById('perm-read');
+            const permWrite = document.getElementById('perm-write');
+            const permExecute = document.getElementById('perm-execute');
+            const permTest = document.getElementById('perm-test');
+            const permApprove = document.getElementById('perm-approve');
+            const maxDepth = document.getElementById('maxDepth');
+            const timeout = document.getElementById('timeout');
+            const retryAttempts = document.getElementById('retryAttempts');
+
+            // Profile actions
+            const uploadProfile = document.getElementById('uploadProfile');
+            const downloadProfile = document.getElementById('downloadProfile');
+            const resetProfile = document.getElementById('resetProfile');
+
+            // Configure team button click
+            document.addEventListener('click', function(e) {
+              if (e.target.matches('[data-action="configure-team"]')) {
+                const team = e.target.getAttribute('data-team');
+                openConfigModal(team);
+              }
+            });
+
+            function openConfigModal(team) {
+              currentTeam = team;
+              const teamName = team.charAt(0).toUpperCase() + team.slice(1);
+              teamModalTitle.textContent = teamName;
+              modal.classList.add('active');
+              
+              // Load current configuration
+              vscode.postMessage({
+                command: 'loadTeamConfiguration',
+                team: team
+              });
+            }
+
+            function closeModal() {
+              modal.classList.remove('active');
+              currentTeam = null;
+            }
+
+            modalClose.addEventListener('click', closeModal);
+            modalCancel.addEventListener('click', closeModal);
+
+            modalSave.addEventListener('click', function() {
+              if (!currentTeam) return;
+
+              const config = {
+                profileYaml: profileYaml.value,
+                permissions: {
+                  read: permRead.checked,
+                  write: permWrite.checked,
+                  execute: permExecute.checked,
+                  test: permTest.checked,
+                  approve: permApprove.checked
+                },
+                maxDepth: parseInt(maxDepth.value),
+                timeout: parseInt(timeout.value),
+                retryAttempts: parseInt(retryAttempts.value)
+              };
+
+              vscode.postMessage({
+                command: 'saveTeamConfiguration',
+                team: currentTeam,
+                config: config
+              });
+            });
+
+            uploadProfile.addEventListener('click', function() {
+              if (!currentTeam) return;
+              
+              vscode.postMessage({
+                command: 'uploadTeamProfile',
+                team: currentTeam
+              });
+            });
+
+            downloadProfile.addEventListener('click', function() {
+              if (!currentTeam) return;
+              
+              vscode.postMessage({
+                command: 'downloadTeamProfile',
+                team: currentTeam
+              });
+            });
+
+            resetProfile.addEventListener('click', function() {
+              if (!currentTeam) return;
+              
+              vscode.postMessage({
+                command: 'resetTeamProfile',
+                team: currentTeam
+              });
+            });
+
+            // Handle coordination settings
+            document.querySelectorAll('[data-setting]').forEach(function(checkbox) {
+              checkbox.addEventListener('change', function() {
+                const setting = this.getAttribute('data-setting');
+                const settings = {};
+                settings[setting] = this.checked;
+                
+                vscode.postMessage({
+                  command: 'orchestrator:updateCoordination',
+                  settings: settings
+                });
+              });
+            });
+
+            // Handle plan selection
+            const planSelect = document.getElementById('planSelect');
+            if (planSelect) {
+              planSelect.addEventListener('change', function() {
+                vscode.postMessage({
+                  command: 'orchestrator:selectPlan',
+                  plan: this.value
+                });
+              });
+            }
+
+            // Handle action buttons
+            document.querySelectorAll('[data-action]').forEach(function(button) {
+              button.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                
+                if (action === 'open-verification') {
+                  vscode.postMessage({ command: 'orchestrator:openVerification' });
+                } else if (action === 'refresh-teams') {
+                  vscode.postMessage({ command: 'orchestrator:refreshTeams' });
+                } else if (action === 'rerun-analysis') {
+                  vscode.postMessage({ command: 'orchestrator:rerunAnalysis' });
+                }
+              });
+            });
+
+            // Handle messages from extension
+            window.addEventListener('message', function(event) {
+              const message = event.data;
+              
+              switch (message.command) {
+                case 'teamConfigurationLoaded':
+                  if (message.team === currentTeam) {
+                    profileYaml.value = message.config.profileYaml || '';
+                    permRead.checked = message.config.permissions.read;
+                    permWrite.checked = message.config.permissions.write;
+                    permExecute.checked = message.config.permissions.execute;
+                    permTest.checked = message.config.permissions.test;
+                    permApprove.checked = message.config.permissions.approve;
+                    maxDepth.value = message.config.maxDepth;
+                    timeout.value = message.config.timeout;
+                    // Use default value of 3 (matches DEFAULT_CONFIG_VALUES.RETRY_ATTEMPTS in agentProfileLoader.ts)
+                    retryAttempts.value = message.config.retryAttempts || 3;
+                  }
+                  break;
+                  
+                case 'teamConfigurationSaved':
+                  if (message.success) {
+                    closeModal();
+                  }
+                  break;
+                  
+                case 'teamProfileUploaded':
+                  if (message.team === currentTeam) {
+                    profileYaml.value = message.profileYaml;
+                  }
+                  break;
+                  
+                case 'teamProfileReset':
+                  if (message.team === currentTeam) {
+                    profileYaml.value = message.profileYaml;
+                  }
+                  break;
+              }
+            });
+
+            // Close modal on background click
+            modal.addEventListener('click', function(e) {
+              if (e.target === modal) {
+                closeModal();
+              }
+            });
+          })();
+        </script>
       </div>
     `;
   }

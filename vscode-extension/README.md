@@ -102,9 +102,15 @@ Run via Command Palette → "Run Health Check" to force a fresh check and view d
    npm install
    ```
 
-4. Compile the extension:
+4. **Build the Plan Builder Vue app** (REQUIRED):
    ```bash
-   npm run compile
+   npm run build:vue
+   ```
+   
+   Verify the build:
+   ```bash
+   npm run verify:planBuilder
+   # Should output: ✓ Plan Builder assets exist
    ```
 
 5. Run tests:
@@ -575,7 +581,8 @@ If the Interactive Plan Builder shows a blank screen or doesn't load correctly:
    - Look for `[Plan Builder]` log messages
 
 **For detailed troubleshooting steps, see:**
-- **[Plan Builder Troubleshooting Guide](docs/PLAN_BUILDER_TROUBLESHOOTING.md)** - Complete diagnostic guide
+- **[Plan Builder Troubleshooting Guide](docs/PLAN_BUILDER_TROUBLESHOOTING.md)** - Complete diagnostic guide (20+ scenarios)
+- **[Plan Builder Test Plan](docs/PLAN_BUILDER_TEST_PLAN.md)** - Comprehensive test cases and acceptance criteria
 
 ### Common Issues
 

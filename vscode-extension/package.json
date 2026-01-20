@@ -628,6 +628,7 @@
     "test:all": "npm run test:unit && npm run test:wizard && npm run test",
     "demo": "npm run compile && node dist/taskGraphDemo.js",
     "report:tests": "node scripts/report-tests.js",
+    "verify:planBuilder": "node -e \"const fs=require('fs');const p='dist/planBuilder/assets';const exists=fs.existsSync(p);const files=exists?fs.readdirSync(p):[];const hasCSS=files.some(f=>f.match(/^main-[a-zA-Z0-9]+\\.css$/));const hasJS=files.some(f=>f.match(/^main-[a-zA-Z0-9]+\\.js$/));if(hasCSS&&hasJS){console.log('✓ Plan Builder assets exist');process.exit(0)}else{console.error('✗ Plan Builder not built - run: npm run build:vue');process.exit(1)}\"",
     "install-hooks": "git config core.hooksPath .githooks && echo 'Git hooks installed from .githooks/'",
     "prepare": "npm run install-hooks || echo 'Warning: Could not install git hooks'"
   },
