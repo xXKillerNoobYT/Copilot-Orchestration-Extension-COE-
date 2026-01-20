@@ -97,6 +97,42 @@ export class MarkdownString {
   }
 }
 
+// VS Code TreeItem
+// Reference: https://code.visualstudio.com/api/references/vscode-api#TreeItem
+export class TreeItem {
+  label?: string;
+  iconPath?: any;
+  command?: any;
+  tooltip?: string;
+  contextValue?: string;
+  
+  constructor(label: string, collapsibleState?: number) {
+    this.label = label;
+  }
+}
+
+// VS Code ThemeIcon
+// Reference: https://code.visualstudio.com/api/references/vscode-api#ThemeIcon
+export class ThemeIcon {
+  id: string;
+  
+  constructor(id: string) {
+    this.id = id;
+  }
+}
+
+export enum TreeItemCollapsibleState {
+  None = 0,
+  Collapsed = 1,
+  Expanded = 2,
+}
+
+export enum ExtensionMode {
+  Production = 1,
+  Development = 2,
+  Test = 3,
+}
+
 export const window = {
   showInformationMessage: createMock(),
   showErrorMessage: createMock(),
@@ -159,11 +195,26 @@ export const Position = mockFn((line: number, character: number) => ({
   character,
 }));
 
-export const EventEmitter = mockFn(() => ({
-  fire: mockFn(),
-  event: mockFn(),
-  dispose: mockFn(),
-}));
+export const EventEmitter = jest.fn(function() {
+  const listeners: Function[] = [];
+  return {
+    fire: jest.fn((data?: any) => {
+      listeners.forEach(listener => listener(data));
+    }),
+    event: jest.fn((listener: Function) => {
+      listeners.push(listener);
+      return {
+        dispose: jest.fn(() => {
+          const index = listeners.indexOf(listener);
+          if (index > -1) {
+            listeners.splice(index, 1);
+          }
+        })
+      };
+    }),
+    dispose: jest.fn(),
+  };
+});
 
 export const CancellationTokenSource = mockFn(() => ({
   token: {

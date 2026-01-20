@@ -45,11 +45,11 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem>, vsc
 
       // Set up file watcher for automatic updates
       this.fileWatcherDispose = this.tasksSource.watch((state) => {
-        // Reset warning flag when file changes
-        this.hasShownValidationWarning = false;
-        
-        // Show validation warnings if any
-        if (!state.isValid && state.issues.length > 0) {
+        // Reset warning flag when the file becomes valid
+        if (state.isValid) {
+          this.hasShownValidationWarning = false;
+        } else if (state.issues.length > 0) {
+          // Show validation warnings if any
           this.showValidationWarning(state.issues[0]);
         }
         
@@ -191,6 +191,14 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskItem>, vsc
       case 'review':
         icon = '$(eye)';
         tooltip = `${task.description}\n\nIn review`;
+        break;
+      case 'failed':
+        icon = '$(error)';
+        tooltip = `${task.description}\n\nFailed`;
+        break;
+      case 'cancelled':
+        icon = '$(circle-slash)';
+        tooltip = `${task.description}\n\nCancelled`;
         break;
     }
 

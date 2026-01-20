@@ -3,6 +3,33 @@
 ## Overview
 The Tasks View Provider has been upgraded from displaying hardcoded sample data to showing real tasks from the workspace `_ZENTASKS/tasks.json` file.
 
+## Architecture Decision: File-Based vs. Database Integration
+
+**Implementation Approach**: This VS Code extension uses a **file-based integration** with `_ZENTASKS/tasks.json` and file watching for updates.
+
+**Original Requirements vs. Implementation**: The broader PRD describes a multi-agent task orchestration system with SQLite database and WebSocket real-time updates. However, for the VS Code extension specifically, a file-based approach was chosen because:
+
+1. **VS Code Extension Best Practices**: Extensions typically work with workspace files rather than maintaining separate databases
+2. **Simplicity**: File-based approach avoids database setup, connection management, and migration complexity
+3. **Developer Experience**: JSON files are easy to inspect, edit, and version control
+4. **Workspace Integration**: Aligns with VS Code's file-centric workflow
+5. **Performance**: File watching with 1-second polling provides adequate real-time updates for typical use cases
+
+**Future Integration**: The extension can be enhanced to:
+- Sync with a backend API/database when available
+- Support both file-based (local) and API-based (remote) data sources
+- Add WebSocket support for sub-second real-time updates when connected to backend
+
+**Current Limitations** (vs. full PRD requirements):
+- No SQLite database integration (uses JSON file)
+- No WebSocket real-time updates (uses file polling at 1-second intervals)
+- No dependency count display in task details
+- No subtask count display in task details  
+- No estimated vs actual hours display
+- No context menu actions (Start Task, Complete Task, Report Issue)
+
+These features are either provided by the backend system or planned as future enhancements to this extension.
+
 ## Implementation Details
 
 ### Integration Architecture
@@ -30,6 +57,7 @@ Tasks are categorized based on their status field:
 | `in-progress` | In Progress |
 | `blocked` | Blocked Tasks |
 | `done`, `review` | Completed |
+| `failed`, `cancelled` | Not displayed in view (filtered out) |
 
 #### 3. Visual Indicators
 - **Icons**: Status-specific icons (play, loading, error, check, eye)

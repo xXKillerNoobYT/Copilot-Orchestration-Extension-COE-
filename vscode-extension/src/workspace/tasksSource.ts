@@ -80,8 +80,12 @@ export class TasksSource implements ITasksSource {
    * Resolve the path to tasks.json by checking workspace roots
    */
   private resolveTaskFilePath(): string {
-    // Try to resolve from first available workspace root
+    // If workspace root is an absolute path (contains path separator), use it directly
     for (const root of this.workspaceRoots) {
+      if (path.isAbsolute(root)) {
+        return path.join(root, 'tasks.json');
+      }
+      // Otherwise, resolve relative to cwd
       const candidatePath = path.join(process.cwd(), root, 'tasks.json');
       return candidatePath;
     }
