@@ -294,14 +294,17 @@ export class PlanAdjustmentService {
         const matchingFeature = this.findMatchingFeature(plan, task);
 
         if (matchingFeature) {
+          // Cast to ParsedTaskWithMetadata to access optional metadata fields
+          const taskWithMetadata = task as ParsedTaskWithMetadata;
+          
           const executionDataItem: TaskExecutionData = {
             taskId: task.id,
             featureId: matchingFeature.id,
             status: this.mapTaskStatusToExecution(task.status || 'pending'),
             estimatedHours: this.parseEffortEstimate(task.estimate) || matchingFeature.effort_estimate || 0,
-            actualHours: this.calculateActualHours(task),
-            startedAt: task.startedAt ? new Date(task.startedAt) : undefined,
-            completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+            actualHours: this.calculateActualHours(taskWithMetadata),
+            startedAt: taskWithMetadata.startedAt ? new Date(taskWithMetadata.startedAt) : undefined,
+            completedAt: taskWithMetadata.completedAt ? new Date(taskWithMetadata.completedAt) : undefined,
             blockedBy: task.dependencies || [],
           };
 
