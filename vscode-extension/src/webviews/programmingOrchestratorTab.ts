@@ -668,6 +668,7 @@ export class ProgrammingOrchestratorManager {
             <div class="modal-section">
               <label for="retryAttempts">Retry Attempts</label>
               <input type="number" id="retryAttempts" min="0" max="10" value="3" style="width: 100%; padding: 8px; border: 1px solid var(--vscode-input-border); background: var(--vscode-input-background); color: var(--vscode-input-foreground);">
+              <p class="help-text">Default: 3 (from AgentProfileLoader.DEFAULT_CONFIG_VALUES)</p>
             </div>
 
             <div class="modal-footer">
@@ -840,6 +841,7 @@ export class ProgrammingOrchestratorManager {
                     permApprove.checked = message.config.permissions.approve;
                     maxDepth.value = message.config.maxDepth;
                     timeout.value = message.config.timeout;
+                    // Use default value of 3 (matches DEFAULT_CONFIG_VALUES.RETRY_ATTEMPTS in agentProfileLoader.ts)
                     retryAttempts.value = message.config.retryAttempts || 3;
                   }
                   break;

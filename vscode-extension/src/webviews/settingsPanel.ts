@@ -1473,10 +1473,30 @@ description: "Agent description"
   }
 
   /**
+   * Validate team type parameter
+   */
+  private isValidTeamType(team: string): team is AgentTeamType {
+    const validTeams: AgentTeamType[] = ['planning', 'answer', 'decomposition', 'verification'];
+    return validTeams.includes(team as AgentTeamType);
+  }
+
+  /**
    * Save Team Configuration
    */
   private async _saveTeamConfiguration(team: string, config: any): Promise<void> {
     try {
+      // Validate team type
+      if (!this.isValidTeamType(team)) {
+        const errorMessage = `Invalid team type: ${team}. Expected one of: planning, answer, decomposition, verification`;
+        vscode.window.showErrorMessage(errorMessage);
+        this._panel.webview.postMessage({
+          command: 'teamConfigurationError',
+          team: team,
+          errors: [{ field: 'team', message: errorMessage }],
+        });
+        return;
+      }
+
       const teamType = team as AgentTeamType;
       
       // Load or create profile
@@ -1559,6 +1579,18 @@ description: "Agent description"
    */
   private async _loadTeamConfiguration(team: string): Promise<void> {
     try {
+      // Validate team type
+      if (!this.isValidTeamType(team)) {
+        const errorMessage = `Invalid team type: ${team}. Expected one of: planning, answer, decomposition, verification`;
+        vscode.window.showErrorMessage(errorMessage);
+        this._panel.webview.postMessage({
+          command: 'teamConfigurationError',
+          team: team,
+          error: errorMessage,
+        });
+        return;
+      }
+
       const teamType = team as AgentTeamType;
       
       // Load profile from workspace or get default
@@ -1630,6 +1662,12 @@ description: "Agent description"
    */
   private async _downloadTeamProfile(team: string): Promise<void> {
     try {
+      // Validate team type
+      if (!this.isValidTeamType(team)) {
+        vscode.window.showErrorMessage(`Invalid team type: ${team}`);
+        return;
+      }
+
       const teamType = team as AgentTeamType;
       const profile = await this.agentProfileLoader.loadFromWorkspace(teamType);
       
@@ -1652,6 +1690,12 @@ description: "Agent description"
    */
   private async _resetTeamProfile(team: string): Promise<void> {
     try {
+      // Validate team type
+      if (!this.isValidTeamType(team)) {
+        vscode.window.showErrorMessage(`Invalid team type: ${team}`);
+        return;
+      }
+
       const teamType = team as AgentTeamType;
       const defaultProfile = this.agentProfileLoader.getDefaultProfile(teamType);
       

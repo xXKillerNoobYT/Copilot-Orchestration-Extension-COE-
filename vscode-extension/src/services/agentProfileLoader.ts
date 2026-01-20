@@ -12,6 +12,16 @@ import * as fs from 'fs';
 import agentProfileSchema from '../schemas/agent-profile.schema.json';
 
 /**
+ * Default configuration values
+ */
+export const DEFAULT_CONFIG_VALUES = {
+  RETRY_ATTEMPTS: 3,
+  TIMEOUT: 300,
+  MAX_CONCURRENT_TASKS: 5,
+  PRIORITY: 'medium' as const,
+} as const;
+
+/**
  * Agent team type enumeration
  */
 export type AgentTeamType = 'planning' | 'answer' | 'decomposition' | 'verification';
@@ -348,8 +358,10 @@ export class AgentProfileLoader {
       try {
         const result = await this.loadFromFile(profilePath);
         return result.profile;
-      } catch {
-        // File doesn't exist, return default profile
+      } catch (error) {
+        // Log the error for debugging, then fall back to default profile
+        console.error(`Failed to load agent profile from workspace file at "${profilePath}":`, error);
+        // File doesn't exist or is invalid, return default profile
       }
     }
 
@@ -379,10 +391,10 @@ export class AgentProfileLoader {
       version: '1.0.0',
       description: this.getDefaultDescription(teamType),
       config: {
-        timeout: 300,
-        retryAttempts: 3,
-        priority: 'medium',
-        maxConcurrentTasks: 5,
+        timeout: DEFAULT_CONFIG_VALUES.TIMEOUT,
+        retryAttempts: DEFAULT_CONFIG_VALUES.RETRY_ATTEMPTS,
+        priority: DEFAULT_CONFIG_VALUES.PRIORITY,
+        maxConcurrentTasks: DEFAULT_CONFIG_VALUES.MAX_CONCURRENT_TASKS,
       },
       permissions: {
         read: true,
@@ -474,7 +486,8 @@ export class AgentProfileLoader {
       }
 
       return profiles;
-    } catch {
+    } catch (error) {
+      console.error('Failed to list workspace agent profiles:', error);
       return [];
     }
   }
