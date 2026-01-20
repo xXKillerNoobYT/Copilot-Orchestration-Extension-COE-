@@ -34,7 +34,14 @@ module.exports = [
         {
           test: /\.ts$/,
           exclude: [/node_modules/, /__tests__/, /\.test\.ts$/],
-          use: [{ loader: 'ts-loader' }],
+          use: [{ 
+            loader: 'ts-loader',
+            options: {
+              // transpileOnly: true disables TypeScript type-checking in this webpack build
+              // Run `tsc --noEmit` (covering all TS files, including tests) separately in CI to catch type errors
+              transpileOnly: true
+            }
+          }],
         },
       ],
     },
@@ -92,7 +99,12 @@ module.exports = [
         {
           test: /\.ts$/,
           exclude: [/node_modules/, /__tests__/],
-          use: [{ loader: 'ts-loader' }],
+          use: [{ 
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true
+            }
+          }],
         },
       ],
     },
