@@ -422,6 +422,12 @@
         "icon": "$(report)"
       },
       {
+        "command": "copilot-orchestrator.showDeadLetterQueue",
+        "title": "Copilot Orchestrator: Show Dead Letter Queue",
+        "category": "Copilot Orchestrator",
+        "icon": "$(error)"
+      },
+      {
         "command": "copilot-orchestrator.openPlanBuilder",
         "title": "Copilot Orchestrator: Open Plan Builder",
         "category": "Plan Builder",
@@ -634,6 +640,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
+    "better-sqlite3": "^12.6.2",
     "chart.js": "^4.5.1",
     "graphlib": "^2.1.8",
     "laravel-echo": "^2.3.0",
@@ -644,6 +651,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/graphlib": "^2.1.12",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.9",

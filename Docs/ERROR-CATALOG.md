@@ -625,11 +625,282 @@ Does it degrade with more memory entries?
 
 ---
 
+## Dead Letter Queue (DLQ) Error Handling Pattern
+
+**Version:** 1.0.1  
+**Added:** January 19, 2026  
+**Implementation:** `vscode-extension/src/mcp-server/errorHandler.ts`
+
+### Overview
+
+The Dead Letter Queue (DLQ) provides a robust error handling pattern for MCP message failures. After retry attempts are exhausted, failed messages are persisted to SQLite for debugging, replay, and audit purposes.
+
+### Error Handling Flow
+
+```
+┌─────────────────┐
+│  MCP Message    │
+│  Sent           │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Attempt 1      │──────┐
+│  (30s timeout)  │      │ Success → Return Result
+└────────┬────────┘      │
+         │ Fail          ▼
+         ▼          ┌─────────────┐
+┌─────────────────┐│             │
+│  Wait 1000ms    ││             │
+│  (backoff)      ││             │
+└────────┬────────┘│             │
+         │         │             │
+         ▼         │             │
+┌─────────────────┐│             │
+│  Attempt 2      │──────────────┘
+│  (30s timeout)  │
+└────────┬────────┘
+         │ Fail
+         ▼
+┌─────────────────┐
+│  Wait 2000ms    │
+│  (backoff 2x)   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Attempt 3      │──────┐
+│  (30s timeout)  │      │ Success → Return Result
+└────────┬────────┘      │
+         │ Fail          ▼
+         ▼          ┌─────────────┐
+┌─────────────────┐│             │
+│  Add to DLQ     ││             │
+│  Persist SQLite ││             │
+│  Emit WebSocket ││             │
+└─────────────────┘└─────────────┘
+```
+
+### Configuration
+
+```typescript
+// Default retry configuration
+const config = {
+  maxRetries: 3,           // Total attempts (including first try)
+  initialDelay: 1000,      // First retry delay (ms)
+  maxDelay: 10000,         // Maximum retry delay (ms)
+  backoffMultiplier: 2,    // Exponential backoff multiplier
+  timeout: 30000           // Per-attempt timeout (ms)
+};
+```
+
+### Error Types and Handling
+
+#### 1. Network Timeout Errors
+**Error Signature:** `Operation timeout after 30000ms`
+
+**Cause:** MCP server not responding within 30 seconds
+
+**DLQ Behavior:**
+- Added to DLQ after 3 attempts (total 90 seconds waiting)
+- Message type: Based on operation (e.g., `task_request`)
+- Handler name: Recorded (e.g., `getNextTask`)
+
+**Recovery:**
+1. Check if MCP server is running
+2. View failed message in DLQ panel
+3. Fix server issues
+4. Replay message from DLQ
+
+#### 2. Connection Refused Errors
+**Error Signature:** `connect ECONNREFUSED localhost:8000`
+
+**Cause:** MCP server not running or wrong port
+
+**DLQ Behavior:**
+- Immediate failure (no retry on connection refused)
+- Added to DLQ with full stack trace
+- Error message includes connection details
+
+**Recovery:**
+1. Start MCP server
+2. Verify `copilot-orchestrator.mcp.baseUrl` configuration
+3. Replay failed messages from DLQ
+
+#### 3. HTTP Error Responses
+**Error Signature:** `HTTP 404`, `HTTP 500`, `HTTP 401`
+
+**Cause:** Server endpoint missing, internal error, or auth failure
+
+**DLQ Behavior:**
+- Retries for 500-level errors (transient)
+- No retry for 400-level errors (permanent)
+- Full request/response logged in DLQ
+
+**Recovery:**
+- **404:** Check MCP API version compatibility
+- **500:** Check server logs, wait for fix, replay
+- **401:** Update auth token, replay
+
+#### 4. Payload Validation Errors
+**Error Signature:** `Invalid request payload`
+
+**Cause:** Message doesn't match expected schema
+
+**DLQ Behavior:**
+- No retry (validation error is permanent)
+- Original payload stored in DLQ for debugging
+- Validation error details captured
+
+**Recovery:**
+1. Review original payload in DLQ
+2. Identify schema mismatch
+3. Fix code generating payload
+4. Delete DLQ entry (cannot replay)
+
+### DLQ Maintenance Procedures
+
+#### Daily: Monitor DLQ Size
+```typescript
+// Get current counts
+const counts = await dlqService.getCountByStatus();
+console.log(`Failed: ${counts.failed}, Archived: ${counts.archived}`);
+
+// Alert if high
+if (counts.failed > 100) {
+  console.error('⚠️ DLQ has 100+ failed messages!');
+}
+```
+
+#### Weekly: Archive Old Entries
+```typescript
+// Archive entries older than 7 days
+const archived = await dlqService.archiveOldEntries(7);
+console.log(`Archived ${archived} old entries`);
+```
+
+#### Monthly: Cleanup Archived
+```typescript
+// Delete archived entries older than 30 days
+const deleted = await dlqService.deleteArchivedEntries(30);
+console.log(`Deleted ${deleted} archived entries`);
+```
+
+#### Ad-hoc: Replay After Fix
+```typescript
+// Get failed entries for specific handler
+const entries = await dlqService.getEntries({
+  status: 'failed',
+  handlerName: 'getNextTask'
+});
+
+// Replay each
+for (const entry of entries) {
+  await dlqService.replayMessage(entry.id);
+  // Re-send original message to MCP
+  await mcpClient.processMessage(entry.originalPayload);
+}
+```
+
+### Debugging with DLQ
+
+#### View Failed Messages
+1. Open Command Palette (`Cmd/Ctrl + Shift + P`)
+2. Search: `Copilot Orchestrator: Show Dead Letter Queue`
+3. Filter by handler, type, or date
+4. Click entry to see full error details
+
+#### Export for Analysis
+1. Open DLQ panel
+2. Apply filters (e.g., last 7 days)
+3. Click "Export JSON" or "Export CSV"
+4. Analyze patterns in external tool
+
+#### Common Failure Patterns
+- **Same handler failing repeatedly:** Likely server-side bug
+- **Multiple handlers timing out:** Network or server overload
+- **Validation errors for one message type:** Schema mismatch
+
+### Integration with Monitoring
+
+#### WebSocket Events
+Subscribe to `deadLetterAdded` events for real-time alerting:
+
+```typescript
+wsClient.on('deadLetterAdded', (event) => {
+  console.error(`❌ DLQ: ${event.handlerName} failed`);
+  console.error(`   Message: ${event.messageId}`);
+  console.error(`   Error: ${event.error}`);
+  
+  // Send to monitoring system
+  metrics.increment('dlq.message_added', {
+    handler: event.handlerName,
+    message_type: event.messageType
+  });
+});
+```
+
+#### Metrics to Track
+- **DLQ size** (total entries)
+- **DLQ growth rate** (entries per hour)
+- **Most common failure handlers**
+- **Replay success rate**
+- **Time to resolution** (first_failed_at to replayed)
+
+### Operational Runbook
+
+#### 🔴 High DLQ Growth (>50 entries/hour)
+
+**Symptoms:** DLQ growing rapidly, multiple handlers failing
+
+**Diagnosis:**
+1. Check MCP server status
+2. Review server logs for errors
+3. Check network connectivity
+4. Verify database connection
+
+**Resolution:**
+1. Fix underlying issue (server restart, network fix)
+2. Wait 5 minutes for retries to settle
+3. Review DLQ for remaining failures
+4. Replay valid messages
+5. Delete invalid messages
+
+#### 🟡 Single Handler Failing Repeatedly
+
+**Symptoms:** Same handler (e.g., `getTaskStatus`) failing 10+ times
+
+**Diagnosis:**
+1. Open DLQ panel, filter by handler
+2. Export failures to JSON
+3. Review error messages for pattern
+4. Check if specific to certain payloads
+
+**Resolution:**
+1. If payload-specific: Fix payload generation
+2. If server-side bug: File issue, wait for fix
+3. Once fixed: Replay all failed messages
+4. Monitor for recurrence
+
+#### 🟢 Normal Operation
+
+**Symptoms:** <10 DLQ entries, occasional timeouts
+
+**Maintenance:**
+- Archive weekly (automated)
+- Delete monthly (automated)
+- Review monthly for trends
+- Export quarterly for audit
+
+---
+
 ## Related Documentation
 
 - **Audit Steps:** `Docs/AUDIT-CONNECTIVITY-CHECKLIST.md`
 - **Configuration:** `Docs/CONFIGURATION-REFERENCE.md`
-- **MCP API:** `Docs/MCP-API-CONTRACTS.md`
+- **MCP API:** `Docs/MCP-API-CONTRACTS.md` (DLQ Schema section)
+- **DLQ Service:** `vscode-extension/src/services/deadLetterQueue.ts`
+- **Error Handler:** `vscode-extension/src/mcp-server/errorHandler.ts`
 - **Create Issue:** Use `.github/ISSUE_TEMPLATE/audit-connectivity.md`
 
 ---

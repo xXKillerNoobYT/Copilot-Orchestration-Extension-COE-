@@ -17,6 +17,9 @@ import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
 import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { AuditDashboardPanel } from './panels/auditDashboardPanel';
+import { DeadLetterQueuePanel } from './panels/DeadLetterQueuePanel';
+import { DeadLetterQueueService } from './services/deadLetterQueue';
+import Database from 'better-sqlite3';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 import { getLLMIPMonitor } from './services/llmIPMonitor';
@@ -32,6 +35,9 @@ import { AgentsViewProvider } from './views/agentsViewProvider';
 import { PlansViewProvider } from './views/plansViewProvider';
 import { initializeErrorLogging, disposeErrorLogging } from './utils/errorMessages';
 import { HealthCheckService } from './services/healthCheck';
+
+// Module-level variable to track database for cleanup
+let dlqDatabase: Database.Database | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize Error Logging Output Channel
@@ -272,6 +278,30 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
       AuditDashboardPanel.createOrShow(context.extensionUri);
+    })
+  );
+
+  // Dead Letter Queue Panel
+  let dlqService: DeadLetterQueueService | null = null;
+  
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showDeadLetterQueue', async () => {
+      try {
+        // Initialize database if not already done
+        if (!dlqService) {
+          const dbPath = path.join(context.globalStorageUri.fsPath, 'copilot-orchestrator.db');
+          // Ensure directory exists
+          await fs.mkdir(context.globalStorageUri.fsPath, { recursive: true });
+          dlqDatabase = new Database(dbPath);
+          dlqService = new DeadLetterQueueService(dlqDatabase);
+        }
+        
+        DeadLetterQueuePanel.createOrShow(context.extensionUri, dlqService);
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to open Dead Letter Queue: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
     })
   );
 
@@ -801,6 +831,16 @@ export function deactivate() {
   // Cleanup streaming output channel on extension deactivation
   const { disposeStreamingOutputChannel } = require('./ui/streamingOutputChannel');
   disposeStreamingOutputChannel();
+  
+  // Close Dead Letter Queue database connection
+  if (dlqDatabase) {
+    try {
+      dlqDatabase.close();
+      dlqDatabase = null;
+    } catch (error) {
+      console.error('Failed to close DLQ database:', error);
+    }
+  }
 }
 
 
