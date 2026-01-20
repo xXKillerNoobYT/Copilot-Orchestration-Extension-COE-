@@ -1,0 +1,51 @@
+# Planning Team Agent Profile Example
+# This profile configures the Planning Team for project planning and task breakdown
+
+name: Planning Team
+type: planning
+version: 1.0.0
+description: Master planner that generates project plans, roadmaps, and task breakdowns
+
+config:
+  timeout: 300
+  retryAttempts: 3
+  priority: high
+  maxConcurrentTasks: 5
+  maxDepth: 3
+  autoDecompose: true
+
+permissions:
+  read: true
+  write: true
+  execute: false
+  test: false
+  approve: false
+  apiAccess:
+    - /api/v1/plans
+    - /api/v1/tasks
+  filePatterns:
+    - "**/*.md"
+    - "**/*.json"
+    - "Docs/Plans/**"
+  excludePatterns:
+    - "node_modules/**"
+    - ".git/**"
+    - "dist/**"
+    - "build/**"
+
+constraints:
+  maxTokensPerRequest: 8000
+  maxContextSize: 100000
+  allowedOperations:
+    - create_task
+    - update_task
+    - create_plan
+    - update_plan
+
+metadata:
+  author: Copilot Orchestration Team
+  createdAt: "2026-01-19T12:00:00Z"
+  tags:
+    - planning
+    - task-management
+    - orchestration

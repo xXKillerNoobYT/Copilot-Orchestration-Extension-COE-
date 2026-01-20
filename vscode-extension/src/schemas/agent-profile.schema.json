@@ -1,0 +1,197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Profile Configuration",
+  "description": "YAML configuration schema for agent team profiles (Planning, Answer, Decomposition, Verification)",
+  "type": "object",
+  "required": ["name", "type", "version"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the agent team (e.g., 'Planning Team', 'Answer Team')",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "type": {
+      "type": "string",
+      "enum": ["planning", "answer", "decomposition", "verification"],
+      "description": "Type of agent team"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of the profile configuration (semver format)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the agent team's purpose"
+    },
+    "config": {
+      "type": "object",
+      "description": "Configuration settings for the agent team",
+      "properties": {
+        "timeout": {
+          "type": "integer",
+          "description": "Execution timeout in seconds",
+          "minimum": 10,
+          "maximum": 3600,
+          "default": 300
+        },
+        "retryAttempts": {
+          "type": "integer",
+          "description": "Number of retry attempts for failed operations",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low"],
+          "description": "Default priority level for tasks assigned to this team",
+          "default": "medium"
+        },
+        "maxConcurrentTasks": {
+          "type": "integer",
+          "description": "Maximum number of concurrent tasks this team can handle",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 5
+        },
+        "maxDepth": {
+          "type": "integer",
+          "description": "Maximum task decomposition depth (for decomposition team)",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3
+        },
+        "autoDecompose": {
+          "type": "boolean",
+          "description": "Automatically decompose tasks over threshold (decomposition team)",
+          "default": true
+        },
+        "requireVisualVerification": {
+          "type": "boolean",
+          "description": "Require visual verification for UI tasks (verification team)",
+          "default": true
+        },
+        "confidenceThreshold": {
+          "type": "number",
+          "description": "Minimum confidence threshold for autonomous decisions (answer team)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.7
+        }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "description": "Permission settings for the agent team",
+      "properties": {
+        "read": {
+          "type": "boolean",
+          "description": "Permission to read files and context",
+          "default": true
+        },
+        "write": {
+          "type": "boolean",
+          "description": "Permission to write files and make code changes",
+          "default": false
+        },
+        "execute": {
+          "type": "boolean",
+          "description": "Permission to execute commands",
+          "default": false
+        },
+        "test": {
+          "type": "boolean",
+          "description": "Permission to run tests",
+          "default": false
+        },
+        "approve": {
+          "type": "boolean",
+          "description": "Permission to approve task completion",
+          "default": false
+        },
+        "apiAccess": {
+          "type": "array",
+          "description": "List of allowed API endpoints",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "filePatterns": {
+          "type": "array",
+          "description": "File patterns this agent can access (glob patterns)",
+          "items": {
+            "type": "string"
+          },
+          "default": ["**/*"]
+        },
+        "excludePatterns": {
+          "type": "array",
+          "description": "File patterns to exclude from access",
+          "items": {
+            "type": "string"
+          },
+          "default": ["node_modules/**", ".git/**", "dist/**", "build/**"]
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Constraints and limits for the agent team",
+      "properties": {
+        "maxTokensPerRequest": {
+          "type": "integer",
+          "description": "Maximum tokens per LLM request",
+          "minimum": 1000,
+          "maximum": 100000,
+          "default": 8000
+        },
+        "maxContextSize": {
+          "type": "integer",
+          "description": "Maximum context bundle size in bytes",
+          "minimum": 10000,
+          "maximum": 10000000,
+          "default": 100000
+        },
+        "allowedOperations": {
+          "type": "array",
+          "description": "List of allowed operations",
+          "items": {
+            "type": "string",
+            "enum": ["create_task", "update_task", "delete_task", "create_plan", "update_plan", "run_tests", "deploy"]
+          },
+          "default": []
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata about the profile",
+      "properties": {
+        "author": {
+          "type": "string",
+          "description": "Author of the profile"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags for categorizing the profile",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
