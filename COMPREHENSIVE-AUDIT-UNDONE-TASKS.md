@@ -76,7 +76,6 @@ This audit identified **85+ deferred tasks** across the codebase, categorized in
 - **StreamingOutputChannel** (`src/ui/streamingOutputChannel.ts`): Real-time output display
 - **Features**: Progress indicators, cancellation, error handling, stream statistics
 - **Tests**: 10 comprehensive test cases in `src/services/streamingClient.test.ts`
-- **Note**: Only SSE transport is currently supported; WebSocket planned for future release
 
 **Old Code**:
 ```typescript

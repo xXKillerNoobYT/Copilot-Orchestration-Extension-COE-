@@ -797,6 +797,10 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   // Cleanup WebSocket connection on extension deactivation
   disposeWebSocketClient();
+  
+  // Cleanup streaming output channel on extension deactivation
+  const { disposeStreamingOutputChannel } = require('./ui/streamingOutputChannel');
+  disposeStreamingOutputChannel();
 }
 
 

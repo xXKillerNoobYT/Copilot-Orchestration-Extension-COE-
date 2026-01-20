@@ -245,6 +245,8 @@ export class StreamingClient {
 
             } catch (parseError) {
               console.warn('[StreamingClient] Failed to parse SSE data:', data);
+              // Note: Individual parse errors are logged but don't fail the entire stream
+              // as the server may send malformed chunks that can be safely ignored
             }
           }
         }

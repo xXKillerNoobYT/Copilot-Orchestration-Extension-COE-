@@ -44,10 +44,11 @@ Configure your LLM endpoint in VS Code settings:
 Location: `vscode-extension/src/services/streamingClient.ts`
 
 - **SSE Transport**: Compatible with OpenAI-style `/chat/completions` endpoints
-- **WebSocket Transport**: For custom streaming servers
 - **Buffer Management**: Handles incomplete SSE messages
 - **Timeout Handling**: Configurable timeout with abort controller
 - **Cancellation**: Integrates with VS Code cancellation tokens
+
+**Note**: WebSocket transport is planned for a future release.
 
 **API**:
 ```typescript
@@ -67,7 +68,7 @@ await client.streamChat(messages, {
     // Stream was cancelled
   }
 }, {
-  transport: 'sse', // or 'websocket'
+  transport: 'sse',  // Currently only SSE is supported
   temperature: 0.7,
   timeoutMs: 30000,
   cancellationToken: vscode.CancellationToken
@@ -211,7 +212,7 @@ interface StreamChunk {
 ### StreamingOptions Interface
 ```typescript
 interface StreamingOptions {
-  transport?: 'sse' | 'websocket';
+  transport?: 'sse';  // Currently only SSE is supported
   temperature?: number;
   timeoutMs?: number;
   cancellationToken?: vscode.CancellationToken;

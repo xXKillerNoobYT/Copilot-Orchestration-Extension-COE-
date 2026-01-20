@@ -223,12 +223,51 @@ export class StreamingOutputChannel {
 
   /**
    * Start periodic progress updates
-   * Note: Currently not updating the output channel to avoid excessive writes.
-   * Progress tracking is maintained internally via statistics.
+   * Displays streaming progress information in the output channel
    */
   private startProgressUpdates(): void {
-    // No-op: Progress is tracked via statistics without active interval updates
-    // to prevent unnecessary CPU usage and output channel writes.
+    // If progress display is disabled, do nothing
+    if (!this.options?.showProgress) {
+      return;
+    }
+
+    // Avoid creating multiple intervals
+    if (this.statsUpdateInterval) {
+      clearInterval(this.statsUpdateInterval);
+      this.statsUpdateInterval = null;
+    }
+
+    let lastChars = this.stats.totalChars;
+
+    this.statsUpdateInterval = setInterval(() => {
+      // If streaming has finished, stop updates
+      if (!this.isStreaming) {
+        this.stopProgressUpdates();
+        return;
+      }
+
+      // Only emit an update if we've received more content
+      if (this.stats.totalChars <= lastChars) {
+        return;
+      }
+
+      lastChars = this.stats.totalChars;
+
+      const durationSeconds = (Date.now() - this.stats.startTime) / 1000 || 0;
+      const charsPerSecond = durationSeconds > 0
+        ? Math.round(this.stats.totalChars / durationSeconds)
+        : this.stats.charsPerSecond;
+
+      this.outputChannel.appendLine(
+        `⏳ Streaming... ${this.stats.totalChars.toLocaleString()} chars ` +
+        `(~${this.stats.totalTokens.toLocaleString()} tokens, ` +
+        `${charsPerSecond} chars/sec)`
+      );
+
+      if (this.options?.autoScroll) {
+        this.outputChannel.show(true);
+      }
+    }, 1000);
   }
 
   /**

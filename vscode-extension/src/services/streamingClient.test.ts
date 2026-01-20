@@ -334,6 +334,43 @@ describe('StreamingClient', () => {
     it('should initialize with empty accumulated response', () => {
       expect(client.getAccumulatedResponse()).toBe('');
     });
+
+    it('should prevent concurrent streams on same client instance', async () => {
+      const mockStream = {
+        getReader: () => ({
+          read: async () => {
+            // Simulate long-running stream
+            await new Promise(resolve => setTimeout(resolve, 100));
+            return { done: false, value: new Uint8Array() };
+          },
+          releaseLock: jest.fn(),
+        }),
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: mockStream,
+      });
+
+      // Start first stream
+      const firstStream = client.streamChat(
+        [{ role: 'user', content: 'Test' }],
+        { onChunk: jest.fn(), onComplete: jest.fn() }
+      );
+
+      // Try to start second stream while first is active
+      await expect(
+        client.streamChat(
+          [{ role: 'user', content: 'Test 2' }],
+          { onChunk: jest.fn(), onComplete: jest.fn() }
+        )
+      ).rejects.toThrow('StreamingClient is already active');
+
+      // Cancel first stream to cleanup
+      client.cancel();
+      await firstStream.catch(() => {}); // Ignore cancellation error
+    });
   });
 
   describe('Factory Function', () => {
