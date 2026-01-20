@@ -37,9 +37,8 @@ module.exports = [
           use: [{ 
             loader: 'ts-loader',
             options: {
-              // transpileOnly: true skips type-checking for faster builds
-              // Type errors in test files won't block extension compilation
-              // Run `tsc --noEmit` separately in CI to catch type errors
+              // transpileOnly: true disables TypeScript type-checking in this webpack build
+              // Run `tsc --noEmit` (covering all TS files, including tests) separately in CI to catch type errors
               transpileOnly: true
             }
           }],

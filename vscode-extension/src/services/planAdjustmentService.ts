@@ -295,6 +295,9 @@ export class PlanAdjustmentService {
 
         if (matchingFeature) {
           // Cast to ParsedTaskWithMetadata to access optional metadata fields
+          // These fields (startedAt, completedAt, actualHours) may exist in rawFrontMatter
+          // but are not part of the base ParsedTask interface since they're task execution metadata
+          // rather than task definition metadata
           const taskWithMetadata = task as ParsedTaskWithMetadata;
           
           const executionDataItem: TaskExecutionData = {
