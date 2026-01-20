@@ -71,6 +71,7 @@ jest.mock('../services/taskService');
 jest.mock('../services/webSocketClient', () => ({
   getWebSocketClient: jest.fn(() => ({
     subscribe: jest.fn(),
+    unsubscribe: jest.fn(),
   })),
 }));
 
@@ -234,16 +235,6 @@ describe('TasksViewProvider', () => {
 
       expect(listener).toHaveBeenCalled();
     });
-
-    it('should update lastRefresh timestamp', () => {
-      const before = Date.now();
-      provider.refresh();
-      const after = Date.now();
-
-      // lastRefresh should be between before and after
-      // We can't directly access it, but we can test the behavior
-      expect(true).toBe(true); // Placeholder for timestamp validation
-    });
   });
 
   describe('refreshWithClear', () => {
@@ -345,17 +336,31 @@ describe('TasksViewProvider', () => {
   });
 
   describe('dispose', () => {
-    it('should clean up resources', () => {
+    it('should clean up resources and unsubscribe from WebSocket', () => {
+      const mockWsClient = {
+        subscribe: jest.fn(),
+        unsubscribe: jest.fn(),
+      };
+      
+      const { getWebSocketClient } = require('../services/webSocketClient');
+      (getWebSocketClient as jest.Mock).mockReturnValueOnce(mockWsClient);
+      
       const providerWithTimeout = new TasksViewProvider(mockContext);
       
       // Trigger debounced refresh to create a timeout
       (providerWithTimeout as any).debouncedRefresh();
       
-      // Dispose should clear the timeout
+      // Clear the mock to track dispose-time calls
+      mockWsClient.unsubscribe.mockClear();
+      
+      // Mock the client for dispose
+      (getWebSocketClient as jest.Mock).mockReturnValueOnce(mockWsClient);
+      
+      // Dispose should clear the timeout and unsubscribe from WebSocket
       providerWithTimeout.dispose();
       
-      // No errors should occur
-      expect(true).toBe(true);
+      // Verify unsubscribe was called for each subscription
+      expect(mockWsClient.unsubscribe).toHaveBeenCalled();
     });
   });
 });

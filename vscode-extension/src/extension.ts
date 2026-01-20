@@ -32,6 +32,7 @@ import { AgentsViewProvider } from './views/agentsViewProvider';
 import { PlansViewProvider } from './views/plansViewProvider';
 import { initializeErrorLogging, disposeErrorLogging } from './utils/errorMessages';
 import { HealthCheckService } from './services/healthCheck';
+import { formatMinutesToHours } from './utils/taskFormatters';
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize Error Logging Output Channel
@@ -612,8 +613,8 @@ export function activate(context: vscode.ExtensionContext) {
         task.description || 'No description provided.',
         '',
         '## Details',
-        `- **Estimated Effort**: ${task.estimated_effort ? Math.round(task.estimated_effort / 60 * 10) / 10 + ' hours' : 'N/A'}`,
-        `- **Actual Effort**: ${task.actual_effort ? Math.round(task.actual_effort / 60 * 10) / 10 + ' hours' : 'N/A'}`,
+        `- **Estimated Effort**: ${task.estimated_effort ? formatMinutesToHours(task.estimated_effort) + ' hours' : 'N/A'}`,
+        `- **Actual Effort**: ${task.actual_effort ? formatMinutesToHours(task.actual_effort) + ' hours' : 'N/A'}`,
         `- **Dependencies**: ${task.dependencyCount || 0}`,
         `- **Subtasks**: ${task.subtaskCount || 0}`,
         '',
@@ -622,7 +623,7 @@ export function activate(context: vscode.ExtensionContext) {
         '',
         `**Created**: ${new Date(task.created_at).toLocaleString()}`,
         `**Updated**: ${new Date(task.updated_at).toLocaleString()}`,
-      ].filter(line => line !== undefined).join('\n');
+      ].filter(line => !!line).join('\n');
 
       const doc = await vscode.workspace.openTextDocument({
         content,

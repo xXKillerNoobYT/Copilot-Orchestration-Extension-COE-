@@ -288,12 +288,74 @@ describe('TaskService', () => {
   });
 
   describe('invalidateInstance', () => {
-    it('should reset singleton instance', () => {
+    it('should reload config and clear cache without recreating instance', () => {
       const instance1 = TaskService.getInstance();
       TaskService.invalidateInstance();
       const instance2 = TaskService.getInstance();
       
-      expect(instance1).not.toBe(instance2);
+      // Should be the same instance (not recreated)
+      expect(instance1).toBe(instance2);
+    });
+  });
+
+  describe('refreshProject', () => {
+    it('should clear cache for project and fetch all categories', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: [] }),
+      });
+
+      // Pre-populate cache
+      await taskService.getTasks('test-project-id', { status: 'pending' });
+      const initialCallCount = (global.fetch as jest.Mock).mock.calls.length;
+
+      // Clear and refresh
+      jest.clearAllMocks();
+      await taskService.refreshProject('test-project-id');
+
+      // Should have called for each category
+      // ready (2 statuses), in-progress (1), blocked (1), testing (2), completed (1) = 7 total
+      expect(global.fetch).toHaveBeenCalledTimes(7);
+    });
+
+    it('should handle errors gracefully when refreshing categories', async () => {
+      let callCount = 0;
+      (global.fetch as jest.Mock).mockImplementation(() => {
+        callCount++;
+        if (callCount === 2) {
+          return Promise.reject(new Error('Network error'));
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, data: [] }),
+        });
+      });
+
+      // Should not throw even if one category fails
+      await expect(taskService.refreshProject('test-project-id')).resolves.not.toThrow();
+    });
+
+    it('should only clear cache for specified project', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: [] }),
+      });
+
+      // Populate cache for two projects
+      await taskService.getTasks('project-1', { status: 'pending' });
+      await taskService.getTasks('project-2', { status: 'pending' });
+      
+      jest.clearAllMocks();
+
+      // Refresh only project-1
+      await taskService.refreshProject('project-1');
+
+      // Should only fetch for project-1
+      expect(global.fetch).toHaveBeenCalled();
+      const calls = (global.fetch as jest.Mock).mock.calls;
+      calls.forEach((call: any[]) => {
+        expect(call[0]).toContain('project-1');
+      });
     });
   });
 });

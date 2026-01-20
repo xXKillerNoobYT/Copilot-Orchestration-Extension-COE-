@@ -49,12 +49,19 @@ export interface TaskFilters {
 }
 
 export class TaskService {
-  private baseUrl: string;
+  private baseUrl!: string;
   private cache: Map<string, { tasks: Task[]; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 30000; // 30 seconds
-  private static instance: TaskService | undefined;
+  private static instance: TaskService;
 
   private constructor() {
+    this.loadConfig();
+  }
+
+  /**
+   * Load configuration from VS Code settings
+   */
+  private loadConfig(): void {
     const config = vscode.workspace.getConfiguration('copilot-orchestrator');
     this.baseUrl = config.get<string>('backendUrl', 'http://localhost:8000');
   }
@@ -67,12 +74,12 @@ export class TaskService {
   }
 
   /**
-   * Invalidate cache and recreate instance when config changes
+   * Invalidate cache and reload configuration when config changes
    */
   static invalidateInstance(): void {
     if (TaskService.instance) {
       TaskService.instance.clearCache();
-      TaskService.instance = undefined;
+      TaskService.instance.loadConfig();
     }
   }
 
@@ -223,10 +230,15 @@ export class TaskService {
     });
     keysToDelete.forEach(key => this.cache.delete(key));
 
-    // Fetch fresh data for common categories
+    // Fetch fresh data for common categories sequentially to avoid overwhelming the backend
     const categories = ['ready', 'in-progress', 'blocked', 'testing', 'completed'];
-    await Promise.all(
-      categories.map(category => this.getTasksByCategory(projectId, category))
-    );
+    for (const category of categories) {
+      try {
+        await this.getTasksByCategory(projectId, category);
+      } catch (error) {
+        console.error(`[TaskService] Failed to refresh category "${category}" for project ${projectId}:`, error);
+        // Continue with other categories even if one fails
+      }
+    }
   }
 }

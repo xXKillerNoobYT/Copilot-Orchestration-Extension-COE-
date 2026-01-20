@@ -1,10 +1,11 @@
+import * as vscode from 'vscode';
+import { Task } from '../services/taskService';
+import { formatMinutesToHours } from '../utils/taskFormatters';
+
 /**
  * Task Tree Item
  * Enhanced tree item for displaying tasks with metadata, priority indicators, and actions
  */
-
-import * as vscode from 'vscode';
-import { Task } from '../services/taskService';
 
 export class TaskTreeItem extends vscode.TreeItem {
   constructor(
@@ -37,7 +38,7 @@ export class TaskTreeItem extends vscode.TreeItem {
     lines.push('');
     
     if (this.task.description) {
-      lines.push(`${this.task.description.substring(0, 200)}${this.task.description.length > 200 ? '...' : ''}`);
+      lines.push(this.truncateAtWordBoundary(this.task.description, 200));
       lines.push('');
     }
     
@@ -78,8 +79,7 @@ export class TaskTreeItem extends vscode.TreeItem {
     
     // Show effort if available
     if (this.task.estimated_effort) {
-      const hours = Math.round(this.task.estimated_effort / 60 * 10) / 10;
-      parts.push(`${hours}h`);
+      parts.push(this.formatMinutesToHours(this.task.estimated_effort));
     }
     
     // Show dependency count
@@ -173,6 +173,35 @@ export class TaskTreeItem extends vscode.TreeItem {
       return `${hours}h`;
     }
     return `${hours}h ${remainingMinutes}m`;
+  }
+
+  /**
+   * Format minutes to hours (for description display)
+   */
+  private formatMinutesToHours(minutes: number): string {
+    const hours = formatMinutesToHours(minutes);
+    return `${hours}h`;
+  }
+
+  /**
+   * Truncate text at word boundary to avoid cutting words
+   */
+  private truncateAtWordBoundary(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    
+    // Find the last space before maxLength
+    const truncated = text.substring(0, maxLength);
+    const lastSpaceIndex = truncated.lastIndexOf(' ');
+    
+    if (lastSpaceIndex > maxLength * 0.8) {
+      // If we found a space in the last 20%, use it
+      return truncated.substring(0, lastSpaceIndex) + '...';
+    }
+    
+    // Otherwise, just truncate at maxLength
+    return truncated + '...';
   }
 }
 

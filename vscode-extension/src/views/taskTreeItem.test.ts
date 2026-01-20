@@ -95,13 +95,22 @@ describe('TaskTreeItem', () => {
       expect(tooltip).toContain('A test task description');
     });
 
-    it('should truncate long descriptions', () => {
+    it('should truncate long descriptions at word boundary', () => {
       const item = new TaskTreeItem(mockTask, vscode.TreeItemCollapsibleState.None);
       const tooltip = item.tooltip as string;
 
-      // Description should be truncated at 200 characters with ellipsis
+      // Description should be truncated with ellipsis
       expect(tooltip).toContain('...');
-      expect(tooltip.indexOf(mockTask.description!)).toBeLessThan(tooltip.indexOf('...'));
+      
+      // Verify the description was actually truncated (original is >200 chars)
+      expect(mockTask.description!.length).toBeGreaterThan(200);
+      
+      // The truncated portion should be less than the full description
+      const truncatedPart = tooltip.substring(
+        tooltip.indexOf(mockTask.description!.substring(0, 50)),
+        tooltip.indexOf('...')
+      );
+      expect(truncatedPart.length).toBeLessThan(mockTask.description!.length);
     });
 
     it('should include status, priority, and type', () => {

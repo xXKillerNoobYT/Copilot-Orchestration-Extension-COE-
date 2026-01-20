@@ -13,6 +13,7 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskTreeItem |
   private lastRefresh = 0;
   private readonly REFRESH_DEBOUNCE_MS = 1000; // Max 1 refresh per second
   private refreshTimeout?: NodeJS.Timeout;
+  private wsSubscriptions: Array<{ channel: string; event: string; callback: (data: any) => void }> = [];
 
   constructor(private context: vscode.ExtensionContext) {
     this.taskService = TaskService.getInstance();
@@ -29,11 +30,14 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskTreeItem |
       return;
     }
 
-    // Subscribe to task events
-    wsClient.subscribe('tasks', 'taskCreated', () => this.debouncedRefresh());
-    wsClient.subscribe('tasks', 'taskUpdated', () => this.debouncedRefresh());
-    wsClient.subscribe('tasks', 'taskCompleted', () => this.debouncedRefresh());
-    wsClient.subscribe('tasks', 'taskStatusChanged', () => this.debouncedRefresh());
+    // Define event subscriptions
+    const events = ['taskCreated', 'taskUpdated', 'taskCompleted', 'taskStatusChanged'];
+    
+    events.forEach(event => {
+      const callback = () => this.debouncedRefresh();
+      wsClient.subscribe('tasks', event, callback);
+      this.wsSubscriptions.push({ channel: 'tasks', event, callback });
+    });
     
     console.log('[TasksViewProvider] WebSocket listeners registered');
   }
@@ -133,12 +137,7 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskTreeItem |
       );
     } catch (error) {
       console.error(`[TasksViewProvider] Failed to load tasks for category ${category}:`, error);
-      
-      // Show user-friendly error in tree view
-      vscode.window.showErrorMessage(
-        `Failed to load ${category} tasks. Is the backend server running?`
-      );
-      
+      // Error messaging is handled in TaskService, just return empty list here
       return [];
     }
   }
@@ -149,6 +148,15 @@ export class TasksViewProvider implements vscode.TreeDataProvider<TaskTreeItem |
   dispose(): void {
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout);
+    }
+
+    // Unsubscribe from WebSocket events
+    const wsClient = getWebSocketClient();
+    if (wsClient) {
+      this.wsSubscriptions.forEach(({ channel, event, callback }) => {
+        wsClient.unsubscribe(channel, event, callback);
+      });
+      this.wsSubscriptions = [];
     }
   }
 }
