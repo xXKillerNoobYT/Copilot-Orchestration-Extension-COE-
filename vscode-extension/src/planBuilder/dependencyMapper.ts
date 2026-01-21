@@ -23,6 +23,20 @@ export interface Milestone {
 }
 
 /**
+ * Template item interface - represents raw template data
+ * that may have dependencies in various field names
+ */
+interface TemplateItem {
+  name: string;
+  description?: string;
+  priority?: string;
+  depends_on?: string[];
+  dependsOn?: string[];
+  dependencies?: string[];
+  [key: string]: any; // Allow additional properties from templates
+}
+
+/**
  * Parse dependencies from text using common patterns
  * 
  * Patterns matched:
@@ -156,7 +170,7 @@ export function mapTemplateDependencies(
 
   const featureNames = allFeatures.map(f => f.name);
   
-  return templateData.map((item: any) => {
+  return templateData.map((item: TemplateItem) => {
     let dependsOn: string[] | null = null;
 
     // Check if template has explicit dependencies
