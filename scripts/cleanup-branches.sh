@@ -91,6 +91,12 @@ else
     echo -e "${GREEN}Mode: Delete CONFIRMED branches only${NC}"
 fi
 
+# Check if array is empty
+if [ ${#BRANCHES_TO_DELETE[@]} -eq 0 ]; then
+    echo -e "${YELLOW}No branches configured for deletion${NC}"
+    exit 0
+fi
+
 echo ""
 echo -e "${BLUE}Branches to delete:${NC}"
 for branch in "${BRANCHES_TO_DELETE[@]}"; do
@@ -163,6 +169,8 @@ for branch in "${BRANCHES_TO_DELETE[@]}"; do
         
         # Delete local branch if it exists
         if git show-ref --verify --quiet "refs/heads/$branch"; then
+            # Use -D intentionally: the branch has just been deleted from origin and is considered stale,
+            # so we force-delete the local copy even if it is not fully merged to ensure consistent cleanup.
             git branch -D "$branch" 2>/dev/null || true
             echo -e "  ${GREEN}✓ Deleted local branch${NC}"
         fi
@@ -176,8 +184,11 @@ done
 
 # Prune remote references
 echo -e "${BLUE}Pruning remote references...${NC}"
-git remote prune origin
-echo -e "${GREEN}✓ Pruned${NC}"
+if git remote prune origin; then
+    echo -e "${GREEN}✓ Pruned${NC}"
+else
+    echo -e "${YELLOW}⚠️  Failed to prune remote references (non-fatal)${NC}"
+fi
 echo ""
 
 # Summary
