@@ -298,6 +298,160 @@ describe('TaskService', () => {
     });
   });
 
+  describe('authentication', () => {
+    it('should include Authorization header when authToken is set via VS Code settings', async () => {
+      // Mock config with authToken
+      const mockConfig = {
+        get: jest.fn((key: string, defaultValue?: string) => {
+          if (key === 'backendUrl') return 'http://localhost:8000';
+          if (key === 'projectId') return 'test-project-id';
+          if (key === 'authToken') return 'test-token-from-config';
+          return defaultValue;
+        }),
+      };
+      
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+      
+      // Reset instance to pick up new config
+      (TaskService as any).instance = undefined;
+      const authenticatedService = TaskService.getInstance();
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, data: [] }),
+      });
+
+      await authenticatedService.getTasks('test-project-id');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer test-token-from-config',
+          }),
+        })
+      );
+    });
+
+    it('should include Authorization header when COPILOT_AUTH_TOKEN env var is set', async () => {
+      // Set environment variable
+      const originalEnv = process.env.COPILOT_AUTH_TOKEN;
+      process.env.COPILOT_AUTH_TOKEN = 'test-token-from-env';
+
+      // Mock config without authToken (so it falls back to env var)
+      const mockConfig = {
+        get: jest.fn((key: string, defaultValue?: string) => {
+          if (key === 'backendUrl') return 'http://localhost:8000';
+          if (key === 'projectId') return 'test-project-id';
+          if (key === 'authToken') return undefined; // No config token
+          return defaultValue;
+        }),
+      };
+      
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+      
+      // Reset instance to pick up new config
+      (TaskService as any).instance = undefined;
+      const authenticatedService = TaskService.getInstance();
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, data: [] }),
+      });
+
+      await authenticatedService.getTasks('test-project-id');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer test-token-from-env',
+          }),
+        })
+      );
+
+      // Restore original env var
+      if (originalEnv !== undefined) {
+        process.env.COPILOT_AUTH_TOKEN = originalEnv;
+      } else {
+        delete process.env.COPILOT_AUTH_TOKEN;
+      }
+    });
+
+    it('should omit Authorization header when no token is configured', async () => {
+      // Mock config without authToken
+      const mockConfig = {
+        get: jest.fn((key: string, defaultValue?: string) => {
+          if (key === 'backendUrl') return 'http://localhost:8000';
+          if (key === 'projectId') return 'test-project-id';
+          if (key === 'authToken') return undefined;
+          return defaultValue;
+        }),
+      };
+      
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+      
+      // Ensure env var is not set
+      const originalEnv = process.env.COPILOT_AUTH_TOKEN;
+      delete process.env.COPILOT_AUTH_TOKEN;
+      
+      // Reset instance to pick up new config
+      (TaskService as any).instance = undefined;
+      const unauthenticatedService = TaskService.getInstance();
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, data: [] }),
+      });
+
+      await unauthenticatedService.getTasks('test-project-id');
+
+      const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+      const headers = fetchCall[1].headers;
+      
+      expect(headers).not.toHaveProperty('Authorization');
+
+      // Restore original env var
+      if (originalEnv !== undefined) {
+        process.env.COPILOT_AUTH_TOKEN = originalEnv;
+      }
+    });
+
+    it('should include Authorization header in getTaskById when token is configured', async () => {
+      // Mock config with authToken
+      const mockConfig = {
+        get: jest.fn((key: string, defaultValue?: string) => {
+          if (key === 'backendUrl') return 'http://localhost:8000';
+          if (key === 'projectId') return 'test-project-id';
+          if (key === 'authToken') return 'test-token-for-getById';
+          return defaultValue;
+        }),
+      };
+      
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+      
+      // Reset instance to pick up new config
+      (TaskService as any).instance = undefined;
+      const authenticatedService = TaskService.getInstance();
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, data: { id: 'task-1', name: 'Test' } }),
+      });
+
+      await authenticatedService.getTaskById('task-1');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/tasks/task-1'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer test-token-for-getById',
+          }),
+        })
+      );
+    });
+  });
+
   describe('refreshProject', () => {
     it('should clear cache for project and fetch all categories', async () => {
       (global.fetch as jest.Mock).mockResolvedValue({
