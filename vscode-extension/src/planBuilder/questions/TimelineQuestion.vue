@@ -34,10 +34,10 @@
       <div class="timeline-suggestion-content">
         <div class="suggestion-meta">
           <div class="meta-item">
-            <strong>Duration:</strong> {{ aiTimelineSuggestion.duration }} days
+            <strong>Duration:</strong> {{ aiTimelineSuggestion.totalDuration.weeks }} weeks ({{ aiTimelineSuggestion.totalDuration.months }} months)
           </div>
           <div class="meta-item">
-            <strong>Phase:</strong> {{ aiTimelineSuggestion.phase }}
+            <strong>Buffer:</strong> {{ aiTimelineSuggestion.bufferPercentage }}%
           </div>
         </div>
         <div v-if="aiTimelineSuggestion.milestones.length > 0" class="milestones-preview">
@@ -48,7 +48,7 @@
             class="milestone-preview-item"
           >
             <span class="milestone-name">{{ milestone.name }}</span>
-            <span class="milestone-date">{{ milestone.date || 'TBD' }}</span>
+            <span class="milestone-date">{{ milestone.phase }} ({{ milestone.durationWeeks }} weeks)</span>
           </div>
         </div>
         <div class="suggestion-actions">
@@ -190,8 +190,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useWizardStore } from '../wizardStore';
 import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
 import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
-import { getAiWizardAssistant } from '../services/aiWizardAssistant';
-import type { TimelineSuggestion } from '../prompts/timeline';
+import { getAiWizardAssistant } from '../../services/aiWizardAssistant';
+import type { TimelineSuggestion } from '../../prompts/timeline';
 
 interface Milestone {
   name: string;
@@ -456,10 +456,9 @@ async function handleAiRecommendTimeline(): Promise<void> {
     const featuresAnswer = wizardStore.getAnswer<{ features?: Array<{ name: string; estimatedDays?: number }> }>('q3-features');
     
     const context = {
-      projectName: projectOverview.name || 'Unnamed Project',
+      projectType: projectOverview.name || 'Unnamed Project',
       projectDescription: projectOverview.description || '',
       features: featuresAnswer?.features || [],
-      existingMilestones: milestones.value.map(m => ({ name: m.name, phase: m.phase })),
     };
 
     const suggestion = await aiAssistant.recommendTimeline(context);
@@ -482,15 +481,23 @@ function acceptAiTimeline(): void {
 
   // Add milestones from AI suggestion
   if (aiTimelineSuggestion.value.milestones && aiTimelineSuggestion.value.milestones.length > 0) {
+    const today = new Date();
+    let currentWeek = 0;
+    
     aiTimelineSuggestion.value.milestones.forEach((milestone) => {
+      const targetDate = new Date(today);
+      targetDate.setDate(targetDate.getDate() + (milestone.startWeek * 7));
+      
       milestones.value.push({
         name: milestone.name,
-        date: milestone.date || '',
+        date: targetDate.toISOString().split('T')[0],
         phase: milestone.phase || 'development',
         dependsOn: null,
         error: '',
         dateError: '',
       });
+      
+      currentWeek = milestone.endWeek;
     });
   }
 

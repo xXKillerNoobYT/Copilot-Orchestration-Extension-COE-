@@ -41,7 +41,7 @@
             <h4>{{ suggestion.name }}</h4>
             <p>{{ suggestion.description }}</p>
             <div class="suggestion-meta">
-              <span class="meta-tag">Priority: {{ suggestion.priority }}</span>
+              <span class="meta-tag">Priority: {{ suggestion.suggestedPriority }}</span>
               <span v-if="suggestion.estimatedDays" class="meta-tag">
                 Est: {{ suggestion.estimatedDays }} days
               </span>
@@ -188,8 +188,8 @@ import { useWizardStore } from '../wizardStore';
 import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
 import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
 import { PlanContextService } from '../services/PlanContextService';
-import { getAiWizardAssistant } from '../services/aiWizardAssistant';
-import type { FeatureSuggestion } from '../prompts/featureBreakdown';
+import { getAiWizardAssistant } from '../../services/aiWizardAssistant';
+import type { FeatureSuggestion } from '../../prompts/featureBreakdown';
 
 interface Feature {
   name: string;
@@ -397,9 +397,13 @@ async function handleAiSuggestFeatures(): Promise<void> {
     // Build context from wizard state
     const projectOverview = wizardStore.getAnswer<{ name?: string; description?: string }>('q1-overview') || {};
     const context = {
-      projectName: projectOverview.name || 'Unnamed Project',
+      projectType: projectOverview.name || 'Unnamed Project',
       projectDescription: projectOverview.description || '',
-      existingFeatures: features.value.map(f => ({ name: f.name, description: f.description })),
+      existingFeatures: features.value.map(f => ({ 
+        name: f.name, 
+        description: f.description,
+        priority: f.priority as 'critical' | 'high' | 'medium' | 'low',
+      })),
     };
 
     const suggestions = await aiAssistant.suggestFeatures(context);
@@ -421,7 +425,7 @@ function acceptAiSuggestion(suggestion: FeatureSuggestion): void {
   features.value.push({
     name: suggestion.name,
     description: suggestion.description,
-    priority: suggestion.priority || 'medium',
+    priority: suggestion.suggestedPriority || 'medium',
     dependsOn: null,
     error: '',
   });

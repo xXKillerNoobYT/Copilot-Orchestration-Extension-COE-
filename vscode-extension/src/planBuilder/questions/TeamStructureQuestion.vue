@@ -250,8 +250,8 @@ import { useWizardStore } from '../wizardStore';
 import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
 import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
 import { PlanContextService } from '../services/PlanContextService';
-import { getAiWizardAssistant } from '../services/aiWizardAssistant';
-import type { RoleSuggestion } from '../prompts/teamStructure';
+import { getAiWizardAssistant } from '../../services/aiWizardAssistant';
+import type { RoleSuggestion } from '../../prompts/teamStructure';
 
 interface TeamMember {
   role: string;
@@ -539,13 +539,8 @@ async function handleAiSuggestRoles(): Promise<void> {
     const featuresAnswer = wizardStore.getAnswer<{ features?: Array<{ name: string; description: string }> }>('q3-features');
     
     const context = {
-      projectName: projectOverview.name || 'Unnamed Project',
+      projectType: projectOverview.name || 'Unnamed Project',
       projectDescription: projectOverview.description || '',
-      features: featuresAnswer?.features || [],
-      existingRoles: teamMembers.value.map(m => ({
-        role: m.role === 'other' ? m.customRole : m.role,
-        skills: parseSkills(m.skills),
-      })),
     };
 
     const suggestions = await aiAssistant.suggestRoles(context);
