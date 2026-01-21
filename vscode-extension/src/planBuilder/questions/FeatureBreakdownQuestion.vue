@@ -11,11 +11,50 @@
       <button class="btn btn-primary" @click="addFeature">
         + Add Feature
       </button>
+      <button class="btn btn-ai" @click="handleAiSuggestFeatures" :disabled="isLoadingAiSuggestions">
+        {{ isLoadingAiSuggestions ? '⏳ Loading...' : '✨ AI Suggest Features' }}
+      </button>
       <span class="feature-count">{{ features.length }} feature(s)</span>
     </div>
 
     <div v-if="featureErrors.length > 0" class="error-message">
       {{ featureErrors[0] }}
+    </div>
+
+    <div v-if="aiError" class="error-message">
+      {{ aiError }}
+    </div>
+
+    <!-- AI Suggestions Panel -->
+    <div v-if="aiSuggestions.length > 0" class="ai-suggestions-panel">
+      <div class="panel-header">
+        <h3>✨ AI Suggested Features</h3>
+        <button class="btn btn-sm" @click="closeAiSuggestions">Close</button>
+      </div>
+      <div class="suggestions-list">
+        <div
+          v-for="(suggestion, index) in aiSuggestions"
+          :key="`ai-suggestion-${index}`"
+          class="suggestion-item"
+        >
+          <div class="suggestion-content">
+            <h4>{{ suggestion.name }}</h4>
+            <p>{{ suggestion.description }}</p>
+            <div class="suggestion-meta">
+              <span class="meta-tag">Priority: {{ suggestion.suggestedPriority }}</span>
+              <span v-if="suggestion.estimatedDays" class="meta-tag">
+                Est: {{ suggestion.estimatedDays }} days
+              </span>
+            </div>
+          </div>
+          <button
+            class="btn btn-primary btn-sm"
+            @click="acceptAiSuggestion(suggestion)"
+          >
+            Add
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="features.length === 0" class="empty-state">
@@ -149,6 +188,8 @@ import { useWizardStore } from '../wizardStore';
 import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
 import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
 import { PlanContextService } from '../services/PlanContextService';
+import { getAiWizardAssistant } from '../../services/aiWizardAssistant';
+import type { FeatureSuggestion } from '../../prompts/featureBreakdown';
 
 interface Feature {
   name: string;
@@ -172,6 +213,7 @@ const props = withDefaults(defineProps<Props>(), {
 // Store
 const wizardStore = useWizardStore();
 const planContextService = PlanContextService.getInstance();
+const aiAssistant = getAiWizardAssistant();
 
 // State
 const features = ref<Feature[]>([
@@ -181,6 +223,11 @@ const featureErrors = ref<string[]>([]);
 const followUpQuestions = ref<FollowUpQuestion[]>([]);
 const followUpAnswers = ref<Record<string, unknown>>({});
 const isLoadingFollowUps = ref(false);
+
+// AI State
+const isLoadingAiSuggestions = ref(false);
+const aiSuggestions = ref<FeatureSuggestion[]>([]);
+const aiError = ref('');
 
 // Computed
 const circularDependency = computed(() => {
@@ -340,6 +387,67 @@ function handleFollowUpAnswers(answers: Record<string, unknown>): void {
   updateStore();
 }
 
+// AI Suggestion Handlers
+async function handleAiSuggestFeatures(): Promise<void> {
+  isLoadingAiSuggestions.value = true;
+  aiError.value = '';
+  aiSuggestions.value = [];
+
+  try {
+    // Build context from wizard state
+    const projectOverview = wizardStore.getAnswer<{ name?: string; description?: string }>('q1-overview') || {};
+    const context = {
+      projectType: projectOverview.name || 'Unnamed Project',
+      projectDescription: projectOverview.description || '',
+      existingFeatures: features.value.map(f => ({ 
+        name: f.name, 
+        description: f.description,
+        priority: f.priority as 'critical' | 'high' | 'medium' | 'low',
+      })),
+    };
+
+    const suggestions = await aiAssistant.suggestFeatures(context);
+    
+    if (suggestions.length === 0) {
+      aiError.value = 'AI could not generate suggestions. Please try again or add features manually.';
+    } else {
+      aiSuggestions.value = suggestions;
+    }
+  } catch (error) {
+    console.error('[Features] AI suggestion error:', error);
+    aiError.value = 'Failed to get AI suggestions. Please try again later.';
+  } finally {
+    isLoadingAiSuggestions.value = false;
+  }
+}
+
+function acceptAiSuggestion(suggestion: FeatureSuggestion): void {
+  features.value.push({
+    name: suggestion.name,
+    description: suggestion.description,
+    priority: suggestion.suggestedPriority || 'medium',
+    dependsOn: null,
+    error: '',
+  });
+  
+  // Track acceptance
+  aiAssistant.trackAcceptance('suggest-features', true);
+  
+  // Remove accepted suggestion from list
+  aiSuggestions.value = aiSuggestions.value.filter(s => s.name !== suggestion.name);
+  
+  validateFeatures();
+}
+
+function closeAiSuggestions(): void {
+  // Track a single rejection event if there are any remaining suggestions
+  if (aiSuggestions.value.length > 0) {
+    aiAssistant.trackAcceptance('suggest-features', false);
+  }
+  
+  aiSuggestions.value = [];
+}
+
 // Load existing answer from store
 onMounted(() => {
   const existingAnswer = wizardStore.getAnswer<{
@@ -427,6 +535,21 @@ defineExpose({
 
 .btn-primary:hover {
   background: var(--vscode-button-hoverBackground);
+}
+
+.btn-ai {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border);
+}
+
+.btn-ai:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.btn-ai:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-danger {
@@ -657,5 +780,77 @@ defineExpose({
   .question-container {
     padding: 1rem;
   }
+}
+
+.ai-suggestions-panel {
+  background: var(--vscode-editor-background);
+  border: 2px solid var(--vscode-focusBorder);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--vscode-input-border);
+}
+
+.panel-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--vscode-foreground);
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.suggestion-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  align-items: flex-start;
+}
+
+.suggestion-content {
+  flex: 1;
+}
+
+.suggestion-content h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem 0;
+  color: var(--vscode-foreground);
+}
+
+.suggestion-content p {
+  font-size: 0.85rem;
+  margin: 0 0 0.6rem 0;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.4;
+}
+
+.suggestion-meta {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.meta-tag {
+  font-size: 0.75rem;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
 }
 </style>
