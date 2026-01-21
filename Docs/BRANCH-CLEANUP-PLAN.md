@@ -160,7 +160,7 @@ git remote prune origin
 git branch -vv
 
 # Verify main has all features
-./scripts/verify-features.sh  # (Script created for verification)
+bash scripts/verify-features.sh  # (Script created for verification)
 ```
 
 ---
