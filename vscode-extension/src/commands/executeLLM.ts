@@ -195,7 +195,7 @@ export async function executeLlmCommandStreaming(): Promise<void> {
   }
 
   // Create streaming output channel
-  const { getStreamingOutputChannel } = await import('../ui/streamingOutputChannel');
+  const { getStreamingOutputChannel } = await import('../ui/streamingOutputChannel.js');
   const outputChannel = getStreamingOutputChannel();
 
   // Show progress with cancellation support
@@ -222,7 +222,7 @@ export async function executeLlmCommandStreaming(): Promise<void> {
         outputChannel.startStream(taskId, agentName);
 
         // Create streaming client
-        const { createStreamingClient } = await import('../services/streamingClient');
+        const { createStreamingClient } = await import('../services/streamingClient.js');
         const streamingClient = createStreamingClient(configState.config);
 
         // Execute streaming request
@@ -230,7 +230,7 @@ export async function executeLlmCommandStreaming(): Promise<void> {
         await streamingClient.streamChat(
           payload.messages,
           {
-            onChunk: (chunk) => {
+            onChunk: (chunk: any) => {
               if (chunk.type === 'text' && chunk.content) {
                 // Append to output channel
                 outputChannel.appendChunk(chunk.content);
@@ -252,13 +252,13 @@ export async function executeLlmCommandStreaming(): Promise<void> {
                 progress.report({ message: 'Stream completed' });
               }
             },
-            onComplete: (response) => {
+            onComplete: (response: any) => {
               outputChannel.endStream(true);
               void vscode.window.showInformationMessage(
                 `Streaming completed for ${taskId}. Check output channel for full response.`
               );
             },
-            onError: (error) => {
+            onError: (error: any) => {
               outputChannel.showError(error);
               outputChannel.endStream(false);
               void vscode.window.showErrorMessage(`Streaming failed: ${error.message}`);
