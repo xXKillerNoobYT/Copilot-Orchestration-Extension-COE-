@@ -38,7 +38,6 @@ export function parseDependenciesFromText(text: string, availableItems: string[]
   }
 
   const dependencies: Set<string> = new Set();
-  const lowerText = text.toLowerCase();
   
   // Common dependency keywords
   const patterns = [
@@ -66,25 +65,72 @@ export function parseDependenciesFromText(text: string, availableItems: string[]
     }
   }
 
+  /**
+   * Determine whether a potential dependency phrase matches an available item name.
+   * 
+   * Matching rules (case-insensitive, expects lowercased inputs):
+   * - Prefer exact string equality.
+   * - For single-word dependencies, only match single-word items with the same word.
+   *   This avoids ambiguous matches like "User" -> "User Authentication".
+   * - For multi-word dependencies, require sufficient exact word overlap
+   *   (overlap ratio >= 0.6, based on the shorter phrase).
+   */
+  const isDependencyMatch = (lowerDep: string, lowerItem: string): boolean => {
+    const depTrimmed = lowerDep.trim();
+    const itemTrimmed = lowerItem.trim();
+
+    if (!depTrimmed || !itemTrimmed) {
+      return false;
+    }
+
+    // Exact full-string match
+    if (depTrimmed === itemTrimmed) {
+      return true;
+    }
+
+    const depWords = depTrimmed.split(/\s+/).filter(Boolean);
+    const itemWords = itemTrimmed.split(/\s+/).filter(Boolean);
+
+    if (depWords.length === 0 || itemWords.length === 0) {
+      return false;
+    }
+
+    // Single-word dependencies are treated strictly to avoid false positives.
+    if (depWords.length === 1) {
+      const depWord = depWords[0];
+      // Only match if the item is also a single word and identical.
+      return itemWords.length === 1 && itemWords[0] === depWord;
+    }
+
+    // For multi-word dependencies, require substantial exact word overlap.
+    const depWordSet = new Set(depWords);
+    const itemWordSet = new Set(itemWords);
+    let overlapCount = 0;
+
+    for (const w of depWordSet) {
+      if (itemWordSet.has(w)) {
+        overlapCount++;
+      }
+    }
+
+    if (overlapCount === 0) {
+      return false;
+    }
+
+    const shorterLength = Math.min(depWordSet.size, itemWordSet.size);
+    const overlapRatio = overlapCount / shorterLength;
+
+    // Require at least 60% overlap based on the shorter phrase.
+    return overlapRatio >= 0.6;
+  };
+
   // Match against available items (case-insensitive)
   for (const dep of potentialDeps) {
     const lowerDep = dep.toLowerCase();
     for (const item of availableItems) {
       const lowerItem = item.toLowerCase();
-      
-      // Check if dependency text contains or matches the item name
-      // Or if item name is contained in dependency text (for partial matches)
-      if (lowerDep.includes(lowerItem) || lowerItem.includes(lowerDep)) {
-        dependencies.add(item);
-        break;
-      }
-      
-      // Check for word boundaries to handle cases like "User Auth" matching "User Authentication"
-      const depWords = lowerDep.split(/\s+/);
-      const itemWords = lowerItem.split(/\s+/);
-      
-      // If all words from dependency are found in item name, it's a match
-      if (depWords.every(word => itemWords.some(itemWord => itemWord.includes(word) || word.includes(itemWord)))) {
+
+      if (isDependencyMatch(lowerDep, lowerItem)) {
         dependencies.add(item);
         break;
       }

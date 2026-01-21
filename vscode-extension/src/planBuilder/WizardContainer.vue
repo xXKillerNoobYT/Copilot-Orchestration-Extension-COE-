@@ -1,16 +1,17 @@
 <template>
   <div class="wizard-container" :class="{ 'with-assistant': showAssistant, 'with-preview': showPreview }">
     <!-- Toast Notifications -->
-    <div class="toast-container">
+    <div class="toast-container" aria-live="polite" aria-atomic="true">
       <transition-group name="toast">
         <div 
           v-for="toast in toasts" 
           :key="toast.id" 
           class="toast"
           :class="`toast-${toast.type}`"
+          :role="toast.type === 'error' || toast.type === 'warning' ? 'alert' : 'status'"
         >
           <span class="toast-message">{{ toast.message }}</span>
-          <button class="toast-close" @click="dismissToast(toast.id)">×</button>
+          <button class="toast-close" @click="dismissToast(toast.id)" aria-label="Close notification">×</button>
         </div>
       </transition-group>
     </div>
@@ -61,7 +62,7 @@
           class="undo-btn"
           @click="handleUndo"
           :disabled="!wizardStore.canUndo"
-          :title="wizardStore.canUndo ? `Undo (${wizardStore.historyLength} actions) - Ctrl+Z` : 'No actions to undo'"
+          :title="wizardStore.canUndo ? 'Undo - Ctrl+Z' : 'No actions to undo'"
         >
           ↶ Undo
         </button>
@@ -198,7 +199,6 @@ import FileImporter from './components/FileImporter.vue';
 import { getTemplateService } from './services/TemplateService';
 import type { WizardState, PreviewRenderResult } from '../components/preview/PreviewEngine';
 import { 
-  autoPopulateDependencies, 
   mapTemplateDependencies, 
   validateDependencyGraph,
   type Feature 
@@ -292,6 +292,7 @@ interface ToastNotification {
   message: string;
   type: 'success' | 'error' | 'warning' | 'info';
   duration?: number;
+  timeoutId?: ReturnType<typeof setTimeout>;
 }
 const toasts = ref<ToastNotification[]>([]);
 let toastIdCounter = 0;
@@ -527,21 +528,28 @@ const handleSuggestionApplied = (suggestion: AiSuggestion) => {
 const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration = 5000) => {
   const id = toastIdCounter++;
   const toast: ToastNotification = { id, message, type, duration };
-  toasts.value.push(toast);
   
   if (duration > 0) {
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       const index = toasts.value.findIndex(t => t.id === id);
       if (index > -1) {
         toasts.value.splice(index, 1);
       }
     }, duration);
+    toast.timeoutId = timeoutId;
   }
+  
+  toasts.value.push(toast);
 };
 
 const dismissToast = (id: number) => {
   const index = toasts.value.findIndex(t => t.id === id);
   if (index > -1) {
+    const toast = toasts.value[index];
+    // Clear the timeout to prevent memory leak
+    if (toast.timeoutId) {
+      clearTimeout(toast.timeoutId);
+    }
     toasts.value.splice(index, 1);
   }
 };
@@ -595,23 +603,34 @@ const handleTemplateSelected = async (templateId: string) => {
     // Map plan.features to Q3
     if (plan.features && plan.features.length > 0) {
       // Use dependency mapper to preserve dependencies
+      const allFeatures = plan.features.map((f: any) => ({ 
+        name: f.name, 
+        description: f.description, 
+        priority: f.priority 
+      }));
+      
       const featuresWithDeps = mapTemplateDependencies(
         plan.features,
-        plan.features.map((f: any) => ({ name: f.name, description: f.description, priority: f.priority }))
+        allFeatures
       );
       
       templateAnswers['features'] = {
         features: featuresWithDeps
-      };
       };
     }
     
     // Map plan.timeline to Q4
     if (plan.timeline && plan.timeline.milestones) {
       // Map dependencies for milestones too
+      const allMilestones = plan.timeline.milestones.map((m: any) => ({ 
+        name: m.name, 
+        date: m.target_date, 
+        phase: m.phase 
+      }));
+      
       const milestonesWithDeps = mapTemplateDependencies(
         plan.timeline.milestones,
-        plan.timeline.milestones.map((m: any) => ({ name: m.name, date: m.target_date, phase: m.phase }))
+        allMilestones
       );
       
       templateAnswers['timeline'] = {
@@ -635,8 +654,20 @@ const handleTemplateSelected = async (templateId: string) => {
     if (templateAnswers['features']?.features) {
       const validation = validateDependencyGraph(templateAnswers['features'].features);
       if (!validation.valid) {
-        showToast(`Template has dependency issues: ${validation.errors.join('; ')}`, 'warning', 8000);
+        const errorMsg = `Template has dependency issues: ${validation.errors.join('; ')}`;
+        showToast(errorMsg, 'warning', 8000);
         console.warn('[Wizard] Template dependency validation warnings:', validation.errors);
+        
+        // Require user confirmation before proceeding with invalid dependencies
+        const proceedWithInvalidDependencies = confirm(
+          `The selected template has dependency issues that may result in a broken plan:\n\n${validation.errors.join('\n')}\n\nDo you want to apply the template anyway?`
+        );
+        
+        if (!proceedWithInvalidDependencies) {
+          showToast('Template application cancelled due to dependency issues.', 'info', 6000);
+          showTemplateSelector.value = false;
+          return;
+        }
       }
     }
     
