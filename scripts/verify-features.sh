@@ -3,7 +3,7 @@
 # Feature Verification Script - Issue #177
 # Verifies all expected features from merged branches exist on main
 #
-# Usage: ./verify-features.sh
+# Usage: bash scripts/verify-features.sh
 #
 # Returns: 0 if all features verified, 1 if any missing
 

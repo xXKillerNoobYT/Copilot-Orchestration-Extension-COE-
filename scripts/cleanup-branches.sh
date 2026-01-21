@@ -3,7 +3,7 @@
 # Branch Cleanup Script - Issue #177
 # Deletes outdated remote branches that have been merged into main
 #
-# Usage: ./cleanup-branches.sh [--dry-run] [--all]
+# Usage: bash scripts/cleanup-branches.sh [--dry-run] [--all]
 #
 # Options:
 #   --dry-run    Show what would be deleted without actually deleting
