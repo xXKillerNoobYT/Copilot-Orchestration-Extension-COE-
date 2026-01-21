@@ -1,9 +1,13 @@
 # Copilot Orchestration Extension (COE)
 # CONSOLIDATED MASTER PLAN
-**Version**: 2.0  
-**Date**: January 18, 2026  
-**Status**: Active Development - 52% Complete  
-**Synced with**: Notion, PRD.json, GITHUB-ISSUES-PLAN.md
+**Version**: 3.0  
+**Date**: January 20, 2026  
+**Status**: Active Development - 52% Complete | AI Teams Staged Rollout (v3.6)  
+**Synced with**: Notion, PRD.json, GITHUB-ISSUES-PLAN.md, AI-TEAMS-STAGING-PLAN.md
+
+> **🚀 Major Update (Jan 20)**: Comprehensive AI Teams system integrated with 3-stage rollout plan. 23 new features (F036-F056) covering Boss AI, LangGraph, AutoGen, context limiting, agent evolution, and more. See `AI-TEAMS-STAGING-PLAN.md` for full staging details.
+
+> **📖 Critical Reference**: All AI systems must consult **PRD.json** and **PRD.md** at every step of the programming cycle. These documents are the primary source of truth for features, requirements, and implementation details.
 
 ---
 
@@ -48,6 +52,58 @@ The **Copilot Orchestration Extension (COE)** is an AI-powered project planning 
 6. **Offer template-driven planning** with customizable workflows and best practices
 7. **Integrate AI-powered assistance** through multi-agent orchestration system
 8. **Ensure extensibility** through plugin architecture and open API
+
+---
+
+## 🤖 AI Teams - Staged Implementation
+
+**New in v3.0**: Comprehensive multi-agent AI system with 23 new features (F036-F056) rolled out in 3 progressive stages. This enhancement transforms COE into a fully autonomous orchestration platform with Boss AI oversight, advanced context management, and self-improving agents.
+
+### 📖 Full Documentation
+See **`AI-TEAMS-STAGING-PLAN.md`** for complete staging details, feature specifications, and implementation roadmap.
+
+### Quick Overview of Stages
+
+#### Stage 1: Core Functionality (Weeks 1-3) - CRITICAL
+**Goal**: Get extension working with basic multi-agent orchestration
+- **F036**: Boss AI Team - Basic Coordination
+- **F016**: Multi-Agent Orchestration - 4 Core Teams (Enhanced)
+- **F037**: Context Limiting - Basic Overflow Prevention
+- **F038**: Basic Task Routing Algorithm
+- **Deliverable**: Working MVP with coordinated agents
+
+#### Stage 2: Advanced Features (Weeks 4-6) - HIGH
+**Goal**: Add intelligence, evolution, and advanced capabilities
+- **F039**: LangGraph Integration - Advanced Workflows
+- **F040**: AutoGen Framework - Agent Communication
+- **F041**: Loop Detection & Recovery
+- **F042**: Agent Evolution - UV Tasks & Updating Tool
+- **F043**: Advanced Context Breaking Strategies
+- **F044-F047**: Researcher, Critic, Scraper, Updater Teams
+- **Deliverable**: Self-improving, intelligent agent system
+
+#### Stage 3: Fine Details (Weeks 7-8) - MEDIUM
+**Goal**: Optimize, fine-tune, and perfect the system
+- **F048**: Customizable Context Limiting per LLM
+- **F049**: Token Estimator with Tiktoken
+- **F050**: Embedding Service for Relevance Scoring
+- **F051**: RL Reward System
+- **F052**: User-Defined Prioritization
+- **F053**: Plan Drift Detection & Enforcement
+- **F054**: PRD Auto-Generation
+- **F055-F056**: Comprehensive Testing & UI Polish
+- **Deliverable**: Production-ready, optimized system
+
+### Integration with Current Plan
+- **Current Phase**: Phase 4 (UI Implementation)
+- **AI Teams Start**: After Issue #3 completion (Week 2)
+- **Stage 1 Target**: Complete by Feb 10, 2026
+- **Full System**: Complete by Mar 17, 2026
+
+### Key Dependencies
+1. **PRD.json & PRD.md**: All AI systems MUST reference these as primary source of truth
+2. **Staging Plan**: Follow sequential implementation (Stage 1 → 2 → 3)
+3. **Quality Gates**: 80%+ test coverage per stage, 0 TypeScript errors
 
 ---
 
@@ -240,49 +296,101 @@ flowchart TB
 
 ---
 
-## 🤖 Agent Teams (4 Specialized Teams)
+## 🤖 Agent Teams (4 Specialized Teams + Coding AI)
 
-### 1. Programming Orchestrator (Master Coordinator)
+> **📚 Enhanced Documentation (v2.1)**: For complete team separation details, strict boundaries, and Coding AI ask protocol, see:
+> - `COE-Master-Plan/02-Agent-Role-Definitions.md` (v2.1 - Updated Jan 20, 2026)
+> - `COE-Master-Plan/AGENT-TEAM-UPDATES-JAN20.md` (Clarifications & rationale)
 
-**Role**: Routes tasks, manages agent lifecycle, aggregates metrics
+### 1. Programming Orchestrator (Dedicated Coding Director)
+
+**Role**: Directs Coding AI only—**sole job** is managing programming execution from Planning Team outputs
+
+**Key Clarification (v2.1)**: 
+- **Coding-only focus**: No planning, answering, or verification
+- **Builds on Planning outputs**: Receives pre-decomposed tasks
+- **Routes clarifications**: Forwards Coding AI questions to Answer Team via MCP
 
 **Responsibilities**:
-- Route tasks to appropriate agent based on task type and status
-- Monitor agent health and performance metrics
-- Implement fallback strategies when agents fail
-- Aggregate metrics for dashboard display
-- Handle agent handoffs (Planning → Decomposition → Verification)
-- Maintain agent communication logs for audit
+- Sequence coding instructions to Coding AI from Planning Team queue
+- Monitor Coding AI progress and detect blocks
+- Route `askQuestion` MCP calls to Answer Team
+- Report coding task completion (no verification involvement)
+- **NOT responsible for**: Planning, answering questions, or verifying code
 
-**Routing Algorithm**:
+**Updated Routing Algorithm** (Coding-Only Focus):
 ```typescript
-function routeTask(task: Task): AgentType {
-  if (task.estimatedHours > 1) return AgentType.TaskDecomposition;
-  if (task.status === 'done') return AgentType.Verification;
-  if (task.requiresContext || task.hasOpenQuestions) return AgentType.Answer;
-  return AgentType.Planning;
+function directCodingAI(task: Task): void {
+  // Only handles coding directives—no routing to other teams
+  if (!task.fromPlanningTeam) {
+    throw new Error("Orchestrator requires Planning Team output");
+  }
+  
+  await codingAI.execute(buildDirective(task));
+  
+  if (codingAI.status === 'blocked') {
+    await answerTeam.askQuestion({...}); // Helper invocation only
+  }
 }
 ```
 
 **Metrics Tracked**:
-- Tasks routed per agent type
-- Agent response times (avg, p95, p99)
-- Agent failure rate
-- Task completion velocity
+- Directives sent to Coding AI
+- Coding AI blocks (requiring Answer Team)
+- Answer Team invocations
+- Average directive latency (<100ms target)
 
-### 2. Planning Team Agent
+### 1a. Coding AI (GitHub Copilot / LLM Executor)
 
-**Role**: Master planner that generates project plans, roadmaps, and task breakdowns
+**NEW SECTION (v2.1)**: Coding AI is **not** an autonomous agent—it's a directed executor with strict ask protocol.
+
+**Core Principles**:
+1. **Strict Instruction Following**: Only implements Orchestrator directives
+2. **Zero Assumption Policy**: Must ask Answer Team for ANY ambiguity
+3. **Ask-Early, Ask-Often**: Better 10 questions than 1 wrong implementation
+4. **MCP askQuestion Only**: Cannot guess, search web, or decide unilaterally
+5. **No Direct User Communication**: All communication via Answer Team
+
+**When Coding AI MUST Ask** (Non-Exhaustive List):
+- Backend tech choice not in plan
+- Library selection ambiguous  
+- Naming convention unclear
+- Error interpretation needed
+- Performance trade-off decision
+- Design system guideline interpretation
+- Integration point undefined
+- Acceptance criteria contradictory
+- **Any decision not 100% clear in directive**
+
+**Configuration**:
+```yaml
+ask_threshold: very_low        # Almost any uncertainty → ask
+max_questions_per_task: 8      # Rate limit
+confidence_threshold: 95       # 95%+ confidence required
+log_all_questions: true        # Audit trail
+```
+
+> **📖 Complete Ask Protocol**: See `02-Agent-Role-Definitions.md` Agent 1a section for detailed guidelines and examples
+
+### 2. Planning Team (Independent Upstream Planner)
+
+**Role**: Generates plans, decomposes features, prepares task queues—**outputs handed off without further coding involvement**
+
+**Key Clarification (v2.1)**:
+- **Independent operation**: No feedback loop to coding execution
+- **Handoff completion**: Planning ends at task queue generation
+- **No post-handoff involvement**: Stays separated from Orchestrator/Verification
 
 **Capabilities**:
 - Generate plans from user requirements
-- Create dependency-aware task lists
+- Create dependency-aware task lists with DAG validation
 - Estimate effort and timelines
-- Adapt plan based on execution feedback
+- Prepare context bundles for Orchestrator handoff
+- **Adapt plan**: Only when user requests (not during coding)
 
 **Input Sources**:
 - User requirements (natural language)
-- Existing plan context
+- Existing plan context (plan.json)
 - Architecture documents
 - Code structure analysis
 
@@ -290,29 +398,49 @@ function routeTask(task: Task): AgentType {
 - plan.json with tasks and dependencies
 - metadata.json with versioning
 - design-system.json references
+- **Context bundles** for Orchestrator (super-detailed prompts)
 
-### 3. Answer Team Agent
+**Updated Configuration**:
+```yaml
+handoff_mode: orchestrator          # NEW: Clean handoff enforcement
+no_coding_feedback_loop: true       # NEW: No involvement after handoff
+```
 
-**Role**: Context-aware Q&A agent using plan + codebase
+### 3. Answer Team (Helper for Coding AI Only)
+
+**Role**: On-call helper invoked **only by Coding AI via MCP** `askQuestion` tool—no proactive involvement
+
+**Key Clarification (v2.1)**:
+- **Trigger**: Only activates when Coding AI calls `askQuestion`
+- **No autonomy**: Waits for explicit questions (helper role)
+- **Fast response**: <5s target to unblock Coding AI quickly
+- **Escalation**: To user if answer not in plan/codebase
 
 **Capabilities**:
-- Load plan and codebase into context window
-- Answer technical questions accurately
-- Cite sources (plan sections, file paths, line numbers)
-- Escalate to human if uncertain (confidence < 75%)
+- Search plan and codebase for context
+- Answer technical questions with citations
+- Provide evidence-based guidance (plan sections, code examples)
+- Escalate when confidence <70% or user decision required
 
 **Context Sources**:
-- Active plan (plan.json)
-- Relevant source files (up to 50KB context)
+- Active plan (plan.json, metadata.json)
+- Codebase via semantic search (relevant files only)
 - Architecture documents
-- Previous Q&A history
+- Previous Q&A history (pattern learning)
+
+**Updated Configuration**:
+```yaml
+invoke_trigger: coding_ai_only      # NEW: Only Coding AI can invoke
+escalate_below_threshold: true      # Auto-escalate low-confidence
+log_all_invocations: true           # NEW: Audit all askQuestion calls
+```
 
 **Response Format**:
 ```json
 {
-  "answer": "string",
-  "confidence": 0.85,
-  "sources": ["plan.json:line 45", "src/app.ts:120-135"],
+  "answer": "Use Passport.js (found in package.json dependencies)",
+  "confidence": 0.90,
+  "sources": ["plan.json:section 3.2", "package.json:line 15"],
   "escalate_to_human": false
 }
 ```
@@ -338,39 +466,67 @@ function routeTask(task: Task): AgentType {
 - Updated dependency map
 - Parent task marked as "container task"
 
-### 5. Verification Team Agent
+### 5. Verification Team (Independent Post-Execution Checker)
 
-**Role**: Automated and visual verification with user gates
+**Role**: Post-execution checker with deliberate stability delay—**waits ~60s after file updates** before verifying
+
+**Key Clarification (v2.1)**:
+- **Independent from coding**: Completely separate from Planning/Orchestrator
+- **Stability delay**: Waits 60 seconds after file changes to prevent false positives
+- **Match detection**: Identifies completed items AND remaining work
+- **Auto-follow-ups**: Creates investigation tasks for gaps
 
 **Responsibilities**:
-1. Run automated tests on task completion
-2. Launch visual verification for UI changes
-3. Wait for user "Ready" signal
-4. Create investigation tasks on failure
+1. **Wait for file stability** (60-second delay after Coding AI updates)
+2. **Compare against plan** (match completed items to acceptance criteria)
+3. **Run automated tests** after stability period
+4. **Launch visual verification** for UI changes (with design system refs)
+5. **Report matches + remaining** (dual output: what's done vs. what's pending)
+6. **Auto-create follow-up tasks** for partial implementations or test failures
+
+**Updated Configuration**:
+```yaml
+stability_delay: 60                       # NEW: Wait 60s after file changes
+report_matches_and_remaining: true        # NEW: Dual output format
+auto_create_followups: true               # NEW: Create tasks for gaps
+watch_files: true                         # Monitor file system for triggers
+```
 
 **Verification Workflows**:
 
-**Automated Testing**:
-- Run unit tests for affected modules
-- Run integration tests if API changes
-- Check for lint/type errors
-- Verify code coverage (>75%)
+**Automated Testing** (with delay):
+1. Coding AI updates files → File watcher triggered
+2. **Wait 60 seconds** for file stability
+3. Read settled files + compare vs. plan
+4. Run unit/integration tests
+5. Identify matches (completed) and remaining (gaps)
+6. Report results with follow-up creation if needed
 
 **Visual Verification** (for UI tasks):
-- Launch development server
+- Launch development server (after stability delay)
 - Display smart checklist (auto-detect tested items)
-- Show design system reference inline
+- Show design system reference inline (colors, typography)
+- Show Plan Reference Panel with acceptance criteria
 - Collect user pass/fail/partial results
 - Create investigation tasks for failures
 
-**Failure Handling**:
+**Updated Failure Handling**:
 ```typescript
-if (verificationResult === 'fail') {
-  createInvestigationTask({
-    parent: task.id,
-    title: `Investigate: ${issue.description}`,
-    priority: 'HIGH',
-    assignTo: 'developer'
+interface VerificationResult {
+  matches: string[];              // NEW: Completed items
+  remaining: string[];            // NEW: Pending work
+  testResults: TestSummary;
+  userFeedback?: VisualCheckResult;
+}
+
+if (result.remaining.length > 0) {
+  // Auto-create follow-up tasks
+  result.remaining.forEach(item => {
+    createFollowUpTask({
+      parent: task.id,
+      title: `Complete: ${item}`,
+      priority: 'HIGH'
+    });
   });
 }
 ```

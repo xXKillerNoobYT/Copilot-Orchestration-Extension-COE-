@@ -2,6 +2,50 @@
 - Monorepo with three active codebases: **Laravel API + Inertia/Vue app** (root), **VS Code extension** (`vscode-extension/`), and **TypeScript context manager library** (`context-manager/`). Docs live in `Docs/` (runbook, plans, MCP references).
 - Default branch: `main`. PHP 8.2+, Laravel 10, Sanctum auth. Frontend uses Vue 3 + Vite + Tailwind. Node 18+ for JS/TS projects.
 
+## 📖 PRD - PRIMARY SOURCE OF TRUTH (READ THIS FIRST!)
+**⚠️ CRITICAL**: Before ANY programming task, consult the PRD as your primary source of truth.
+
+### PRD Files (v3.0 - AI Teams Integrated)
+1. **`PRD.json`** (Machine-readable - AI agents use this)
+   - 58 features across 10 categories
+   - Complete technical specifications
+   - Implementation roadmap with 3-stage AI Teams rollout
+   - **USE FOR**: Feature requirements, acceptance criteria, dependencies
+
+2. **`PRD.md`** (Human-readable - developers use this)
+   - Full narrative documentation
+   - Stakeholder needs and user stories
+   - Architecture overview and diagrams
+   - **USE FOR**: Understanding context, reviewing full specifications
+
+3. **`PRD.ipynb`** (Generator notebook)
+   - Auto-generates PRD.json and PRD.md from project docs
+   - **RUN THIS**: When upstream docs change (master plan, features, etc.)
+   - Updates both PRD files simultaneously
+
+### When to Reference PRD
+**ALWAYS check PRD before**:
+- Starting any new feature implementation
+- Making architecture decisions
+- Understanding task requirements
+- Checking acceptance criteria
+- Verifying dependencies
+- Planning multi-agent coordination
+- Implementing AI Teams features (F036-F056)
+
+**PRD Integration Points**:
+1. **Feature Development**: Check `PRD.json` → features array → find your feature ID
+2. **Agent Coordination**: Check `PRD.json` → technical_specs → "Multi-Agent Orchestration"
+3. **Context Management**: Check `PRD.json` → AI Teams Stage 1-3 features
+4. **Testing**: Use acceptance_criteria from PRD as test specifications
+5. **Documentation**: Keep PRD in sync - update `PRD.ipynb` when plans change
+
+### AI Teams Staging Reference
+- **Stage 1** (F036-F038): Core functionality - Boss AI, context limiting, routing
+- **Stage 2** (F039-F047): Advanced - LangGraph, AutoGen, loops, evolution
+- **Stage 3** (F048-F056): Fine details - per-LLM limits, RL rewards, PRD auto-gen
+- Full staging details: `Docs/Plans/AI-TEAMS-STAGING-PLAN.md`
+
 ## Setup & common commands
 - Root Laravel app: `composer install`, copy `.env`, `php artisan key:generate`, `npm install`. Dev server: `php artisan serve` + `npm run dev`. Prod build: `npm run build` (runs `vue-tsc` then Vite SSR + CSR).
 - Tests: PHP `php artisan test` (or `vendor/bin/phpunit`). JS (root) `npm test` / `npm run test:coverage`. Context-manager: `cd context-manager && npm install && npm test`. VS Code extension: `cd vscode-extension && npm install && npm run compile && npm test`.
@@ -29,9 +73,12 @@
 - Type-safe storage for task/agent contexts (JSON/YAML adapters, pruning policies, Zod validation). Main class `src/context-manager.ts`; storage adapters in `src/storage`. See `README.md` and `IMPLEMENTATION-SUMMARY.md` for API. Tests via Jest (`npm test`).
 
 ## Docs to consult first
-- **`Docs/Current-Status/`** ⭐ **NEW! AI AGENTS: READ THIS FIRST!** Live project state with READY-TO-WORK.md (what to do), BLOCKED-TASKS.md (what to avoid), OPEN-ISSUES.md (GitHub status), INCOMPLETE-WORK.md (all undone tasks), PRIORITY-QUEUE.md (what's next). Updated hourly from GitHub API.
+- **⭐ `PRD.json` & `PRD.md`** ⭐ **MOST IMPORTANT! PRIMARY SOURCE OF TRUTH!** Complete feature specifications, requirements, acceptance criteria, and AI Teams roadmap (58 features across 10 categories). Check these BEFORE starting any task.
+- **`Docs/Plans/AI-TEAMS-STAGING-PLAN.md`** 3-stage rollout for AI Teams (23 new features F036-F056). Boss AI, LangGraph, AutoGen, context limiting, agent evolution.
+- **`Docs/Plans/CONSOLIDATED-MASTER-PLAN.md`** v3.0 master plan with AI Teams integration. References PRD as source of truth.
+- **`Docs/Current-Status/`** ⭐ **AI AGENTS: READ THIS FIRST!** Live project state with READY-TO-WORK.md (what to do), BLOCKED-TASKS.md (what to avoid), OPEN-ISSUES.md (GitHub status), INCOMPLETE-WORK.md (all undone tasks), PRIORITY-QUEUE.md (what's next). Updated hourly from GitHub API.
 - `Docs/PROJECT-RUNBOOK.md` (execution order, task expectations, commands), `Docs/GITHUB-ISSUES-PLAN.md` (issue mappings), `Docs/README.md` (doc navigation), `COPILOT-WORKFLOW-QUICKSTART.md` (autonomous Copilot flow). Issues are mirrored in `.github/issues/` via GitHub Issues Sync.
-- PRD sources: prefer `PRD.json` (machine-readable for AI); `PRD.md` for human review; regenerate both via `PRD.ipynb` when upstream docs change.
+- PRD regeneration: Run `PRD.ipynb` when upstream docs change to update both `PRD.json` and `PRD.md`.
 
 ## Testing/CI expectations
 - Aim for all suites green: Laravel `php artisan test`, root Jest, context-manager Jest, extension Jest. Coverage targets noted in context-manager (80%+) and extension docs. Keep Vite/TypeScript builds clean (`npm run build`, `npm run compile`).

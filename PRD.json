@@ -1,10 +1,10 @@
 {
   "title": "Copilot Orchestration Extension (COE)",
   "version": "2.0.0",
-  "date": "2026-01-18",
+  "date": "2026-01-21",
   "status": "In Development - 52% Complete (Specification: 100%)",
-  "executive_summary": "\n## Executive Summary\n\nThe **Copilot Orchestration Extension (COE)** is an AI-powered project planning and task management system built as a VS Code extension. It transforms how development teams plan, decompose, and execute complex software projects through intelligent automation and multi-agent coordination.\n\n### Problem Statement\nDevelopment teams struggle with:\n- Time-consuming manual project planning and task breakdown (hours \u2192 days for complex projects)\n- Difficulty maintaining plan-code alignment throughout development lifecycle\n- Lack of visibility into task dependencies and bottlenecks across large projects\n- Inefficient context switching between planning tools and IDE (>20% productivity loss)\n- Inconsistent task verification leading to quality issues and rework (15-30% of tasks)\n- Manual GitHub Issues management causing sync drift and duplicate entry\n\n### Solution\nCOE provides a unified, AI-powered platform that:\n1. **Captures requirements** through an interactive 10-question design workflow\n2. **Decomposes tasks** automatically using AI with dependency detection and critical path analysis\n3. **Maps dependencies** with visual DAG rendering and circular dependency prevention\n4. **Coordinates execution** via 4 specialized agent teams:\n   - **Programming Orchestrator**: Master coordinator managing agent lifecycle and task routing\n   - **Planning Team**: Generates project plans, roadmaps, and dependency-aware task breakdowns\n   - **Answer Team**: Provides context-aware Q&A using plan + codebase with source citations\n   - **Verification Team**: Automated testing + visual verification with user Ready gates\n5. **Ensures quality** through smart checklists, design system integration, and automated investigation tasks\n6. **Syncs with GitHub** for seamless bi-directional Issue sync (5-minute interval, rate-limit optimized)\n\n### Key Differentiators\n- **Native VS Code Integration**: No context switching; planning happens where coding happens\n- **Multi-Agent Orchestration**: 4 specialized teams with MCP (Model Context Protocol) coordination\n- **Visual Verification System**: Interactive UI with server controls, smart checklists, and design system references\n- **Bi-Directional GitHub Sync**: Maintains single source of truth with sub-issue linking and automated updates\n- **AI-Powered Intelligence**: Leverages GitHub Copilot and custom agents for 70% autonomous task execution\n- **Super-Detailed Prompts**: Context bundles with design references, file lists, and acceptance criteria for perfect AI guidance\n- **Plan Adjustment Wizard**: Mid-execution plan changes with impact analysis and task regeneration\n\n### Current Status (January 18, 2026)\n- **Specification**: 100% complete (all 12 sections documented in master plan)\n- **Implementation**: 52% complete, on track for February 15, 2026 launch\n- **Test Coverage**: 96.8% (392/405 tests passing)\n- **Phase**: Phase 4 (UI Implementation) - 50% complete\n- **TypeScript Errors**: 0 \u2705\n- **Git Status**: Clean \u2705\n- **Days to Launch**: 28\n\n### Business Value\n- **50% reduction** in project planning time (hours \u2192 minutes with AI assistance)\n- **85% first-time task completion** rate (reduced rework from 30% to 15%)\n- **70% autonomous task execution** by AI agents (30% reduction in manual task overhead)\n- **99% GitHub sync accuracy** (eliminates duplicate entry and sync drift)\n- **$50K estimated savings** in first year from efficiency gains and reduced rework\n\n### Target Users\n- **Project Managers and Tech Leads** (planning and oversight with real-time dashboards)\n- **Developers** (task execution with super-detailed prompts and context loading)\n- **QA/Testers** (visual verification workflows with design system integration)\n- **Product Owners** (roadmap tracking across 35 features and 7 categories)\n- **AI Agents** (autonomous execution via MCP tools and structured task definitions)\n\n### Launch Timeline\n**MVP Launch**: February 15, 2026 (28 days from current date)\n\nCurrent Sprint (Week 1-2, Jan 11-21):\n- \u2705 Issue #1: Fix critical blockers (COMPLETED in 30 min)\n- \ud83d\udd04 Issue #2: Live preview system with <500ms latency (READY - 5-8 hours)\n- \ud83d\udcc5 Issue #3: Plan decomposition engine (QUEUED - 12-16 hours, can run parallel with #2)\n\nRemaining Phases:\n- Phase 4 (UI): Jan 17-29 - Visual Verification, Programming Orchestrator, Settings Panel\n- Phase 5 (AI Integration): Jan 30-Feb 5 - Agent profiles, Copilot integration, context bundling\n- Phase 6 (Testing & QA): Feb 6-12 - E2E test suite, performance benchmarks, UAT\n- Phase 7 (Documentation & Launch): Feb 13-15 - User guides, API docs, video tutorials, MVP launch\n",
-  "product_overview": "\n## Product Overview\n\n### Vision\nBuild the definitive AI-powered orchestration platform for software development teams, enabling seamless collaboration between human developers and autonomous AI agents through multi-team coordination and intelligent task routing.\n\n### Core Capabilities\n\n#### 1. Interactive Plan Builder with 10-Question Design Workflow\nVisual drag-and-drop interface for creating project plans with:\n- **Real-time dependency linking** with automatic arrow rendering\n- **Automated circular dependency detection** using DAG validation algorithms\n- **Critical path highlighting** with distinct visual indicators\n- **Timeline estimation** with resource allocation and workload balancing\n- **Template library** with 5+ pre-built templates (microservice, API, UI component, etc.)\n- **10-question design phase** capturing: project type, complexity, timeline, team size, design system, testing strategy, deployment, monitoring, documentation, success criteria\n- **3 user journey paths**: Quick (15 min), Standard (30 min), Comprehensive (60 min)\n\n#### 2. Multi-Agent Orchestration System (4 Specialized Teams)\nFour specialized agent teams working in coordination via MCP (Model Context Protocol):\n\n**Programming Orchestrator (Master Coordinator)**\n- Routes tasks to appropriate agent based on task type and status\n- Monitors agent health and performance metrics (response time, failure rate, velocity)\n- Implements fallback strategies when agents fail (30-second timeout)\n- Aggregates metrics for dashboard display with real-time WebSocket updates\n- **Routing Algorithm**: \n  - `estimatedHours > 1` \u2192 Task Decomposition\n  - `status = 'done'` \u2192 Verification\n  - `requiresContext OR hasOpenQuestions` \u2192 Answer Team\n  - Default \u2192 Planning Team\n\n**Planning Team Agent**  \n- Generates project plans from requirements using natural language processing\n- Creates dependency-aware task breakdowns with DAG validation\n- Estimates effort and timelines based on historical data and complexity analysis\n- Adapts plans based on execution feedback and progress metrics\n- **Output**: plan.json (tasks + dependencies), metadata.json (versioning), design-system.json references\n\n**Answer Team Agent**  \n- Provides context-aware Q&A using plan + codebase (semantic search)\n- Answers technical questions accurately with confidence scoring (threshold: 0.7)\n- Cites sources from plan sections, code files, and architecture docs\n- Escalates complex questions to humans when confidence < 0.7\n- **Context Sources**: Plan files, codebase, architecture docs, previous Q&A history\n\n**Task Decomposition Agent**\n- Detects complex tasks (estimated hours > 1 or flagged by Planning Team)\n- Automatically generates 3-5 subtasks with AI assistance\n- Preserves parent-child relationships and maintains dependency graph integrity\n- Notifies user of decomposition with summary and impact analysis\n- **Triggers**: >60-minute tasks, manual requests, complexity flags\n\n**Verification Team Agent**\n- Runs automated tests on task completion (unit, integration, E2E)\n- Launches visual verification for UI changes with design system references\n- Waits for user Ready signal before marking task complete\n- Creates investigation tasks automatically on test failures or visual issues\n- **Workflows**: \n  - Automated (backend tasks): Run tests \u2192 Pass/Fail \u2192 Report\n  - Visual (UI tasks): Launch server \u2192 Display checklist \u2192 User verify \u2192 Report\n  - Combined: Auto tests first, then visual verification if UI task\n\n#### 3. Visual Verification Workflow\nInteractive panel for user-guided testing with comprehensive design system integration:\n- **Server Control Panel**: Start/Stop/Restart buttons with status indicators (Running/Stopped/Error)\n- **Smart Checklist**: Auto-generated from acceptance criteria with detection of already-tested items\n- **Design System Reference**: Inline color swatches (with hex codes), typography samples, component library links\n- **Plan Reference Panel**: Relevant plan excerpt with highlighting and acceptance criteria\n- **Issue Reporting**: Create investigation tasks with description, severity (Critical/Major/Minor), and screenshot upload\n- **Plan Adjustment Wizard**: Mid-verification plan changes with impact analysis and automated task regeneration\n- **3 User Workflows**: Pass (all checks pass \u2192 next task), Fail (create investigations \u2192 block completion), Change (launch wizard \u2192 update plan)\n\n#### 4. MCP Server with 6 Enhanced Tools\nModel Context Protocol server providing core coordination capabilities:\n- **`getNextTask`**: Returns highest priority task with super-detailed prompt, design references, file contexts, and acceptance criteria\n- **`reportTaskStatus`**: Updates task status (inProgress/completed/failed/blocked) and triggers workflow transitions\n- **`reportObservation`**: Logs observations during execution (broadcast to all teams + audit log)\n- **`reportTestFailure`**: Reports test failures with diagnostics and creates investigation tasks automatically\n- **`reportVerificationResult`**: Submits verification results (pass/fail/partial) with issues and checklist data\n- **`askQuestion`**: Routes questions to Answer Team for context-aware responses with cited sources\n\n**Enhanced Reporting**:\n- WebSocket event streaming (taskCreated, taskUpdated, observationLogged, etc.)\n- Audit log for all agent actions with timestamps and metadata\n- Error handling with 30-second timeout, 3 retry attempts, and dead-letter queue\n- SQLite WAL mode persistence for performance and reliability\n\n#### 5. GitHub Issues Bi-Directional Sync\nSeamless integration with GitHub for single source of truth:\n- **Automatic Issue creation** for each task (title, body, labels, milestone)\n- **Status synchronization** (task status \u2194 Issue state) with 5-minute interval\n- **Comment import** as observations in task audit log\n- **Sub-issue linking** for task hierarchy with parent references\n- **Rate limit optimization**: Batch requests (max 50/batch), local caching (5-min TTL), exponential backoff\n- **GraphQL integration** for complex queries reducing request count by 60%\n- **Conflict resolution**: Last-write-wins with manual merge UI for conflicts\n\n#### 6. Programming Orchestrator Dashboard\nReal-time visibility into system status and multi-team coordination:\n- **Team Status Cards**: 4 cards (Planning, Answer, Decomposition, Verification) showing:\n  - Status (Active/Idle/Error)\n  - Current task (ID and title)\n  - Metrics (tasks completed, avg response time)\n  - Last activity timestamp\n- **Live Metrics**: Tasks created/completed/verified, agent utilization %, completion rate\n- **Coordination Toggles**: \n  - Auto-decompose (automatically split complex tasks)\n  - Require visual verification (mandate visual checks for UI tasks)\n  - Multi-team handoff (enable automatic agent handoffs)\n  - Parallel execution (allow simultaneous task execution)\n- **Plan Selector**: Dropdown to switch active plan with Load/Refresh/New actions\n- **Team Configuration**: Per-team config modals, YAML profile loading, permission management\n- **WebSocket-based live updates** for real-time dashboard refresh (<500ms latency)\n\n### Technology Stack\n- **Frontend**: TypeScript, React (for webviews), Vue 3 (for interactive components), VS Code Extension API\n- **Backend**: Node.js, SQLite with WAL mode (persistence), WebSocket (real-time events)\n- **AI/ML**: GitHub Copilot integration, custom agent orchestration framework, context bundling with token limits\n- **Integrations**: GitHub REST/GraphQL APIs (rate-limit optimized), CI/CD webhooks, Slack/Teams notifications (planned)\n- **Testing**: Jest 29+ (unit/integration: 96.8% coverage), Mocha (E2E extension tests)\n- **Validation**: Zod-based schema validation for all MCP tool inputs\n- **Build Tools**: Webpack (dual bundle: extension + tools), TypeScript 5+, ESLint/Prettier\n",
+  "executive_summary": "\n## Executive Summary\n\nThe **Copilot Orchestration Extension (COE)** is an AI-powered project planning and task management system built as a VS Code extension. It transforms how development teams plan, decompose, and execute complex software projects through intelligent automation and multi-agent coordination.\n\n> **\ud83d\udcda Note for AI Systems**: This PRD is a high-level summary. For comprehensive implementation details, consult:\n> - `Docs/Plans/CONSOLIDATED-MASTER-PLAN.md` - Complete project specification (1,088 lines)\n> - `Docs/Plans/COE-Master-Plan/02-Agent-Role-Definitions.md` - Full agent specifications (1,021 lines)\n> - `Docs/Plans/COE-Master-Plan/05-MCP-API-Reference.md` - Complete MCP API contracts (978 lines)\n> - `Docs/GITHUB-ISSUES-PLAN.md` - Current sprint execution details\n> - See \"Reference Documentation\" section below for complete mapping\n\n### Problem Statement\nDevelopment teams struggle with:\n- Time-consuming manual project planning and task breakdown (hours \u2192 days for complex projects)\n- Difficulty maintaining plan-code alignment throughout development lifecycle\n- Lack of visibility into task dependencies and bottlenecks across large projects\n- Inefficient context switching between planning tools and IDE (>20% productivity loss)\n- Inconsistent task verification leading to quality issues and rework (15-30% of tasks)\n- Manual GitHub Issues management causing sync drift and duplicate entry\n\n### Solution\nCOE provides a unified, AI-powered platform that:\n1. **Captures requirements** through an interactive 10-question design workflow\n2. **Decomposes tasks** automatically using AI with dependency detection and critical path analysis\n3. **Maps dependencies** with visual DAG rendering and circular dependency prevention\n4. **Coordinates execution** via 4 specialized agent teams:\n   - **Programming Orchestrator**: Master coordinator managing agent lifecycle and task routing\n   - **Planning Team**: Generates project plans, roadmaps, and dependency-aware task breakdowns\n   - **Answer Team**: Provides context-aware Q&A using plan + codebase with source citations\n   - **Verification Team**: Automated testing + visual verification with user Ready gates\n5. **Ensures quality** through smart checklists, design system integration, and automated investigation tasks\n6. **Syncs with GitHub** for seamless bi-directional Issue sync (5-minute interval, rate-limit optimized)\n\n> **\ud83d\udd0d Deep Dive**: For complete agent specifications, routing algorithms, and YAML profiles, see `Docs/Plans/COE-Master-Plan/02-Agent-Role-Definitions.md`\n\n### Key Differentiators\n- **Native VS Code Integration**: No context switching; planning happens where coding happens\n- **Multi-Agent Orchestration**: 4 specialized teams with MCP (Model Context Protocol) coordination\n- **Visual Verification System**: Interactive UI with server controls, smart checklists, and design system references\n- **Bi-Directional GitHub Sync**: Maintains single source of truth with sub-issue linking and automated updates\n- **AI-Powered Intelligence**: Leverages GitHub Copilot and custom agents for 70% autonomous task execution\n- **Super-Detailed Prompts**: Context bundles with design references, file lists, and acceptance criteria for perfect AI guidance\n- **Plan Adjustment Wizard**: Mid-execution plan changes with impact analysis and task regeneration\n\n> **\ud83c\udfd7\ufe0f Architecture Details**: See `Docs/Plans/COE-Master-Plan/01-Architecture-Document.md` for system diagrams and component interactions\n\n### Current Status (January 18, 2026)\n- **Specification**: 100% complete (all 12 sections documented in master plan)\n- **Implementation**: 52% complete, on track for February 15, 2026 launch\n- **Test Coverage**: 96.8% (392/405 tests passing)\n- **Phase**: Phase 4 (UI Implementation) - 50% complete\n- **TypeScript Errors**: 0 \u2705\n- **Git Status**: Clean \u2705\n- **Days to Launch**: 28\n\n> **\ud83d\udccb Current Sprint**: See `Docs/GITHUB-ISSUES-PLAN.md` for Issues #1-3 with detailed acceptance criteria and file lists\n\n### Business Value\n- **50% reduction** in project planning time (hours \u2192 minutes with AI assistance)\n- **85% first-time task completion** rate (reduced rework from 30% to 15%)\n- **70% autonomous task execution** by AI agents (30% reduction in manual task overhead)\n- **99% GitHub sync accuracy** (eliminates duplicate entry and sync drift)\n- **$50K estimated savings** in first year from efficiency gains and reduced rework\n\n### Target Users\n- **Project Managers and Tech Leads** (planning and oversight with real-time dashboards)\n- **Developers** (task execution with super-detailed prompts and context loading)\n- **QA/Testers** (visual verification workflows with design system integration)\n- **Product Owners** (roadmap tracking across 35 features and 7 categories)\n- **AI Agents** (autonomous execution via MCP tools and structured task definitions)\n\n### Launch Timeline\n**MVP Launch**: February 15, 2026 (28 days from current date)\n\nCurrent Sprint (Week 1-2, Jan 11-21):\n- \u2705 Issue #1: Fix critical blockers (COMPLETED in 30 min)\n- \ud83d\udd04 Issue #2: Live preview system with <500ms latency (READY - 5-8 hours)\n- \ud83d\udcc5 Issue #3: Plan decomposition engine (QUEUED - 12-16 hours, can run parallel with #2)\n\nRemaining Phases:\n- Phase 4 (UI): Jan 17-29 - Visual Verification, Programming Orchestrator, Settings Panel\n- Phase 5 (AI Integration): Jan 30-Feb 5 - Agent profiles, Copilot integration, context bundling\n- Phase 6 (Testing & QA): Feb 6-12 - E2E test suite, performance benchmarks, UAT\n- Phase 7 (Documentation & Launch): Feb 13-15 - User guides, API docs, video tutorials, MVP launch\n\n---\n\n## \ud83d\udcda Reference Documentation\n\nThis PRD provides a **high-level overview**. For detailed implementation specifications, consult these authoritative documents:\n\n### Primary Sources (Complete Specifications)\n\n| Document | Lines | Purpose | When to Use |\n|----------|-------|---------|-------------|\n| **`Docs/Plans/CONSOLIDATED-MASTER-PLAN.md`** | 1,088 | Complete project overview, all 35 features, current status | Overall context, feature details, current sprint |\n| **`Docs/Plans/COE-Master-Plan/01-Architecture-Document.md`** | 274 | System architecture, component diagrams | System design, component relationships |\n| **`Docs/Plans/COE-Master-Plan/02-Agent-Role-Definitions.md`** | 1,021 | Complete agent specs, routing, permissions | Agent implementation, coordination logic |\n| **`Docs/Plans/COE-Master-Plan/03-Workflow-Orchestration.md`** | - | Task workflows, state transitions | Workflow automation, lifecycle management |\n| **`Docs/Plans/COE-Master-Plan/04-Data-Flow-State-Management.md`** | - | Data flow, state handling, WebSocket events | Data synchronization, real-time updates |\n| **`Docs/Plans/COE-Master-Plan/05-MCP-API-Reference.md`** | 978 | Complete MCP tool specs, API contracts | MCP implementation, tool development |\n| **`Docs/GITHUB-ISSUES-PLAN.md`** | - | Current sprint Issues #1-3 with acceptance criteria | Task execution, sprint planning |\n| **`Docs/PROJECT-RUNBOOK.md`** | - | Step-by-step procedures, commands | Operational tasks, testing procedures |\n| **`Docs/Plans/PLAN-SYNC-STATUS.md`** | 687 | Sync status between systems | Verify documentation coverage |\n| **`Docs/Plans/NOTION-SYNC-UPDATE-JAN18.md`** | 875 | Complete feature specifications | Feature implementation details |\n\n### Quick Reference Guide for AI Systems\n\n**Starting Implementation?**\n1. Read `CONSOLIDATED-MASTER-PLAN.md` for overall context\n2. Check `GITHUB-ISSUES-PLAN.md` for current task details\n3. Consult specific master plan documents for component details\n\n**Implementing Agents?**\n- Full specs: `02-Agent-Role-Definitions.md` (1,021 lines)\n- Includes: Routing algorithms, permissions, YAML profiles, handoff logic\n\n**Building MCP Tools?**\n- API contracts: `05-MCP-API-Reference.md` (978 lines)\n- Includes: Request/response schemas, error handling, WebSocket events\n\n**Need Architecture Context?**\n- System design: `01-Architecture-Document.md` (274 lines)\n- Includes: Mermaid diagrams, component flows, integration points\n\n**Workflow Questions?**\n- Orchestration: `03-Workflow-Orchestration.md`\n- State management: `04-Data-Flow-State-Management.md`\n\n### Document Update Status\n\n**Last Updated**: January 18, 2026  \n**Source of Truth**: `CONSOLIDATED-MASTER-PLAN.md`  \n**Sync Status**: Check `PLAN-SYNC-STATUS.md` for latest synchronization state\n\n**Note**: All source documents include cross-references and are versioned. When implementing features, always verify against the master plan documents for the most current and detailed specifications.\n",
+  "product_overview": "\n## Product Overview\n\n> **\ud83d\udd0d Detailed Specs**: For comprehensive technical specifications, see `Docs/Plans/COE-Master-Plan/` folder (5 architecture documents)\n\n### Vision\nBuild the definitive AI-powered orchestration platform for software development teams, enabling seamless collaboration between human developers and autonomous AI agents through multi-team coordination and intelligent task routing.\n\n### Core Capabilities\n\n#### 1. Interactive Plan Builder with 10-Question Design Workflow\nVisual drag-and-drop interface for creating project plans with:\n- **Real-time dependency linking** with automatic arrow rendering\n- **Automated circular dependency detection** using DAG validation algorithms\n- **Critical path highlighting** with distinct visual indicators\n- **Timeline estimation** with resource allocation and workload balancing\n- **Template library** with 5+ pre-built templates (microservice, API, UI component, etc.)\n- **10-question design phase** capturing: project type, complexity, timeline, team size, design system, testing strategy, deployment, monitoring, documentation, success criteria\n- **3 user journey paths**: Quick (15 min), Standard (30 min), Comprehensive (60 min)\n\n> **\ud83d\udcd6 Implementation Guide**: See `CONSOLIDATED-MASTER-PLAN.md` Section 9 for complete Interactive Design Phase specifications\n\n#### 2. Multi-Agent Orchestration System (4 Specialized Teams)\nFour specialized agent teams working in coordination via MCP (Model Context Protocol):\n\n**Programming Orchestrator (Master Coordinator)**\n- Routes tasks to appropriate agent based on task type and status\n- Monitors agent health and performance metrics (response time, failure rate, velocity)\n- Implements fallback strategies when agents fail (30-second timeout)\n- Aggregates metrics for dashboard display with real-time WebSocket updates\n- **Routing Algorithm**: \n  - `estimatedHours > 1` \u2192 Task Decomposition\n  - `status = 'done'` \u2192 Verification\n  - `requiresContext OR hasOpenQuestions` \u2192 Answer Team\n  - Default \u2192 Planning Team\n\n**Planning Team Agent**  \n- Generates project plans from requirements using natural language processing\n- Creates dependency-aware task breakdowns with DAG validation\n- Estimates effort and timelines based on historical data and complexity analysis\n- Adapts plans based on execution feedback and progress metrics\n- **Output**: plan.json (tasks + dependencies), metadata.json (versioning), design-system.json references\n\n**Answer Team Agent**  \n- Provides context-aware Q&A using plan + codebase (semantic search)\n- Answers technical questions accurately with confidence scoring (threshold: 0.7)\n- Cites sources from plan sections, code files, and architecture docs\n- Escalates complex questions to humans when confidence < 0.7\n- **Context Sources**: Plan files, codebase, architecture docs, previous Q&A history\n\n**Task Decomposition Agent**\n- Detects complex tasks (estimated hours > 1 or flagged by Planning Team)\n- Automatically generates 3-5 subtasks with AI assistance\n- Preserves parent-child relationships and maintains dependency graph integrity\n- Notifies user of decomposition with summary and impact analysis\n- **Triggers**: >60-minute tasks, manual requests, complexity flags\n\n**Verification Team Agent**\n- Runs automated tests on task completion (unit, integration, E2E)\n- Launches visual verification for UI changes with design system references\n- Waits for user Ready signal before marking task complete\n- Creates investigation tasks automatically on test failures or visual issues\n- **Workflows**: \n  - Automated (backend tasks): Run tests \u2192 Pass/Fail \u2192 Report\n  - Visual (UI tasks): Launch server \u2192 Display checklist \u2192 User verify \u2192 Report\n  - Combined: Auto tests first, then visual verification if UI task\n\n> **\ud83e\udd16 Complete Agent Specs**: See `Docs/Plans/COE-Master-Plan/02-Agent-Role-Definitions.md` for:\n> - Complete agent profiles (1,021 lines)\n> - Tool permissions and execution constraints\n> - Handoff logic and coordination patterns\n> - YAML profile specifications\n> - Communication protocols\n\n#### 3. Visual Verification Workflow\nInteractive panel for user-guided testing with comprehensive design system integration:\n- **Server Control Panel**: Start/Stop/Restart buttons with status indicators (Running/Stopped/Error)\n- **Smart Checklist**: Auto-generated from acceptance criteria with detection of already-tested items\n- **Design System Reference**: Inline color swatches (with hex codes), typography samples, component library links\n- **Plan Reference Panel**: Relevant plan excerpt with highlighting and acceptance criteria\n- **Issue Reporting**: Create investigation tasks with description, severity (Critical/Major/Minor), and screenshot upload\n- **Plan Adjustment Wizard**: Mid-verification plan changes with impact analysis and automated task regeneration\n- **3 User Workflows**: Pass (all checks pass \u2192 next task), Fail (create investigations \u2192 block completion), Change (launch wizard \u2192 update plan)\n\n> **\ud83c\udfa8 UI Specifications**: See `NOTION-SYNC-UPDATE-JAN18.md` \"Visual Verification System\" section for complete UI component specs\n\n#### 4. MCP Server with 6 Enhanced Tools\nModel Context Protocol server providing core coordination capabilities:\n- **`getNextTask`**: Returns highest priority task with super-detailed prompt, design references, file contexts, and acceptance criteria\n- **`reportTaskStatus`**: Updates task status (inProgress/completed/failed/blocked) and triggers workflow transitions\n- **`reportObservation`**: Logs observations during execution (broadcast to all teams + audit log)\n- **`reportTestFailure`**: Reports test failures with diagnostics and creates investigation tasks automatically\n- **`reportVerificationResult`**: Submits verification results (pass/fail/partial) with issues and checklist data\n- **`askQuestion`**: Routes questions to Answer Team for context-aware responses with cited sources\n\n**Enhanced Reporting**:\n- WebSocket event streaming (taskCreated, taskUpdated, observationLogged, etc.)\n- Audit log for all agent actions with timestamps and metadata\n- Error handling with 30-second timeout, 3 retry attempts, and dead-letter queue\n- SQLite WAL mode persistence for performance and reliability\n\n> **\ud83d\udd27 MCP API Details**: See `Docs/Plans/COE-Master-Plan/05-MCP-API-Reference.md` for:\n> - Complete JSON-RPC 2.0 protocol specification (978 lines)\n> - Request/response schemas for all 6 tools\n> - Error codes and handling strategies\n> - WebSocket event definitions\n> - Transport layer specifications\n\n#### 5. GitHub Issues Bi-Directional Sync\nSeamless integration with GitHub for single source of truth:\n- **Automatic Issue creation** for each task (title, body, labels, milestone)\n- **Status synchronization** (task status \u2194 Issue state) with 5-minute interval\n- **Comment import** as observations in task audit log\n- **Sub-issue linking** for task hierarchy with parent references\n- **Rate limit optimization**: Batch requests (max 50/batch), local caching (5-min TTL), exponential backoff\n- **GraphQL integration** for complex queries reducing request count by 60%\n- **Conflict resolution**: Last-write-wins with manual merge UI for conflicts\n\n> **\ud83d\udd04 Integration Details**: See `01-Architecture-Document.md` GitHub Integration section for architecture diagrams\n\n#### 6. Programming Orchestrator Dashboard\nReal-time visibility into system status and multi-team coordination:\n- **Team Status Cards**: 4 cards (Planning, Answer, Decomposition, Verification) showing:\n  - Status (Active/Idle/Error)\n  - Current task (ID and title)\n  - Metrics (tasks completed, avg response time)\n  - Last activity timestamp\n- **Live Metrics**: Tasks created/completed/verified, agent utilization %, completion rate\n- **Coordination Toggles**: \n  - Auto-decompose (automatically split complex tasks)\n  - Require visual verification (mandate visual checks for UI tasks)\n  - Multi-team handoff (enable automatic agent handoffs)\n  - Parallel execution (allow simultaneous task execution)\n- **Plan Selector**: Dropdown to switch active plan with Load/Refresh/New actions\n- **Team Configuration**: Per-team config modals, YAML profile loading, permission management\n- **WebSocket-based live updates** for real-time dashboard refresh (<500ms latency)\n\n> **\ud83d\udcca Dashboard Specs**: See `NOTION-SYNC-UPDATE-JAN18.md` \"Programming Orchestrator\" section for complete dashboard layout\n\n### Technology Stack\n- **Frontend**: TypeScript, React (for webviews), Vue 3 (for interactive components), VS Code Extension API\n- **Backend**: Node.js, SQLite with WAL mode (persistence), WebSocket (real-time events)\n- **AI/ML**: GitHub Copilot integration, custom agent orchestration framework, context bundling with token limits\n- **Integrations**: GitHub REST/GraphQL APIs (rate-limit optimized), CI/CD webhooks, Slack/Teams notifications (planned)\n- **Testing**: Jest 29+ (unit/integration: 96.8% coverage), Mocha (E2E extension tests)\n- **Validation**: Zod-based schema validation for all MCP tool inputs\n- **Build Tools**: Webpack (dual bundle: extension + tools), TypeScript 5+, ESLint/Prettier\n\n> **\ud83c\udfd7\ufe0f Technical Deep Dive**: See `Docs/Plans/COE-Master-Plan/` folder for:\n> - `01-Architecture-Document.md` - System architecture and component diagrams\n> - `04-Data-Flow-State-Management.md` - Data flow and state handling\n> - `05-MCP-API-Reference.md` - Complete API specifications\n",
   "objectives": [
     "Enable intuitive requirement capture through interactive planning workflows",
     "Provide atomic task decomposition with dependency mapping and critical path analysis",
@@ -843,6 +843,404 @@
       ],
       "dependencies": [],
       "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F036",
+      "name": "Boss AI Team - Basic Coordination",
+      "description": "Top-level supervisor AI for multi-agent coordination, task routing, and conflict resolution.",
+      "category": "AI Teams - Stage 1",
+      "status": "Planned",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Routes tasks to appropriate agent teams",
+        "Monitors team status and metrics",
+        "Detects basic conflicts (plan vs. execution drift)",
+        "Aggregates metrics for dashboard",
+        "Handles team status changes"
+      ],
+      "dependencies": [],
+      "estimated_effort": "2-3 weeks"
+    },
+    {
+      "id": "F037",
+      "name": "Context Limiting - Basic Overflow Prevention",
+      "description": "Prevents token overflows with configurable limits and auto-recovery.",
+      "category": "AI Teams - Stage 1",
+      "status": "Planned",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Global context limit enforced (default: 5,000 tokens)",
+        "Minimum floor (3,500 tokens) prevents underflow",
+        "Basic summarization when >80% limit",
+        "Auto-recovery on overflow (fresh start with handover)",
+        "Sidebar shows context status"
+      ],
+      "dependencies": [
+        "F010"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F038",
+      "name": "Basic Task Routing Algorithm",
+      "description": "Simple rules-based routing for task assignment to agent teams.",
+      "category": "AI Teams - Stage 1",
+      "status": "Planned",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Routes by estimated hours (>1hr \u2192 Decomposition)",
+        "Routes by status (done \u2192 Verification)",
+        "Routes questions to Answer Team",
+        "Default route to Planning Team",
+        "100% of test tasks routed correctly"
+      ],
+      "dependencies": [
+        "F036"
+      ],
+      "estimated_effort": "3 days"
+    },
+    {
+      "id": "F039",
+      "name": "LangGraph Integration - Advanced Workflows",
+      "description": "Graph-based orchestration for complex multi-agent workflows with conditional edges and state persistence.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Conditional edges (e.g., drift >0.2 \u2192 Verification)",
+        "Loop support for retries and reviews",
+        "State checkpoints for recovery",
+        "Supervisor pattern (Boss oversees sub-graphs)",
+        "Handles complex workflows without errors"
+      ],
+      "dependencies": [
+        "F036"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F040",
+      "name": "AutoGen Framework - Agent Communication",
+      "description": "Conversational multi-agent system with group chats and human-in-loop escalations.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Group chats for team collaboration",
+        "Human-in-loop for escalations",
+        "Message compression for 14B models",
+        "Tool chaining (agents call MCP tools)",
+        "Chat history tracking"
+      ],
+      "dependencies": [
+        "F016"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F041",
+      "name": "Loop Detection & Recovery",
+      "description": "Prevents infinite loops and stalled issues through pattern detection and auto-recovery.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Detects LangGraph cycles (>3 repeats)",
+        "Pattern matching in AutoGen chats (similarity >0.8)",
+        "Metrics-based detection (no progress in 5 cycles)",
+        "Auto-break and escalate to Researcher/Boss",
+        "Sidebar alerts on loop detection"
+      ],
+      "dependencies": [
+        "F039",
+        "F040"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F042",
+      "name": "Agent Evolution - UV Tasks & Updating Tool",
+      "description": "Self-improving agents via template updates and Update Verification tasks.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Critic detects patterns (e.g., 'Linting misses >3')",
+        "UV (Update Verification) tasks generated",
+        "updateTemplate MCP tool for safe updates",
+        "YAML-only changes (no code breaking)",
+        "3+ successful evolution examples"
+      ],
+      "dependencies": [
+        "F045"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F043",
+      "name": "Advanced Context Breaking Strategies",
+      "description": "Multiple strategies for intelligent context management and token optimization.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Summarize Old strategy (temporal compression)",
+        "Prioritize Recent strategy (relevance pruning)",
+        "Content-Type Chunking (code vs. text)",
+        "Discard Low-Relevance (aggressive pruning)",
+        "Hybrid strategy chaining",
+        "Reduces overflows to <5%"
+      ],
+      "dependencies": [
+        "F037"
+      ],
+      "estimated_effort": "2 weeks"
+    },
+    {
+      "id": "F044",
+      "name": "Researcher Team Agent",
+      "description": "Problem-solver agent that scrapes documentation and finds solutions for ambiguities and issues.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Triggered by ambiguities, issues, or loops",
+        "Web search integration",
+        "Documentation scraping (browse_page)",
+        "Feeds solutions to Coding AI prompts",
+        "80%+ autonomous resolution rate"
+      ],
+      "dependencies": [
+        "F040",
+        "F041"
+      ],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F045",
+      "name": "Critic Team Agent",
+      "description": "Reviews all outputs, rates agents, and suggests improvements for continuous system enhancement.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Reviews plans, code, and documentation",
+        "Rates agents (1-10 scale)",
+        "Suggests improvements",
+        "Feeds RL training data",
+        "Detects patterns for evolution"
+      ],
+      "dependencies": [],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F046",
+      "name": "Scraper Team Agent",
+      "description": "Verifies Coding AI outputs and communication for on-task alignment.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Scrapes Coding AI documents",
+        "Verifies on-task status",
+        "Checks proper communication",
+        "Reports to Boss/Critic",
+        "Escalates miscommunications"
+      ],
+      "dependencies": [
+        "F019"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F047",
+      "name": "Updater Agent",
+      "description": "Cleanup and organization agent for file management and conflict resolution.",
+      "category": "AI Teams - Stage 2",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Deletes junk files post-use",
+        "Organizes docs into folders",
+        "Resolves conflicts (merges duplicates)",
+        "File Tree integration",
+        "Background operation (no user interruption)"
+      ],
+      "dependencies": [
+        "F036"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F048",
+      "name": "Customizable Context Limiting per LLM",
+      "description": "Per-LLM and per-agent context limits with user-configurable settings.",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Per-LLM limits (e.g., local 14B: 3,500; Grok: 8,000)",
+        "User-specified minimum floor",
+        "'Follow Default' checkbox for each LLM",
+        "Per-agent overrides in settings",
+        "Sidebar UI for configuration"
+      ],
+      "dependencies": [
+        "F037"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F049",
+      "name": "Token Estimator with Tiktoken",
+      "description": "Accurate token counting using tiktoken for GPT-like models with HuggingFace fallback.",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Tiktoken JS integration",
+        "HuggingFace tokenizer fallback",
+        "Batch optimization (cache encodings)",
+        "Within 5% accuracy",
+        "Replaces all placeholder estimateTokens"
+      ],
+      "dependencies": [
+        "F043"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F050",
+      "name": "Embedding Service for Relevance Scoring",
+      "description": "Semantic similarity scoring using MiniLM embeddings for intelligent context pruning.",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "MiniLM (sentence-transformers) integration",
+        "Cosine similarity for relevance scores",
+        "Batch embeddings for performance",
+        "GloVe fallback if latency >100ms",
+        "Improves coherence by 15%+"
+      ],
+      "dependencies": [
+        "F043"
+      ],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F051",
+      "name": "RL Reward System for Breaking Outcomes",
+      "description": "Reinforcement learning system that rewards successful context breaking and penalizes failures.",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Reward function (positive for success, negative for recovery)",
+        "Dataset generation (JSONL for fine-tuning)",
+        "Metrics: coherence delta, tokens reduced, priority preserved",
+        "100+ training samples collected",
+        "Integration with Boss AI"
+      ],
+      "dependencies": [
+        "F043"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F052",
+      "name": "User-Defined Prioritization",
+      "description": "Custom priority assignment for modular projects (e.g., To Do List P1, Calendar P3).",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Priority assignment in Planning Wizard (P1-3)",
+        "Auto-sequencing (P1 tasks first)",
+        "Breaking strategies respect priorities",
+        "Task queue sorts by priority",
+        "Examples: To Do List (P1) vs. Calendar (P3)"
+      ],
+      "dependencies": [
+        "F038"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F053",
+      "name": "Plan Drift Detection & Enforcement",
+      "description": "Real-time monitoring of code deviations from plan with user decision flow.",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Detects deviations (code diffs vs. plan)",
+        "Boss evaluates impact",
+        "User modal: 'Keep change or eradicate?'",
+        "Auto-log enforcements",
+        "95%+ drift detection rate"
+      ],
+      "dependencies": [
+        "F036"
+      ],
+      "estimated_effort": "1.5 weeks"
+    },
+    {
+      "id": "F054",
+      "name": "PRD Auto-Generation",
+      "description": "Boss AI generates and updates PRD automatically on plan changes with RL-tuned accuracy.",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Syncs PRD on plan changes",
+        "RL-fine-tuned for accuracy",
+        "Markdown and JSON formats",
+        "Version bump on drift",
+        "Integration with Boss AI"
+      ],
+      "dependencies": [
+        "F036"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F055",
+      "name": "Comprehensive Test Suite for Context Management",
+      "description": "End-to-end testing for overflow simulations with coherence verification.",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Generate 10k+ token contexts",
+        "Apply strategy chains",
+        "Verify coherence (>0.85 similarity)",
+        "Performance benchmarks (<2s for 50 units)",
+        "90%+ code coverage for context management"
+      ],
+      "dependencies": [
+        "F043"
+      ],
+      "estimated_effort": "1 week"
+    },
+    {
+      "id": "F056",
+      "name": "Sidebar UI Feedback for Context Breaking",
+      "description": "Real-time visual feedback during context breaking with progress indicators and status messages.",
+      "category": "AI Teams - Stage 3",
+      "status": "Planned",
+      "priority": "P2",
+      "acceptance_criteria": [
+        "Progress bar (blue/green/orange/red)",
+        "Status messages (e.g., 'Summarizing old context...')",
+        "Priority badge (e.g., 'P1: To Do List')",
+        "Details collapsible (token counts, strategies)",
+        "Updates in <500ms"
+      ],
+      "dependencies": [
+        "F043"
+      ],
+      "estimated_effort": "1 week"
     }
   ],
   "technical_specs": [
@@ -1368,93 +1766,78 @@
       ]
     }
   ],
-  "architecture_overview": "See Technical Specifications section for detailed architecture including MCP server (6 tools), multi-agent orchestration (4 teams), database schema (4 tables), VS Code extension structure, GitHub integration, and visual verification system",
+  "architecture_overview": "See Technical Specifications section and Docs/Plans/COE-Master-Plan/01-Architecture-Document.md",
   "timeline": {
-    "total_duration": "39 calendar days",
+    "total_duration": "4 weeks (Jan 17 - Feb 15, 2026)",
     "target_launch": "2026-02-15",
     "phases": [
       {
-        "phase": "Phase 1: Planning & Design",
-        "duration": "2 weeks",
+        "phase": "Phase 1: Foundation (Week 1)",
+        "duration": "5 days",
         "status": "Complete",
-        "progress": "100%",
         "deliverables": [
-          "Architecture docs (8 documents)",
-          "Feature specs (35 features)",
-          "UI mockups (10 pages)",
-          "MCP API contracts"
+          "Git clean",
+          "Design system tests",
+          "Foundation ready"
         ]
       },
       {
-        "phase": "Phase 2: Backend Components",
-        "duration": "2 weeks (parallel with Phase 3)",
-        "status": "Complete",
-        "progress": "100%",
-        "deliverables": [
-          "MCP server with 6 tools",
-          "SQLite database schema (4 tables)",
-          "Agent framework (4 teams)",
-          "WebSocket event system"
-        ]
-      },
-      {
-        "phase": "Phase 3: Frontend APIs",
-        "duration": "2 weeks (parallel with Phase 2)",
-        "status": "Complete",
-        "progress": "100%",
-        "deliverables": [
-          "Extension activation",
-          "MCP client",
-          "GitHub sync (bi-directional)",
-          "Agent validation (Zod schemas)"
-        ]
-      },
-      {
-        "phase": "Phase 4: UI Pages",
-        "duration": "2 weeks",
+        "phase": "Phase 2: Core Features (Week 1-2)",
+        "duration": "7 days",
         "status": "In Progress",
-        "progress": "50%",
         "deliverables": [
-          "Visual Verification Panel (7 components, 3 workflows)",
-          "Programming Orchestrator Dashboard (team cards, live metrics, toggles)",
-          "Settings Panel (4 tabs)",
-          "Plan Builder (drag-and-drop with dependency linking)"
+          "Live preview system",
+          "Plan decomposition engine"
         ]
       },
       {
-        "phase": "Phase 5: AI Integration",
-        "duration": "1 week",
-        "status": "Queued",
-        "progress": "0%",
+        "phase": "Phase 3: Integration (Week 2-3)",
+        "duration": "7 days",
+        "status": "Planned",
         "deliverables": [
-          "Agent YAML profiles (4 teams)",
-          "Copilot API integration",
-          "Context bundling optimization",
-          "Super-detailed prompt generator"
+          "Agent coordination",
+          "GitHub sync",
+          "Context bundling"
         ]
       },
       {
-        "phase": "Phase 6: Testing & QA",
-        "duration": "1 week",
-        "status": "Queued",
-        "progress": "0%",
+        "phase": "Phase 4: UI (Week 3)",
+        "duration": "7 days",
+        "status": "Planned",
         "deliverables": [
-          "E2E test suite",
-          "Performance benchmarks (<500ms latency validation)",
-          "User acceptance testing",
-          "Load testing (50+ feature plans)"
+          "Visual Verification Panel",
+          "Programming Orchestrator Dashboard"
         ]
       },
       {
-        "phase": "Phase 7: Documentation & Launch",
-        "duration": "<1 week",
-        "status": "Queued",
-        "progress": "0%",
+        "phase": "Phase 5: AI Integration (Week 4)",
+        "duration": "6 days",
+        "status": "Planned",
         "deliverables": [
-          "User guides (getting started, advanced)",
-          "API documentation (MCP tools)",
-          "Video tutorials (3 workflows)",
-          "MVP launch on VS Code Marketplace"
+          "Agent profiles",
+          "Copilot integration",
+          "MCP tools"
+        ]
+      },
+      {
+        "phase": "Phase 6: Testing & QA (Week 4)",
+        "duration": "7 days",
+        "status": "Planned",
+        "deliverables": [
+          "E2E tests",
+          "Performance benchmarks",
+          "UAT"
+        ]
+      },
+      {
+        "phase": "Phase 7: Launch (Week 4)",
+        "duration": "3 days",
+        "status": "Planned",
+        "deliverables": [
+          "Documentation",
+          "API docs",
+          "Video tutorials",
+          "MVP launch"
         ]
       }
     ]
@@ -1464,40 +1847,34 @@
     "total_hours": 920,
     "roles": [
       {
-        "role": "UX/Product Designer",
-        "hours": 160,
-        "duration": "4 weeks @ 40 hrs/week",
-        "focus": "10-question workflow, visual verification UI, programming orchestrator dashboard"
+        "role": "Lead Developer",
+        "hours": 240,
+        "duration": "4 weeks"
       },
       {
         "role": "Frontend Developer",
-        "hours": 240,
-        "duration": "6 weeks @ 40 hrs/week",
-        "focus": "VS Code extension, React/Vue components, WebSocket integration"
+        "hours": 200,
+        "duration": "4 weeks"
       },
       {
         "role": "Backend Developer",
-        "hours": 200,
-        "duration": "5 weeks @ 40 hrs/week",
-        "focus": "MCP server, SQLite database, GitHub sync, agent orchestration"
+        "hours": 180,
+        "duration": "3 weeks"
       },
       {
-        "role": "AI/ML Engineer",
-        "hours": 60,
-        "duration": "3 weeks @ 20 hrs/week",
-        "focus": "Agent team coordination, context bundling, Copilot integration"
-      },
-      {
-        "role": "QA/Tester",
+        "role": "QA Engineer",
         "hours": 120,
-        "duration": "4 weeks @ 30 hrs/week",
-        "focus": "Test suite (96.8% coverage), E2E tests, performance benchmarks"
+        "duration": "2 weeks"
       },
       {
-        "role": "Tech Lead/PM",
-        "hours": 140,
-        "duration": "7 weeks @ 20 hrs/week",
-        "focus": "Architecture decisions, roadmap management, stakeholder communication"
+        "role": "UX Designer",
+        "hours": 100,
+        "duration": "2 weeks"
+      },
+      {
+        "role": "DevOps Engineer",
+        "hours": 80,
+        "duration": "1 week"
       }
     ]
   },
@@ -1719,38 +2096,32 @@
     }
   ],
   "assumptions": [
-    "Users have VS Code 1.75+ installed (compatibility verified)",
-    "GitHub account with repo access for Issue sync",
-    "Copilot subscription for AI features (optional but recommended for full agent capabilities)",
-    "SQLite support on user's platform (Windows/Mac/Linux - verified in testing)",
-    "Network access for GitHub API and WebSocket connections",
-    "Node.js 16+ for local MCP server execution",
-    "Minimum 4GB RAM for extension and MCP server (8GB recommended for large projects)",
-    "Workspace with write permissions for plan files in Docs/Plans/ directory"
+    "Team has access to GitHub Copilot licenses",
+    "VS Code Extension API remains stable (no breaking changes)",
+    "GitHub API rate limits are sufficient for development needs",
+    "SQLite is acceptable for MVP (no need for distributed DB)",
+    "Design system JSON schema is finalized before UI implementation",
+    "Team members available full-time for project duration",
+    "No major feature changes during implementation phase"
   ],
   "constraints": [
-    "Must work within VS Code extension sandbox security model (no arbitrary code execution)",
-    "GitHub API rate limits (5000 req/hr authenticated, optimized with batching and caching)",
-    "Extension bundle size < 50MB for VS Code Marketplace approval (current: ~35MB)",
-    "Backward compatibility with VS Code 1.75+ (tested on 1.75, 1.80, 1.85)",
-    "No external database dependencies (SQLite embedded only for portability)",
-    "MCP tools must respond < 500ms for good UX (p95 target: <200ms)",
-    "WebSocket event streaming limited to 100 events/second to prevent UI flooding",
-    "Context bundle size limited to 100KB to fit within token limits (auto-pruned)",
-    "Task decomposition depth limited to 5 levels to prevent excessive nesting",
-    "Concurrent agent execution limited to 4 teams (one per team type) to manage resource usage"
+    "Must use VS Code Extension API (no standalone app)",
+    "MVP launch by February 15, 2026 (hard deadline)",
+    "Budget limited to development time only (no external services)",
+    "GitHub API rate limits (5000 requests/hour)",
+    "VS Code webview limitations for UI complexity",
+    "Must maintain backward compatibility with existing plans",
+    "No breaking changes to MCP protocol during development"
   ],
   "out_of_scope": [
-    "Native mobile app (VS Code only for MVP, mobile viewing via web interface considered for v2.0)",
-    "JetBrains IDE support (future enhancement, architecture designed for portability)",
-    "Multi-language support beyond English (future, i18n hooks in place)",
-    "Real-time collaborative editing (future, WebSocket foundation supports this)",
-    "Cloud-hosted SaaS version (MVP is local-first for data privacy, SaaS considered for enterprise)",
-    "Jira/Asana integration (GitHub only for MVP, plugin architecture supports future integrations)",
-    "Advanced AI models beyond Copilot (future, MCP protocol agnostic to AI provider)",
-    "Custom report generation beyond exports (future, raw data available via JSON export)",
-    "Video recording for visual verification (future, screenshot support only in MVP)",
-    "Multi-repository orchestration (single repo for MVP, cross-repo planned for v2.0)"
+    "Multi-user collaboration (real-time editing)",
+    "Cloud storage/sync (local files only for MVP)",
+    "Mobile app or web interface",
+    "Integration with Jira, Asana, or other PM tools",
+    "Advanced analytics and reporting dashboards",
+    "Multi-language support (English only for MVP)",
+    "Custom AI model training (using existing Copilot)",
+    "Enterprise SSO and advanced security features"
   ],
   "github_issues": [
     {

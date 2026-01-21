@@ -1,9 +1,9 @@
 # COE Agent Role Definitions
 
-**Version**: 1.0  
-**Date**: January 17, 2026  
-**Status**: Draft  
-**Cross-References**: [Master Plan](plan.md), [Architecture Document](01-Architecture-Document.md)
+**Version**: 2.1  
+**Date**: January 20, 2026  
+**Status**: Updated - Enhanced Team Separations & Coding AI Protocol  
+**Cross-References**: [Master Plan](plan.md), [Architecture Document](01-Architecture-Document.md), [MCP API Reference](05-MCP-API-Reference.md)
 
 ---
 
@@ -11,85 +11,112 @@
 
 The **Copilot Orchestration Extension** employs a team-based agent architecture where specialized agents handle different aspects of the development workflow. This document defines the roles, responsibilities, interfaces, and coordination patterns for each agent type.
 
+**Key Update (v2.1)**: This version emphasizes **strict team separation** to prevent crosstalk and ambiguity:
+- **Programming Orchestrator**: Dedicated to directing Coding AI only (e.g., GitHub Copilot)
+- **Planning Team**: Independent upstream team focused on plan generation and decomposition
+- **Answer Team**: Helper invoked only by Coding AI via MCP tools for clarification
+- **Verification Team**: Independent post-execution checker with deliberate delay for file stability
+- **Coding AI**: Follows strict ask-early protocol with zero-assumption policy
+
 ### Agent Hierarchy
 
 ```mermaid
 graph TD
-    PO[Programming Orchestrator<br/>Master Coordinator]
-    PO --> PT[Planning Team]
-    PO --> AT[Answer Team]
-    PO --> TD[Task Decomposition Agent]
-    PO --> VT[Verification Team]
+    PO[Programming Orchestrator<br/>Coding Director Only]
+    PO --> CA[Coding AI<br/>GitHub Copilot]
+    CA -.Ask Clarification.-> AT[Answer Team<br/>Helper Only]
+    PT[Planning Team<br/>Independent Upstream] --> TQ[Task Queue]
+    TQ --> PO
+    CA --> Files[Code Files]
+    Files -.Wait 60s.-> VT[Verification Team<br/>Post-Execution Checker]
+    VT -.Matches/Remaining.-> Dashboard
     
-    PT --> TQ[Task Queue]
-    TD --> PT
-    VT --> TQ
-    AT --> KB[Knowledge Base<br/>Plan + Code Context]
+    style PO fill:#e1f5ff
+    style PT fill:#fff4e1
+    style AT fill:#f0ffe1
+    style VT fill:#ffe1f5
+    style CA fill:#ffebcd
 ```
+
+**Legend**:
+- Solid arrows: Direct handoffs
+- Dotted arrows: On-demand invocations
+- Color coding: Each team isolated by responsibility
 
 ---
 
-## Agent 1: Programming Orchestrator
+## Agent 1: Programming Orchestrator (Dedicated Coding Director)
 
 ### Role
-**Master coordinator** that routes tasks, manages agent lifecycle, and aggregates metrics.
+**Dedicated coding director** that orchestrates and directs the Coding AI (e.g., GitHub Copilot) for programming tasks. Its **sole job** is to manage programming execution based on Planning AI outputs—no planning, answering, or verification.
 
 ### Responsibilities
-- Route tasks to appropriate agent based on task type and status
-- Monitor agent health and performance metrics
-- Implement fallback strategies when agents fail
-- Aggregate metrics for dashboard display
-- Handle agent handoffs (e.g., Planning → Decomposition → Verification)
-- Maintain agent communication logs for audit
+- Sequence coding instructions to Coding AI from Planning Team outputs
+- Monitor Coding AI progress and detect blocks
+- Route clarification requests from Coding AI to Answer Team via MCP
+- Report coding task completion status back to orchestration queue
+- Escalate blocks to user if Answer Team cannot resolve
+- **Explicitly NOT responsible for**: Planning tasks, answering questions directly, or verifying code quality
 
 ### Goals
-- ✅ Ensure every task is assigned to the right agent
-- ✅ Minimize agent idle time (keep agents busy)
-- ✅ Detect and recover from agent failures within 30 seconds
-- ✅ Provide real-time status updates to UI
+- ✅ Ensure Coding AI receives precise, unambiguous directives
+- ✅ Minimize coding stalls by fast-routing clarifications to Answer Team
+- ✅ Maintain strict separation from Planning/Verification teams
+- ✅ Provide real-time coding progress updates to Dashboard
 
 ### Anti-Goals
-- ❌ Never execute tasks directly (delegates to specialized agents)
-- ❌ Never make plan decisions (defers to Planning Team)
-- ❌ Never answer questions (defers to Answer Team)
+- ❌ Never generates plans or decomposes tasks (defers to Planning Team)
+- ❌ Never answers Coding AI questions directly (routes to Answer Team)
+- ❌ Never verifies code quality (defers to Verification Team)
+- ❌ Never executes code itself (directs Coding AI only)
 
 ### Tool Permissions
 ```yaml
-read_files: true              # Read plans, tasks, logs
-write_files: false            # Cannot modify plans or tasks
-modify_tasks: true            # Can update task assignments
-access_network: false         # Local coordination only
+read_files: true              # Read plans, tasks from Planning Team
+write_files: false            # Cannot modify plans
+modify_tasks: true            # Can update coding task status
+access_network: true          # Call Coding AI API (e.g., Copilot)
 run_commands: false           # No direct execution
+invoke_answer_team: true      # Can route MCP askQuestion calls
+coding_only: true             # NEW: Enforces no deviation from coding role
 ```
 
 ### Execution Constraints
 ```yaml
-max_parallel_agents: 4        # One per team type
-require_plan_before_action: true
-health_check_interval: 10s    # Check agent heartbeats
-fallback_timeout: 30s         # Switch to fallback if agent unresponsive
+max_concurrent_coding_sessions: 3  # Limit parallel Coding AI directives
+require_plan_task_id: true         # Must have Planning Team task before directing
+coding_focus: strict               # No autonomous deviation from task bundle
+health_check_interval: 10s         # Monitor Coding AI responsiveness
+escalation_timeout: 30s            # Escalate if Answer Team doesn't respond
 ```
 
-### Handoff Logic
+### Handoff Logic (Updated for Coding-Only Focus)
 ```typescript
-function routeTask(task: Task): AgentType {
-  // Priority 1: Check if task needs decomposition
-  if (task.estimatedHours > 1) {
-    return AgentType.TaskDecomposition;
+function directCodingAI(task: Task): void {
+  // 1. Pull pre-decomposed task from Planning Team queue
+  if (!task.fromPlanningTeam) {
+    throw new Error("Orchestrator requires Planning Team output");
   }
   
-  // Priority 2: Check if task is completed and needs verification
-  if (task.status === 'done') {
-    return AgentType.Verification;
+  // 2. Send coding directive to Coding AI with context bundle
+  const directive = buildCodingDirective(task);
+  const response = await codingAI.execute(directive);
+  
+  // 3. Monitor progress
+  if (response.status === 'blocked') {
+    // Route to Answer Team via MCP
+    await answerTeam.askQuestion({
+      question: response.blockReason,
+      context: task.contextBundle,
+      priority: 'high'
+    });
   }
   
-  // Priority 3: Check if task requires context/questions
-  if (task.requiresContext || task.hasOpenQuestions) {
-    return AgentType.Answer;
+  // 4. Report completion (no verification involvement)
+  if (response.status === 'complete') {
+    await reportTaskStatus(task.id, 'done');
+    // Verification Team picks up automatically via file watcher
   }
-  
-  // Default: Route to Planning Team
-  return AgentType.Planning;
 }
 ```
 
@@ -123,30 +150,145 @@ function routeTask(task: Task): AgentType {
 
 ---
 
-## Agent 2: Planning Team
+## Agent 1a: Coding AI (GitHub Copilot / LLM Coding Assistant)
 
 ### Role
-**Task generator and project tracker** that converts plans into executable task trees with dependencies.
+**Code executor** that implements coding directives from the Programming Orchestrator. Not an autonomous agent—follows instructions exactly and **must ask** for clarification on any ambiguity.
+
+### Core Principles
+
+| # | Principle | Description | Why It Matters |
+|---|-----------|-------------|----------------|
+| 1 | **Strict Instruction Following** | Only implements what Orchestrator explicitly directs | Prevents drift from approved plan |
+| 2 | **Zero Assumption Policy** | If any decision point exists (library, naming, structure, etc.), **must ask** via MCP | Eliminates architectural mistakes |
+| 3 | **Ask-Early, Ask-Often** | Better to ask 10 questions than implement wrong once | Saves far more time than it costs |
+| 4 | **MCP askQuestion is Only Escape Hatch** | Not allowed to guess, search web, or decide unilaterally | Enforces single source of truth |
+| 5 | **No Direct User Interaction** | Never speaks directly to user (all communication via Answer Team) | Keeps UI clean and predictable |
+
+### When Coding AI **MUST** Ask Answer Team
+
+The Coding AI is **required** to invoke `askQuestion` in ANY of these situations:
+
+- ❓ No explicit instruction for current decision point
+- ❓ Multiple valid implementation paths (performance vs. readability, library choice, etc.)
+- ❓ Backend technology not decided in plan
+- ❓ Naming convention, folder structure, or style ambiguous
+- ❓ Error message or test failure needs interpretation
+- ❓ Dependency version conflict detected
+- ❓ Security / auth / permission question arises
+- ❓ Performance implication unclear
+- ❓ Integration point with another module unclear
+- ❓ Acceptance criteria contradictory or incomplete
+- ❓ Plan references non-existent file/component/API
+- ❓ Design system / UI guideline interpretation needed
+- ❓ Anything feels even slightly "not 100% clear"
+
+**Rule of Thumb**: If Coding AI has to make even a small design decision not literally spelled out → **ask**.
+
+### Escalation Flow
+
+```mermaid
+graph TD
+    A[Coding AI receives directive] --> B{Can execute<br/>without ambiguity?}
+    B -->|Yes| C[Execute code changes]
+    B -->|No| D[Invoke MCP askQuestion]
+    D --> E[Answer Team receives query]
+    E --> F{Can answer from<br/>plan/codebase?}
+    F -->|Yes| G[Return answer to Coding AI]
+    F -->|No| H[Escalate to user via UI]
+    H --> I[User provides clarification]
+    I --> G
+    G --> C
+    C --> J[Report status to Orchestrator]
+```
+
+### Tool Permissions
+```yaml
+read_files: true              # Read codebase, plan context
+write_files: true             # Modify code files
+modify_tasks: false           # Cannot change task definitions
+access_network: false         # No external API calls (Answer Team handles)
+run_commands: true            # Execute tests, build commands
+invoke_answer_team: true      # CRITICAL: Must ask questions when unclear
+ask_threshold: very_low       # Almost any uncertainty triggers ask
+max_questions_per_task: 8     # Rate limit to prevent spam
+```
+
+### Execution Constraints
+```yaml
+confidence_threshold: 95      # Must be 95%+ confident before implementing
+require_explicit_directive: true  # Cannot invent features
+log_all_questions: true       # All askQuestion calls logged with context
+question_timeout: 60s         # Escalate if Answer Team doesn't respond
+```
+
+### Example askQuestion Payloads
+
+**Good Example** (specific, context-rich):
+```json
+{
+  "question": "Task requires 'user authentication'—should I use Passport.js (already in package.json) or implement custom JWT middleware? Performance target is <100ms token validation.",
+  "context": {
+    "taskId": "TASK-042",
+    "relatedFiles": ["routes/auth.js", "package.json"],
+    "acceptanceCriteria": ["Secure token validation", "Sub-100ms latency"],
+    "priority": "high"
+  },
+  "confidence": 40
+}
+```
+
+**Bad Example** (too vague):
+```json
+{
+  "question": "How should I handle errors?",
+  "context": {},
+  "confidence": 20
+}
+```
+
+### Benefits
+
+**As a User**:
+- Almost never surprised by unapproved architectural choices
+- System asks intelligent questions instead of guessing
+- Only involved when truly necessary (Answer Team filters noise)
+- High confidence final code matches intended plan
+
+**As a Developer**:
+- Clear separation → easier unit testing
+- Most "assumed but wrong" bugs caught early
+- Answer Team is central tuning point for reasoning quality
+- Easy debugging via askQuestion thread traces
+
+---
+
+## Agent 2: Planning Team (Independent Upstream Planner)
+
+### Role
+**Independent upstream planner** that generates plans, decomposes features, and prepares task queues for the Programming Orchestrator. **Outputs are handed off without further involvement in coding or verification.**
 
 ### Responsibilities
 - Read plan files from `Docs/Plans/{plan-id}/`
 - Generate comprehensive task decomposition (epics → stories → subtasks)
 - Maintain dependency-aware task graphs (DAG validation)
-- Track overall project progress and health
+- Prepare task bundles with context for Programming Orchestrator
+- Track overall project progress and health (dashboard metrics)
 - Identify when plan updates require new tasks
-- Coordinate with Task Decomposition Agent for complex work
-- Update `tasks.json` with generated tasks
+- **Handoff to Orchestrator** - Planning ends at task queue generation
+- **No feedback loop to coding** - Stays independent from execution phase
 
 ### Goals
 - ✅ Convert user plans into complete, dependency-aware task trees
 - ✅ Maintain DAG structure (no circular dependencies)
-- ✅ Track overall project progress (% complete, blocked count)
-- ✅ Identify plan-code drift (when code doesn't match plan)
+- ✅ Prepare context-rich task bundles for seamless Orchestrator handoff
+- ✅ Track planning progress (% decomposed, dependencies resolved)
 
 ### Anti-Goals
-- ❌ Never implement code directly (delegates to Coding Agent)
-- ❌ Never modify plan without user approval (read-only access)
-- ❌ Never create tasks not grounded in plan specifications
+- ❌ Never executes or directs coding (defers to Programming Orchestrator)
+- ❌ Never modifies plan without user approval (read-only on plan.json)
+- ❌ Never creates tasks not grounded in plan specifications
+- ❌ Never involved in coding progress or verification (complete separation)
 
 ### Tool Permissions
 ```yaml
@@ -163,6 +305,8 @@ require_plan_before_action: true    # Must have valid plan.json
 require_context_review: true        # Review plan context before generating tasks
 max_parallel_actions: 5             # Can create up to 5 tasks simultaneously
 max_task_depth: 3                   # Epics → Stories → Subtasks (3 levels max)
+handoff_mode: orchestrator          # NEW: Enforces clean handoff to Orchestrator
+no_coding_feedback_loop: true       # NEW: No involvement after handoff
 ```
 
 ### Task Generation Algorithm
@@ -279,31 +423,32 @@ planning: |
 
 ---
 
-## Agent 3: Answer Team
+## Agent 3: Answer Team (Helper for Coding AI)
 
 ### Role
-**Context-aware Q&A system** that provides answers from plan and codebase for current task.
+**On-call helper team** that provides context-aware answers **only when invoked by Coding AI** via MCP `askQuestion` tool. Acts as intelligent clarification layer between Coding AI and plan/codebase knowledge.
 
 ### Responsibilities
-- Read entire codebase with semantic understanding
-- Read current plan (all versions)
-- Know which task is currently being worked on
-- Answer questions specifically related to current task context
-- Provide plan references with exact quotes
-- Show code examples from existing implementation
-- Clarify design decisions from plan history
+- **Wait for invocation** - Only activates when Coding AI calls `askQuestion` via MCP
+- Read relevant plan sections and codebase for context
+- Provide specific, evidence-based answers with citations
+- Escalate to user if answer cannot be determined from plan/code
+- Return structured responses with confidence scores
+- Log all questions for audit and pattern analysis
+- **No proactive involvement** - Helper role only, no autonomous actions
 
 ### Goals
-- ✅ Answer questions related to current task with 95%+ accuracy
-- ✅ Provide relevant plan sections with exact references
-- ✅ Show code examples from codebase when applicable
-- ✅ Clarify design decisions with evidence (not guessing)
+- ✅ Answer Coding AI questions with 95%+ accuracy when invocable from plan/code
+- ✅ Provide plan references with exact quotes (no hallucination)
+- ✅ Escalate appropriately when user decision required
+- ✅ Respond within 5 seconds for unblocking Coding AI
 
 ### Anti-Goals
-- ❌ Never implement code (answer-only role)
-- ❌ Never modify tasks or plan (read-only access)
-- ❌ Never answer questions outside current task scope (stay focused)
-- ❌ Never guess - admit uncertainty when answer not in plan/code
+- ❌ Never implements code (answer-only role)
+- ❌ Never modifies tasks or plan (read-only access)
+- ❌ Never invoked by anyone except Coding AI (strict trigger control)
+- ❌ Never guesses - admits uncertainty and escalates to user
+- ❌ Never proactively offers help (waits for explicit questions)
 
 ### Tool Permissions
 ```yaml
@@ -312,6 +457,7 @@ write_files: false            # Read-only access
 modify_tasks: false           # Cannot change tasks
 access_network: false         # Local knowledge only
 run_commands: false           # No execution
+invoke_trigger: coding_ai_only  # NEW: Only Coding AI can invoke
 ```
 
 ### Execution Constraints
@@ -320,6 +466,8 @@ require_context_review: true      # Must review task + plan before answering
 max_depth: 3                      # Can follow references but don't go too deep
 max_response_time: 5s             # Must respond within 5 seconds
 confidence_threshold: 0.7         # Only answer if confidence >= 70%
+escalate_below_threshold: true    # Auto-escalate low-confidence questions to user
+log_all_invocations: true         # NEW: Track all askQuestion calls with context
 ```
 
 ### Answer Algorithm
@@ -619,59 +767,83 @@ decompose: |
 
 ---
 
-## Agent 5: Verification Team
+## Agent 5: Verification Team (Independent Post-Execution Checker)
 
 ### Role
-**Quality gatekeeper** that validates task completion through automated and visual testing.
+**Independent post-execution checker** that activates after Coding AI file updates. **Waits ~1 minute for file stability**, then checks against plan, identifies matches (completed items), and flags remaining work.
 
 ### Responsibilities
-- **Auto verification**: Check code-based acceptance criteria automatically
-- **Visual verification**: Coordinate user-assisted UI testing with guided checklists
-- **Test running**: Execute unit/integration tests to verify completion
-- **Regression detection**: Catch broken tests that previously passed
-- **User walkthrough**: Guide visual verification process with screenshots/videos
+- **File Stability Monitoring**: Wait for deliberate delay (default: 60 seconds) after file updates to ensure changes are settled
+- **Plan Comparison**: Read updated files and compare against original plan/acceptance criteria
+- **Match Identification**: Identify completed items that match plan specifications
+- **Gap Detection**: Flag remaining work or partial implementations
+- **Auto-Test Running**: Execute unit/integration tests after stability period
+- **Visual Verification**: Coordinate user-assisted UI testing with guided checklists (for UI tasks)
+- **Follow-Up Creation**: Auto-create investigation tasks for gaps or test failures
+- **No Direct Coding Involvement**: Complete separation from Planning/Orchestrator teams
 
 ### Goals
-- ✅ Verify all acceptance criteria met before marking task complete
-- ✅ Run automated tests and report results (pass/fail counts)
-- ✅ Coordinate visual verification with user for UI changes
-- ✅ Detect regressions in existing tests immediately
+- ✅ Prevent false positives from in-flight file updates (via stability delay)
+- ✅ Accurately identify matches vs. remaining work
+- ✅ Verify all acceptance criteria met before marking complete
+- ✅ Auto-create follow-ups for partial completions
+- ✅ Provide clear "completed" vs. "still needed" reports to user
 
 ### Anti-Goals
-- ❌ Never approve task without ALL criteria passing
-- ❌ Never skip visual verification when UI changes detected
-- ❌ Never assume tests pass without running them
+- ❌ Never approves task without stability delay completing
+- ❌ Never skips comparison against original plan
+- ❌ Never assumes partial implementation is complete
+- ❌ Never modifies code (verification only)
+- ❌ Never involved in Planning or Orchestrator directing (isolated team)
 
 ### Tool Permissions
 ```yaml
-read_files: true              # Read test files, code, acceptance criteria
-write_files: false            # Read-only verification
+read_files: true              # Read test files, code, acceptance criteria, plan
+write_files: false            # Read-only verification (no code modification)
 run_commands: true            # Run tests, start dev server for visual verify
 modify_tasks: true            # Mark verified/failed, create follow-up tasks
 access_network: false         # Local testing only
+watch_files: true             # NEW: Monitor file changes to trigger verification
 ```
 
 ### Execution Constraints
 ```yaml
+stability_delay: 60                       # NEW: Wait 60 seconds after file changes before verifying
 require_tests_for_changes: true           # Code changes must have tests
 require_explicit_confirmation: false      # Can start server without asking
 require_all_criteria_pass: true           # All acceptance criteria must pass
 visual_verify_timeout: 600                # Max 10 min for user visual verify
+report_matches_and_remaining: true        # NEW: Output both completed and pending items
+auto_create_followups: true               # NEW: Create tasks for gaps automatically
 ```
 
-### Verification Workflow
+### Verification Workflow (Updated with Stability Delay)
 ```mermaid
 sequenceDiagram
-    participant CA as Coding Agent
+    participant CA as Coding AI
+    participant Files as File System
     participant VT as Verification Team
+    participant Timer as Stability Timer
     participant Tests as Test Suite
-    participant Server as Dev Server
     participant User as User
     
-    CA->>VT: reportTaskDone(status=done)
-    VT->>VT: Read acceptance criteria
+    CA->>Files: Update code files
+    Files->>Timer: Start 60s countdown
+    Note over Timer: Wait for file stability<br/>(prevents false positives)
+    Timer-->>VT: Stability period complete
+    VT->>Files: Read updated files
+    VT->>VT: Compare against plan
+    VT->>VT: Identify matches + remaining
     VT->>Tests: Run automated tests
-    Tests-->>VT: Results (92 passed, 0 failed)
+    Tests-->>VT: Results (pass/fail)
+    
+    alt All Matches + Tests Pass
+        VT->>Dashboard: Report complete
+    else Gaps or Test Failures
+        VT->>VT: Create follow-up tasks
+        VT->>User: Notify of remaining work
+    end
+```
     
     alt All auto tests pass
         VT->>VT: Check if UI changes present
@@ -879,30 +1051,38 @@ sequenceDiagram
 
 ---
 
-## Agent Handoff Matrix
+## Agent Handoff Matrix (Updated for Team Separation)
 
-| From Agent | To Agent | Trigger | Data Passed |
-|------------|----------|---------|-------------|
-| Programming Orchestrator | Planning Team | Plan loaded | Plan ID, version |
-| Programming Orchestrator | Answer Team | Question asked | Question, current task, context |
-| Programming Orchestrator | Task Decomposition | Task >60 min | Task to decompose |
-| Programming Orchestrator | Verification Team | Task reported done | Task ID, files modified |
-| Planning Team | Task Decomposition | Task >60 min | Task to break down |
-| Task Decomposition | Planning Team | Subtasks created | Subtask list with dependencies |
-| Verification Team | Programming Orchestrator | Verification complete | Result (pass/fail), next task |
+| From Agent | To Agent | Trigger | Data Passed | Notes |
+|------------|----------|---------|-------------|-------|
+| Planning Team | Programming Orchestrator | Task queue ready | Task bundles with context | **Handoff complete** - Planning done |
+| Programming Orchestrator | Coding AI | Directive issued | Task + super-detailed prompt | Direct coding instruction |
+| Coding AI | Answer Team (via Orchestrator) | Ambiguity detected | Question + context bundle | **Only via MCP askQuestion** |
+| Answer Team | Coding AI | Answer ready | Answer + citations + confidence | May escalate to user if needed |
+| Coding AI | File System | Implementation complete | Modified files | Triggers file watcher |
+| File System | Verification Team | After 60s delay | File paths + timestamps | **Auto-trigger after stability** |
+| Verification Team | Dashboard | Verification complete | Matches list + remaining list | User sees completed vs. gaps |
+| Verification Team | Task Queue | Gaps found | Follow-up tasks | Auto-created investigations |
+
+**Key Separations**:
+- Planning → Orchestrator (one-way, no feedback loop during coding)
+- Coding AI → Answer Team (only via MCP, never direct)
+- Files → Verification (automatic after delay, no Orchestrator involvement)
 
 ---
 
-## Performance Metrics Per Agent
+## Updated Performance Metrics Per Agent
 
-| Agent | Metric | Target | Current |
-|-------|--------|--------|---------|
-| Programming Orchestrator | Routing latency | <100ms | ~80ms |
-| Planning Team | Task generation time | <5s per plan | ~3s |
-| Answer Team | Response time | <5s | ~2.5s |
-| Task Decomposition | Decomposition time | <10s per task | ~7s |
-| Verification Team | Auto-verify time | <30s | ~20s |
-| Verification Team | Visual verify time (user) | <10 min | ~5 min |
+| Agent | Metric | Target | Current | Notes |
+|-------|--------|--------|---------|-------|
+| Programming Orchestrator | Directive delivery latency | <100ms | ~80ms | Time to send directive to Coding AI |
+| Coding AI | Questions asked per task | <8 | TBD | Measure ask-frequency pattern |
+| Planning Team | Task generation time | <5s per plan | ~3s | From plan load to queue ready |
+| Answer Team | Response time | <5s | ~2.5s | Must be fast to unblock Coding AI |
+| Answer Team | Escalation rate | <20% | TBD | Questions escalated to user |
+| Verification Team | Stability delay duration | 60s | 60s | Fixed waiting period |
+| Verification Team | Match detection accuracy | >95% | TBD | Completed vs. plan alignment |
+| Verification Team | Auto-verify time | <30s | ~20s | After stability period |
 
 ---
 
@@ -1015,6 +1195,174 @@ describe('PlanningTeam', () => {
 - [Architecture Document](c:\Users\weird\OneDrive\Documents\GitHub\Copilot-Orchestration-Extension-COE-\Docs\Plans\COE-Master-Plan\01-Architecture-Document.md)
 - [MCP Protocol Specification](https://github.com/modelcontextprotocol/specification)
 
-**Document Status**: Complete  
-**Next Review**: After agent implementation begins  
+**Document Status**: Updated (v2.1 - Enhanced Team Separations)  
+**Next Review**: After Milestone 1 completion (Jan 21, 2026)  
 **Owner**: Plan Master Agent + Development Team
+
+---
+
+## 🎯 Updated Implementation Milestones (Incorporating Team Separations)
+
+These milestones reflect the refined team architecture with strict separations to avoid integration issues.
+
+### Milestone 1: YAML Profiles & Separation Configs
+**Target**: January 21, 2026  
+**Status**: Planned
+
+**Deliverables**:
+- [ ] Update all YAML profiles with new separation flags:
+  - `orchestrator.yaml`: Add `coding_only: true`, `max_concurrent_coding_sessions: 3`
+  - `answer-team.yaml`: Add `invoke_trigger: coding_ai_only`
+  - `verification-team.yaml`: Add `stability_delay: 60`, `report_matches_and_remaining: true`
+  - `coding-ai.yaml`: Add `ask_threshold: very_low`, `max_questions_per_task: 8`
+- [ ] Test YAML loader validates new fields
+- [ ] Unit tests for team isolation (100% coverage on separation logic)
+
+**Acceptance Criteria**:
+- All 4 YAML profiles updated with new constraints
+- Loader rejects profiles missing required separation fields
+- Tests verify no crosstalk between teams (integration test suite)
+
+---
+
+### Milestone 2: Orchestrator-Coding Handoff Integrated
+**Target**: January 28, 2026  
+**Status**: In Progress (aligned with Phase 4)
+
+**Deliverables**:
+- [ ] Backend: `CodingDirectorService.php` for directing Coding AI
+- [ ] Backend: `TaskHandoffService.php` integrates Planning outputs
+- [ ] Frontend: Orchestrator tab in Dashboard shows coding queue
+- [ ] Frontend: Real-time indicators ("Directing Coding AI on Task X")
+- [ ] E2E tests for Planning → Orchestrator → Coding AI flow
+- [ ] Pause/resume controls for coding sessions
+
+**Acceptance Criteria**:
+- Programming Orchestrator receives tasks from Planning Team
+- Can successfully direct Coding AI (Copilot) with context bundles
+- UI logs show directive sequence
+- No direct Planning/Verification involvement during coding
+- E2E test passes with 0 team boundary violations
+
+---
+
+### Milestone 3: Answer & Verification Triggers Deployed
+**Target**: February 4, 2026  
+**Status**: Planned
+
+**Deliverables**:
+- [ ] MCP `askQuestion` tool accepts Coding AI invocations only
+- [ ] Answer Team responds with confidence scores and citations
+- [ ] Verification Team implements 60-second stability delay
+- [ ] `FileStabilityWatcher.php` polls for file changes
+- [ ] UI timer display in Verification Panel ("Waiting 60s...")
+- [ ] `reportVerificationResult` includes `matches[]` and `remaining[]` fields
+- [ ] Auto-creation of follow-up tasks for gaps
+
+**Acceptance Criteria**:
+- Coding AI can invoke askQuestion via MCP (recorded in logs)
+- Answer Team responds <5s with >70% confidence
+- Verification waits full 60s before checking files
+- Matches/remaining clearly separated in verification reports
+- Follow-up tasks auto-created for incomplete implementations
+- 96%+ test coverage for new verification logic
+
+---
+
+### Milestone 4: Full Loop with Delays Validated
+**Target**: February 11, 2026  
+**Status**: Planned
+
+**Deliverables**:
+- [ ] End-to-end test: Plan → Orchestrate Coding → Answer Help → Verify (with delay)
+- [ ] Performance benchmarks for full loop (<5 min per atomic task)
+- [ ] Cross-team leak detection tests (ensure no unauthorized communication)
+- [ ] Dashboard shows all 4 teams with correct separation
+- [ ] Audit log verification for proper handoffs
+
+**Acceptance Criteria**:
+- E2E test completes Plan → Coding → Verification with 0 errors
+- No team accesses data from other teams (isolation verified)
+- Stability delay prevents false positives in verification
+- All MCP calls logged correctly in audit trail
+- User can observe full loop in Dashboard without confusion
+
+---
+
+### Milestone 5: MVP Launch with Updated Docs
+**Target**: February 15, 2026  
+**Status**: Planned
+
+**Deliverables**:
+- [ ] User guides updated with team separation explanations
+- [ ] FAQ: "Why does Coding AI ask so many questions?" → Zero-assumption policy
+- [ ] Video tutorial showing each team's role in workflow
+- [ ] Beta testing with 5+ users (target: 85% satisfaction on team clarity)
+- [ ] Performance monitoring dashboard with per-team metrics
+- [ ] Final audit of team boundaries before launch
+
+**Acceptance Criteria**:
+- All documentation reflects v2.1 team separations
+- Beta users understand which team handles what
+- No confusion about "why is verification delayed?" (docs explain stability period)
+- Launch-ready build with 0 TypeScript/PHP errors
+- All 405 tests passing (100%)
+
+---
+
+## 📋 Next Documentation Actions
+
+1. **Update MCP API Reference** (`05-MCP-API-Reference.md`)
+   - Add `askQuestion` confidence_level parameter (0-100)
+   - Update `reportVerificationResult` schema with `matches` and `remaining` arrays
+   - Document stability_delay as configurable parameter
+
+2. **Create Coding AI Behavior Guide** (new file: `06-Coding-AI-Protocol.md`)
+   - Detailed ask protocol examples
+   - Good vs. bad question payloads
+   - When to escalate vs. when to infer from context
+   - Performance expectations
+
+3. **Update Visual Verification Panel Spec**
+   - Add stability delay timer UI component
+   - Show "Waiting for file stability..." indicator
+   - Display matches vs. remaining in separate sections
+
+4. **Add to Project Runbook** (`Docs/PROJECT-RUNBOOK.md`)
+   - Section: "Understanding Agent Team Separations"
+   - Troubleshooting: "Coding AI won't stop asking questions" → Adjust ask_threshold
+
+5. **Create Sample askQuestion Payloads** (for testing)
+   - 10+ good examples of appropriate questions
+   - 5+ bad examples with explanations
+   - Test suite to validate question quality scoring
+
+---
+
+## 💡 Implementation Impact Summary
+
+**Reduces Ambiguity**:
+- Clear team boundaries prevent "who should handle this?" confusion
+- Coding AI's strict ask protocol eliminates guessing
+- Verification delay prevents premature checks
+
+**Improves Modularity**:
+- Each team can be tested/developed independently
+- YAML profiles make configuration transparent
+- Handoff matrix documents all inter-team communication
+
+**Enhances Quality**:
+- Zero-assumption policy catches most architectural mistakes early
+- Stability delay reduces verification false positives
+- Match/remaining separation gives clear completion status
+
+**Prepares for Scale**:
+- Plugin architecture can add new teams without breaking existing ones
+- MCP protocol versioning allows gradual rollout
+- Per-team metrics identify bottlenecks independently
+
+**Aligns with Timeline**:
+- Phase 4 (UI): Jan 17-29 - Dashboard separations, stability timer UI
+- Phase 5 (AI Integration): Jan 30-Feb 5 - YAML profiles, ask protocol implementation
+- Phase 6 (Testing): Feb 6-12 - Cross-team isolation tests, E2E validation
+- Phase 7 (Launch): Feb 13-15 - Beta testing, documentation finalization

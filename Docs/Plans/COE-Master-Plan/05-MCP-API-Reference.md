@@ -923,6 +923,235 @@ describe('MCP getNextTask', () => {
 
 ---
 
+## Tool Versions & Error Handling (v3.9+)
+
+### askQuestion (v1.2)
+
+**Purpose**: Request clarification on ambiguous directives
+
+**Enhanced Parameters**:
+```json
+{
+  "question": {"type": "string", "maxLength": 300, "required": true},
+  "context_summary": {"type": "string", "required": true},
+  "current_file": {"type": ["string", "null"]},
+  "relevant_snippets": {"type": "array", "maxLength": 2000, "items": {"file": "string", "content": "string"}},
+  "task_id": {"type": "string", "required": true},
+  "confidence_level": {"type": "integer", "minimum": 0, "maximum": 100},
+  "priority_level": {"type": "integer", "enum": [1, 2, 3], "default": 2},
+  "possible_options": {"type": ["array", "null"], "items": "string"}
+}
+```
+
+**Returns**:
+```json
+{
+  "answer": "string",
+  "source": ["string", "null"],
+  "confidence": "integer (0-100)",
+  "follow_up_needed": "boolean",
+  "escalated_to_user": "boolean"
+}
+```
+
+**Error Responses**:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "TOKEN_LIMIT_EXCEEDED | TIMEOUT | INVALID_STATE",
+    "message": "string",
+    "severity": "HIGH | MEDIUM",
+    "retryable": true,
+    "priority_impact": "P1_BLOCKED | P2_DELAYED",
+    "retry_after_seconds": 10
+  }
+}
+```
+
+**Token Impact**: ~400-800 tokens added  
+**Copilot Compat**: `/agent call MCP askQuestion {json_props}`
+
+### reportTaskCompleted (v1.2)
+
+**Purpose**: Signal task completion with metrics
+
+**Parameters**:
+```json
+{
+  "task_id": {"type": "string", "required": true},
+  "status": {"type": "string", "enum": ["success", "partial", "failed"], "required": true},
+  "output_summary": {"type": "string", "maxLength": 500},
+  "files_modified": {"type": "array", "items": "string"},
+  "coverage_percent": ["number", "null"],
+  "test_results": {"passed": "integer", "failed": "integer"},
+  "priority_completed": {"type": "integer", "enum": [1, 2, 3]}
+}
+```
+
+**Returns**:
+```json
+{
+  "acknowledged": true,
+  "next_task_suggested": ["string", "null"]
+}
+```
+
+**Token Impact**: ~200-500  
+**Copilot Compat**: `/agent call MCP reportTaskCompleted {json_props}`
+
+### reportObservation (v1.1)
+
+**Purpose**: Log non-urgent insights (async, queued)
+
+**Parameters**:
+```json
+{
+  "observation": {"type": "string", "maxLength": 1000, "required": true},
+  "category": {"type": "string", "enum": ["optimization", "potential_bug", "style_note", "docs_improvement", "other"]},
+  "priority": {"type": "integer", "enum": [1, 2, 3], "default": 3},
+  "task_id": "string",
+  "file_path": ["string", "null"]
+}
+```
+
+**Returns**:
+```json
+{
+  "logged": true,
+  "observation_id": "string"
+}
+```
+
+**Token Impact**: ~150-300  
+**Copilot Compat**: `/agent call MCP reportObservation {json_props}`
+
+### reportIssue (v1.1)
+
+**Purpose**: Flag blocking or concerning issues
+
+**Parameters**:
+```json
+{
+  "issue_description": {"type": "string", "maxLength": 800, "required": true},
+  "severity": {"type": "integer", "enum": [1, 2, 3], "description": "1=critical", "required": true},
+  "task_id": "string",
+  "file_path": ["string", "null"],
+  "repro_steps": "string",
+  "immediate": {"type": "boolean", "default": false}
+}
+```
+
+**Returns**:
+```json
+{
+  "logged": true,
+  "escalated": "boolean"
+}
+```
+
+**Error Codes**: INVALID_PARAM, RATE_LIMIT  
+**Token Impact**: ~250-600  
+**Copilot Compat**: `/agent call MCP reportIssue {json_props}`
+
+### getImmediateAnswer (v1.0)
+
+**Purpose**: Synchronous call for urgent clarifications (blocks caller)
+
+**Parameters**:
+```json
+{
+  "query": {"type": "string", "maxLength": 400, "required": true},
+  "context_bundle": {"type": "object"},
+  "max_wait_seconds": {"type": "integer", "default": 30}
+}
+```
+
+**Returns**:
+```json
+{
+  "answer": "string",
+  "source": ["string", "null"],
+  "timeout": "boolean"
+}
+```
+
+**Error Codes**: TIMEOUT (HIGH severity, no retry)  
+**Token Impact**: ~500-1200  
+**Copilot Compat**: `/agent call MCP getImmediateAnswer {json_props}`
+
+### reportTaskStatus (v1.3)
+
+**Purpose**: Rich in-progress status updates with metrics
+
+**Parameters** (Expanded):
+```json
+{
+  "task_id": {"type": "string", "required": true},
+  "status": {"type": "string", "enum": ["in_progress", "blocked", "done", "failed", "paused"]},
+  "progress_percent": {"type": "integer", "minimum": 0, "maximum": 100},
+  "details": {"type": "string", "maxLength": 600},
+  "metrics": {
+    "tokens_used": "integer",
+    "time_seconds": "number",
+    "coverage_added": "number"
+  },
+  "priority": {"type": "integer", "enum": [1, 2, 3]}
+}
+```
+
+**Returns**:
+```json
+{
+  "acknowledged": true,
+  "next_action": ["string", "null"]
+}
+```
+
+**Token Impact**: ~300-700  
+**Copilot Compat**: `/agent call MCP reportTaskStatus {json_props}`
+
+---
+
+## Global Error Response Schema (v4.0+)
+
+**All tools return standardized error schema on failure**:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "string",
+    "message": "string",
+    "details": ["object", "null"],
+    "severity": "enum (LOW | MEDIUM | HIGH | CRITICAL)",
+    "retryable": "boolean",
+    "retry_after_seconds": ["integer", "null"],
+    "fallback_suggested": "boolean",
+    "priority_impact": "enum (NONE | P3_IGNORABLE | P2_DELAYED | P1_BLOCKED)",
+    "log_level": "enum (DEBUG | INFO | WARN | ERROR)"
+  },
+  "context": {
+    "task_id": ["string", "null"],
+    "agent_name": ["string", "null"],
+    "timestamp": "string (ISO 8601)"
+  }
+}
+```
+
+---
+
+## Error Codes Reference
+
+See `Docs/ERROR-HANDLING.md` for complete error codes registry with:
+- All error code definitions (INVALID_PARAM, TOKEN_LIMIT_EXCEEDED, TIMEOUT, etc.)
+- Severity levels and escalation paths
+- Retry guidance and fallback strategies
+- User-facing message templates
+- Integration with backup system and context breaking
+
+---
+
 ## Security
 
 ### Authentication
