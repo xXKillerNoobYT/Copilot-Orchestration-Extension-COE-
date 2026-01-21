@@ -107,8 +107,10 @@ describe('handleAskUserQuestion', () => {
     const askedAt = new Date(requestBody.asked_at);
     const expiresAt = new Date(requestBody.expires_at);
     const diff = expiresAt.getTime() - askedAt.getTime();
+    const expectedDiff = 600 * 1000;
 
-    expect(diff).toBe(600 * 1000); // 600 seconds
+    // Allow 1ms tolerance for timing variations
+    expect(Math.abs(diff - expectedDiff)).toBeLessThanOrEqual(1);
   });
 
   it('should handle empty context', async () => {

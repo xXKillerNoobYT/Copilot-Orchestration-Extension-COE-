@@ -23,7 +23,7 @@ export async function handleGetNextTask(args: any) {
 
   try {
     const manager = getTaskManager();
-    const task = await manager.getNextTask({ filter, priority, agentType });
+    const task = manager.getNextTask({ filter, priority, agentType });
 
     if (!task) {
       return formatAgentError(
@@ -31,26 +31,45 @@ export async function handleGetNextTask(args: any) {
       );
     }
 
-    const queueDepth = await manager.getQueueDepth();
+    const queueDepth = manager.getQueueDepth();
 
-    // Format task for agent consumption
+    // Get dependencies for this task
+    const dependencies = manager.getDependencies(task.id);
+
+    // Format task for agent consumption matching PRD specification
     const formattedTask = {
       taskId: task.id,
-      title: task.title,
-      description: task.description,
+      title: task.name,  // Database field is 'name', not 'title'
+      description: task.description || '',
       status: task.status,
       priority: task.priority,
-      assignedTo: agentType || 'agent',
-      estimatedEffort: task.estimatedEffort || 'Unknown',
-      dependencies: task.dependencies,
-      acceptanceCriteria: task.acceptanceCriteria || [],
-      context: task.context || {
-        relatedFiles: [],
+      taskType: task.task_type,
+      assignedTo: task.assigned_agent || agentType || 'agent',
+      estimatedEffort: task.estimated_effort ? `${task.estimated_effort} minutes` : 'Unknown',
+      actualEffort: task.actual_effort ? `${task.actual_effort} minutes` : null,
+      dependencies: dependencies.map(dep => ({
+        id: dep.depends_on_task_id,
+        type: dep.dependency_type
+      })),
+      acceptanceCriteria: [], // TODO: Add acceptance criteria field to database schema
+      context: {
+        projectId: task.project_id,
+        parentTaskId: task.parent_task_id || null,
+        githubIssue: task.github_issue_id ? {
+          number: task.github_issue_id,
+          url: task.github_issue_url || ''
+        } : null,
+        branchName: task.branch_name || null,
+        contextBundlePath: task.context_bundle_path || null,
+        relatedFiles: [], // TODO: Add context bundle integration
         relatedIssues: [],
         techStack: [],
       },
-      createdAt: task.createdAt || new Date().toISOString(),
-      updatedAt: task.updatedAt || new Date().toISOString(),
+      createdAt: task.created_at,
+      updatedAt: task.updated_at,
+      startedAt: task.started_at || null,
+      completedAt: task.completed_at || null,
+      version: task.version,
     };
 
     return formatAgentSuccess({

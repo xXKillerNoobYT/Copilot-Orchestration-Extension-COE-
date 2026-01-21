@@ -75,17 +75,18 @@ export const ValidationSchemas = {
 
   // New agent mode tool schemas
   getNextTask: z.object({
-    filter: z.string().optional(),
+    filter: z.enum(['ready', 'blocked', 'all']).optional(),
     priority: z.enum(['critical', 'high', 'medium', 'low']).optional(),
     agentType: z.string().optional(),
   }),
 
   reportTaskStatus: z.object({
     taskId: z.string().min(1, 'Task ID is required'),
-    status: z.enum(['pending', 'in-progress', 'blocked', 'done', 'failed']),
+    status: z.enum(['pending', 'approved', 'in_progress', 'testing', 'review', 'completed', 'failed', 'blocked', 'cancelled']),
     progress: z.number().min(0).max(1).optional(),
     observations: z.string().optional(),
     blockers: z.array(z.string()).optional(),
+    actualHours: z.number().min(0).optional(),
   }),
 
   getContextBundle: z.object({
@@ -125,8 +126,8 @@ export function validateInput<T>(
     if (error instanceof z.ZodError) {
       const issues = error.issues;
       const firstError = issues[0];
-      const pathString = firstError?.path && Array.isArray(firstError.path) 
-        ? firstError.path.join('.') 
+      const pathString = firstError?.path && Array.isArray(firstError.path)
+        ? firstError.path.join('.')
         : 'input';
       return {
         valid: false,

@@ -3,21 +3,18 @@
  * Provides centralized singleton instances for TaskManager and GitHubIntegration
  */
 
-import { TaskManager } from './taskManager.js';
+import { TaskManager } from '../../services/taskManager.js';
 import { GitHubIntegration } from './githubIntegration.js';
 
 // Singleton instances
-let taskManagerInstance: TaskManager | null = null;
 let githubIntegrationInstance: GitHubIntegration | null = null;
 
 /**
- * Get singleton TaskManager instance
+ * Get singleton TaskManager instance (from services/taskManager)
+ * This now uses the database-backed implementation
  */
 export function getTaskManager(): TaskManager {
-  if (!taskManagerInstance) {
-    taskManagerInstance = new TaskManager();
-  }
-  return taskManagerInstance;
+  return TaskManager.getInstance();
 }
 
 /**
@@ -41,6 +38,6 @@ export function getGitHubIntegration(): GitHubIntegration {
  * Reset singleton instances (useful for testing)
  */
 export function resetServices(): void {
-  taskManagerInstance = null;
+  TaskManager.resetInstance();
   githubIntegrationInstance = null;
 }

@@ -19,44 +19,95 @@ export async function handleReportTaskStatus(args: any) {
     return formatAgentError(validation.error);
   }
 
-  const { taskId, status, progress, observations, blockers } = validation.data;
+  const { taskId, status, progress, observations, blockers, actualHours } = validation.data;
 
   try {
     const manager = getTaskManager();
-    const result = await manager.updateTaskStatus(taskId, status, progress, observations, blockers);
 
-    if (!result.success) {
+    // Get current task to retrieve version for optimistic locking
+    const currentTask = manager.getTaskById(taskId);
+    if (!currentTask) {
       return formatAgentError(
-        AgentErrors.taskNotFound(result.error || `Task ${taskId}`)
+        AgentErrors.taskNotFound(`Task ${taskId} not found`)
       );
+    }
+
+    const previousStatus = currentTask.status;
+
+    // Build update details
+    const updateDetails: any = {};
+    if (actualHours !== undefined) {
+      updateDetails.actual_effort = actualHours * 60; // Convert hours to minutes
+    }
+
+    // Update task status with optimistic locking
+    const updatedTask = manager.updateTaskStatus(
+      taskId,
+      status,
+      updateDetails,
+      currentTask.version
+    );
+
+    // Log observations if provided
+    if (observations) {
+      manager.logAuditEntry({
+        task_id: taskId,
+        action: 'observation_logged',
+        details: JSON.stringify({ observations }),
+      });
+    }
+
+    // Log blockers if provided
+    if (blockers && blockers.length > 0) {
+      manager.logAuditEntry({
+        task_id: taskId,
+        action: 'blockers_reported',
+        details: JSON.stringify({ blockers }),
+      });
     }
 
     const statusUpdate = {
       taskId,
-      previousStatus: result.task?.status || 'unknown',
+      previousStatus,
       newStatus: status,
       progress: progress ?? 0,
       observations,
       blockers: blockers || [],
-      updatedAt: new Date().toISOString(),
+      updatedAt: updatedTask.updated_at,
+      version: updatedTask.version,
       nextSteps:
         status === 'blocked'
           ? ['Resolve blockers before continuing']
-          : status === 'done'
-          ? ['Request verification', 'Close task']
-          : ['Continue implementation'],
+          : status === 'completed'
+            ? ['Request verification', 'Close task']
+            : status === 'in_progress'
+              ? ['Continue implementation']
+              : ['Update progress as needed'],
     };
 
     // Add task completion message
-    if (status === 'done') {
+    if (status === 'completed') {
       statusUpdate.nextSteps.push('Task marked complete, verification requested');
     }
 
+    // TODO: Trigger WebSocket event broadcast here
+    // This will be implemented in the WebSocket broadcasting task
+
     return formatAgentSuccess({
       statusUpdate,
-      message: `Task ${taskId} status updated to ${status}`,
+      message: `Task ${taskId} status updated from ${previousStatus} to ${status}`,
     });
   } catch (error) {
+    // Handle optimistic locking conflicts
+    if (error instanceof Error && error.message.includes('version mismatch')) {
+      return formatAgentError(
+        AgentErrors.operationFailed(
+          'report task status',
+          'Concurrent modification detected. Please retry with the latest task version.'
+        )
+      );
+    }
+
     return formatAgentError(
       AgentErrors.operationFailed(
         'report task status',

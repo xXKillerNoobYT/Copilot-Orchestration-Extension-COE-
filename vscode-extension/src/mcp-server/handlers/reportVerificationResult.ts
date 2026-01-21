@@ -119,7 +119,12 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
         args
       );
     } catch (error) {
-      return formatAgentError(error as Error);
+      return formatAgentError(
+        AgentErrors.operationFailed(
+          'report verification result',
+          error instanceof Error ? error.message : String(error)
+        )
+      );
     }
   }
 

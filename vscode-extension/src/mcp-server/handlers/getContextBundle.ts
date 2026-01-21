@@ -34,14 +34,21 @@ export async function handleGetContextBundle(args: any) {
 
   try {
     const manager = getTaskManager();
-    const task = await manager.getTaskById(taskId);
+    const task = manager.getTaskById(taskId);
 
     if (!task) {
       return formatAgentError(AgentErrors.taskNotFound(taskId));
     }
 
+    // Adapt our Task type to TaskWithContext for compatibility
+    const taskWithContext: any = {
+      ...task,
+      title: task.name,  // Map 'name' to 'title' for legacy compatibility
+      dependencies: manager.getDependencies(task.id).map(d => d.depends_on_task_id),
+    };
+
     const retrieval = getContextRetrieval();
-    const contextBundle = await retrieval.getContextBundle(task, {
+    const contextBundle = await retrieval.getContextBundle(taskWithContext, {
       includeFiles,
       includeDocs,
     });
