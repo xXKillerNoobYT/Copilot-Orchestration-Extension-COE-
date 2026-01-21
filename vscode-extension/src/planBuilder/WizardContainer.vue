@@ -30,6 +30,17 @@
       @cancel="showTemplateSelector = false"
     />
 
+    <!-- Confirmation Dialog -->
+    <ConfirmDialog
+      :visible="showConfirmDialog"
+      :title="confirmDialogConfig.title"
+      :message="confirmDialogConfig.message"
+      :confirm-text="confirmDialogConfig.confirmText"
+      :cancel-text="confirmDialogConfig.cancelText"
+      @confirm="confirmDialogConfig.onConfirm"
+      @cancel="confirmDialogConfig.onCancel"
+    />
+
     <!-- Header with progress -->
     <div class="wizard-header">
       <div class="wizard-title">
@@ -196,6 +207,7 @@ import ContextualAssistant from './ContextualAssistant.vue';
 import PreviewContainer from '../components/preview/PreviewContainer.vue';
 import TemplateSelector from './components/TemplateSelector.vue';
 import FileImporter from './components/FileImporter.vue';
+import ConfirmDialog from './components/ConfirmDialog.vue';
 import { getTemplateService } from './services/TemplateService';
 import type { WizardState, PreviewRenderResult } from '../components/preview/PreviewEngine';
 import { 
@@ -296,6 +308,20 @@ interface ToastNotification {
 }
 const toasts = ref<ToastNotification[]>([]);
 let toastIdCounter = 0;
+
+// Confirmation dialog state
+const showConfirmDialog = ref(false);
+const confirmDialogConfig = ref({
+  title: 'Confirm',
+  message: '',
+  confirmText: 'Confirm',
+  cancelText: 'Cancel',
+  onConfirm: () => {},
+  onCancel: () => {},
+});
+
+// Undo/Redo toast throttling
+let lastUndoRedoToastTimestamp = 0;
 
 // Question definitions - Five Core Wizard Questions
 const questions = ref([
@@ -554,19 +580,52 @@ const dismissToast = (id: number) => {
   }
 };
 
+// Helper function to show undo/redo toasts with throttling
+const showUndoRedoToast = (message: string) => {
+  const now = Date.now();
+  const MIN_INTERVAL_MS = 1000;
+
+  if (now - lastUndoRedoToastTimestamp >= MIN_INTERVAL_MS) {
+    // Slightly shorter duration for undo/redo success to reduce visual noise
+    showToast(message, 'success', 1500);
+  }
+
+  lastUndoRedoToastTimestamp = now;
+};
+
 // Undo/Redo handlers
 const handleUndo = () => {
   if (wizardStore.undo()) {
-    showToast('Action undone', 'success', 2000);
+    showUndoRedoToast('Action undone');
     console.log('[Wizard] Undo performed');
   }
 };
 
 const handleRedo = () => {
   if (wizardStore.redo()) {
-    showToast('Action redone', 'success', 2000);
+    showUndoRedoToast('Action redone');
     console.log('[Wizard] Redo performed');
   }
+};
+
+// Helper function to apply template answers to wizard store
+const applyTemplateAnswers = (templateId: string, templateAnswers: Record<string, unknown>) => {
+  // Apply to wizard state if wizardStore has state manager
+  if (wizardStore.state && typeof wizardStore.state.applyTemplate === 'function') {
+    wizardStore.state.applyTemplate(templateId, templateAnswers);
+  }
+  
+  // Set answers in store
+  Object.entries(templateAnswers).forEach(([key, value]) => {
+    wizardStore.setAnswer(key, value);
+  });
+  
+  // Update UI
+  appliedTemplateId.value = templateId;
+  showTemplateSelector.value = false;
+  
+  showToast('Template applied successfully!', 'success');
+  console.log('[Wizard] Template applied:', templateId, templateAnswers);
 };
 
 // Template handling
@@ -659,34 +718,32 @@ const handleTemplateSelected = async (templateId: string) => {
         console.warn('[Wizard] Template dependency validation warnings:', validation.errors);
         
         // Require user confirmation before proceeding with invalid dependencies
-        const proceedWithInvalidDependencies = confirm(
-          `The selected template has dependency issues that may result in a broken plan:\n\n${validation.errors.join('\n')}\n\nDo you want to apply the template anyway?`
-        );
-        
-        if (!proceedWithInvalidDependencies) {
-          showToast('Template application cancelled due to dependency issues.', 'info', 6000);
-          showTemplateSelector.value = false;
-          return;
-        }
+        // Use custom confirmation dialog instead of native confirm()
+        return new Promise<void>((resolve) => {
+          confirmDialogConfig.value = {
+            title: 'Template Dependency Issues',
+            message: `The selected template has dependency issues that may result in a broken plan:\n\n${validation.errors.join('\n')}\n\nDo you want to apply the template anyway?`,
+            confirmText: 'Apply Anyway',
+            cancelText: 'Cancel',
+            onConfirm: () => {
+              showConfirmDialog.value = false;
+              applyTemplateAnswers(templateId, templateAnswers);
+              resolve();
+            },
+            onCancel: () => {
+              showConfirmDialog.value = false;
+              showToast('Template application cancelled due to dependency issues.', 'info', 6000);
+              showTemplateSelector.value = false;
+              resolve();
+            },
+          };
+          showConfirmDialog.value = true;
+        });
       }
     }
     
-    // Apply to wizard state if wizardStore has state manager
-    if (wizardStore.state && typeof wizardStore.state.applyTemplate === 'function') {
-      wizardStore.state.applyTemplate(templateId, templateAnswers);
-    }
-    
-    // Set answers in store
-    Object.entries(templateAnswers).forEach(([key, value]) => {
-      wizardStore.setAnswer(key, value);
-    });
-    
-    // Update UI
-    appliedTemplateId.value = templateId;
-    showTemplateSelector.value = false;
-    
-    showToast('Template applied successfully!', 'success');
-    console.log('[Wizard] Template applied:', templateId, templateAnswers);
+    // Apply template answers if validation passed
+    applyTemplateAnswers(templateId, templateAnswers);
   } catch (error) {
     console.error('[Wizard] Failed to apply template:', error);
     
