@@ -35,6 +35,7 @@ import { AgentsViewProvider } from './views/agentsViewProvider';
 import { PlansViewProvider } from './views/plansViewProvider';
 import { initializeErrorLogging, disposeErrorLogging } from './utils/errorMessages';
 import { HealthCheckService } from './services/healthCheck';
+import { formatMinutesToHours } from './utils/taskFormatters';
 
 // Module-level variable to track database for cleanup
 let dlqDatabase: Database.Database | null = null;
@@ -618,6 +619,47 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('copilot-orchestrator.refreshPlans', async () => {
       plansViewProvider.refresh();
       vscode.window.showInformationMessage('Plans refreshed.');
+    })
+  );
+
+  // Command to view task details
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.viewTaskDetails', async (task: any) => {
+      if (!task || !task.id) {
+        vscode.window.showErrorMessage('Invalid task selected.');
+        return;
+      }
+
+      // Create a document with task details
+      const content = [
+        `# Task: ${task.name}`,
+        '',
+        `**ID**: ${task.id}`,
+        `**Status**: ${task.status}`,
+        `**Priority**: ${task.priority}`,
+        `**Type**: ${task.task_type}`,
+        '',
+        '## Description',
+        task.description || 'No description provided.',
+        '',
+        '## Details',
+        `- **Estimated Effort**: ${task.estimated_effort ? formatMinutesToHours(task.estimated_effort) + ' hours' : 'N/A'}`,
+        `- **Actual Effort**: ${task.actual_effort ? formatMinutesToHours(task.actual_effort) + ' hours' : 'N/A'}`,
+        `- **Dependencies**: ${task.dependencyCount || 0}`,
+        `- **Subtasks**: ${task.subtaskCount || 0}`,
+        '',
+        task.assigned_agent ? `**Assigned Agent**: ${task.assigned_agent}` : '',
+        task.github_issue_url ? `**GitHub Issue**: ${task.github_issue_url}` : '',
+        '',
+        `**Created**: ${new Date(task.created_at).toLocaleString()}`,
+        `**Updated**: ${new Date(task.updated_at).toLocaleString()}`,
+      ].filter(Boolean).join('\n');
+
+      const doc = await vscode.workspace.openTextDocument({
+        content,
+        language: 'markdown',
+      });
+      await vscode.window.showTextDocument(doc, { preview: true });
     })
   );
 

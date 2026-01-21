@@ -352,6 +352,12 @@
         "keybinding": "ctrl+shift+t"
       },
       {
+        "command": "copilot-orchestrator.viewTaskDetails",
+        "title": "View Task Details",
+        "category": "Copilot Orchestrator",
+        "icon": "$(info)"
+      },
+      {
         "command": "copilot-orchestrator.showTaskMetadata",
         "title": "Show Task Metadata",
         "category": "Task File"
