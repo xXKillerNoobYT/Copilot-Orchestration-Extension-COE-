@@ -1,8 +1,14 @@
 <template>
   <div v-if="visible" class="modal-overlay" @click="handleCancel">
-    <div class="modal-content" @click.stop>
+    <div 
+      class="modal-content" 
+      @click.stop
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+    >
       <div class="modal-header">
-        <h2>{{ title }}</h2>
+        <h2 :id="titleId">{{ title }}</h2>
         <button class="modal-close" @click="handleCancel" aria-label="Close dialog">✕</button>
       </div>
 
@@ -11,10 +17,10 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="handleCancel">
+        <button ref="cancelButton" class="btn btn-secondary" @click="handleCancel">
           {{ cancelText }}
         </button>
-        <button class="btn btn-primary" @click="handleConfirm">
+        <button ref="confirmButton" class="btn btn-primary" @click="handleConfirm">
           {{ confirmText }}
         </button>
       </div>
@@ -23,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick, onUnmounted } from 'vue';
 
 interface Props {
   visible: boolean;
@@ -44,25 +50,78 @@ const emit = defineEmits<{
   (e: 'cancel'): void;
 }>();
 
+const titleId = 'confirm-dialog-title';
+const confirmButton = ref<HTMLButtonElement | null>(null);
+const cancelButton = ref<HTMLButtonElement | null>(null);
+let previouslyFocusedElement: HTMLElement | null = null;
+let keydownHandler: ((event: KeyboardEvent) => void) | null = null;
+
 const handleConfirm = () => {
   emit('confirm');
+  restoreFocus();
 };
 
 const handleCancel = () => {
   emit('cancel');
+  restoreFocus();
 };
 
-// Handle Escape key
-watch(() => props.visible, (isVisible) => {
+const restoreFocus = () => {
+  if (previouslyFocusedElement) {
+    previouslyFocusedElement.focus();
+    previouslyFocusedElement = null;
+  }
+};
+
+// Handle Escape key and focus management
+watch(() => props.visible, async (isVisible) => {
   if (isVisible) {
-    const handleKeydown = (event: KeyboardEvent) => {
+    // Save currently focused element
+    previouslyFocusedElement = document.activeElement as HTMLElement;
+    
+    // Set up keyboard handler
+    keydownHandler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         handleCancel();
       }
+      
+      // Focus trap - Tab key navigation
+      if (event.key === 'Tab') {
+        const focusableElements = [cancelButton.value, confirmButton.value].filter(Boolean);
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        
+        if (event.shiftKey && document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement?.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement?.focus();
+        }
+      }
     };
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
+    
+    window.addEventListener('keydown', keydownHandler);
+    
+    // Focus the primary button after render
+    await nextTick();
+    confirmButton.value?.focus();
+  } else {
+    // Clean up keyboard handler
+    if (keydownHandler) {
+      window.removeEventListener('keydown', keydownHandler);
+      keydownHandler = null;
+    }
   }
+});
+
+// Clean up on component unmount
+onUnmounted(() => {
+  if (keydownHandler) {
+    window.removeEventListener('keydown', keydownHandler);
+    keydownHandler = null;
+  }
+  restoreFocus();
 });
 </script>
 

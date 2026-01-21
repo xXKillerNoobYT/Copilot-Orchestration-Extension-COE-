@@ -709,41 +709,59 @@ const handleTemplateSelected = async (templateId: string) => {
       };
     }
     
-    // Validate dependencies before applying
+    // Validate dependencies (features and milestones) before applying
+    const dependencyErrors: string[] = [];
+    
     if (templateAnswers['features']?.features) {
-      const validation = validateDependencyGraph(templateAnswers['features'].features);
-      if (!validation.valid) {
-        const errorMsg = `Template has dependency issues: ${validation.errors.join('; ')}`;
-        showToast(errorMsg, 'warning', 8000);
-        console.warn('[Wizard] Template dependency validation warnings:', validation.errors);
-        
-        // Require user confirmation before proceeding with invalid dependencies
-        // Use custom confirmation dialog instead of native confirm()
-        return new Promise<void>((resolve) => {
-          confirmDialogConfig.value = {
-            title: 'Template Dependency Issues',
-            message: `The selected template has dependency issues that may result in a broken plan:\n\n${validation.errors.join('\n')}\n\nDo you want to apply the template anyway?`,
-            confirmText: 'Apply Anyway',
-            cancelText: 'Cancel',
-            onConfirm: () => {
-              showConfirmDialog.value = false;
-              applyTemplateAnswers(templateId, templateAnswers);
-              resolve();
-            },
-            onCancel: () => {
-              showConfirmDialog.value = false;
-              showToast('Template application cancelled due to dependency issues.', 'info', 6000);
-              showTemplateSelector.value = false;
-              resolve();
-            },
-          };
-          showConfirmDialog.value = true;
-        });
+      const featureValidation = validateDependencyGraph(templateAnswers['features'].features);
+      if (!featureValidation.valid) {
+        dependencyErrors.push(
+          ...featureValidation.errors.map((e: string) => `Feature: ${e}`)
+        );
       }
+    }
+    
+    if (templateAnswers['timeline']?.milestones) {
+      const milestoneValidation = validateDependencyGraph(templateAnswers['timeline'].milestones);
+      if (!milestoneValidation.valid) {
+        dependencyErrors.push(
+          ...milestoneValidation.errors.map((e: string) => `Milestone: ${e}`)
+        );
+      }
+    }
+    
+    if (dependencyErrors.length > 0) {
+      const errorMsg = `Template has dependency issues: ${dependencyErrors.join('; ')}`;
+      showToast(errorMsg, 'warning', 8000);
+      console.warn('[Wizard] Template dependency validation warnings:', dependencyErrors);
+      
+      // Require user confirmation before proceeding with invalid dependencies
+      // Use custom confirmation dialog instead of native confirm()
+      return new Promise<void>((resolve) => {
+        confirmDialogConfig.value = {
+          title: 'Template Dependency Issues',
+          message: `The selected template has dependency issues that may result in a broken plan:\n\n${dependencyErrors.join('\n')}\n\nDo you want to apply the template anyway?`,
+          confirmText: 'Apply Anyway',
+          cancelText: 'Cancel',
+          onConfirm: () => {
+            showConfirmDialog.value = false;
+            applyTemplateAnswers(templateId, templateAnswers);
+            resolve();
+          },
+          onCancel: () => {
+            showConfirmDialog.value = false;
+            showToast('Template application cancelled due to dependency issues.', 'info', 6000);
+            showTemplateSelector.value = false;
+            resolve();
+          },
+        };
+        showConfirmDialog.value = true;
+      });
     }
     
     // Apply template answers if validation passed
     applyTemplateAnswers(templateId, templateAnswers);
+    return Promise.resolve();
   } catch (error) {
     console.error('[Wizard] Failed to apply template:', error);
     
@@ -958,6 +976,14 @@ onUnmounted(() => {
   
   // Clean up AI service
   aiService.dispose();
+  
+  // Clear all active toast timers and reset the toast list
+  toasts.value.forEach((toast) => {
+    if (toast.timeoutId) {
+      clearTimeout(toast.timeoutId);
+    }
+  });
+  toasts.value = [];
 });
 
 // Sync currentStep with store

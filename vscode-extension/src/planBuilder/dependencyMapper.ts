@@ -147,7 +147,7 @@ export function parseDependenciesFromText(text: string, availableItems: string[]
  * to wizard answers.
  */
 export function mapTemplateDependencies(
-  templateData: any,
+  templateData: unknown,
   allFeatures: Feature[]
 ): Feature[] {
   if (!templateData || !Array.isArray(templateData)) {
