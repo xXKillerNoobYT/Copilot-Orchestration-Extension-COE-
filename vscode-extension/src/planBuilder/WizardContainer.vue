@@ -1,5 +1,20 @@
 <template>
   <div class="wizard-container" :class="{ 'with-assistant': showAssistant, 'with-preview': showPreview }">
+    <!-- Toast Notifications -->
+    <div class="toast-container">
+      <transition-group name="toast">
+        <div 
+          v-for="toast in toasts" 
+          :key="toast.id" 
+          class="toast"
+          :class="`toast-${toast.type}`"
+        >
+          <span class="toast-message">{{ toast.message }}</span>
+          <button class="toast-close" @click="dismissToast(toast.id)">×</button>
+        </div>
+      </transition-group>
+    </div>
+    
     <!-- File Importer (shown before wizard starts) -->
     <FileImporter
       v-if="showFileImporter"
@@ -41,6 +56,22 @@
           title="Start from a template"
         >
           📋 Use Template
+        </button>
+        <button 
+          class="undo-btn"
+          @click="handleUndo"
+          :disabled="!wizardStore.canUndo"
+          :title="wizardStore.canUndo ? `Undo (${wizardStore.historyLength} actions) - Ctrl+Z` : 'No actions to undo'"
+        >
+          ↶ Undo
+        </button>
+        <button 
+          class="redo-btn"
+          @click="handleRedo"
+          :disabled="!wizardStore.canRedo"
+          :title="wizardStore.canRedo ? 'Redo - Ctrl+Shift+Z' : 'No actions to redo'"
+        >
+          ↷ Redo
         </button>
         <button 
           class="toggle-preview-btn"
@@ -166,6 +197,12 @@ import TemplateSelector from './components/TemplateSelector.vue';
 import FileImporter from './components/FileImporter.vue';
 import { getTemplateService } from './services/TemplateService';
 import type { WizardState, PreviewRenderResult } from '../components/preview/PreviewEngine';
+import { 
+  autoPopulateDependencies, 
+  mapTemplateDependencies, 
+  validateDependencyGraph,
+  type Feature 
+} from './dependencyMapper';
 
 // Type definitions for imported context
 interface ImportedFile {
@@ -248,6 +285,16 @@ const aiSuggestionCount = computed(() => aiService.getSuggestionHistory().length
 const showPreview = ref(true); // Default to ON for live preview
 const previewRenderTime = ref<number>(0);
 const previewErrors = ref<string[]>([]);
+
+// Toast notification state
+interface ToastNotification {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  duration?: number;
+}
+const toasts = ref<ToastNotification[]>([]);
+let toastIdCounter = 0;
 
 // Question definitions - Five Core Wizard Questions
 const questions = ref([
@@ -476,6 +523,44 @@ const handleSuggestionApplied = (suggestion: AiSuggestion) => {
   }
 };
 
+// Toast notification helpers
+const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration = 5000) => {
+  const id = toastIdCounter++;
+  const toast: ToastNotification = { id, message, type, duration };
+  toasts.value.push(toast);
+  
+  if (duration > 0) {
+    setTimeout(() => {
+      const index = toasts.value.findIndex(t => t.id === id);
+      if (index > -1) {
+        toasts.value.splice(index, 1);
+      }
+    }, duration);
+  }
+};
+
+const dismissToast = (id: number) => {
+  const index = toasts.value.findIndex(t => t.id === id);
+  if (index > -1) {
+    toasts.value.splice(index, 1);
+  }
+};
+
+// Undo/Redo handlers
+const handleUndo = () => {
+  if (wizardStore.undo()) {
+    showToast('Action undone', 'success', 2000);
+    console.log('[Wizard] Undo performed');
+  }
+};
+
+const handleRedo = () => {
+  if (wizardStore.redo()) {
+    showToast('Action redone', 'success', 2000);
+    console.log('[Wizard] Redo performed');
+  }
+};
+
 // Template handling
 const handleTemplateSelected = async (templateId: string) => {
   try {
@@ -509,25 +594,28 @@ const handleTemplateSelected = async (templateId: string) => {
     
     // Map plan.features to Q3
     if (plan.features && plan.features.length > 0) {
+      // Use dependency mapper to preserve dependencies
+      const featuresWithDeps = mapTemplateDependencies(
+        plan.features,
+        plan.features.map((f: any) => ({ name: f.name, description: f.description, priority: f.priority }))
+      );
+      
       templateAnswers['features'] = {
-        features: plan.features.map((f: any) => ({
-          name: f.name,
-          description: f.description,
-          priority: f.priority,
-          dependsOn: null // TODO: Map dependencies
-        }))
+        features: featuresWithDeps
+      };
       };
     }
     
     // Map plan.timeline to Q4
     if (plan.timeline && plan.timeline.milestones) {
+      // Map dependencies for milestones too
+      const milestonesWithDeps = mapTemplateDependencies(
+        plan.timeline.milestones,
+        plan.timeline.milestones.map((m: any) => ({ name: m.name, date: m.target_date, phase: m.phase }))
+      );
+      
       templateAnswers['timeline'] = {
-        milestones: plan.timeline.milestones.map((m: any) => ({
-          name: m.name,
-          date: m.target_date,
-          phase: m.phase,
-          dependsOn: null
-        }))
+        milestones: milestonesWithDeps
       };
     }
     
@@ -541,6 +629,15 @@ const handleTemplateSelected = async (templateId: string) => {
           availability: r.availability || 'full-time'
         }))
       };
+    }
+    
+    // Validate dependencies before applying
+    if (templateAnswers['features']?.features) {
+      const validation = validateDependencyGraph(templateAnswers['features'].features);
+      if (!validation.valid) {
+        showToast(`Template has dependency issues: ${validation.errors.join('; ')}`, 'warning', 8000);
+        console.warn('[Wizard] Template dependency validation warnings:', validation.errors);
+      }
     }
     
     // Apply to wizard state if wizardStore has state manager
@@ -557,10 +654,26 @@ const handleTemplateSelected = async (templateId: string) => {
     appliedTemplateId.value = templateId;
     showTemplateSelector.value = false;
     
+    showToast('Template applied successfully!', 'success');
     console.log('[Wizard] Template applied:', templateId, templateAnswers);
   } catch (error) {
     console.error('[Wizard] Failed to apply template:', error);
-    // TODO: Show error to user
+    
+    // User-friendly error message
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'An unexpected error occurred while applying the template';
+    
+    showToast(`Failed to apply template: ${errorMessage}`, 'error', 10000);
+    
+    // Log to audit log (if available)
+    if (typeof window !== 'undefined' && (window as any).auditLog) {
+      (window as any).auditLog.error('template_application_failed', {
+        templateId,
+        error: errorMessage,
+        timestamp: new Date().toISOString()
+      });
+    }
   }
 };
 
@@ -706,10 +819,16 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
     autoSave();
   }
   
-  // Ctrl+Z or Cmd+Z - undo (not yet implemented)
-  if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+  // Ctrl+Z or Cmd+Z - undo
+  if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
     event.preventDefault();
-    // TODO: Implement undo functionality
+    handleUndo();
+  }
+  
+  // Ctrl+Shift+Z or Cmd+Shift+Z - redo
+  if ((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey) {
+    event.preventDefault();
+    handleRedo();
   }
   
   // Tab - navigate between steps (with modifier)
@@ -1009,6 +1128,127 @@ kbd {
   color: var(--vscode-badge-foreground);
 }
 
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--vscode-notifications-background);
+  border: 1px solid var(--vscode-notifications-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 300px;
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 13px;
+  color: var(--vscode-notifications-foreground);
+}
+
+.toast-close {
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--vscode-notifications-foreground);
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+.toast-success {
+  border-left: 4px solid var(--vscode-terminal-ansiGreen);
+}
+
+.toast-error {
+  border-left: 4px solid var(--vscode-terminal-ansiRed);
+}
+
+.toast-warning {
+  border-left: 4px solid var(--vscode-terminal-ansiYellow);
+}
+
+.toast-info {
+  border-left: 4px solid var(--vscode-terminal-ansiBlue);
+}
+
+/* Toast animations */
+.toast-enter-active {
+  animation: toast-slide-in 0.3s ease-out;
+}
+
+.toast-leave-active {
+  animation: toast-slide-out 0.3s ease-in;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Undo/Redo buttons */
+.undo-btn,
+.redo-btn {
+  padding: 6px 12px;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.undo-btn:disabled,
+.redo-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.undo-btn:not(:disabled):hover,
+.redo-btn:not(:disabled):hover {
+  background: var(--vscode-button-hoverBackground);
+  color: var(--vscode-button-foreground);
+}
+
 /* Animations */
 .fade-enter-active,
 .fade-leave-active {
@@ -1033,6 +1273,16 @@ kbd {
   .btn {
     flex: 1;
     min-width: 80px;
+  }
+  
+  .toast-container {
+    left: 20px;
+    right: 20px;
+    max-width: none;
+  }
+  
+  .toast {
+    min-width: 0;
   }
 }
 </style>
