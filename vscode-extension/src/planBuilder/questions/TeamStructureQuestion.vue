@@ -11,11 +11,53 @@
       <button class="btn btn-primary" @click="addRole">
         + Add Team Member
       </button>
+      <button class="btn btn-ai" @click="handleAiSuggestRoles" :disabled="isLoadingAiSuggestions">
+        {{ isLoadingAiSuggestions ? '⏳ Loading...' : '✨ AI Suggest Roles' }}
+      </button>
       <span class="member-count">{{ teamMembers.length }} member(s)</span>
     </div>
 
     <div v-if="teamErrors.length > 0" class="error-message">
       {{ teamErrors[0] }}
+    </div>
+
+    <div v-if="aiError" class="error-message">
+      {{ aiError }}
+    </div>
+
+    <!-- AI Role Suggestions Panel -->
+    <div v-if="aiRoleSuggestions.length > 0" class="ai-suggestions-panel">
+      <div class="panel-header">
+        <h3>✨ AI Suggested Roles</h3>
+        <button class="btn btn-sm" @click="closeAiSuggestions">Close</button>
+      </div>
+      <div class="suggestions-list">
+        <div
+          v-for="(suggestion, index) in aiRoleSuggestions"
+          :key="`ai-role-${index}`"
+          class="suggestion-item"
+        >
+          <div class="suggestion-content">
+            <h4>{{ formatRoleName(suggestion.role) }}</h4>
+            <p v-if="suggestion.description">{{ suggestion.description }}</p>
+            <div class="suggestion-meta">
+              <span v-if="suggestion.skills && suggestion.skills.length > 0" class="meta-tag">
+                Skills: {{ suggestion.skills.slice(0, 3).join(', ') }}
+                <span v-if="suggestion.skills.length > 3">...</span>
+              </span>
+              <span v-if="suggestion.count" class="meta-tag">
+                Count: {{ suggestion.count }}
+              </span>
+            </div>
+          </div>
+          <button
+            class="btn btn-primary btn-sm"
+            @click="acceptAiRoleSuggestion(suggestion)"
+          >
+            Add
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="teamMembers.length === 0" class="empty-state">
@@ -208,6 +250,8 @@ import { useWizardStore } from '../wizardStore';
 import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
 import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
 import { PlanContextService } from '../services/PlanContextService';
+import { getAiWizardAssistant } from '../services/aiWizardAssistant';
+import type { RoleSuggestion } from '../prompts/teamStructure';
 
 interface TeamMember {
   role: string;
@@ -229,6 +273,7 @@ const props = withDefaults(defineProps<Props>(), {
 // Store
 const wizardStore = useWizardStore();
 const planContextService = PlanContextService.getInstance();
+const aiAssistant = getAiWizardAssistant();
 
 // State
 const teamMembers = ref<TeamMember[]>([
@@ -238,6 +283,11 @@ const teamErrors = ref<string[]>([]);
 const followUpQuestions = ref<FollowUpQuestion[]>([]);
 const followUpAnswers = ref<Record<string, unknown>>({});
 const isLoadingFollowUps = ref(false);
+
+// AI State
+const isLoadingAiSuggestions = ref(false);
+const aiRoleSuggestions = ref<RoleSuggestion[]>([]);
+const aiError = ref('');
 
 // Predefined roles
 const predefinedRoles = [
@@ -477,6 +527,74 @@ function handleFollowUpAnswers(answers: Record<string, unknown>): void {
   updateStore();
 }
 
+// AI Role Suggestion Handlers
+async function handleAiSuggestRoles(): Promise<void> {
+  isLoadingAiSuggestions.value = true;
+  aiError.value = '';
+  aiRoleSuggestions.value = [];
+
+  try {
+    // Build context from wizard state
+    const projectOverview = wizardStore.getAnswer<{ name?: string; description?: string }>('q1-overview') || {};
+    const featuresAnswer = wizardStore.getAnswer<{ features?: Array<{ name: string; description: string }> }>('q3-features');
+    
+    const context = {
+      projectName: projectOverview.name || 'Unnamed Project',
+      projectDescription: projectOverview.description || '',
+      features: featuresAnswer?.features || [],
+      existingRoles: teamMembers.value.map(m => ({
+        role: m.role === 'other' ? m.customRole : m.role,
+        skills: parseSkills(m.skills),
+      })),
+    };
+
+    const suggestions = await aiAssistant.suggestRoles(context);
+    
+    if (suggestions.length === 0) {
+      aiError.value = 'AI could not generate role suggestions. Please try again or add roles manually.';
+    } else {
+      aiRoleSuggestions.value = suggestions;
+    }
+  } catch (error) {
+    console.error('[Team] AI suggestion error:', error);
+    aiError.value = 'Failed to get AI role suggestions. Please try again later.';
+  } finally {
+    isLoadingAiSuggestions.value = false;
+  }
+}
+
+function acceptAiRoleSuggestion(suggestion: RoleSuggestion): void {
+  const count = suggestion.count || 1;
+  
+  for (let i = 0; i < count; i++) {
+    teamMembers.value.push({
+      role: suggestion.role,
+      customRole: '',
+      skills: suggestion.skills?.join(', ') || '',
+      agentMapping: null,
+      availability: 'full-time',
+      error: '',
+    });
+  }
+  
+  // Track acceptance
+  aiAssistant.trackAcceptance('suggest-roles', true);
+  
+  // Remove accepted suggestion from list
+  aiRoleSuggestions.value = aiRoleSuggestions.value.filter(s => s.role !== suggestion.role);
+  
+  validateTeam();
+}
+
+function closeAiSuggestions(): void {
+  // Track rejection for any remaining suggestions
+  aiRoleSuggestions.value.forEach(() => {
+    aiAssistant.trackAcceptance('suggest-roles', false);
+  });
+  
+  aiRoleSuggestions.value = [];
+}
+
 // Load existing answer from store
 onMounted(() => {
   const existingAnswer = wizardStore.getAnswer<{
@@ -572,6 +690,21 @@ defineExpose({
 
 .btn-primary:hover {
   background: var(--vscode-button-hoverBackground);
+}
+
+.btn-ai {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border);
+}
+
+.btn-ai:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.btn-ai:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-danger {
@@ -948,5 +1081,77 @@ defineExpose({
   .question-container {
     padding: 1rem;
   }
+}
+
+.ai-suggestions-panel {
+  background: var(--vscode-editor-background);
+  border: 2px solid var(--vscode-focusBorder);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--vscode-input-border);
+}
+
+.panel-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--vscode-foreground);
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.suggestion-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  align-items: flex-start;
+}
+
+.suggestion-content {
+  flex: 1;
+}
+
+.suggestion-content h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem 0;
+  color: var(--vscode-foreground);
+}
+
+.suggestion-content p {
+  font-size: 0.85rem;
+  margin: 0 0 0.6rem 0;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.4;
+}
+
+.suggestion-meta {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.meta-tag {
+  font-size: 0.75rem;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
 }
 </style>

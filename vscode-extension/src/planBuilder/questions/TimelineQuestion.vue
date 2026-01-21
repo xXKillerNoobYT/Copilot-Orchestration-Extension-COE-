@@ -11,11 +11,52 @@
       <button class="btn btn-primary" @click="addMilestone">
         + Add Milestone
       </button>
+      <button class="btn btn-ai" @click="handleAiRecommendTimeline" :disabled="isLoadingAiSuggestions">
+        {{ isLoadingAiSuggestions ? '⏳ Loading...' : '✨ AI Recommend Timeline' }}
+      </button>
       <span class="milestone-count">{{ milestones.length }} milestone(s)</span>
     </div>
 
     <div v-if="timelineErrors.length > 0" class="error-message">
       {{ timelineErrors[0] }}
+    </div>
+
+    <div v-if="aiError" class="error-message">
+      {{ aiError }}
+    </div>
+
+    <!-- AI Timeline Suggestion Panel -->
+    <div v-if="aiTimelineSuggestion" class="ai-suggestions-panel">
+      <div class="panel-header">
+        <h3>✨ AI Recommended Timeline</h3>
+        <button class="btn btn-sm" @click="closeAiSuggestions">Close</button>
+      </div>
+      <div class="timeline-suggestion-content">
+        <div class="suggestion-meta">
+          <div class="meta-item">
+            <strong>Duration:</strong> {{ aiTimelineSuggestion.duration }} days
+          </div>
+          <div class="meta-item">
+            <strong>Phase:</strong> {{ aiTimelineSuggestion.phase }}
+          </div>
+        </div>
+        <div v-if="aiTimelineSuggestion.milestones.length > 0" class="milestones-preview">
+          <h4>Suggested Milestones:</h4>
+          <div
+            v-for="(milestone, index) in aiTimelineSuggestion.milestones"
+            :key="`ai-milestone-${index}`"
+            class="milestone-preview-item"
+          >
+            <span class="milestone-name">{{ milestone.name }}</span>
+            <span class="milestone-date">{{ milestone.date || 'TBD' }}</span>
+          </div>
+        </div>
+        <div class="suggestion-actions">
+          <button class="btn btn-primary" @click="acceptAiTimeline">
+            Accept Timeline
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-if="milestones.length === 0" class="empty-state">
@@ -149,6 +190,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useWizardStore } from '../wizardStore';
 import DynamicFollowUpQuestions from '../components/DynamicFollowUpQuestions.vue';
 import type { FollowUpQuestion } from '../components/DynamicFollowUpQuestions.vue';
+import { getAiWizardAssistant } from '../services/aiWizardAssistant';
+import type { TimelineSuggestion } from '../prompts/timeline';
 
 interface Milestone {
   name: string;
@@ -171,6 +214,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Store
 const wizardStore = useWizardStore();
+const aiAssistant = getAiWizardAssistant();
 
 // State
 const milestones = ref<Milestone[]>([
@@ -180,6 +224,11 @@ const timelineErrors = ref<string[]>([]);
 const followUpQuestions = ref<FollowUpQuestion[]>([]);
 const followUpAnswers = ref<Record<string, unknown>>({});
 const isLoadingFollowUps = ref(false);
+
+// AI State
+const isLoadingAiSuggestions = ref(false);
+const aiTimelineSuggestion = ref<TimelineSuggestion | null>(null);
+const aiError = ref('');
 
 // Phase definitions
 const phases = [
@@ -395,6 +444,70 @@ function handleFollowUpAnswers(answers: Record<string, unknown>): void {
   updateStore();
 }
 
+// AI Timeline Handlers
+async function handleAiRecommendTimeline(): Promise<void> {
+  isLoadingAiSuggestions.value = true;
+  aiError.value = '';
+  aiTimelineSuggestion.value = null;
+
+  try {
+    // Build context from wizard state
+    const projectOverview = wizardStore.getAnswer<{ name?: string; description?: string }>('q1-overview') || {};
+    const featuresAnswer = wizardStore.getAnswer<{ features?: Array<{ name: string; estimatedDays?: number }> }>('q3-features');
+    
+    const context = {
+      projectName: projectOverview.name || 'Unnamed Project',
+      projectDescription: projectOverview.description || '',
+      features: featuresAnswer?.features || [],
+      existingMilestones: milestones.value.map(m => ({ name: m.name, phase: m.phase })),
+    };
+
+    const suggestion = await aiAssistant.recommendTimeline(context);
+    
+    if (!suggestion) {
+      aiError.value = 'AI could not generate timeline recommendation. Please try again or add milestones manually.';
+    } else {
+      aiTimelineSuggestion.value = suggestion;
+    }
+  } catch (error) {
+    console.error('[Timeline] AI suggestion error:', error);
+    aiError.value = 'Failed to get AI timeline recommendation. Please try again later.';
+  } finally {
+    isLoadingAiSuggestions.value = false;
+  }
+}
+
+function acceptAiTimeline(): void {
+  if (!aiTimelineSuggestion.value) return;
+
+  // Add milestones from AI suggestion
+  if (aiTimelineSuggestion.value.milestones && aiTimelineSuggestion.value.milestones.length > 0) {
+    aiTimelineSuggestion.value.milestones.forEach((milestone) => {
+      milestones.value.push({
+        name: milestone.name,
+        date: milestone.date || '',
+        phase: milestone.phase || 'development',
+        dependsOn: null,
+        error: '',
+        dateError: '',
+      });
+    });
+  }
+
+  // Track acceptance
+  aiAssistant.trackAcceptance('recommend-timeline', true);
+  
+  aiTimelineSuggestion.value = null;
+  validateTimeline();
+}
+
+function closeAiSuggestions(): void {
+  if (aiTimelineSuggestion.value) {
+    aiAssistant.trackAcceptance('recommend-timeline', false);
+  }
+  aiTimelineSuggestion.value = null;
+}
+
 // Load existing answer from store
 onMounted(() => {
   const existingAnswer = wizardStore.getAnswer<{
@@ -483,6 +596,21 @@ defineExpose({
 
 .btn-primary:hover {
   background: var(--vscode-button-hoverBackground);
+}
+
+.btn-ai {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border);
+}
+
+.btn-ai:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.btn-ai:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-danger {
@@ -756,5 +884,85 @@ defineExpose({
   .question-container {
     padding: 1rem;
   }
+}
+
+.ai-suggestions-panel {
+  background: var(--vscode-editor-background);
+  border: 2px solid var(--vscode-focusBorder);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--vscode-input-border);
+}
+
+.panel-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--vscode-foreground);
+}
+
+.timeline-suggestion-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.suggestion-meta {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.8rem;
+  background: var(--vscode-input-background);
+  border-radius: 4px;
+}
+
+.meta-item {
+  font-size: 0.85rem;
+  color: var(--vscode-foreground);
+}
+
+.meta-item strong {
+  color: var(--vscode-focusBorder);
+  margin-right: 0.4rem;
+}
+
+.milestones-preview h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.6rem 0;
+  color: var(--vscode-foreground);
+}
+
+.milestone-preview-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.8rem;
+  background: var(--vscode-input-background);
+  border-left: 3px solid var(--vscode-focusBorder);
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.milestone-name {
+  font-weight: 500;
+  color: var(--vscode-foreground);
+}
+
+.milestone-date {
+  color: var(--vscode-descriptionForeground);
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 0.8rem;
+  padding-top: 0.5rem;
 }
 </style>
