@@ -3,11 +3,11 @@
  * Unit tests for wizard-specific AI assistance
  */
 
-import { AiWizardAssistant, getAiWizardAssistant } from '../services/aiWizardAssistant';
-import { AiAssistanceService } from '../services/aiAssistanceService';
+import { AiWizardAssistant, getAiWizardAssistant } from '../../src/services/aiWizardAssistant';
+import { AiAssistanceService } from '../../src/services/aiAssistanceService';
 
 // Mock dependencies
-jest.mock('../services/aiAssistanceService');
+jest.mock('../../src/services/aiAssistanceService');
 
 describe('AiWizardAssistant', () => {
   let assistant: AiWizardAssistant;
