@@ -260,7 +260,7 @@ export class PlanAdjustmentService {
       }
 
       // Import task parser and path dynamically
-      const { parseTasksFromDirectory } = await import('../taskParser');
+      const { parseTasksFromDirectory } = await import('../taskParser.js');
       const path = await import('path');
 
       // Define common task directories to search
