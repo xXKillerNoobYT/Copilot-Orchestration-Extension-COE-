@@ -505,9 +505,14 @@ export class AiWizardAssistant {
     if (!metrics || metrics.length === 0) return null;
 
     const sorted = [...metrics].sort((a, b) => a - b);
-    const p50 = sorted[Math.floor(sorted.length * 0.5)];
-    const p95 = sorted[Math.floor(sorted.length * 0.95)];
-    const p99 = sorted[Math.floor(sorted.length * 0.99)];
+    const getPercentile = (percentile: number): number => {
+      const index = Math.min(sorted.length - 1, Math.ceil(sorted.length * percentile) - 1);
+      return sorted[Math.max(0, index)];
+    };
+    
+    const p50 = getPercentile(0.5);
+    const p95 = getPercentile(0.95);
+    const p99 = getPercentile(0.99);
 
     return { p50, p95, p99 };
   }
@@ -557,6 +562,7 @@ export class AiWizardAssistant {
       }
     }
 
+    // This line should never be reached due to throw in the loop
     throw new Error('All retries exhausted');
   }
 
@@ -567,21 +573,15 @@ export class AiWizardAssistant {
     request: AiAssistanceRequest,
     customPrompt: string
   ): Promise<AiAssistanceResponse> {
-    // For now, we'll create a mock response structure
-    // In production, this would call the actual MCP service
+    // Call the actual MCP service with custom prompt
     try {
-      const response = await this.aiService.getSuggestions(request);
-      
-      // Inject custom prompt as the question
-      return {
-        suggestions: [
-          {
-            question: customPrompt,
-            suggestion: customPrompt, // This would be replaced by actual AI response
-            confidence: 0.8,
-          },
-        ],
+      // Inject custom prompt into the request
+      const modifiedRequest = {
+        ...request,
+        userAnswer: customPrompt,
       };
+      
+      return await this.aiService.getSuggestions(modifiedRequest);
     } catch (error) {
       console.error('[AiWizardAssistant] AI service call failed:', error);
       return {

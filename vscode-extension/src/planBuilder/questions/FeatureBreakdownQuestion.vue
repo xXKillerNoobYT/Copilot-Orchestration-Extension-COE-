@@ -440,10 +440,10 @@ function acceptAiSuggestion(suggestion: FeatureSuggestion): void {
 }
 
 function closeAiSuggestions(): void {
-  // Track rejection for any remaining suggestions
-  aiSuggestions.value.forEach(() => {
+  // Track a single rejection event if there are any remaining suggestions
+  if (aiSuggestions.value.length > 0) {
     aiAssistant.trackAcceptance('suggest-features', false);
-  });
+  }
   
   aiSuggestions.value = [];
 }

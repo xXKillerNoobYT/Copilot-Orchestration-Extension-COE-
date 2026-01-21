@@ -479,10 +479,12 @@ async function handleAiRecommendTimeline(): Promise<void> {
 function acceptAiTimeline(): void {
   if (!aiTimelineSuggestion.value) return;
 
+  // Clear existing milestones to avoid duplicates
+  milestones.value = [];
+
   // Add milestones from AI suggestion
   if (aiTimelineSuggestion.value.milestones && aiTimelineSuggestion.value.milestones.length > 0) {
     const today = new Date();
-    let currentWeek = 0;
     
     aiTimelineSuggestion.value.milestones.forEach((milestone) => {
       const targetDate = new Date(today);
@@ -496,8 +498,6 @@ function acceptAiTimeline(): void {
         error: '',
         dateError: '',
       });
-      
-      currentWeek = milestone.endWeek;
     });
   }
 

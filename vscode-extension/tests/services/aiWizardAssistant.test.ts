@@ -579,6 +579,70 @@ describe('AiWizardAssistant', () => {
         expect(result).toBeNull();
       });
     });
+
+    describe('Timeout and Retry Logic', () => {
+      it('should enforce timeout correctly', async () => {
+        // Mock a slow response that exceeds timeout
+        mockAiService.getSuggestions.mockImplementation(() => 
+          new Promise(resolve => setTimeout(() => resolve({ suggestions: [] }), 2000))
+        );
+
+        const startTime = Date.now();
+        
+        try {
+          await assistant.suggestFeatures(
+            { projectType: 'Web App', projectDescription: 'Test' },
+            { timeout: 100, retries: 0 }
+          );
+          fail('Should have thrown timeout error');
+        } catch (error: any) {
+          const elapsed = Date.now() - startTime;
+          expect(elapsed).toBeLessThan(500); // Should timeout quickly
+          expect(error.message).toContain('timeout');
+        }
+      });
+
+      it('should retry on failure', async () => {
+        let attempts = 0;
+        mockAiService.getSuggestions.mockImplementation(() => {
+          attempts++;
+          if (attempts < 3) {
+            return Promise.reject(new Error('Temporary failure'));
+          }
+          return Promise.resolve({
+            suggestions: [
+              {
+                question: 'test',
+                suggestion: JSON.stringify([{ name: 'Feature', description: 'Test' }]),
+                confidence: 0.9,
+              },
+            ],
+          });
+        });
+
+        const result = await assistant.suggestFeatures(
+          { projectType: 'Web App', projectDescription: 'Test' },
+          { timeout: 5000, retries: 2 }
+        );
+
+        expect(attempts).toBe(3); // Should have retried twice before success
+        expect(result).toHaveLength(0); // Parsing will fail but shouldn't throw
+      });
+
+      it('should throw error after exhausting retries', async () => {
+        mockAiService.getSuggestions.mockRejectedValue(new Error('Persistent failure'));
+
+        try {
+          await assistant.suggestFeatures(
+            { projectType: 'API', projectDescription: 'Test' },
+            { timeout: 1000, retries: 2 }
+          );
+          fail('Should have thrown error');
+        } catch (error: any) {
+          expect(error.message).toContain('Persistent failure');
+        }
+      });
+    });
   });
 
   describe('getAiWizardAssistant singleton', () => {

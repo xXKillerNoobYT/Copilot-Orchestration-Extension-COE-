@@ -39,7 +39,7 @@
         >
           <div class="suggestion-content">
             <h4>{{ formatRoleName(suggestion.role) }}</h4>
-            <p v-if="suggestion.description">{{ suggestion.description }}</p>
+            <p v-if="suggestion.rationale">{{ suggestion.rationale }}</p>
             <div class="suggestion-meta">
               <span v-if="suggestion.skills && suggestion.skills.length > 0" class="meta-tag">
                 Skills: {{ suggestion.skills.slice(0, 3).join(', ') }}
@@ -582,10 +582,10 @@ function acceptAiRoleSuggestion(suggestion: RoleSuggestion): void {
 }
 
 function closeAiSuggestions(): void {
-  // Track rejection for any remaining suggestions
-  aiRoleSuggestions.value.forEach(() => {
+  // Track a single rejection event if there are any remaining suggestions
+  if (aiRoleSuggestions.value.length > 0) {
     aiAssistant.trackAcceptance('suggest-roles', false);
-  });
+  }
   
   aiRoleSuggestions.value = [];
 }
