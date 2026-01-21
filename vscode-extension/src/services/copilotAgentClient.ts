@@ -33,14 +33,14 @@ async function retryWithExponentialBackoff<T>(
 ): Promise<T> {
   let attempts = 0;
   let lastError: Error | null = null;
-  
+
   while (attempts < maxAttempts) {
     try {
       return await fn();
     } catch (error) {
       lastError = error as Error;
       attempts++;
-      
+
       if (attempts < maxAttempts) {
         // Exponential backoff: wait 2^attempts seconds
         const backoffMs = Math.pow(2, attempts) * 1000;
@@ -49,7 +49,7 @@ async function retryWithExponentialBackoff<T>(
       }
     }
   }
-  
+
   throw lastError || new Error(`${operation} failed after ${maxAttempts} attempts`);
 }
 
@@ -180,14 +180,14 @@ export class CopilotAgentClient {
   private authProvider: GitHubAuthProvider | null = null;
   private agentProfiles: Map<string, AgentProfile> = new Map();
   private analyticsQueue: AnalyticsEvent[] = [];
-  
+
   // Cache for agent discovery results
   private agentDiscoveryCache: { agents: AgentRegistration[]; timestamp: number } | null = null;
   private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-  
+
   // Maximum analytics queue size to prevent memory leaks
   private readonly MAX_ANALYTICS_QUEUE_SIZE = 1000;
-  
+
   // Initialization promise to track async loading
   private initializationPromise: Promise<void> | null = null;
 
@@ -197,23 +197,23 @@ export class CopilotAgentClient {
   ) {
     // Load configuration from VS Code settings
     const vsConfig = vscode.workspace.getConfiguration('copilot-orchestrator');
-    
+
     this.config = {
       baseUrl: config?.baseUrl ?? vsConfig.get('backendUrl') ?? 'http://localhost:8000',
       authToken: config?.authToken ?? '',
       timeout: config?.timeout ?? 30000,
       mockMode: config?.mockMode ?? false, // Real API mode by default
     };
-    
+
     // Initialize auth provider if context is available
     if (this.context) {
       this.authProvider = new GitHubAuthProvider(this.context.secrets);
     }
-    
+
     // Start async initialization (profiles and stored token)
     this.initializationPromise = this.initialize();
   }
-  
+
   /**
    * Initialize async resources (agent profiles and stored token)
    * 
@@ -231,7 +231,7 @@ export class CopilotAgentClient {
       console.error('[CopilotAgentClient] Initialization failed:', error);
     }
   }
-  
+
   /**
    * Ensure initialization is complete before proceeding
    * 
@@ -242,7 +242,7 @@ export class CopilotAgentClient {
       await this.initializationPromise;
     }
   }
-  
+
   /**
    * Load stored authentication token from secret storage
    */
@@ -250,7 +250,7 @@ export class CopilotAgentClient {
     if (!this.authProvider) {
       return;
     }
-    
+
     try {
       const token = await this.authProvider.getStoredToken();
       if (token) {
@@ -271,14 +271,14 @@ export class CopilotAgentClient {
       // Use extension context for reliable path resolution if available
       const baseDir = this.context?.extensionPath ?? __dirname;
       const profilesDir = path.join(baseDir, 'src/config/agent-profiles');
-      
+
       const profileFiles = [
         'planning-team.yaml',
         'answer-team.yaml',
         'decomposition-team.yaml',
         'verification-team.yaml',
       ];
-      
+
       for (const filename of profileFiles) {
         const filepath = path.join(profilesDir, filename);
         try {
@@ -310,7 +310,7 @@ export class CopilotAgentClient {
   async authenticate(): Promise<boolean> {
     // Ensure initialization is complete (loads stored token)
     await this.ensureInitialized();
-    
+
     // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Authentication successful');
@@ -325,16 +325,16 @@ export class CopilotAgentClient {
         console.error(`[CopilotAgentClient] ${errorMsg}`);
         throw new Error(errorMsg);
       }
-      
+
       // Step 1: Authenticate with GitHub and get token
       const authResult = await this.authProvider.authenticate();
-      
+
       if (!authResult.success || !authResult.token) {
         console.error('[CopilotAgentClient] GitHub authentication failed:', authResult.error);
         this.authenticationValid = false;
         return false;
       }
-      
+
       // Step 2: Validate token with backend API
       const response = await this.fetch('/api/v1/auth/validate', 'POST', {
         token: authResult.token,
@@ -342,16 +342,16 @@ export class CopilotAgentClient {
 
       const isValid = response.success === true;
       this.authenticationValid = isValid;
-      
+
       if (isValid) {
         this.config.authToken = authResult.token;
         console.log('[CopilotAgentClient] Authentication successful');
       } else {
         console.error('[CopilotAgentClient] Backend token validation failed');
       }
-      
+
       return isValid;
-      
+
     } catch (error) {
       console.error('[CopilotAgentClient] Authentication failed:', error);
       this.authenticationValid = false;
@@ -374,7 +374,7 @@ export class CopilotAgentClient {
   async registerAgent(registration: AgentRegistration): Promise<boolean> {
     // Ensure initialization is complete (loads agent profiles)
     await this.ensureInitialized();
-    
+
     // Check if agent is already registered
     if (this.registeredAgents.has(registration.agentId)) {
       console.log('[CopilotAgentClient] Agent already registered:', registration.agentId);
@@ -395,7 +395,7 @@ export class CopilotAgentClient {
       await retryWithExponentialBackoff(async () => {
         // Load agent profile from YAML if available
         const profile = this.agentProfiles.get(registration.agentId);
-        
+
         // Prepare registration payload
         const payload = {
           name: registration.name,
@@ -406,21 +406,21 @@ export class CopilotAgentClient {
           llm_provider: profile?.configuration?.llm_provider ?? 'copilot',
           is_active: true,
         };
-        
+
         const response = await this.fetch('/api/v1/agents', 'POST', payload);
-        
+
         if (!response.success) {
           throw new Error(response.error || 'Registration failed');
         }
-        
+
         return response;
       }, 3, 'Agent registration');
-      
+
       // Registration successful
       this.registered = true;
       this.currentAgentId = registration.agentId;
       this.registeredAgents.add(registration.agentId);
-      
+
       // Track analytics
       this.trackAnalytics({
         agentId: registration.agentId,
@@ -429,13 +429,13 @@ export class CopilotAgentClient {
         success: true,
         metadata: { name: registration.name, role: registration.role },
       });
-      
+
       console.log(`[CopilotAgentClient] Successfully registered agent: ${registration.name}`);
       return true;
-      
+
     } catch (error) {
       console.error('[CopilotAgentClient] Agent registration failed after retries:', error);
-      
+
       // Track failed registration
       this.trackAnalytics({
         agentId: registration.agentId,
@@ -444,11 +444,11 @@ export class CopilotAgentClient {
         success: false,
         metadata: { error: (error as Error).message },
       });
-      
+
       return false;
     }
   }
-  
+
   /**
    * Map agent role to backend agent type
    */
@@ -462,7 +462,7 @@ export class CopilotAgentClient {
       'review': 'reviewer',
       'testing': 'tester',
     };
-    
+
     return roleMapping[role] || 'coder';
   }
 
@@ -480,7 +480,7 @@ export class CopilotAgentClient {
    */
   async handoffTask(request: AgentHandoffRequest): Promise<AgentHandoffResponse> {
     const startTime = Date.now();
-    
+
     // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Task handoff from', request.fromAgent, 'to', request.toAgent);
@@ -499,9 +499,9 @@ export class CopilotAgentClient {
         context: request.context,
         reason: request.reason,
       });
-      
+
       const duration = Date.now() - startTime;
-      
+
       // Track analytics
       this.trackAnalytics({
         agentId: request.fromAgent,
@@ -514,22 +514,22 @@ export class CopilotAgentClient {
           toAgent: request.toAgent,
         },
       });
-      
+
       if (response.success) {
         return {
           success: true,
           handoffId: response.data?.handoff_id || `handoff-${Date.now()}`,
         };
       }
-      
+
       return {
         success: false,
         error: response.error || 'Handoff failed',
       };
-      
+
     } catch (error) {
       console.error('[CopilotAgentClient] Task handoff failed:', error);
-      
+
       // Track failed handoff
       this.trackAnalytics({
         agentId: request.fromAgent,
@@ -539,7 +539,7 @@ export class CopilotAgentClient {
         success: false,
         metadata: { error: (error as Error).message },
       });
-      
+
       return {
         success: false,
         error: (error as Error).message,
@@ -562,14 +562,14 @@ export class CopilotAgentClient {
    */
   async executeTask(request: AgentExecutionRequest): Promise<AgentExecutionResponse> {
     const startTime = Date.now();
-    
+
     // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Executing task with agent', request.agentId);
-      
+
       // Generate a simulated response
       const output = this.generateMockResponse(request.payload);
-      
+
       return {
         success: true,
         output,
@@ -590,16 +590,16 @@ export class CopilotAgentClient {
           task_id: request.payload.taskId,
           payload: request.payload,
         });
-        
+
         if (!res.success) {
           throw new Error(res.error || 'Execution failed');
         }
-        
+
         return res;
       }, 3, 'Task execution');
-      
+
       const duration = Date.now() - startTime;
-      
+
       // Track successful execution
       this.trackAnalytics({
         agentId: request.agentId,
@@ -612,7 +612,7 @@ export class CopilotAgentClient {
           requestId: request.requestId,
         },
       });
-      
+
       return {
         success: true,
         output: response.data?.output || response.data?.result || '',
@@ -622,12 +622,12 @@ export class CopilotAgentClient {
           ...(response.data?.metadata || {}),
         },
       };
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       console.error('[CopilotAgentClient] Task execution failed after retries:', error);
-      
+
       this.trackAnalytics({
         agentId: request.agentId,
         eventType: 'task_execution',
@@ -636,7 +636,7 @@ export class CopilotAgentClient {
         success: false,
         metadata: { error: (error as Error).message },
       });
-      
+
       return {
         success: false,
         output: '',
@@ -660,7 +660,7 @@ export class CopilotAgentClient {
   async discoverAgents(): Promise<AgentDiscoveryResult> {
     // Ensure initialization is complete (loads agent profiles)
     await this.ensureInitialized();
-    
+
     // Check cache first
     if (this.agentDiscoveryCache) {
       const cacheAge = Date.now() - this.agentDiscoveryCache.timestamp;
@@ -672,7 +672,7 @@ export class CopilotAgentClient {
         };
       }
     }
-    
+
     // Mock mode bypass
     if (this.config.mockMode) {
       console.log('[CopilotAgentClient] Mock mode: Returning mock agents');
@@ -696,13 +696,13 @@ export class CopilotAgentClient {
           capabilities: ['code-review', 'security-analysis', 'best-practices'],
         },
       ];
-      
+
       // Cache mock results
       this.agentDiscoveryCache = {
         agents: mockAgents,
         timestamp: Date.now(),
       };
-      
+
       return {
         success: true,
         agents: mockAgents,
@@ -712,15 +712,15 @@ export class CopilotAgentClient {
     try {
       // Real agent discovery via backend API
       const response = await this.fetch('/api/v1/agents', 'GET');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Discovery failed');
       }
-      
+
       // Map backend agent data to AgentRegistration format
       const agents: AgentRegistration[] = (response.data || []).map((agent: any) => {
         const profile = this.agentProfiles.get(agent.id);
-        
+
         return {
           agentId: agent.id,
           name: agent.name,
@@ -729,7 +729,7 @@ export class CopilotAgentClient {
           endpoint: agent.endpoint,
         };
       });
-      
+
       // Add agents from YAML profiles that aren't in backend yet
       for (const [agentId, profile] of this.agentProfiles.entries()) {
         if (!agents.find(a => a.agentId === agentId)) {
@@ -741,13 +741,13 @@ export class CopilotAgentClient {
           });
         }
       }
-      
+
       // Cache results
       this.agentDiscoveryCache = {
         agents,
         timestamp: Date.now(),
       };
-      
+
       // Track analytics
       this.trackAnalytics({
         agentId: 'system',
@@ -756,17 +756,17 @@ export class CopilotAgentClient {
         success: true,
         metadata: { agentCount: agents.length },
       });
-      
+
       console.log(`[CopilotAgentClient] Discovered ${agents.length} agents`);
-      
+
       return {
         success: true,
         agents,
       };
-      
+
     } catch (error) {
       console.error('[CopilotAgentClient] Agent discovery failed:', error);
-      
+
       // Track failed discovery
       this.trackAnalytics({
         agentId: 'system',
@@ -775,7 +775,7 @@ export class CopilotAgentClient {
         success: false,
         metadata: { error: (error as Error).message },
       });
-      
+
       return {
         success: false,
         agents: [],
@@ -783,7 +783,7 @@ export class CopilotAgentClient {
       };
     }
   }
-  
+
   /**
    * Map backend agent type to role
    */
@@ -795,7 +795,7 @@ export class CopilotAgentClient {
       'coder': 'code',
       'reviewer': 'review',
     };
-    
+
     return typeMapping[type] || type;
   }
 
@@ -818,7 +818,7 @@ export class CopilotAgentClient {
    */
   private async fetch(endpoint: string, method: string, body?: unknown): Promise<Record<string, any>> {
     const url = `${this.config.baseUrl}${endpoint}`;
-    
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
@@ -842,17 +842,17 @@ export class CopilotAgentClient {
       return await response.json() as Record<string, any>;
     } catch (error: unknown) {
       clearTimeout(timeoutId);
-      
+
       // Check if error is an AbortError (timeout)
       const err = error as any;
       const isAbortError = err && (err.name === 'AbortError' || err.code === 'ABORT_ERR');
-      
+
       if (isAbortError) {
         const timeoutMs = this.config.timeout;
         const timeoutMsg = typeof timeoutMs === 'number' ? ` after ${timeoutMs}ms` : '';
         throw new Error(`Request to ${endpoint} timed out${timeoutMsg}`);
       }
-      
+
       throw error;
     }
   }
@@ -908,7 +908,7 @@ ${this.formatContextFiles(payload.context.files)}
 *Note: This is a mock response. Real implementation requires GitHub Copilot Agent Mode API access and proper authentication.*
 `;
   }
-  
+
   /**
    * Track analytics event
    * 
@@ -925,9 +925,9 @@ ${this.formatContextFiles(payload.context.files)}
       console.warn(`[CopilotAgentClient] Analytics queue full (${this.MAX_ANALYTICS_QUEUE_SIZE} events), dropping to ${retainSize} events`);
       this.analyticsQueue = this.analyticsQueue.slice(-retainSize);
     }
-    
+
     this.analyticsQueue.push(event);
-    
+
     // Auto-flush if queue is getting large
     if (this.analyticsQueue.length >= 50) {
       this.flushAnalytics().catch(error => {
@@ -935,7 +935,7 @@ ${this.formatContextFiles(payload.context.files)}
       });
     }
   }
-  
+
   /**
    * Flush analytics events to backend
    * 
@@ -948,16 +948,16 @@ ${this.formatContextFiles(payload.context.files)}
     if (this.analyticsQueue.length === 0) {
       return true;
     }
-    
+
     // Don't send analytics in mock mode
     if (this.config.mockMode) {
       this.analyticsQueue = [];
       return true;
     }
-    
+
     const events = [...this.analyticsQueue];
     this.analyticsQueue = [];
-    
+
     try {
       const response = await this.fetch('/api/v1/analytics/events', 'POST', {
         events: events.map(e => ({
@@ -969,12 +969,12 @@ ${this.formatContextFiles(payload.context.files)}
           metadata: e.metadata,
         })),
       });
-      
+
       if (response.success) {
         console.log(`[CopilotAgentClient] Flushed ${events.length} analytics events`);
         return true;
       }
-      
+
       // Re-queue events if submission failed, but limit to prevent unbounded growth
       if (this.analyticsQueue.length + events.length <= this.MAX_ANALYTICS_QUEUE_SIZE) {
         this.analyticsQueue.push(...events);
@@ -982,7 +982,7 @@ ${this.formatContextFiles(payload.context.files)}
         console.warn('[CopilotAgentClient] Dropping analytics events due to queue size limit');
       }
       return false;
-      
+
     } catch (error) {
       console.error('[CopilotAgentClient] Failed to flush analytics:', error);
       // Re-queue events with size limit
@@ -994,7 +994,7 @@ ${this.formatContextFiles(payload.context.files)}
       return false;
     }
   }
-  
+
   /**
    * Get agent profile by ID
    * 
@@ -1004,7 +1004,7 @@ ${this.formatContextFiles(payload.context.files)}
   getAgentProfile(agentId: string): AgentProfile | undefined {
     return this.agentProfiles.get(agentId);
   }
-  
+
   /**
    * Get all loaded agent profiles
    * 
@@ -1013,7 +1013,7 @@ ${this.formatContextFiles(payload.context.files)}
   getAllAgentProfiles(): Map<string, AgentProfile> {
     return new Map(this.agentProfiles);
   }
-  
+
   /**
    * Clear agent discovery cache
    * 

@@ -71,7 +71,7 @@ class GetWorkspaceConfigHandler extends MCPHandlerBase {
    */
   private validateWebSocketDriver(value?: string): 'soketi' | 'pusher' | 'redis' {
     const validDrivers: Array<'soketi' | 'pusher' | 'redis'> = ['soketi', 'pusher', 'redis'];
-    
+
     if (value && validDrivers.includes(value as any)) {
       return value as 'soketi' | 'pusher' | 'redis';
     }

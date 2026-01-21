@@ -411,7 +411,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  
+
   // Log to stderr (stdout is reserved for MCP protocol)
   console.error('Copilot Orchestrator MCP Server started');
 }

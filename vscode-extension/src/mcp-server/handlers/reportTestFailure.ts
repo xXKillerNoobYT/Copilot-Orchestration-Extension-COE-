@@ -38,7 +38,7 @@ export async function handleReportTestFailure(args: any) {
     // Create investigation task if no suggested fix
     if (!suggestedFix) {
       const github = getGitHubIntegration();
-      
+
       if (github.isAvailable()) {
         const result = await github.createTestFailureIssue({
           taskId,
@@ -71,8 +71,8 @@ export async function handleReportTestFailure(args: any) {
       nextSteps: suggestedFix
         ? ['Apply suggested fix', 'Re-run tests']
         : failureReport.investigationCreated
-        ? [`Investigation task created: ${failureReport.issueUrl}`, 'Debug the issue', 'Update task status']
-        : ['Investigation logged', 'Debug the issue', 'Update task status'],
+          ? [`Investigation task created: ${failureReport.issueUrl}`, 'Debug the issue', 'Update task status']
+          : ['Investigation logged', 'Debug the issue', 'Update task status'],
     });
   } catch (error) {
     return formatAgentError(

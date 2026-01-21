@@ -16,18 +16,18 @@ class ListActiveTasksHandler extends MCPHandlerBase {
       async () => {
         // Get backend URL from environment or use default
         const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
-        
+
         // Build query parameters for filtering
         const params = new URLSearchParams();
         if (status) params.append('status', status);
         if (priority) params.append('priority', priority);
         if (assignee) params.append('assigned_agent', assignee);
-        
+
         // Use project ID if provided, otherwise use default or from environment
         const effectiveProjectId = projectId || process.env.MCP_PROJECT_ID || 'default';
-        
+
         const url = `${baseUrl}/api/v1/projects/${effectiveProjectId}/tasks?${params.toString()}`;
-        
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {

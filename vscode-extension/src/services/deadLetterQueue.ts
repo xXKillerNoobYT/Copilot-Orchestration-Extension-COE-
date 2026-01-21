@@ -60,7 +60,7 @@ export class DeadLetterQueueService {
 
       if (!tableExists) {
         console.log('[DeadLetterQueue] Creating dead_letter_queue table...');
-        
+
         // Create table
         this.db.exec(`
           CREATE TABLE IF NOT EXISTS dead_letter_queue (

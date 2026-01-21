@@ -67,12 +67,11 @@ export async function handleReportObservation(args: any) {
 
   return formatAgentSuccess({
     observation,
-    message: `Observation recorded${
-      createTask && observation.issueUrl
+    message: `Observation recorded${createTask && observation.issueUrl
         ? ` and task created: ${observation.issueUrl}`
         : createTask
-        ? ' (logged locally)'
-        : ''
-    }`,
+          ? ' (logged locally)'
+          : ''
+      }`,
   });
 }

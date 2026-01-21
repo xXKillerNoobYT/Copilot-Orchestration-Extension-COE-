@@ -170,7 +170,7 @@ describe('StreamingClient', () => {
 
       // Timeout should call onError or onCancel
       expect(callbacks.onError || callbacks.onCancel).toBeTruthy();
-      
+
       jest.useRealTimers();
     }, 60000);
 
@@ -220,7 +220,7 @@ describe('StreamingClient', () => {
       // onCancel should be called when stream is aborted
       expect(callbacks.onCancel).toHaveBeenCalled();
       expect(callbacks.onComplete).not.toHaveBeenCalled();
-      
+
       jest.useRealTimers();
     }, 60000);
 

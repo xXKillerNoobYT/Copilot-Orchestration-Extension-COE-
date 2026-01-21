@@ -280,7 +280,7 @@ describe('DeadLetterQueueService', () => {
 
     it('should order entries by created_at DESC', async () => {
       const entries = await service.getEntries();
-      
+
       for (let i = 0; i < entries.length - 1; i++) {
         expect(entries[i].firstFailedAt.getTime()).toBeGreaterThanOrEqual(
           entries[i + 1].firstFailedAt.getTime()
@@ -498,7 +498,7 @@ describe('DeadLetterQueueService', () => {
     it('should return counts grouped by status', async () => {
       await service.addFailedMessage('msg-001', 'task_request', {}, new Error('Test'));
       await service.addFailedMessage('msg-002', 'task_request', {}, new Error('Test'));
-      
+
       const id3 = await service.addFailedMessage('msg-003', 'task_request', {}, new Error('Test'));
       await service.replayMessage(id3);
 
