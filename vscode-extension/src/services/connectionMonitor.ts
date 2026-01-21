@@ -158,7 +158,7 @@ export class ConnectionMonitor {
   private async checkWebSocketConnection(): Promise<void> {
     try {
       // Import WebSocket client dynamically to avoid circular dependencies
-      const { getWebSocketClient } = await import('./webSocketClient');
+      const { getWebSocketClient } = await import('./webSocketClient.js');
       const wsClient = getWebSocketClient();
 
       if (!wsClient) {

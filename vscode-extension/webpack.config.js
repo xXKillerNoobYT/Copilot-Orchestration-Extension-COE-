@@ -28,6 +28,9 @@ module.exports = [
     ],
     resolve: {
       extensions: ['.ts', '.js'],
+      extensionAlias: {
+        '.js': ['.ts', '.js'],
+      },
     },
     module: {
       rules: [
@@ -93,6 +96,9 @@ module.exports = [
     ],
     resolve: {
       extensions: ['.ts', '.js'],
+      extensionAlias: {
+        '.js': ['.ts', '.js'],
+      },
     },
     module: {
       rules: [
