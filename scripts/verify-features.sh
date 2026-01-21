@@ -7,7 +7,7 @@
 #
 # Returns: 0 if all features verified, 1 if any missing
 
-set -e
+# Note: Do not use 'set -e' here; we want to run all checks and count PASS/FAIL.
 
 # Color codes for output
 RED='\033[0;31m'

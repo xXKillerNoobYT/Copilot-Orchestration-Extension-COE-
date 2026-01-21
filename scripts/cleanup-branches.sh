@@ -28,11 +28,9 @@ for arg in "$@"; do
     case $arg in
         --dry-run)
             DRY_RUN=true
-            shift
             ;;
         --all)
             DELETE_ALL=true
-            shift
             ;;
         *)
             echo "Unknown option: $arg"
@@ -57,8 +55,7 @@ fi
 CURRENT_BRANCH=$(git branch --show-current)
 if [ "$CURRENT_BRANCH" != "main" ]; then
     echo -e "${YELLOW}Warning: Not on main branch (currently on: $CURRENT_BRANCH)${NC}"
-    echo -e "Switch to main? (y/n): "
-    read -r response
+    read -r -p "Switch to main? (y/n): " response
     if [ "$response" = "y" ]; then
         git checkout main
     else
@@ -124,9 +121,16 @@ if [ "$DRY_RUN" = true ]; then
 fi
 
 # Confirmation prompt
-echo -e "${YELLOW}⚠️  WARNING: This will permanently delete ${#BRANCHES_TO_DELETE[@]} remote branches${NC}"
-echo -e "Type 'DELETE' to confirm: "
-read -r confirmation
+# Count actual existing branches
+EXISTING_COUNT=0
+for branch in "${BRANCHES_TO_DELETE[@]}"; do
+    if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+        ((EXISTING_COUNT++))
+    fi
+done
+
+echo -e "${YELLOW}⚠️  WARNING: This will permanently delete $EXISTING_COUNT remote branches${NC}"
+read -r -p "Type 'DELETE' to confirm: " confirmation
 
 if [ "$confirmation" != "DELETE" ]; then
     echo -e "${RED}Aborted - confirmation not provided${NC}"

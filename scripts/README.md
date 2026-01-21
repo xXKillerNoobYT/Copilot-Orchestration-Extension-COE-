@@ -18,16 +18,16 @@ Automated branch deletion script with safety features.
 **Usage:**
 ```bash
 # Preview what would be deleted (safe)
-./scripts/cleanup-branches.sh --dry-run
+bash scripts/cleanup-branches.sh --dry-run
 
 # Delete confirmed outdated branches only
-./scripts/cleanup-branches.sh
+bash scripts/cleanup-branches.sh
 
 # Delete all branches including additional ones
-./scripts/cleanup-branches.sh --all
+bash scripts/cleanup-branches.sh --all
 
 # Preview all deletions
-./scripts/cleanup-branches.sh --all --dry-run
+bash scripts/cleanup-branches.sh --all --dry-run
 ```
 
 **Branches Deleted (default mode):**
@@ -60,7 +60,7 @@ Verifies all features from merged branches exist on main.
 **Usage:**
 ```bash
 # Run verification
-./scripts/verify-features.sh
+bash scripts/verify-features.sh
 ```
 
 **Checks Performed:**
