@@ -351,7 +351,7 @@ export class WebSocketClient {
    */
   private async dynamicImport(module: string): Promise<any> {
     try {
-      return await import(module);
+      return await import(/* webpackIgnore: true */ module);
     } catch (error) {
       console.warn(
         `[WebSocket] Failed to import ${module}. Install with: npm install ${module}`

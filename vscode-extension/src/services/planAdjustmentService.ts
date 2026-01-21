@@ -515,7 +515,7 @@ export class PlanAdjustmentService {
   ): Promise<void> {
     try {
       // Import WebSocket client dynamically to avoid circular dependencies
-      const { getWebSocketClient } = await import('./webSocketClient.js');
+      const { getWebSocketClient } = await import('./webSocketClient');
       const wsClient = getWebSocketClient();
 
       if (!wsClient) {

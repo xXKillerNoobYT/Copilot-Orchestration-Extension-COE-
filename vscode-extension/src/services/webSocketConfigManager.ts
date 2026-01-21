@@ -233,7 +233,7 @@ export class WebSocketConfigManager {
 
     try {
       const { initializeWebSocketClient, disposeWebSocketClient } =
-        await import('./webSocketClient.js');
+        await import('./webSocketClient');
 
       const clientConfig = this.toClientConfig();
       const client = await initializeWebSocketClient(clientConfig);

@@ -1271,7 +1271,7 @@ description: "Agent description"
    */
   private async _loadAgentProfile(profileName: string): Promise<void> {
     try {
-      const { defaultAgentProfileLoader } = await import('../agentProfiles.js');
+      const { defaultAgentProfileLoader } = await import('../agentProfiles');
       const profile = await defaultAgentProfileLoader.loadProfile(profileName);
 
       if (!profile) {

@@ -25,6 +25,8 @@ module.exports = [
     ignoreWarnings: [
       /punycode/,
       /sqlite/,
+      /Critical dependency: require function is used in a way/,
+      /Critical dependency: the request of a dependency is an expression/,
     ],
     resolve: {
       extensions: ['.ts', '.js'],
@@ -90,6 +92,8 @@ module.exports = [
     ignoreWarnings: [
       /punycode/,
       /sqlite/,
+      /Critical dependency: require function is used in a way/,
+      /Critical dependency: the request of a dependency is an expression/,
     ],
     resolve: {
       extensions: ['.ts', '.js'],
