@@ -17,6 +17,9 @@ import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
 import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { AuditDashboardPanel } from './panels/auditDashboardPanel';
+import { DeadLetterQueuePanel } from './panels/DeadLetterQueuePanel';
+import { DeadLetterQueueService } from './services/deadLetterQueue';
+import Database from 'better-sqlite3';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
 import { getLLMIPMonitor } from './services/llmIPMonitor';
@@ -34,16 +37,19 @@ import { initializeErrorLogging, disposeErrorLogging } from './utils/errorMessag
 import { HealthCheckService } from './services/healthCheck';
 import { formatMinutesToHours } from './utils/taskFormatters';
 
+// Module-level variable to track database for cleanup
+let dlqDatabase: Database.Database | null = null;
+
 export function activate(context: vscode.ExtensionContext) {
   // Initialize Error Logging Output Channel
   const errorOutputChannel = initializeErrorLogging();
-  
+
   // Register disposables separately to follow VS Code best practices
   context.subscriptions.push(errorOutputChannel);
   context.subscriptions.push({
     dispose: () => disposeErrorLogging(),
   });
-  
+
   // Initialize Agent Profile Watcher (Phase 5: Hot-reload for agent profiles)
   const profileWatcher = getAgentProfileWatcher(context.extensionUri);
   profileWatcher.start();
@@ -276,6 +282,30 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Dead Letter Queue Panel
+  let dlqService: DeadLetterQueueService | null = null;
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showDeadLetterQueue', async () => {
+      try {
+        // Initialize database if not already done
+        if (!dlqService) {
+          const dbPath = path.join(context.globalStorageUri.fsPath, 'copilot-orchestrator.db');
+          // Ensure directory exists
+          await fs.mkdir(context.globalStorageUri.fsPath, { recursive: true });
+          dlqDatabase = new Database(dbPath);
+          dlqService = new DeadLetterQueueService(dlqDatabase);
+        }
+
+        DeadLetterQueuePanel.createOrShow(context.extensionUri, dlqService);
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to open Dead Letter Queue: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    })
+  );
+
   // ============ WebSocket Broadcasting (Code Master Section 11.8-11.9) ============
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.configureWebSocket', async () => {
@@ -489,7 +519,7 @@ export function activate(context: vscode.ExtensionContext) {
         async (progress) => {
           // Get MCP client instance
           const mcpClient = MCPClient.getInstance();
-          
+
           // Report task status to backend
           progress.report({ increment: 30, message: 'Reporting task status to orchestrator...' });
           const statusResponse = await mcpClient.reportTaskStatus({
@@ -498,7 +528,7 @@ export function activate(context: vscode.ExtensionContext) {
             progressPercent: 50,
             implementationNotes: 'Task execution initiated from VS Code extension',
           });
-          
+
           // Log observation for audit trail
           progress.report({ increment: 20, message: 'Logging execution observation...' });
           await mcpClient.reportObservation({
@@ -507,13 +537,13 @@ export function activate(context: vscode.ExtensionContext) {
             message: `Task execution started from VS Code extension at ${new Date().toISOString()}`,
             severity: 'info',
           });
-          
+
           // Request next task details from orchestrator queue
           progress.report({ increment: 30, message: 'Fetching task from orchestrator queue...' });
           const nextTask = await mcpClient.getNextTask();
-          
+
           progress.report({ increment: 20 });
-          
+
           // Show success message with task details
           if (nextTask) {
             vscode.window.showInformationMessage(
@@ -539,7 +569,7 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showErrorMessage(
         `Failed to execute task: ${error instanceof Error ? error.message : String(error)}`
       );
-      
+
       // Report failure to backend
       try {
         const mcpClient = MCPClient.getInstance();
@@ -839,10 +869,20 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   // Cleanup WebSocket connection on extension deactivation
   disposeWebSocketClient();
-  
+
   // Cleanup streaming output channel on extension deactivation
   const { disposeStreamingOutputChannel } = require('./ui/streamingOutputChannel');
   disposeStreamingOutputChannel();
+
+  // Close Dead Letter Queue database connection
+  if (dlqDatabase) {
+    try {
+      dlqDatabase.close();
+      dlqDatabase = null;
+    } catch (error) {
+      console.error('Failed to close DLQ database:', error);
+    }
+  }
 }
 
 

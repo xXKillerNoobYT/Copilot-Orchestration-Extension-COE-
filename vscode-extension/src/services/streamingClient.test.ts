@@ -23,6 +23,7 @@ describe('StreamingClient', () => {
       customModel: '',
       temperature: 0.7,
       timeoutMs: 30000,
+      taskRoots: ['_ZENTASKS'],
     };
     client = createStreamingClient(config);
     jest.clearAllMocks();
@@ -80,7 +81,7 @@ describe('StreamingClient', () => {
       // Verify chunks received
       expect(chunks.filter(c => c.type === 'text').length).toBeGreaterThan(0);
       expect(chunks.some(c => c.type === 'done')).toBe(true);
-      
+
       // Verify completion callback
       expect(callbacks.onComplete).toHaveBeenCalled();
       expect(callbacks.onError).not.toHaveBeenCalled();
@@ -273,7 +274,7 @@ describe('StreamingClient', () => {
       const chunks: StreamChunk[] = [];
       await client.streamChat(
         [{ role: 'user', content: 'Test' }],
-        { 
+        {
           onChunk: (chunk) => chunks.push(chunk),
           onComplete: jest.fn()
         }
@@ -369,7 +370,7 @@ describe('StreamingClient', () => {
 
       // Cancel first stream to cleanup
       client.cancel();
-      await firstStream.catch(() => {}); // Ignore cancellation error
+      await firstStream.catch(() => { }); // Ignore cancellation error
     });
   });
 

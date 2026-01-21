@@ -22,7 +22,7 @@ import type { ParsedTask } from '../taskParser';
 /**
  * Parsed task with additional metadata fields for execution tracking
  */
-interface ParsedTaskWithMetadata extends ParsedTask {
+interface ParsedTaskWithMetadata extends Omit<ParsedTask, 'startedAt' | 'completedAt'> {
   feature_id?: string;
   actualHours?: number;
   startedAt?: string | Date;
@@ -515,7 +515,7 @@ export class PlanAdjustmentService {
   ): Promise<void> {
     try {
       // Import WebSocket client dynamically to avoid circular dependencies
-      const { getWebSocketClient } = await import('./websocketClient');
+      const { getWebSocketClient } = await import('./webSocketClient.js');
       const wsClient = getWebSocketClient();
 
       if (!wsClient) {
@@ -548,7 +548,7 @@ export class PlanAdjustmentService {
         impact?: string;
         timestamp?: string;
       }
-      
+
       wsClient.subscribe('plan-updates', 'plan.updated', (data: PlanUpdateEvent) => {
         console.log('[PlanAdjustmentService] Received plan update broadcast:', data);
       });
