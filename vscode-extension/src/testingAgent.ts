@@ -90,7 +90,7 @@ export class TestingAgent {
       const name = match[1];
       const params = this.parseParameters(match[2]);
       const returnType = match[3]?.trim();
-      
+
       analysis.functions.push(name);
       analysis.functionSignatures.push({
         name,
@@ -107,7 +107,7 @@ export class TestingAgent {
       const name = match[1];
       const params = this.parseParameters(match[2]);
       const returnType = match[3]?.trim();
-      
+
       analysis.functions.push(name);
       analysis.functionSignatures.push({
         name,
@@ -122,7 +122,7 @@ export class TestingAgent {
     while ((match = classRegex.exec(code)) !== null) {
       const className = match[1];
       analysis.classes.push(className);
-      
+
       // Extract class methods
       const methods = this.extractClassMethods(code, className);
       analysis.classMethods.push(...methods);
@@ -148,31 +148,40 @@ export class TestingAgent {
     }
 
     const params: FunctionParameter[] = [];
-    
-    // More robust parameter parsing that handles nested parentheses and complex types
+
+    // More robust parameter parsing that handles nested parentheses, angle brackets, and curly braces
     let currentParam = '';
     let depth = 0;
     let angleDepth = 0;
-    
+    let braceDepth = 0;
+
     for (let i = 0; i < paramStr.length; i++) {
       const ch = paramStr[i];
-      
+
       // Track parentheses depth (for function types like (arg: string) => void)
       if (ch === '(') {
         depth++;
       } else if (ch === ')') {
         depth--;
       }
-      
+
       // Track angle brackets depth (for generics like Array<T>)
       if (ch === '<') {
         angleDepth++;
-      } else if (ch === '>') {
-        angleDepth--;
+      } else if (ch === '>' && paramStr[i - 1] !== '=') {
+        // Ignore the > in arrow functions (=>)
+        angleDepth = Math.max(0, angleDepth - 1);
       }
-      
-      // Only split on comma if we're at depth 0 (not inside nested structures)
-      if (ch === ',' && depth === 0 && angleDepth === 0) {
+
+      // Track curly braces depth (for object types like { id: string })
+      if (ch === '{') {
+        braceDepth++;
+      } else if (ch === '}') {
+        braceDepth--;
+      }
+
+      // Only split on comma if we're at depth 0 everywhere (not inside any nested structures)
+      if (ch === ',' && depth === 0 && angleDepth === 0 && braceDepth === 0) {
         if (currentParam.trim()) {
           params.push(this.parseSingleParameter(currentParam.trim()));
         }
@@ -181,7 +190,7 @@ export class TestingAgent {
         currentParam += ch;
       }
     }
-    
+
     // Don't forget the last parameter
     if (currentParam.trim()) {
       params.push(this.parseSingleParameter(currentParam.trim()));
@@ -196,45 +205,46 @@ export class TestingAgent {
   private parseSingleParameter(paramStr: string): FunctionParameter {
     // Handle optional parameters (name?: type)
     const isOptional = paramStr.includes('?:') || paramStr.includes('?=');
-    
+
     // Split by = to separate default value
     let nameAndType = paramStr;
     let defaultValue: string | undefined;
-    
+
     // Find the = that's not inside a function type or generic
     let depth = 0;
     let angleDepth = 0;
     let equalIndex = -1;
-    
+
     for (let i = 0; i < paramStr.length; i++) {
       const ch = paramStr[i];
       if (ch === '(') depth++;
       else if (ch === ')') depth--;
       else if (ch === '<') angleDepth++;
       else if (ch === '>') angleDepth--;
-      else if (ch === '=' && depth === 0 && angleDepth === 0) {
+      else if (ch === '=' && depth === 0 && angleDepth === 0 && paramStr[i + 1] !== '>') {
+        // Treat '=' as default-value separator only when not part of an arrow function (=>)
         equalIndex = i;
         break;
       }
     }
-    
+
     if (equalIndex !== -1) {
       nameAndType = paramStr.substring(0, equalIndex).trim();
       defaultValue = paramStr.substring(equalIndex + 1).trim();
     }
-    
+
     // Split by : to separate name and type
     const colonIndex = nameAndType.indexOf(':');
     let name: string;
     let type: string | undefined;
-    
+
     if (colonIndex !== -1) {
       name = nameAndType.substring(0, colonIndex).replace('?', '').trim();
       type = nameAndType.substring(colonIndex + 1).trim();
     } else {
       name = nameAndType.replace('?', '').trim();
     }
-    
+
     return {
       name,
       type,
@@ -248,7 +258,7 @@ export class TestingAgent {
    */
   private extractClassMethods(code: string, className: string): ClassMethod[] {
     const methods: ClassMethod[] = [];
-    
+
     // Find the class body by locating the opening brace and then balancing braces
     const classStartRegex = new RegExp(`class\\s+${className}[^{]*\\{`, 's');
     const startMatch = classStartRegex.exec(code);
@@ -279,13 +289,13 @@ export class TestingAgent {
     }
 
     const classBody = code.slice(openBraceIndex + 1, endIndex);
-    
+
     // Extract methods (public, private, static)
     // Use a more conservative regex that captures the parameter section as-is
     // Then rely on parseParameters() to handle complex types
     const methodRegex = /(public|private|protected)?\s*(static)?\s*(async)?\s*(\w+)\s*\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)(?::\s*([^{;]+))?/g;
     let match;
-    
+
     while ((match = methodRegex.exec(classBody)) !== null) {
       const visibility = match[1] || 'public';
       const isStatic = !!match[2];
@@ -641,14 +651,11 @@ ${testCases.join('\n\n')}
       await fs.writeFile(testFilePath, testCode, 'utf-8');
 
       // Execute tests based on framework
-      let result: TestResult;
       if (this.framework === 'mocha') {
-        result = await this.executeMochaTests(testFilePath);
-      } else {
-        result = await this.executeJestTests(testFilePath);
+        return await this.executeMochaTests(testFilePath);
       }
 
-      return result;
+      return await this.executeJestTests(testFilePath);
     } catch (error) {
       return {
         passed: false,
@@ -667,7 +674,7 @@ ${testCases.join('\n\n')}
    */
   private async executeMochaTests(testFilePath: string): Promise<TestResult> {
     const startTime = Date.now();
-    
+
     try {
       // Note: In production, ensure mocha and ts-node are installed
       const command = `npx mocha ${testFilePath} --require ts-node/register --reporter json`;
@@ -720,7 +727,7 @@ ${testCases.join('\n\n')}
    */
   private async executeJestTests(testFilePath: string): Promise<TestResult> {
     const startTime = Date.now();
-    
+
     try {
       const command = `npx jest ${testFilePath} --json`;
       const { stdout } = await execAsync(command, {
@@ -731,13 +738,21 @@ ${testCases.join('\n\n')}
       const duration = Date.now() - startTime;
       const jestOutput = JSON.parse(stdout);
 
+      const testCases: TestCase[] = (jestOutput.testResults?.[0]?.assertionResults || []).map((test: any) => ({
+        name: test.title,
+        passed: test.status === 'passed',
+        duration: test.duration,
+        error: test.failureMessages?.[0],
+        stack: test.failureMessages?.[0],
+      }));
+
       return {
-        passed: jestOutput.success,
+        passed: jestOutput.numFailedTests === 0,
         total: jestOutput.numTotalTests,
         passCount: jestOutput.numPassedTests,
         failCount: jestOutput.numFailedTests,
         duration,
-        testCases: [],
+        testCases,
       };
     } catch (error) {
       const duration = Date.now() - startTime;

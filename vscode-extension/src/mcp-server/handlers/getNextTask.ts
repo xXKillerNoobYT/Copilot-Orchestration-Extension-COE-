@@ -9,8 +9,8 @@ import {
   formatAgentSuccess,
   formatAgentError,
   AgentErrors,
-} from '../agentValidation.js';
-import { getTaskManager } from '../integrations/serviceFactory.js';
+} from '../agentValidation';
+import { getTaskManager } from '../integrations/serviceFactory';
 
 export async function handleGetNextTask(args: any) {
   // Validate input

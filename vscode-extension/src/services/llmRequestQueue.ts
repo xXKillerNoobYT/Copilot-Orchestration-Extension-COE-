@@ -38,6 +38,10 @@ export class LlmRequestQueue {
     private requestsProcessed: number = 0;
     private requestsFailed: number = 0;
     private lastProcessedTime: number = 0;
+    private inFlightCount: number = 0;
+    private currentRequest: QueuedRequest | null = null;
+    private processingPromise: Promise<void> | null = null;
+    private activeTimeoutCancel: (() => void) | null = null;
 
     constructor() {
         const config = readLlmTimeoutConfig();
@@ -48,11 +52,12 @@ export class LlmRequestQueue {
      * Queue a request for execution
      */
     async enqueue<T>(request: Omit<QueuedRequest<T>, 'resolve' | 'reject' | 'timestamp'>): Promise<T> {
-        // Check queue depth limit
-        if (this.queue.length >= this.timeoutConfig.maxQueueDepth) {
+        // Check queue depth limit (include in-flight work)
+        const activeDepth = this.queue.length + this.inFlightCount;
+        if (activeDepth >= this.timeoutConfig.maxQueueDepth) {
             throw new Error(
-                `Queue full: ${this.queue.length}/${this.timeoutConfig.maxQueueDepth} requests. ` +
-                `Estimated wait time: ${getQueueWaitEstimate(this.queue.length, this.timeoutConfig)}`
+                `Queue full: ${activeDepth}/${this.timeoutConfig.maxQueueDepth} requests. ` +
+                `Estimated wait time: ${getQueueWaitEstimate(activeDepth, this.timeoutConfig)}`
             );
         }
 
@@ -73,8 +78,10 @@ export class LlmRequestQueue {
             }
 
             // Start processing if not already running
-            if (!this.isProcessing) {
-                this.processQueue();
+            if (!this.processingPromise) {
+                this.processingPromise = this.processQueue().finally(() => {
+                    this.processingPromise = null;
+                });
             }
         });
     }
@@ -89,10 +96,17 @@ export class LlmRequestQueue {
 
         this.isProcessing = true;
 
+        // Use setImmediate to allow synchronous enqueue calls to batch together
+        // before processing starts
+        await new Promise(resolve => setImmediate(resolve));
+
         while (this.queue.length > 0) {
             const request = this.queue.shift()!;
+            this.inFlightCount++;
+            this.currentRequest = request;
             const needsModelSwitch = this.currentModel !== null && this.currentModel !== request.modelName;
 
+            let timeout: { promise: Promise<never>; cancel: () => void } | null = null;
             try {
                 // Apply model switch delay if needed
                 if (needsModelSwitch) {
@@ -115,9 +129,11 @@ export class LlmRequestQueue {
 
                 // Execute the request
                 console.log(`[LLM Queue] Executing request ${request.id} for agent ${request.agentId} (model: ${request.modelName})`);
+                timeout = this.createTimeoutPromise(request);
+                this.activeTimeoutCancel = timeout.cancel;
                 const result = await Promise.race([
                     request.execute(),
-                    this.createTimeoutPromise(request),
+                    timeout.promise,
                 ]);
 
                 // Update state
@@ -129,6 +145,13 @@ export class LlmRequestQueue {
             } catch (error) {
                 this.requestsFailed++;
                 request.reject(error as Error);
+            } finally {
+                if (timeout) {
+                    timeout.cancel();
+                }
+                this.activeTimeoutCancel = null;
+                this.inFlightCount = Math.max(0, this.inFlightCount - 1);
+                this.currentRequest = null;
             }
         }
 
@@ -138,15 +161,27 @@ export class LlmRequestQueue {
     /**
      * Create a timeout promise for request execution
      */
-    private createTimeoutPromise(request: QueuedRequest): Promise<never> {
+    private createTimeoutPromise(request: QueuedRequest): { promise: Promise<never>; cancel: () => void } {
         const timeout = this.timeoutConfig.requestMs;
-        return new Promise((_, reject) => {
-            setTimeout(() => {
+        let timeoutId: NodeJS.Timeout | null = null;
+
+        const promise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => {
                 reject(new Error(
                     `Request timeout after ${timeout}ms for agent ${request.agentId} (model: ${request.modelName})`
                 ));
             }, timeout);
         });
+
+        return {
+            promise,
+            cancel: () => {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+            },
+        };
     }
 
     /**
@@ -160,27 +195,49 @@ export class LlmRequestQueue {
      * Get queue status
      */
     getStatus(): QueueStatus {
+        const activeDepth = this.queue.length + this.inFlightCount;
         return {
-            queueDepth: this.queue.length,
+            queueDepth: activeDepth,
             currentModel: this.currentModel,
             isProcessing: this.isProcessing,
-            estimatedWaitTime: getQueueWaitEstimate(this.queue.length, this.timeoutConfig),
+            estimatedWaitTime: getQueueWaitEstimate(activeDepth, this.timeoutConfig),
             requestsProcessed: this.requestsProcessed,
             requestsFailed: this.requestsFailed,
         };
     }
 
     /**
+     * Wait until the queue has finished processing all pending items
+     */
+    async waitForIdle(): Promise<void> {
+        if (this.processingPromise) {
+            await this.processingPromise;
+        }
+    }
+
+    /**
      * Clear the queue
      */
-    clear(): void {
+    clear(options?: { rejectPending?: boolean }): void {
+        const { rejectPending = true } = options || {};
         const pendingRequests = [...this.queue];
         this.queue = [];
+        this.inFlightCount = 0;
+        this.currentRequest = null;
+        this.isProcessing = false;
+        this.processingPromise = null;
+        if (this.activeTimeoutCancel) {
+            this.activeTimeoutCancel();
+            this.activeTimeoutCancel = null;
+        }
 
-        // Reject all pending requests
-        pendingRequests.forEach(req => {
-            req.reject(new Error('Queue cleared'));
-        });
+        // Reject all pending requests when requested (used for explicit cancellation)
+        if (rejectPending) {
+            pendingRequests.forEach(req => {
+                req.reject(new Error('Queue cleared'));
+            });
+            this.requestsFailed += pendingRequests.length;
+        }
     }
 
     /**

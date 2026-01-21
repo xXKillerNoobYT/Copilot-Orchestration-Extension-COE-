@@ -3,7 +3,7 @@
  * Tests real backend integration with mocked fetch responses
  */
 
-import { handleGetTaskStatus } from '../getTaskStatus.js';
+import { handleGetTaskStatus } from '../getTaskStatus';
 
 // Mock fetch globally
 global.fetch = jest.fn() as jest.Mock;

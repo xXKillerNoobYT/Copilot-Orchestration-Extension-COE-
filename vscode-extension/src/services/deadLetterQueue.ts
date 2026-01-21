@@ -39,10 +39,12 @@ export interface DeadLetterFilters {
 
 export class DeadLetterQueueService {
   private db: Database.Database;
+  private insertStmt: Database.Statement | null = null;
 
   constructor(db: Database.Database) {
     this.db = db;
     this.initializeSchema();
+    this.prepareStatements();
   }
 
   /**
@@ -97,6 +99,51 @@ export class DeadLetterQueueService {
   }
 
   /**
+   * Prepare reusable statements for performance
+   */
+  private prepareStatements(): void {
+    this.insertStmt = this.db.prepare(`
+      INSERT INTO dead_letter_queue 
+      (id, message_id, message_type, original_payload, error_message, error_stack, 
+       retry_count, handler_name, task_id, first_failed_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+  }
+
+  /**
+   * Add failed message synchronously (for use within transactions)
+   * Does not include try-catch to allow transaction rollback
+   */
+  addFailedMessageSync(
+    messageId: string,
+    messageType: string,
+    payload: object,
+    error: Error,
+    handlerName?: string,
+    taskId?: string,
+    retryCount: number = 0
+  ): string {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+
+    this.insertStmt?.run(
+      id,
+      messageId,
+      messageType,
+      JSON.stringify(payload),
+      error.message,
+      error.stack || null,
+      retryCount,
+      handlerName || null,
+      taskId || null,
+      now,
+      now
+    );
+
+    return id;
+  }
+
+  /**
    * Add failed message to dead-letter queue
    */
   async addFailedMessage(
@@ -112,12 +159,7 @@ export class DeadLetterQueueService {
       const id = randomUUID();
       const now = new Date().toISOString();
 
-      this.db.prepare(`
-        INSERT INTO dead_letter_queue 
-        (id, message_id, message_type, original_payload, error_message, error_stack, 
-         retry_count, handler_name, task_id, first_failed_at, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      this.insertStmt?.run(
         id,
         messageId,
         messageType,

@@ -3,7 +3,7 @@
  * Tests agent metrics and state retrieval
  */
 
-import { handleGetAgentState } from '../getAgentState.js';
+import { handleGetAgentState } from '../getAgentState';
 
 global.fetch = jest.fn() as jest.Mock;
 

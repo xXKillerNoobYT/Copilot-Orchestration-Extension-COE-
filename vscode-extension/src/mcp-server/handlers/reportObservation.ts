@@ -8,8 +8,8 @@ import {
   formatAgentSuccess,
   formatAgentError,
   AgentErrors,
-} from '../agentValidation.js';
-import { getGitHubIntegration, getTaskManager } from '../integrations/serviceFactory.js';
+} from '../agentValidation';
+import { getGitHubIntegration, getTaskManager } from '../integrations/serviceFactory';
 
 export async function handleReportObservation(args: any) {
   // Validate input

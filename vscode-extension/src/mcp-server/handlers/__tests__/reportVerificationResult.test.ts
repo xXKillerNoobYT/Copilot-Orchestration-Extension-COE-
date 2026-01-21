@@ -3,7 +3,7 @@
  * Tests verification result submission and task status updates
  */
 
-import { handleReportVerificationResult } from '../reportVerificationResult.js';
+import { handleReportVerificationResult } from '../reportVerificationResult';
 
 global.fetch = jest.fn() as jest.Mock;
 

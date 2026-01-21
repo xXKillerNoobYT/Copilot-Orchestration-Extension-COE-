@@ -14,19 +14,19 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 // Tool handlers will be implemented in separate files
-import { handleGetTaskStatus } from './handlers/getTaskStatus.js';
-import { handleListActiveTasks } from './handlers/listActiveTasks.js';
-import { handleGetAgentState } from './handlers/getAgentState.js';
-import { handleReportObservation } from './handlers/reportObservation.js';
-import { handleRequestVerification } from './handlers/requestVerification.js';
-import { handleAskUserQuestion } from './handlers/askUserQuestion.js';
-import { handleGetWorkspaceConfig } from './handlers/getWorkspaceConfig.js';
+import { handleGetTaskStatus } from './handlers/getTaskStatus';
+import { handleListActiveTasks } from './handlers/listActiveTasks';
+import { handleGetAgentState } from './handlers/getAgentState';
+import { handleReportObservation } from './handlers/reportObservation';
+import { handleRequestVerification } from './handlers/requestVerification';
+import { handleAskUserQuestion } from './handlers/askUserQuestion';
+import { handleGetWorkspaceConfig } from './handlers/getWorkspaceConfig';
 // Agent Mode specific handlers
-import { handleGetNextTask } from './handlers/getNextTask.js';
-import { handleReportTaskStatus } from './handlers/reportTaskStatus.js';
-import { handleGetContextBundle } from './handlers/getContextBundle.js';
-import { handleReportTestFailure } from './handlers/reportTestFailure.js';
-import { handleReportVerificationResult } from './handlers/reportVerificationResult.js';
+import { handleGetNextTask } from './handlers/getNextTask';
+import { handleReportTaskStatus } from './handlers/reportTaskStatus';
+import { handleGetContextBundle } from './handlers/getContextBundle';
+import { handleReportTestFailure } from './handlers/reportTestFailure';
+import { handleReportVerificationResult } from './handlers/reportVerificationResult';
 
 /**
  * Extension-only MCP tools exposed to GitHub Copilot coding agent

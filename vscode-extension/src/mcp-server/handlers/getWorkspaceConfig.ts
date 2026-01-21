@@ -4,7 +4,7 @@
  * Note: In MCP server context, configuration comes from environment, not VS Code settings
  */
 
-import { MCPHandlerBase } from './MCPHandlerBase.js';
+import { MCPHandlerBase } from './MCPHandlerBase';
 
 class GetWorkspaceConfigHandler extends MCPHandlerBase {
   /**

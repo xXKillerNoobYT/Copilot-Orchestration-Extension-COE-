@@ -4,8 +4,8 @@
  */
 
 import Database from 'better-sqlite3';
-import { MCPErrorHandler, DEFAULT_RETRY_CONFIG } from './errorHandler.js';
-import { DeadLetterQueueService } from '../services/deadLetterQueue.js';
+import { MCPErrorHandler, DEFAULT_RETRY_CONFIG } from './errorHandler';
+import { DeadLetterQueueService } from '../services/deadLetterQueue';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdtempSync, rmSync } from 'fs';

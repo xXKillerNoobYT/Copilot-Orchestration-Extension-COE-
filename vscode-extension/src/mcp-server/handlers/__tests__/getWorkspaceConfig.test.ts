@@ -3,7 +3,7 @@
  * Tests environment-based configuration
  */
 
-import { handleGetWorkspaceConfig } from '../getWorkspaceConfig.js';
+import { handleGetWorkspaceConfig } from '../getWorkspaceConfig';
 
 describe('handleGetWorkspaceConfig', () => {
   beforeEach(() => {

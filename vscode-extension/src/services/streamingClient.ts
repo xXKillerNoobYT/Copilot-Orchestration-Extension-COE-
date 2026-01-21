@@ -57,7 +57,7 @@ export class StreamingClient {
   private accumulatedResponse: string = '';
   private isActive: boolean = false;
 
-  constructor(private config: LlmConfig) {}
+  constructor(private config: LlmConfig) { }
 
   /**
    * Stream LLM response using SSE
@@ -75,13 +75,13 @@ export class StreamingClient {
     if (this.isActive) {
       throw new Error('StreamingClient is already active. Create a new instance or wait for the current stream to complete.');
     }
-    
+
     const transport = options?.transport || 'sse';
-    
+
     if (transport !== 'sse') {
       throw new Error('Only SSE transport is currently supported. WebSocket support is planned for a future release.');
     }
-    
+
     await this.streamWithSSE(messages, callbacks, options);
   }
 
@@ -100,9 +100,9 @@ export class StreamingClient {
 
     const baseUrl = this.config.baseUrl.replace(/\/$/, '');
     const url = `${baseUrl}/chat/completions`;
-    
-    const model = this.config.defaultModel === 'custom' 
-      ? this.config.customModel 
+
+    const model = this.config.defaultModel === 'custom'
+      ? this.config.customModel
       : this.config.defaultModel;
 
     const body = {
@@ -112,20 +112,23 @@ export class StreamingClient {
       stream: true, // Enable streaming
     };
 
-    try {
-      // Setup timeout
-      const timeoutMs = options?.timeoutMs ?? this.config.timeoutMs;
-      const timeoutId = setTimeout(() => {
-        this.abortController?.abort();
+    const timeoutMs = options?.timeoutMs ?? this.config.timeoutMs;
+    let timeoutId: NodeJS.Timeout | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        this.cancel();
+        reject(new Error('Stream timeout - check server connection'));
       }, timeoutMs);
+    });
 
-      // Listen for cancellation token
-      if (options?.cancellationToken) {
-        options.cancellationToken.onCancellationRequested(() => {
-          this.cancel();
-        });
-      }
+    // Listen for cancellation token
+    if (options?.cancellationToken) {
+      options.cancellationToken.onCancellationRequested(() => {
+        this.cancel();
+      });
+    }
 
+    try {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -135,44 +138,50 @@ export class StreamingClient {
         },
         body: JSON.stringify(body),
         signal: this.abortController.signal,
-      }).finally(() => {
-        clearTimeout(timeoutId);
       });
 
+      // Check HTTP status first
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      // If no body, abort early
       if (!response.body) {
         throw new Error('Response body is null - streaming not supported');
       }
 
-      // Process SSE stream
-      await this.processSSEStream(response.body, callbacks);
+      // Race stream processing against timeout
+      await Promise.race([
+        this.processSSEStream(response.body, callbacks),
+        timeoutPromise,
+      ]);
 
-      // Stream completed successfully
-      this.isActive = false;
-      callbacks.onComplete?.(this.accumulatedResponse);
-
-    } catch (error: any) {
-      this.isActive = false;
-
-      // Check if cancelled
-      if (error.name === 'AbortError') {
+      if (this.abortController.signal.aborted) {
         callbacks.onCancel?.();
         return;
       }
 
-      // Check for timeout
-      if (error.message?.includes('timeout') || error.message?.includes('aborted')) {
+      callbacks.onComplete?.(this.accumulatedResponse);
+    } catch (error: any) {
+      if (this.abortController?.signal.aborted || error?.name === 'AbortError') {
+        callbacks.onCancel?.();
+        return;
+      }
+
+      if (error?.message?.includes('timeout')) {
         const timeoutError = new Error('Stream timeout - check server connection');
         callbacks.onError?.(timeoutError);
         throw timeoutError;
       }
 
-      // Other errors
-      callbacks.onError?.(error);
-      throw error;
+      const errObj = error instanceof Error ? error : new Error(String(error));
+      callbacks.onError?.(errObj);
+      throw errObj;
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      this.isActive = false;
     }
   }
 
@@ -186,6 +195,16 @@ export class StreamingClient {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+
+    // Propagate cancellation
+    const signal = this.abortController?.signal;
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        this.isActive = false;
+        callbacks.onCancel?.();
+        reader.cancel?.();
+      });
+    }
 
     try {
       while (this.isActive) {
@@ -225,7 +244,7 @@ export class StreamingClient {
 
               if (content) {
                 this.accumulatedResponse += content;
-                
+
                 callbacks.onChunk?.({
                   type: 'text',
                   content,

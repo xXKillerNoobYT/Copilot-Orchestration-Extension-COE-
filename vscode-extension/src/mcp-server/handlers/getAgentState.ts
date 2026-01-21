@@ -3,7 +3,7 @@
  * Integrates with Laravel backend AgentRepository and TaskQueueService
  */
 
-import { MCPHandlerBase } from './MCPHandlerBase.js';
+import { MCPHandlerBase } from './MCPHandlerBase';
 
 class GetAgentStateHandler extends MCPHandlerBase {
   /**
@@ -12,64 +12,71 @@ class GetAgentStateHandler extends MCPHandlerBase {
   async execute(args: any) {
     const { agentName } = args || {};
 
-    return this.executeWithRetry(
-      async () => {
-        const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
-        
-        // Fetch agent state from backend
-        // If agentName is provided, get specific agent; otherwise get all agents
-        const endpoint = agentName 
-          ? `/api/v1/agents?name=${encodeURIComponent(agentName)}`
-          : '/api/v1/agents';
-        
-        const response = await fetch(`${baseUrl}${endpoint}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        });
+    try {
+      return await this.executeWithRetry(
+        async () => {
+          const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
 
-        if (!response.ok) {
-          throw new Error(`Backend request failed: ${response.status} ${response.statusText}`);
-        }
+          // Fetch agent state from backend
+          // If agentName is provided, get specific agent; otherwise get all agents
+          const encodedName = agentName
+            ? encodeURIComponent(agentName).replace(/%20/g, '+')
+            : '';
+          const endpoint = agentName
+            ? `/api/v1/agents?name=${encodedName}`
+            : '/api/v1/agents';
 
-        const data = await response.json();
-        const agents = data.agents || data.data || [];
+          const response = await fetch(`${baseUrl}${endpoint}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          });
 
-        // Transform agent data to expected format
-        const agentStates: Record<string, any> = {};
-        
-        for (const agent of Array.isArray(agents) ? agents : [agents]) {
-          const name = agent.name || agent.id;
-          agentStates[name] = {
-            status: this.mapAgentStatus(agent.status),
-            currentTask: agent.current_task_id,
-            queueDepth: agent.queue_depth || 0,
-            avgTaskTime: agent.avg_task_duration || 'N/A',
-            successRate: agent.success_rate || 0,
-            tasksCompleted: agent.tasks_completed || 0,
-            tasksActive: agent.tasks_active || 0,
-            lastActivity: agent.last_activity_at,
-            capabilities: agent.capabilities || [],
-            type: agent.agent_type,
-          };
-        }
+          if (!response.ok) {
+            throw new Error(`Backend request failed: ${response.status} ${response.statusText}`);
+          }
 
-        // If specific agent requested but not found, return appropriate response
-        if (agentName && Object.keys(agentStates).length === 0) {
-          throw new Error(`Agent '${agentName}' not found`);
-        }
+          const data = await response.json();
+          const agents = data.agents || data.data || [];
 
-        return this.formatSuccess({
-          agents: agentName ? { [agentName]: agentStates[agentName] } : agentStates,
-          timestamp: new Date().toISOString(),
-          systemStatus: this.determineSystemStatus(Object.values(agentStates)),
-        });
-      },
-      'handleGetAgentState',
-      args
-    );
+          // Transform agent data to expected format
+          const agentStates: Record<string, any> = {};
+
+          for (const agent of Array.isArray(agents) ? agents : [agents]) {
+            const name = agent.name || agent.id;
+            agentStates[name] = {
+              status: this.mapAgentStatus(agent.status),
+              currentTask: agent.current_task_id,
+              queueDepth: agent.queue_depth || 0,
+              avgTaskTime: agent.avg_task_duration || 'N/A',
+              successRate: agent.success_rate || 0,
+              tasksCompleted: agent.tasks_completed || 0,
+              tasksActive: agent.tasks_active || 0,
+              lastActivity: agent.last_activity_at,
+              capabilities: agent.capabilities || [],
+              type: agent.agent_type,
+            };
+          }
+
+          // If specific agent requested but not found, return appropriate response
+          if (agentName && Object.keys(agentStates).length === 0) {
+            throw new Error(`Agent '${agentName}' not found`);
+          }
+
+          return this.formatSuccess({
+            agents: agentName ? { [agentName]: agentStates[agentName] } : agentStates,
+            timestamp: new Date().toISOString(),
+            systemStatus: this.determineSystemStatus(Object.values(agentStates)),
+          });
+        },
+        'handleGetAgentState',
+        args
+      );
+    } catch (error) {
+      return this.formatError(error as Error);
+    }
   }
 
   /**
@@ -87,7 +94,7 @@ class GetAgentStateHandler extends MCPHandlerBase {
       'blocked': 'error',
       'failed': 'error',
     };
-    
+
     return statusMap[backendStatus.toLowerCase()] || 'idle';
   }
 

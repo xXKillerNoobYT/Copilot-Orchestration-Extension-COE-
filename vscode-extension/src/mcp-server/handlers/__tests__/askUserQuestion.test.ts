@@ -3,7 +3,7 @@
  * Tests question creation in backend
  */
 
-import { handleAskUserQuestion } from '../askUserQuestion.js';
+import { handleAskUserQuestion } from '../askUserQuestion';
 
 global.fetch = jest.fn() as jest.Mock;
 

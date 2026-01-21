@@ -3,7 +3,7 @@
  * Tests verification request creation in backend
  */
 
-import { handleRequestVerification } from '../requestVerification.js';
+import { handleRequestVerification } from '../requestVerification';
 
 global.fetch = jest.fn() as jest.Mock;
 

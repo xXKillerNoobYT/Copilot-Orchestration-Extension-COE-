@@ -10,8 +10,8 @@ import {
   formatAgentSuccess,
   formatAgentError,
   AgentErrors,
-} from '../agentValidation.js';
-import { MCPHandlerBase } from './MCPHandlerBase.js';
+} from '../agentValidation';
+import { MCPHandlerBase } from './MCPHandlerBase';
 
 class ReportVerificationResultHandler extends MCPHandlerBase {
   /**
@@ -26,97 +26,101 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
 
     const { taskId, verificationType, passed, findings, screenshots } = validation.data;
 
-    return this.executeWithRetry(
-      async () => {
-        const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
+    try {
+      return await this.executeWithRetry(
+        async () => {
+          const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
 
-        // Submit verification result to backend
-        const resultData = {
-          task_id: taskId,
-          verification_type: verificationType,
-          passed,
-          findings: findings || [],
-          screenshots: screenshots || [],
-          timestamp: new Date().toISOString(),
-          reviewer: 'agent',
-        };
-
-        const response = await fetch(`${baseUrl}/api/v1/mcp/reportVerificationResult`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(resultData),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to submit verification result: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const verificationResult = data.verificationResult || data;
-
-        const warnings: string[] = [];
-
-        // If verification failed, create investigation tasks
-        let investigationTasksCreated: number | undefined;
-        if (!passed && findings && findings.length > 0) {
-          investigationTasksCreated = await this.createInvestigationTasks(taskId, findings, baseUrl);
-          if (investigationTasksCreated === undefined) {
-            warnings.push('Failed to create investigation tasks for verification findings');
-          } else if (investigationTasksCreated < findings.length) {
-            warnings.push(`Only ${investigationTasksCreated} of ${findings.length} investigation tasks created successfully`);
-          }
-        }
-
-        // Update task status based on verification result
-        const statusUpdated = await this.updateTaskStatus(taskId, passed, baseUrl);
-        if (!statusUpdated) {
-          warnings.push('Failed to update task status - task may already be in terminal state or update failed');
-        }
-
-        // Determine next workflow step
-        const nextAction = passed
-          ? 'Task can be marked as complete and merged'
-          : 'Task requires additional work based on findings';
-
-        const nextSteps = passed
-          ? ['Update task status to done', 'Close related issues', 'Merge pull request']
-          : ['Address verification findings', 'Request re-verification', 'Update task priority'];
-
-        const result: any = {
-          verificationResult: {
-            id: verificationResult.id || `VERIFY-${Date.now()}`,
-            taskId,
-            verificationType,
+          // Submit verification result to backend
+          const resultData = {
+            task_id: taskId,
+            verification_type: verificationType,
             passed,
             findings: findings || [],
             screenshots: screenshots || [],
-            timestamp: verificationResult.timestamp || new Date().toISOString(),
+            timestamp: new Date().toISOString(),
             reviewer: 'agent',
-            qualityGatePassed: passed,
-          },
-          message: `Verification ${passed ? 'passed' : 'failed'} for task ${taskId}`,
-          nextAction,
-          nextSteps,
-        };
+          };
 
-        // Add warnings if any non-critical operations failed
-        if (warnings.length > 0) {
-          result.warnings = warnings;
-        }
+          const response = await fetch(`${baseUrl}/api/v1/mcp/reportVerificationResult`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(resultData),
+          });
 
-        // Add investigation task count if created
-        if (investigationTasksCreated !== undefined) {
-          result.investigationTasksCreated = investigationTasksCreated;
-        }
+          if (!response.ok) {
+            throw new Error(`Failed to submit verification result: ${response.status} ${response.statusText}`);
+          }
 
-        return formatAgentSuccess(result);
-      },
-      'handleReportVerificationResult',
-      args
-    );
+          const data = await response.json();
+          const verificationResult = data.verificationResult || data;
+
+          const warnings: string[] = [];
+
+          // If verification failed, create investigation tasks
+          let investigationTasksCreated: number | undefined;
+          if (!passed && findings && findings.length > 0) {
+            investigationTasksCreated = await this.createInvestigationTasks(taskId, findings, baseUrl);
+            if (investigationTasksCreated === undefined) {
+              warnings.push('Failed to create investigation tasks for verification findings');
+            } else if (investigationTasksCreated < findings.length) {
+              warnings.push(`Only ${investigationTasksCreated} of ${findings.length} investigation tasks created successfully`);
+            }
+          }
+
+          // Update task status based on verification result
+          const statusUpdated = await this.updateTaskStatus(taskId, passed, baseUrl);
+          if (!statusUpdated) {
+            warnings.push('Failed to update task status - task may already be in terminal state or update failed');
+          }
+
+          // Determine next workflow step
+          const nextAction = passed
+            ? 'Task can be marked as complete and merged'
+            : 'Task requires additional work based on findings';
+
+          const nextSteps = passed
+            ? ['Update task status to done', 'Close related issues', 'Merge pull request']
+            : ['Address verification findings', 'Request re-verification', 'Update task priority'];
+
+          const result: any = {
+            verificationResult: {
+              id: verificationResult.id || `VERIFY-${Date.now()}`,
+              taskId,
+              verificationType,
+              passed,
+              findings: findings || [],
+              screenshots: screenshots || [],
+              timestamp: verificationResult.timestamp || new Date().toISOString(),
+              reviewer: 'agent',
+              qualityGatePassed: passed,
+            },
+            message: `Verification ${passed ? 'passed' : 'failed'} for task ${taskId}`,
+            nextAction,
+            nextSteps,
+          };
+
+          // Add warnings if any non-critical operations failed
+          if (warnings.length > 0) {
+            result.warnings = warnings;
+          }
+
+          // Add investigation task count if created
+          if (investigationTasksCreated !== undefined) {
+            result.investigationTasksCreated = investigationTasksCreated;
+          }
+
+          return formatAgentSuccess(this.formatSuccess(result));
+        },
+        'handleReportVerificationResult',
+        args
+      );
+    } catch (error) {
+      return formatAgentError(error as Error);
+    }
   }
 
   /**
@@ -127,13 +131,13 @@ class ReportVerificationResultHandler extends MCPHandlerBase {
   private async createInvestigationTasks(taskId: string, findings: any[], baseUrl: string): Promise<number | undefined> {
     try {
       // Create all investigation tasks in parallel for better performance
-      const createPromises = findings.map(finding => 
+      const createPromises = findings.map(finding =>
         this.createSingleInvestigationTask(taskId, finding, baseUrl)
       );
 
       const results = await Promise.all(createPromises);
       const successCount = results.filter(r => r === true).length;
-      
+
       return successCount > 0 ? successCount : undefined;
     } catch (error) {
       console.warn('[ReportVerificationResult] Failed to create investigation tasks:', error);

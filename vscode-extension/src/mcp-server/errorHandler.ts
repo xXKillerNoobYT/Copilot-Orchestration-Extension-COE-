@@ -9,7 +9,7 @@
  * - WebSocket event emission for monitoring
  */
 
-import { DeadLetterQueueService } from '../services/deadLetterQueue.js';
+import { DeadLetterQueueService } from '../services/deadLetterQueue';
 
 export interface MCPMessage {
   id: string;

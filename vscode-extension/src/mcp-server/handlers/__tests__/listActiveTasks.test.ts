@@ -3,7 +3,7 @@
  * Tests filtering and pagination with backend API
  */
 
-import { handleListActiveTasks } from '../listActiveTasks.js';
+import { handleListActiveTasks } from '../listActiveTasks';
 
 global.fetch = jest.fn() as jest.Mock;
 

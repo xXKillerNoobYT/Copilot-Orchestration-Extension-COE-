@@ -33,7 +33,7 @@ describe('LlmRequestQueue', () => {
     });
 
     afterEach(() => {
-        queue.clear();
+        queue.clear({ rejectPending: false });
         jest.useRealTimers();
     });
 
@@ -59,31 +59,43 @@ describe('LlmRequestQueue', () => {
         });
 
         it('should reject when queue is full', async () => {
+            jest.useFakeTimers();
+
             // Fill queue to max depth (5)
+            const promises: Promise<any>[] = [];
             for (let i = 0; i < 5; i++) {
-                queue.enqueue({
+                const p = queue.enqueue({
                     id: `req-${i}`,
                     agentId: 'agent-1',
                     modelName: 'model-a',
                     priority: 1,
                     execute: () => new Promise(() => { }), // Never resolves
                 });
+                promises.push(p);
             }
 
-            // Try to add one more
-            await expect(
-                queue.enqueue({
-                    id: 'req-overflow',
-                    agentId: 'agent-1',
-                    modelName: 'model-a',
-                    priority: 1,
-                    execute: () => Promise.resolve('result'),
-                })
-            ).rejects.toThrow('Queue full');
+            // Process queue (but won't complete since execute never resolves)
+            // Note: intentionally do not advance timers to avoid triggering request timeouts
+
+            // Try to add one more - should reject immediately
+            const overflowPromise = queue.enqueue({
+                id: 'req-overflow',
+                agentId: 'agent-1',
+                modelName: 'model-a',
+                priority: 1,
+                execute: () => Promise.resolve('result'),
+            });
+
+            await expect(overflowPromise).rejects.toThrow('Queue full');
+
+            jest.useRealTimers();
         });
 
         it('should process requests in priority order', async () => {
             const executionOrder: string[] = [];
+
+            // Use fake timers to prevent immediate processing
+            jest.useFakeTimers();
 
             // Enqueue low priority first
             queue.enqueue({
@@ -97,7 +109,7 @@ describe('LlmRequestQueue', () => {
                 },
             });
 
-            // Enqueue high priority second
+            // Enqueue high priority second (higher number = higher priority in insertion logic)
             queue.enqueue({
                 id: 'high',
                 agentId: 'agent-1',
@@ -109,10 +121,13 @@ describe('LlmRequestQueue', () => {
                 },
             });
 
+            // Process queue - high priority should be sorted first before execution
             await jest.runAllTimersAsync();
 
-            // High priority should execute first (inserted at front)
+            // High priority (10) should execute before low priority (1)
             expect(executionOrder).toEqual(['high', 'low']);
+
+            jest.useRealTimers();
         });
 
         it('should apply model switch delay when switching models', async () => {
@@ -151,6 +166,8 @@ describe('LlmRequestQueue', () => {
         });
 
         it('should timeout requests that exceed requestMs', async () => {
+            jest.useFakeTimers();
+
             const slowExecute = () => new Promise<string>((resolve) => {
                 setTimeout(() => resolve('result'), 5000); // Longer than requestMs (1000ms)
             });
@@ -163,11 +180,15 @@ describe('LlmRequestQueue', () => {
                 execute: slowExecute,
             });
 
-            // Fast-forward past request timeout
+            const expectation = expect(promise).rejects.toThrow('Request timeout');
+
+            // Fast-forward all timers to trigger the queue timeout immediately
             await jest.runAllTimersAsync();
 
-            await expect(promise).rejects.toThrow('Request timeout');
-        });
+            await expectation;
+
+            jest.useRealTimers();
+        }, 10000);
     });
 
     describe('getStatus', () => {
@@ -204,7 +225,8 @@ describe('LlmRequestQueue', () => {
         });
 
         it('should track failed requests', async () => {
-            queue.enqueue({
+            jest.useFakeTimers();
+            const promise = queue.enqueue({
                 id: 'req-fail',
                 agentId: 'agent-1',
                 modelName: 'model-a',
@@ -212,10 +234,14 @@ describe('LlmRequestQueue', () => {
                 execute: () => Promise.reject(new Error('Failure')),
             });
 
+            const expectation = expect(promise).rejects.toThrow('Failure');
+
             await jest.runAllTimersAsync();
+            await expectation;
 
             const status = queue.getStatus();
             expect(status.requestsFailed).toBe(1);
+            jest.useRealTimers();
         });
     });
 
@@ -235,7 +261,7 @@ describe('LlmRequestQueue', () => {
             const statusBefore = queue.getStatus();
             expect(statusBefore.queueDepth).toBe(3);
 
-            queue.clear();
+            queue.clear({ rejectPending: false });
 
             const statusAfter = queue.getStatus();
             expect(statusAfter.queueDepth).toBe(0);

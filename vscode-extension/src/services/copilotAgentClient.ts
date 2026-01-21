@@ -1022,6 +1022,29 @@ ${this.formatContextFiles(payload.context.files)}
   clearDiscoveryCache(): void {
     this.agentDiscoveryCache = null;
   }
+
+  /**
+   * Determine if current version meets or exceeds the minimum supported version
+   * Accepts version strings with varying segment counts (e.g., 1.90, 1.90.0.5)
+   */
+  public isVersionSupported(currentVersion: string, minimumVersion: string): boolean {
+    const parse = (version: string): number[] => version.split('.').map(part => Number(part) || 0);
+
+    const a = parse(currentVersion);
+    const b = parse(minimumVersion);
+    const maxLen = Math.max(a.length, b.length);
+
+    // Normalize lengths by padding with zeros
+    while (a.length < maxLen) a.push(0);
+    while (b.length < maxLen) b.push(0);
+
+    for (let i = 0; i < maxLen; i++) {
+      if (a[i] > b[i]) return true;
+      if (a[i] < b[i]) return false;
+    }
+    // Equal versions
+    return true;
+  }
 }
 
 /**

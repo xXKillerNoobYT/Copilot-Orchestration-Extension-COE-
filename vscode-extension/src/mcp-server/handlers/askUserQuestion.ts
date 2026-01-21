@@ -4,7 +4,7 @@
  * Note: User interaction happens via VS Code extension, not directly in MCP server
  */
 
-import { MCPHandlerBase } from './MCPHandlerBase.js';
+import { MCPHandlerBase } from './MCPHandlerBase';
 
 class AskUserQuestionHandler extends MCPHandlerBase {
   /**
@@ -17,54 +17,58 @@ class AskUserQuestionHandler extends MCPHandlerBase {
       return this.formatError('Missing required parameter: question');
     }
 
-    return this.executeWithRetry(
-      async () => {
-        const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
+    try {
+      return await this.executeWithRetry(
+        async () => {
+          const baseUrl = process.env.MCP_BASE_URL || 'http://localhost:8000';
 
-        // Create question in backend database
-        const questionData = {
-          question,
-          context: context || {},
-          timeout,
-          status: 'pending',
-          asked_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + timeout * 1000).toISOString(),
-        };
-
-        const response = await fetch(`${baseUrl}/api/v1/questions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(questionData),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to create question: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const questionRecord = data.question || data;
-
-        return this.formatSuccess({
-          success: true,
-          questionRequest: {
-            id: questionRecord.id,
+          // Create question in backend database
+          const questionData = {
             question,
-            context,
+            context: context || {},
             timeout,
             status: 'pending',
-            createdAt: questionRecord.created_at || new Date().toISOString(),
-            expiresAt: questionRecord.expires_at,
-          },
-          message: `Question submitted to user. Timeout: ${timeout}s. Response will be available via WebSocket event or polling.`,
-          note: 'VS Code extension will receive WebSocket notification and prompt the user. Check question status via backend API.',
-        });
-      },
-      'handleAskUserQuestion',
-      args
-    );
+            asked_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + timeout * 1000).toISOString(),
+          };
+
+          const response = await fetch(`${baseUrl}/api/v1/questions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(questionData),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to create question: ${response.status} ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          const questionRecord = data.question || data;
+
+          return this.formatSuccess({
+            success: true,
+            questionRequest: {
+              id: questionRecord.id,
+              question,
+              context,
+              timeout,
+              status: 'pending',
+              createdAt: questionRecord.created_at || new Date().toISOString(),
+              expiresAt: questionRecord.expires_at,
+            },
+            message: `Question submitted to user. Timeout: ${timeout}s. Response will be available via WebSocket event or polling.`,
+            note: 'VS Code extension will receive WebSocket notification and prompt the user. Check question status via backend API.',
+          });
+        },
+        'handleAskUserQuestion',
+        args
+      );
+    } catch (error) {
+      return this.formatError(error as Error);
+    }
   }
 }
 

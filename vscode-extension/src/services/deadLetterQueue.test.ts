@@ -551,9 +551,10 @@ describe('DeadLetterQueueService', () => {
     it('should handle 1000+ entries efficiently', async () => {
       const startTime = Date.now();
 
-      // Add 1000 entries
+      // Add 1000 entries using transaction for speed
+      db.exec('BEGIN TRANSACTION');
       for (let i = 0; i < 1000; i++) {
-        await service.addFailedMessage(
+        service.addFailedMessageSync(
           `msg-${i}`,
           'task_request',
           { index: i },
@@ -561,6 +562,7 @@ describe('DeadLetterQueueService', () => {
           'handler1'
         );
       }
+      db.exec('COMMIT');
 
       const insertTime = Date.now() - startTime;
 

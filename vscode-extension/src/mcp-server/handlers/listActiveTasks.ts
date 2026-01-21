@@ -3,7 +3,7 @@
  * Integrates with Laravel backend TaskRepository to fetch filtered task list
  */
 
-import { MCPHandlerBase } from './MCPHandlerBase.js';
+import { MCPHandlerBase } from './MCPHandlerBase';
 
 class ListActiveTasksHandler extends MCPHandlerBase {
   /**
