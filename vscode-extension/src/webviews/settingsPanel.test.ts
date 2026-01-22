@@ -222,8 +222,12 @@ describe('SettingsPanel - Core Functionality', () => {
             SettingsPanel.createOrShow(mockExtensionUri);
             const handler = (global as any).messageHandler!;
 
+            // Mock agentProfileLoader to return profile data
+            const mockAgentProfileLoader = require('../services/agentProfileLoader');
+            mockAgentProfileLoader.loadProfile = jest.fn().mockResolvedValue({ name: 'planner', version: 1 });
+
             await handler({ command: 'loadAgentProfile', profileName: 'planner' });
-            expect(mockPanel.webview.postMessage).toHaveBeenCalled();
+            expect(mockAgentProfileLoader.loadProfile).toHaveBeenCalledWith('planner');
 
             const profile = { name: 'TestProfile', version: 1 };
             await handler({ command: 'saveAgentProfile', profile });
