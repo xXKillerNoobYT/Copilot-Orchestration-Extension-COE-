@@ -2170,7 +2170,7 @@
       "type": "Task",
       "labels": [],
       "created_at": "2026-01-22T02:45:22Z",
-      "updated_at": "2026-01-22T02:45:22Z",
+      "updated_at": "2026-01-22T06:26:20Z",
       "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/194",
       "body": "# MCP Server Tools (6) + Audit Logging\n\n### Goal\nImplement MCP server with required tools and audit logging per PRD.\n\n### Scope\n- Tools: getNextTask, reportTaskStatus, reportObservation, reportTestFailure, reportVerificationResult, askQuestion.\n- JSON-RPC 2.0 endpoints with Zod validation; 30s timeout, 3 retries, DLQ behavior.\n- WebSocket event streaming (taskCreated/Updated, observationLogged, etc.).\n- SQLite WAL persistence; error handling and backoff.\n- Audit log for all actions with timestam"
     },
@@ -2438,72 +2438,9 @@
         }
       ],
       "created_at": "2026-01-22T04:57:58Z",
-      "updated_at": "2026-01-22T04:57:58Z",
+      "updated_at": "2026-01-22T06:25:16Z",
       "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/214",
       "body": "# \u2705 Settings Panel + GitHub Sync - Implementation Verification & Test Coverage\n\n# Settings Panel + GitHub Sync - Implementation Verification & Test Coverage\n\n**Part of**: Phase 4 (UI Implementation)  \n**Related PRD Features**: F034 (VS Code Extension UI), F028 (GitHub Sync)  \n**Priority**: P0 \u2013 Critical Path  \n**Estimated**: 1-2 days  \n**Status**: Implementation COMPLETE \u2705 | Testing INCOMPLETE \u26a0\ufe0f\n\n---\n\n## \ud83c\udfaf Goal\nVerify and document that the Settings Panel + GitHub Sync features are fully functio"
-    },
-    {
-      "number": 215,
-      "title": "Fix remaining settingsPanel test failures (13/44)",
-      "state": "open",
-      "priority": "MEDIUM",
-      "type": "Bug",
-      "labels": [
-        {
-          "id": 9921722742,
-          "name": "bug",
-          "color": "d73a4a",
-          "description": "Something isn't working"
-        },
-        {
-          "id": 10019902001,
-          "name": "testing",
-          "color": "ededed"
-        },
-        {
-          "id": 10040858592,
-          "name": "vscode-extension",
-          "color": "ededed"
-        }
-      ],
-      "created_at": "2026-01-22T05:13:37Z",
-      "updated_at": "2026-01-22T05:13:37Z",
-      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/215",
-      "body": "# Fix remaining settingsPanel test failures (13/44)\n\n# Issue: Settings Panel Test Failures  \n\n## Status\n- **Fixed:** 31/44 tests passing (70.5%)\n- **Remaining:** 13 tests failing\n- **Blocker:** Yes - tests must pass before PR merge\n\n## Context\nFixed critical runtime issues in LLM Configuration panel (saving/loading/tabs all work now), but need to fix remaining test failures for CI/CD compliance.\n\n## Failing Test Categories\n\n### 1. Orchestrator Integration (2 tests)\n- `should handle orchestrator:"
-    },
-    {
-      "number": 216,
-      "title": "\ud83d\udc1b LLM Configuration page not saving/loading settings",
-      "state": "open",
-      "priority": "MEDIUM",
-      "type": "Bug",
-      "labels": [
-        {
-          "id": 9921722742,
-          "name": "bug",
-          "color": "d73a4a",
-          "description": "Something isn't working"
-        },
-        {
-          "id": 10020385328,
-          "name": "P0",
-          "color": "ededed"
-        },
-        {
-          "id": 10040858592,
-          "name": "vscode-extension",
-          "color": "ededed"
-        },
-        {
-          "id": 10040873407,
-          "name": "settings",
-          "color": "ededed"
-        }
-      ],
-      "created_at": "2026-01-22T05:17:09Z",
-      "updated_at": "2026-01-22T05:17:09Z",
-      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/216",
-      "body": "# \ud83d\udc1b LLM Configuration page not saving/loading settings\n\n## Problem Description\n\nThe **LLM Configuration** settings panel was failing to:\n- \u274c Save settings (Base URL, API Key, Model, Temperature, Timeout)\n- \u274c Load existing configuration\n- \u274c Switch between tabs without errors\n\n**User Impact:** Critical - users cannot configure LLM endpoints, blocking all AI features.\n\n## Root Causes Identified\n\n### 1. Null Pointer Errors in DOM Access\n```javascript\n// BEFORE (Crashes):\ndocument.getElementById('tem"
     },
     {
       "number": 217,
@@ -2533,108 +2470,6 @@
       "updated_at": "2026-01-22T06:10:04Z",
       "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/217",
       "body": "# GUI Usability Verification: Multiple UI Components Not Working Properly\n\n# GUI Usability Verification: Multiple UI Components Not Working Properly\n\n## Severity\n**P1** - Multiple core UI features are non-functional, impacting user experience\n\n## Description\nSeveral key GUI components in the VS Code extension are either not working properly or showing 'command not found' errors. This requires a comprehensive verification and fix of the UI layer.\n\n## Sub-Issues Created\n- **#218** - LLM Configurat"
-    },
-    {
-      "number": 218,
-      "title": "Sub-Issue: LLM Configuration Component Not Working",
-      "state": "open",
-      "priority": "MEDIUM",
-      "type": "Bug",
-      "labels": [
-        {
-          "id": 9921722742,
-          "name": "bug",
-          "color": "d73a4a",
-          "description": "Something isn't working"
-        },
-        {
-          "id": 10020385330,
-          "name": "P1",
-          "color": "ededed"
-        },
-        {
-          "id": 10040858592,
-          "name": "vscode-extension",
-          "color": "ededed"
-        },
-        {
-          "id": 10040873407,
-          "name": "settings",
-          "color": "ededed"
-        }
-      ],
-      "created_at": "2026-01-22T06:08:59Z",
-      "updated_at": "2026-01-22T06:08:59Z",
-      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/218",
-      "body": "# Sub-Issue: LLM Configuration Component Not Working\n\n**Parent Issue:** #217\n\n## Component\nLLM Configuration\n\n## Status\nNot working properly\n\n## Expected Behavior\nShould allow users to configure LLM settings including:\n- Base URL (LM Studio endpoint)\n- API Key\n- Default model\n- Temperature\n- Timeout settings\n\n## Actual Behavior\nComponent is not functioning as expected. Users cannot properly configure LLM settings.\n\n## Steps to Reproduce\n1. Open VS Code with COE extension\n2. Access LLM Configurat"
-    },
-    {
-      "number": 219,
-      "title": "Sub-Issue: Planning Phase Command Not Found",
-      "state": "open",
-      "priority": "MEDIUM",
-      "type": "Beta",
-      "labels": [
-        {
-          "id": 9921722742,
-          "name": "bug",
-          "color": "d73a4a",
-          "description": "Something isn't working"
-        },
-        {
-          "id": 10020385330,
-          "name": "P1",
-          "color": "ededed"
-        },
-        {
-          "id": 10040429234,
-          "name": "beta",
-          "color": "ededed"
-        },
-        {
-          "id": 10040858592,
-          "name": "vscode-extension",
-          "color": "ededed"
-        }
-      ],
-      "created_at": "2026-01-22T06:09:30Z",
-      "updated_at": "2026-01-22T06:09:30Z",
-      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/219",
-      "body": "# Sub-Issue: Planning Phase Command Not Found\n\n**Parent Issue:** #217\n\n## Component\nPlanning Phase Command\n\n## Status\nCommand not found error\n\n## Expected Behavior\nShould initiate the planning phase workflow showing:\n- 10-question design workflow\n- Scope definition\n- Dependency mapping\n- Task structure creation\n\n## Actual Behavior\nError: \\command 'copilot-orchestrator.planningPhase' not found\\\n\n## Steps to Reproduce\n1. Open VS Code with COE extension\n2. Click 'Planning Phase' button\n3. Observe e"
-    },
-    {
-      "number": 220,
-      "title": "Sub-Issue: Open Orchestrator Panel Command Not Found",
-      "state": "open",
-      "priority": "MEDIUM",
-      "type": "Beta",
-      "labels": [
-        {
-          "id": 9921722742,
-          "name": "bug",
-          "color": "d73a4a",
-          "description": "Something isn't working"
-        },
-        {
-          "id": 10020385330,
-          "name": "P1",
-          "color": "ededed"
-        },
-        {
-          "id": 10040429234,
-          "name": "beta",
-          "color": "ededed"
-        },
-        {
-          "id": 10040858592,
-          "name": "vscode-extension",
-          "color": "ededed"
-        }
-      ],
-      "created_at": "2026-01-22T06:09:30Z",
-      "updated_at": "2026-01-22T06:09:30Z",
-      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/220",
-      "body": "# Sub-Issue: Open Orchestrator Panel Command Not Found\n\n**Parent Issue:** #217\n\n## Component\nOpen Orchestrator Panel Command\n\n## Status\nCommand not found error\n\n## Expected Behavior\nShould open the orchestrator panel showing:\n- Task list\n- Agent status\n- Real-time metrics\n- Dashboard controls\n\n## Actual Behavior\nError: \\command 'copilot-orchestrator.showPanel' not found\\\n\n## Steps to Reproduce\n1. Open VS Code with COE extension\n2. Click 'Open Orchestrator Panel' button\n3. Observe error message\n\n"
     },
     {
       "number": 221,

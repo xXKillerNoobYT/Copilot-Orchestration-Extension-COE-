@@ -2005,7 +2005,7 @@ Real-time dashboard showing team status, metrics, and coordination toggles
 
 ## Open GitHub Issues (Beta Roadmap)
 
-**Total Open Issues**: 29  
+**Total Open Issues**: 24  
 **Loaded from**: `.vscode/github-issues/*.md` (synced from GitHub)
 
 ### Issue #191: Interactive Plan Builder + DAG Validation (PRD F001/F002/F017/F032) 🟡
@@ -2452,55 +2452,6 @@ Verify and document that the Settings Panel + GitHub Sync features are fully fun
 
 **GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/214
 
-### Issue #215: Fix remaining settingsPanel test failures (13/44) 🟡
-
-**Priority**: MEDIUM | **Type**: Bug | **State**: open  
-
-**Description:**
-# Fix remaining settingsPanel test failures (13/44)
-
-# Issue: Settings Panel Test Failures  
-
-## Status
-- **Fixed:** 31/44 tests passing (70.5%)
-- **Remaining:** 13 tests failing
-- **Blocker:** Yes - tests must pass before PR merge
-
-## Context
-Fixed critical runtime issues in LLM Configuration panel (saving/loading/tabs all work now), but need to fix remaining test failures for CI/CD compliance.
-
-## Failing Test Categories
-
-### 1. Orchestrator Integration (2 tests)
-- `should handle orchestrator:
-
-**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/215
-
-### Issue #216: 🐛 LLM Configuration page not saving/loading settings 🟡
-
-**Priority**: MEDIUM | **Type**: Bug | **State**: open  
-
-**Description:**
-# 🐛 LLM Configuration page not saving/loading settings
-
-## Problem Description
-
-The **LLM Configuration** settings panel was failing to:
-- ❌ Save settings (Base URL, API Key, Model, Temperature, Timeout)
-- ❌ Load existing configuration
-- ❌ Switch between tabs without errors
-
-**User Impact:** Critical - users cannot configure LLM endpoints, blocking all AI features.
-
-## Root Causes Identified
-
-### 1. Null Pointer Errors in DOM Access
-```javascript
-// BEFORE (Crashes):
-document.getElementById('tem
-
-**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/216
-
 ### Issue #217: GUI Usability Verification: Multiple UI Components Not Working Properly 🟡
 
 **Priority**: MEDIUM | **Type**: Bug | **State**: open  
@@ -2520,104 +2471,6 @@ Several key GUI components in the VS Code extension are either not working prope
 - **#218** - LLM Configurat
 
 **GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/217
-
-### Issue #218: Sub-Issue: LLM Configuration Component Not Working 🟡
-
-**Priority**: MEDIUM | **Type**: Bug | **State**: open  
-
-**Description:**
-# Sub-Issue: LLM Configuration Component Not Working
-
-**Parent Issue:** #217
-
-## Component
-LLM Configuration
-
-## Status
-Not working properly
-
-## Expected Behavior
-Should allow users to configure LLM settings including:
-- Base URL (LM Studio endpoint)
-- API Key
-- Default model
-- Temperature
-- Timeout settings
-
-## Actual Behavior
-Component is not functioning as expected. Users cannot properly configure LLM settings.
-
-## Steps to Reproduce
-1. Open VS Code with COE extension
-2. Access LLM Configurat
-
-**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/218
-
-### Issue #219: Sub-Issue: Planning Phase Command Not Found 🟡
-
-**Priority**: MEDIUM | **Type**: Beta | **State**: open  
-
-**Description:**
-# Sub-Issue: Planning Phase Command Not Found
-
-**Parent Issue:** #217
-
-## Component
-Planning Phase Command
-
-## Status
-Command not found error
-
-## Expected Behavior
-Should initiate the planning phase workflow showing:
-- 10-question design workflow
-- Scope definition
-- Dependency mapping
-- Task structure creation
-
-## Actual Behavior
-Error: \command 'copilot-orchestrator.planningPhase' not found\
-
-## Steps to Reproduce
-1. Open VS Code with COE extension
-2. Click 'Planning Phase' button
-3. Observe e
-
-**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/219
-
-### Issue #220: Sub-Issue: Open Orchestrator Panel Command Not Found 🟡
-
-**Priority**: MEDIUM | **Type**: Beta | **State**: open  
-
-**Description:**
-# Sub-Issue: Open Orchestrator Panel Command Not Found
-
-**Parent Issue:** #217
-
-## Component
-Open Orchestrator Panel Command
-
-## Status
-Command not found error
-
-## Expected Behavior
-Should open the orchestrator panel showing:
-- Task list
-- Agent status
-- Real-time metrics
-- Dashboard controls
-
-## Actual Behavior
-Error: \command 'copilot-orchestrator.showPanel' not found\
-
-## Steps to Reproduce
-1. Open VS Code with COE extension
-2. Click 'Open Orchestrator Panel' button
-3. Observe error message
-
-
-
-**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/220
 
 ### Issue #221: Sub-Issue: Interactive Plan Builder Opens Blank 🟡
 
@@ -2816,6 +2669,6 @@ Panel opens but displays a blank screen with no controls or content.
 
 ## Document Control
 
-**Generated**: 2026-01-21 23:12:09  
+**Generated**: 2026-01-21 23:32:40  
 **Generated by**: AI-Optimized PRD Notebook  
 **Source**: Copilot Orchestration Extension project documentation
