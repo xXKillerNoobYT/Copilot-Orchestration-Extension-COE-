@@ -2043,3 +2043,314 @@ Next requested focus:
 
 Let me know what to expand next.
 
+# Updated AI Teams Documentation for Copilot Orchestration Extension (COE)
+
+**Version**: 5.3 – Deep Dive: Evolution Phase  
+**Date**: January 21, 2026  
+**Status**: Documentation Improved – This version provides a **super-detailed deep dive** into the **Evolution Phase** of the program lifecycle model (introduced in v5.2). The Evolution Phase is now expanded with granular mechanics, sub-processes, detection algorithms, RL integration details, error handling, user controls, and long-term sustainability strategies. This refinement ensures the Code Master extension (COE) can self-improve indefinitely, adapting to project complexities, user feedback, and emerging patterns without manual overhauls. The phase is positioned as "ongoing from week 3" but now includes startup bootstrapping, phase-specific metrics, and ties to modular execution (v4.9), plan updating (v5.0), and error patterns (v4.2). Optimizations for 14B models emphasize efficient pattern scanning (low-compute embeddings) and batched RL updates.  
+**Synced with**: Previous updates (v5.2), `code master Full plan.ipynb`, `CONSOLIDATED-MASTER-PLAN.md`, `02-Agent-Role-Definitions.md`, `05-MCP-API-Reference.md`.  
+**Key Insights**: 
+- Evolution is not reactive-only; it includes proactive "health checks" to anticipate issues.
+- RL is central, with rewards tied to measurable reductions in error rates, task times, and user interventions.
+- User visibility is enhanced to build trust, with opt-in controls for "evolution aggressiveness."
+
+This deep dive solidifies the Evolution Phase as the "self-healing engine" of COE, enabling the extension to build and maintain high-quality programs over extended lifecycles.
+
+---
+
+## Deep Dive: Evolution Phase – Overview & Rationale
+
+**Phase Definition Recap (from v5.2)**: Ongoing from week 3, driven by error patterns and the Critic Team, with safe YAML-only updates as the key constraint. Exit condition: The system adapts to new patterns automatically, achieving <5% error recurrence rate on known issues.
+
+**Expanded Rationale**: In traditional development, programs degrade over time due to accumulating technical debt, unaddressed patterns, and shifting requirements. COE's Evolution Phase counters this by turning runtime data (errors, metrics, drifts) into **actionable intelligence** for continuous refinement. It ensures the program remains "functionable" (functional + stable) and flexible, evolving agents, tools, templates, and even the plan itself without disrupting workflows. For example, if linting misses recur in P1 modules, the system evolves Verification checklists autonomously.
+
+**Phase Characteristics**:
+- **Duration**: Perpetual (starts week 3, ramps to full autonomy by week 8).
+- **Resource Allocation**: 10–20% of system compute (batched scans to minimize overhead).
+- **Success Metrics**: Error recurrence <5%; average task time reduction >15% quarterly; user interventions <2/week after month 1.
+- **Risks**: Over-evolution (too many changes) – mitigated by human gates and RL penalties; under-evolution (missed patterns) – mitigated by proactive checks.
+
+---
+
+## Evolution Phase Mechanics – Sub-Processes
+
+The phase runs as a continuous background loop (Boss AI job, every 15–60 min configurable), with sub-processes for detection, analysis, proposal, execution, and learning.
+
+### 1. Signal Collection & Storage (Always-On)
+- **Purpose**: Gather raw data from all system activities to feed pattern detection.
+- **Sources** (expanded from v5.2):
+  | Source                  | Data Collected                          | Frequency    | Storage (SQLite Table) |
+  |-------------------------|-----------------------------------------|--------------|-------------------------|
+  | MCP Tool Calls          | Params, returns, errors, token_impact   | Per call    | mcp_logs               |
+  | Task Executions         | Completion time, verification outcome   | Per task    | task_history           |
+  | Context Breaking        | Pre/post tokens, strategies used, coherence_delta | Per break   | context_events         |
+  | Plan Drifts             | File Tree diffs vs plan, drift_score    | On change   | drift_logs             |
+  | User Feedback           | Poll responses, manual overrides        | On submit   | user_feedback          |
+  | RL Reward Signals       | Per-action rewards (from v3.6)          | Per cycle   | rl_dataset             |
+  | Copilot Delegations     | Workspace outcomes, delegation_failures | Per delegation | copilot_logs         |
+- **Retention Policy**: 30 days rolling (configurable); anonymized for privacy.
+- **14B Optimization**: Batch inserts to reduce I/O; indexed by timestamp/task_id for fast queries.
+
+### 2. Pattern Detection (Core Algorithm – Expanded from v4.2)
+- **Purpose**: Scan collected signals for recurring issues, anomalies, or improvement opportunities.
+- **Algorithm** (Pseudocode – Builds on v4.2 detectPatterns):
+  ```typescript
+  interface SignalLog {
+    timestamp: Date;
+    type: 'mcp_call' | 'task_exec' | 'context_break' | 'drift' | 'user_feedback' | 'rl_reward' | 'copilot';
+    data: any;  // type-specific
+    priorityImpact: 'NONE' | 'P1_BLOCKED' | 'P2_DELAYED' | 'P3_IGNORABLE';
+    severity: number;  // 1–4
+  }
+
+  function detectPatterns(logs: SignalLog[], windowHours = 24): Pattern[] {
+    const patterns: Map<string, Pattern> = new Map();
+    const now = Date.now();
+    const windowStart = now - windowHours * 3600000;
+
+    logs = logs.filter(log => log.timestamp.getTime() >= windowStart);
+
+    for (const log of logs) {
+      const signature = generateSignature(log);  // e.g., 'mcp:askQuestion:TOKEN_LIMIT_EXCEEDED:P1'
+      let pattern = patterns.get(signature) || initPattern(signature, log);
+
+      pattern.count++;
+      pattern.evidence.push(log);
+      pattern.avgSeverity = ((pattern.avgSeverity * (pattern.count - 1)) + log.severity) / pattern.count;
+      pattern.priorityImpactCount += (log.priorityImpact !== 'NONE' ? 1 : 0);
+      pattern.lastSeen = log.timestamp;
+
+      if (pattern.count > 1) {
+        pattern.recurrenceInterval = (now - pattern.firstSeen.getTime()) / (pattern.count - 1);
+      }
+
+      patterns.set(signature, pattern);
+    }
+
+    return Array.from(patterns.values())
+      .filter(p => shouldTriggerProposal(p))
+      .sort((a, b) => b.score - a.score);  // score = count * avgSeverity * priorityImpactCount / recurrenceInterval
+  }
+
+  function generateSignature(log: SignalLog): string {
+    let base = `${log.type}:${log.data.tool_name || log.data.category || 'general'}`;
+    if (log.data.error?.code) base += `:${log.data.error.code}`;
+    if (log.priorityImpact !== 'NONE') base += `:${log.priorityImpact}`;
+    return base;
+  }
+
+  function initPattern(signature: string, firstLog: SignalLog): Pattern {
+    return {
+      signature,
+      category: categorizeSignal(firstLog.type, firstLog.data.error?.code),
+      count: 1,
+      evidence: [firstLog],
+      avgSeverity: firstLog.severity,
+      priorityImpactCount: (firstLog.priorityImpact !== 'NONE' ? 1 : 0),
+      firstSeen: firstLog.timestamp,
+      lastSeen: firstLog.timestamp,
+      recurrenceInterval: 0,
+      score: 0,
+    };
+  }
+
+  function shouldTriggerProposal(pattern: Pattern): boolean {
+    return pattern.count >= getMinCount(pattern.category, pattern.avgSeverity) &&
+           pattern.priorityImpactCount >= 1 &&
+           pattern.recurrenceInterval < 3600000 * 4;  // <4 hours avg between occurrences
+  }
+
+  function getMinCount(category: string, severity: number): number {
+    if (category.includes('Token') || category.includes('Recovery')) return severity > 2 ? 2 : 3;
+    if (category.includes('P1')) return 2;
+    return 4;
+  }
+  ```
+- **Categorization Function** (expanded):
+  - Token-related → "Token Management Failures"  
+  - MCP errors → "Tool Parameter Errors"  
+  - Verification fails → "Task Failure Rate"  
+  - Etc. (full mapping in registry)
+
+- **Proactive Scans**: In addition to reactive (on new logs), run every 4 hours for "dormant patterns" (e.g., low-frequency but high-severity).
+
+### 3. Proposal Generation & Prioritization (LM-Assisted – Expanded from v5.2)
+- **Purpose**: Turn detected patterns into concrete, minimal YAML-only fixes (e.g., add checklist item, tweak prompt prop).
+- **LM Role**: 14B model generates the proposal content (token-limited to <1,500).
+- **Proposal Prioritization**: Sort by score; P1-impact first; limit to 3 proposals per cycle to avoid overload.
+- **LM Prompt Template** (detailed, props-based):
+  ```
+  Detected pattern: {pattern.signature} with count {pattern.count}, avg severity {pattern.avgSeverity}, priority impact {pattern.priorityImpactCount}.
+  Evidence summary: {evidence_snippet} (last 3 logs).
+  Recurrence: every {pattern.recurrenceInterval / 3600000} hours avg.
+  Suggest **minimal YAML-only update** to affected {agent_name} template/tool/config.
+  Target: Reduce recurrence by >50%.
+  Change type: {suggested_type} (e.g., add_checklist, edit_prompt_prop).
+  Keep proposal <300 tokens. Output as UV task JSON.
+  ```
+- **AutoGen Refinement**: If pattern involves multiple agents (e.g., handoff error), chat with involved teams (e.g., Orchestrator + Verification).
+
+### 4. Execution via UV Task (Safe Application – From v5.2)
+- **Expanded UV Checklist** (for evolution-specific tasks):
+  - Verify Pattern Evidence: Cross-check logs (min 70% confidence match).  
+  - Simulate Fix Impact: Dry-run with new YAML (e.g., re-verify last 5 failed tasks).  
+  - Check Disruption: Token delta <200, no P1 perf drop >5%.  
+  - Boss RL Pre-Score: Projected reward >0.3.  
+  - Human Gate: If P1 impact or change >1 item.  
+- **Application**: Updating Tool applies; immediate post-test cycle (re-run 3–5 relevant tasks).
+- **Rollback Threshold**: If post-verify reward <0 → auto-rollback + log "failed evolution".
+
+### 5. Post-Execution Monitoring & Learning (Closed Feedback Loop)
+- **Monitoring Window**: 24–48 hours post-update (configurable).
+- **Metrics Collected** (expanded):
+  | Metric                   | Target Threshold | Bad Outcome Action               |
+  |--------------------------|------------------|----------------------------------|
+  | Pattern Recurrence Rate  | <20% of pre      | Trigger counter-proposal UV      |
+  | Task Success Delta       | +15%             | Negative RL; flag for review     |
+  | User Intervention Count  | <1/week post     | Escalate to human modal          |
+  | Perf Impact (time/tokens)| <+5%             | Rollback if >+10%                |
+  | Coherence Score Delta    | > -0.05          | Adjust breaking strategy         |
+- **Learning Mechanisms**:
+  - **RL Update**: Batch post-outcomes to dataset (e.g., {pre_pattern, update_action, post_metrics, reward}).
+  - **Critic Meta-Review**: Every 7 days, Critic scans evolution history for "meta-patterns" (e.g., "Frequent rollbacks on prompt edits → propose stricter simulation").
+  - **Long-Term Adaptation**: After 50+ evolutions, use aggregated data for major 14B fine-tuning (e.g., better proposal generation).
+
+- **Pseudocode – Post-Monitoring Evaluator**:
+  ```typescript
+  function evaluateEvolutionOutcome(updateId: string, prePattern: Pattern, postLogs: SignalLog[]): EvolutionResult {
+    const postPattern = detectPatterns(postLogs, 48);  // re-scan
+    const matchingPost = postPattern.find(p => p.signature === prePattern.signature);
+
+    const recurrenceDelta = matchingPost ? (matchingPost.count / prePattern.count) : 0;
+
+    const reward = calculateReward({
+      recurrenceReduction: 1 - recurrenceDelta,
+      taskSuccessDelta: getTaskDelta(postLogs),
+      perfImpact: getPerfDelta(postLogs),
+      // ... other metrics
+    });
+
+    if (reward < 0.2) {
+      triggerRollback(updateId);
+      return { status: 'failed', reward, nextAction: 'counter-proposal' };
+    }
+
+    return { status: 'success', reward, nextAction: 'none' };
+  }
+
+  function calculateReward(metrics: any): number {
+    return (
+      metrics.recurrenceReduction * 0.4 +
+      metrics.taskSuccessDelta * 0.3 +
+      (1 - Math.abs(metrics.perfImpact)) * 0.2 +
+      // ... weighted sum, clamped -2 to +2
+    );
+  }
+  ```
+
+### 6. User Controls & Visibility in Evolution Phase
+- **Sidebar – Evolution Overview** (expanded from v5.2):
+  - “Evolution Status”: Progress bar (e.g., “85% error reduction since last major update”)
+  - “Active Proposals”: List of pending UV tasks with “Approve / Edit / Reject”
+  - “History Timeline”: Scrollable log of evolutions (e.g., “v1.3 – Added linting: +45% quality”)
+  - “Aggressiveness Slider”: Low (fewer auto-updates) / Medium / High (more proactive)
+
+- **Opt-In Gates**: Settings toggle “Allow Auto-Evolutions for P3” (default on); “Require Approval for All” (default off for minor).
+
+- **Manual Trigger**: Sidebar button “Suggest Improvement” → user describes issue → Critic generates UV task.
+
+### 7. Edge Cases & Safeguards
+- **Over-Evolution**: If >5 updates in 24h → temporary pause + user notification (“System evolving rapidly – review?”).
+- **Failed Evolutions**: 3 consecutive negatives → escalate to full rebuild gate (user approval).
+- **P1 Sensitivity**: All P1-impacting evolutions require human gate, even if minor.
+- **Weird Patterns**: If uncategorizable (e.g., new error code), LM classifies via AutoGen chat.
+- **Backup**: All evolutions have 7-day rollback window (via versioned YAML snapshots).
+
+### 8. Flow Charts for Evolution Phase
+
+#### High-Level Phase Loop (Mermaid)
+
+```mermaid
+graph TD
+    A[Ongoing Signal Collection] --> B[Every 15–60 min: Critic Scan]
+    B --> C[Detect Patterns > Threshold?]
+    C -->|No| D[Proactive Health Check<br>e.g., Simulate Random Task Cycle]
+    D --> E[Anomalies Found?]
+    E -->|Yes| F[Aggregate Signals]
+    C -->|Yes| F
+    F --> G[Prioritize Proposals<br>P1 First, Score Desc]
+    G --> H[Generate UV Tasks (LM + AutoGen)<br>Limit 3/Cycle]
+    H --> I[Execute UV Queue (Boss + Updating Tool)]
+    I --> J[Post-Apply Monitoring (24–48h Window)]
+    J --> K[Evaluate Outcome (Reward Calc)]
+    K --> L{Positive Reward?}
+    L -->|Yes| M[Log Success → RL Dataset]
+    L -->|No| N[Rollback + Counter-Proposal UV]
+    M --> A
+    N --> H
+```
+
+#### ASCII Fallback (Phase Loop)
+
+```
+Signals Collect (Ongoing)
+   ↓
+Critic Scan (15–60 min)
+   ↓ Patterns? ──Yes──► Aggregate
+   │                  ↓ No ──► Health Check (Simulate)
+   │                                ↓ Anomalies? ──Yes──► Aggregate
+   ↓
+Prioritize Proposals (P1 first)
+   ↓
+Generate UV Tasks (LM + AutoGen, max 3)
+   ↓
+Execute UV Queue (Boss + Tool)
+   ↓
+Post-Monitor (24–48h)
+   ↓
+Evaluate (Reward)
+   ↓ Positive? ──Yes──► Log + RL Dataset → Loop to Collect
+      ↓ No
+   Rollback + Counter UV → Loop to Generate
+```
+
+#### Detailed Pattern Detection Sub-Flow (Mermaid)
+
+```mermaid
+graph TD
+    S1[Filter Logs by Window] --> S2[Group by Signature<br>code:tool:priority]
+    S2 --> S3[Calculate Metrics<br>count, avgSeverity, impactCount, interval]
+    S3 --> S4[Assign Category<br>e.g., Token Failures]
+    S4 --> S5[Compute Score<br>count * severity * impact / interval]
+    S5 --> S6{Score > Threshold<br>AND count >= min?}
+    S6 -->|No| S7[Discard – Low Priority Log]
+    S6 -->|Yes| S8[Add to Proposal Queue<br>Sorted by Score Desc]
+    S8 --> S9[Cap at 3 Proposals/Cycle]
+    S9 --> S10[LM Generate UV JSON for Each]
+```
+
+#### ASCII Fallback (Detection Sub-Flow)
+
+```
+Filter Logs (Window)
+   ↓
+Group by Signature (code:tool:priority)
+   ↓
+Calc Metrics (count, severity, impact, interval)
+   ↓
+Assign Category
+   ↓
+Compute Score (weighted formula)
+   ↓ Score > Thresh & Count >= Min? ──No──► Discard (Log)
+      ↓ Yes
+   Add to Proposal Queue (Sort Desc)
+   ↓
+Cap 3/Cycle
+   ↓
+LM Generate UV for Each
+```
+
+This super-detailed Evolution Phase now provides a complete, self-sustaining model for ongoing improvement in the Code Master extension.
+
+Next: Prototype pattern detection engine? Or expand RL dataset format?
+

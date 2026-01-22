@@ -1,5 +1,6 @@
 import { TaskService, Task } from './services/taskService';
 import { GitHubSyncService, TaskData as GitHubTaskData } from './services/githubSyncService';
+import { NotificationService, DecompositionNotification } from './services/notificationService';
 
 export interface DecompositionAgentOptions {
   pollIntervalMs?: number;
@@ -32,6 +33,7 @@ export class DecompositionAgent {
   private readonly pollIntervalMs: number;
   private readonly effortThresholdMinutes: number;
   private readonly taskService: TaskService;
+  private readonly notificationService: NotificationService;
   private githubSync?: GitHubSyncService;
   private running = false;
 
@@ -39,6 +41,7 @@ export class DecompositionAgent {
     this.pollIntervalMs = options?.pollIntervalMs ?? 10_000;
     this.effortThresholdMinutes = options?.effortThresholdMinutes ?? 60;
     this.taskService = TaskService.getInstance();
+    this.notificationService = NotificationService.getInstance();
     this.githubSync = githubSync;
   }
 
@@ -59,12 +62,31 @@ export class DecompositionAgent {
           const subtasks = this.generateSubtasks(task);
           const summary = this.buildSummary(task, subtasks);
 
-          // Notify user (console log; UI toast could be added)
-          console.log('[DecompositionAgent] Decomposition summary:', summary);
+          // Notify user with rich UI and capture action
+          const notificationData: DecompositionNotification = {
+            originalTaskId: task.id,
+            originalTaskTitle: task.name,
+            subtaskCount: summary.subtaskCount,
+            subtasks: summary.subtasks,
+            impact: summary.impact,
+          };
 
-          // Create GitHub sub-issues if configured
-          if (this.githubSync) {
-            await this.createGitHubSubIssues(task, subtasks);
+          const userAction = await this.notificationService.showDecompositionSummary(
+            notificationData
+          );
+
+          console.log('[DecompositionAgent] User action:', userAction);
+
+          if (userAction === 'accept') {
+            // Create GitHub sub-issues if configured
+            if (this.githubSync) {
+              await this.createGitHubSubIssues(task, subtasks);
+            }
+            console.log('[DecompositionAgent] Decomposition accepted and applied');
+          } else if (userAction === 'reject') {
+            console.log('[DecompositionAgent] Decomposition rejected by user');
+          } else if (userAction === 'edit') {
+            console.log('[DecompositionAgent] Decomposition edit requested (future: open edit UI)');
           }
         }
       }
