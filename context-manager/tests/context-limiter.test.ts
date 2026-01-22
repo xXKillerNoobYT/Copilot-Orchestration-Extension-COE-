@@ -81,4 +81,46 @@ describe('ContextLimiter (F037)', () => {
     const high = result.items.find((it) => it.priority === 'high');
     expect(high?.content).toBe('important-high-priority');
   });
+
+  test('handles empty items array gracefully', () => {
+    const limiter = new ContextLimiter();
+    const result = limiter.enforce([]);
+    expect(result.items.length).toBe(0);
+    expect(result.status.tokensUsed).toBe(0);
+    expect(result.status.percentageUsed).toBe(0);
+    expect(result.status.autoRecovery).toBe(false);
+  });
+
+  test('handles items with pre-computed tokens', () => {
+    const limiter = new ContextLimiter();
+    const items: ContextItem[] = [
+      { content: 'test', tokens: 100, priority: 'low' },
+      { content: 'test2', tokens: 200, priority: 'medium' },
+    ];
+    const result = limiter.enforce(items);
+    expect(result.status.tokensUsed).toBe(300);
+  });
+
+  test('handles content shorter than summarization threshold', () => {
+    const limiter = new ContextLimiter();
+    const items: ContextItem[] = [
+      { content: makeText(150), priority: 'low' }, // < 200 chars
+      { content: makeText(18000), priority: 'medium' }, // ~4500 tokens triggers summarization
+    ];
+    const result = limiter.enforce(items);
+    expect(result.status.summarizationApplied).toBe(true);
+    // First item is already short, should still be summarized but content preserved
+    const shortItem = result.items.find((it) => it.content.includes('Summary: xxx'));
+    expect(shortItem).toBeDefined();
+  });
+
+  test('adds tokens to items that do not have them', () => {
+    const limiter = new ContextLimiter();
+    const items: ContextItem[] = [
+      { content: makeText(400) }, // no priority or tokens specified
+    ];
+    const result = limiter.enforce(items);
+    expect(result.items[0].tokens).toBeDefined();
+    expect(result.items[0].tokens).toBeGreaterThan(0);
+  });
 });
