@@ -114,9 +114,13 @@ export class WorkflowGraph {
         }
 
         const timeout = node.timeout ?? 30000;
-        const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`Node ${nodeId} timeout after ${timeout}ms`)), timeout)
-        );
+        let timeoutId: NodeJS.Timeout | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(
+                () => reject(new Error(`Node ${nodeId} timeout after ${timeout}ms`)),
+                timeout
+            );
+        });
 
         try {
             const handlerResult = await Promise.race([node.handler(state), timeoutPromise]);
@@ -130,6 +134,10 @@ export class WorkflowGraph {
                 return { attempts: state.attempts + 1 };
             }
             throw error;
+        } finally {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
         }
     }
 
