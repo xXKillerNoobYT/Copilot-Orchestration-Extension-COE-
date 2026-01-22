@@ -6,24 +6,24 @@
 import * as vscode from 'vscode';
 
 export interface DecompositionNotification {
-  originalTaskId: string;
-  originalTaskTitle: string;
-  subtaskCount: number;
-  subtasks: Array<{
-    title: string;
-    estimated_effort: number; // minutes
-    type: string;
-    priority: string;
-  }>;
-  impact: {
-    timeline_change_minutes: number;
-    parallel_opportunities: string[];
-  };
+    originalTaskId: string;
+    originalTaskTitle: string;
+    subtaskCount: number;
+    subtasks: Array<{
+        title: string;
+        estimated_effort: number; // minutes
+        type: string;
+        priority: string;
+    }>;
+    impact: {
+        timeline_change_minutes: number;
+        parallel_opportunities: string[];
+    };
 }
 
 export interface NotificationAction {
-  label: string;
-  callback: () => Promise<void> | void;
+    label: string;
+    callback: () => Promise<void> | void;
 }
 
 export type NotificationLevel = 'info' | 'warning' | 'error' | 'success';
@@ -32,117 +32,117 @@ export type NotificationLevel = 'info' | 'warning' | 'error' | 'success';
  * Notification Service
  */
 export class NotificationService {
-  private static instance: NotificationService;
-  private outputChannel: vscode.OutputChannel;
+    private static instance: NotificationService;
+    private outputChannel: vscode.OutputChannel;
 
-  private constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('COE Notifications');
-  }
-
-  /**
-   * Get singleton instance
-   */
-  static getInstance(): NotificationService {
-    if (!NotificationService.instance) {
-      NotificationService.instance = new NotificationService();
-    }
-    return NotificationService.instance;
-  }
-
-  /**
-   * Show a decomposition summary notification with actions
-   */
-  async showDecompositionSummary(
-    notification: DecompositionNotification
-  ): Promise<'accept' | 'reject' | 'edit' | 'dismiss'> {
-    const { originalTaskTitle, subtaskCount, subtasks, impact } = notification;
-
-    // Build notification message
-    const timelineChange = impact.timeline_change_minutes;
-    const timelineMessage =
-      timelineChange > 0
-        ? `+${timelineChange} min (more detail added)`
-        : timelineChange < 0
-        ? `${timelineChange} min (optimized)`
-        : 'No change';
-
-    const message = `✨ Task Decomposition: "${originalTaskTitle}" → ${subtaskCount} subtasks\n` +
-      `Timeline Impact: ${timelineMessage}\n` +
-      `Parallel Opportunities: ${impact.parallel_opportunities.length || 0}`;
-
-    // Show quick pick with actions
-    const action = await vscode.window.showInformationMessage(
-      message,
-      { modal: false },
-      'Accept',
-      'Reject',
-      'Edit',
-      'View Details'
-    );
-
-    // Log to output channel
-    this.logDecomposition(notification);
-
-    if (action === 'View Details') {
-      await this.showDecompositionDetailsPanel(notification);
-      return 'accept'; // Default to accept after viewing
+    private constructor() {
+        this.outputChannel = vscode.window.createOutputChannel('COE Notifications');
     }
 
-    switch (action) {
-      case 'Accept':
-        return 'accept';
-      case 'Reject':
-        return 'reject';
-      case 'Edit':
-        return 'edit';
-      default:
-        return 'dismiss';
-    }
-  }
-
-  /**
-   * Show detailed decomposition panel in webview
-   */
-  private async showDecompositionDetailsPanel(
-    notification: DecompositionNotification
-  ): Promise<void> {
-    const panel = vscode.window.createWebviewPanel(
-      'coeDecompositionDetails',
-      `Decomposition: ${notification.originalTaskTitle}`,
-      vscode.ViewColumn.Beside,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-      }
-    );
-
-    panel.webview.html = this.getDecompositionDetailsHtml(notification);
-
-    // Handle messages from webview
-    panel.webview.onDidReceiveMessage(
-      (message) => {
-        switch (message.command) {
-          case 'accept':
-          case 'reject':
-          case 'edit':
-            panel.dispose();
-            break;
+    /**
+     * Get singleton instance
+     */
+    static getInstance(): NotificationService {
+        if (!NotificationService.instance) {
+            NotificationService.instance = new NotificationService();
         }
-      },
-      undefined,
-      []
-    );
-  }
+        return NotificationService.instance;
+    }
 
-  /**
-   * Generate HTML for decomposition details panel
-   */
-  private getDecompositionDetailsHtml(notification: DecompositionNotification): string {
-    const { originalTaskTitle, subtaskCount, subtasks, impact } = notification;
+    /**
+     * Show a decomposition summary notification with actions
+     */
+    async showDecompositionSummary(
+        notification: DecompositionNotification
+    ): Promise<'accept' | 'reject' | 'edit' | 'dismiss'> {
+        const { originalTaskTitle, subtaskCount, subtasks, impact } = notification;
 
-    const subtasksHtml = subtasks
-      .map(
-        (subtask, index) => `
+        // Build notification message
+        const timelineChange = impact.timeline_change_minutes;
+        const timelineMessage =
+            timelineChange > 0
+                ? `+${timelineChange} min (more detail added)`
+                : timelineChange < 0
+                    ? `${timelineChange} min (optimized)`
+                    : 'No change';
+
+        const message = `✨ Task Decomposition: "${originalTaskTitle}" → ${subtaskCount} subtasks\n` +
+            `Timeline Impact: ${timelineMessage}\n` +
+            `Parallel Opportunities: ${impact.parallel_opportunities.length || 0}`;
+
+        // Show quick pick with actions
+        const action = await vscode.window.showInformationMessage(
+            message,
+            { modal: false },
+            'Accept',
+            'Reject',
+            'Edit',
+            'View Details'
+        );
+
+        // Log to output channel
+        this.logDecomposition(notification);
+
+        if (action === 'View Details') {
+            await this.showDecompositionDetailsPanel(notification);
+            return 'accept'; // Default to accept after viewing
+        }
+
+        switch (action) {
+            case 'Accept':
+                return 'accept';
+            case 'Reject':
+                return 'reject';
+            case 'Edit':
+                return 'edit';
+            default:
+                return 'dismiss';
+        }
+    }
+
+    /**
+     * Show detailed decomposition panel in webview
+     */
+    private async showDecompositionDetailsPanel(
+        notification: DecompositionNotification
+    ): Promise<void> {
+        const panel = vscode.window.createWebviewPanel(
+            'coeDecompositionDetails',
+            `Decomposition: ${notification.originalTaskTitle}`,
+            vscode.ViewColumn.Beside,
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true,
+            }
+        );
+
+        panel.webview.html = this.getDecompositionDetailsHtml(notification);
+
+        // Handle messages from webview
+        panel.webview.onDidReceiveMessage(
+            (message) => {
+                switch (message.command) {
+                    case 'accept':
+                    case 'reject':
+                    case 'edit':
+                        panel.dispose();
+                        break;
+                }
+            },
+            undefined,
+            []
+        );
+    }
+
+    /**
+     * Generate HTML for decomposition details panel
+     */
+    private getDecompositionDetailsHtml(notification: DecompositionNotification): string {
+        const { originalTaskTitle, subtaskCount, subtasks, impact } = notification;
+
+        const subtasksHtml = subtasks
+            .map(
+                (subtask, index) => `
       <div class="subtask">
         <div class="subtask-header">
           <span class="subtask-number">${index + 1}</span>
@@ -155,14 +155,14 @@ export class NotificationService {
         </div>
       </div>
     `
-      )
-      .join('');
+            )
+            .join('');
 
-    const parallelsHtml = impact.parallel_opportunities
-      .map((opp) => `<li>${opp}</li>`)
-      .join('');
+        const parallelsHtml = impact.parallel_opportunities
+            .map((opp) => `<li>${opp}</li>`)
+            .join('');
 
-    return `<!DOCTYPE html>
+        return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -300,16 +300,15 @@ export class NotificationService {
   <h2>Subtasks</h2>
   ${subtasksHtml}
 
-  ${
-    impact.parallel_opportunities.length > 0
-      ? `
+  ${impact.parallel_opportunities.length > 0
+                ? `
   <div class="parallel">
     <h3 style="margin-top: 0;">⚡ Parallel Opportunities</h3>
     <ul>${parallelsHtml}</ul>
   </div>
   `
-      : ''
-  }
+                : ''
+            }
 
   <div class="actions">
     <button onclick="sendMessage('accept')">✓ Accept</button>
@@ -325,76 +324,76 @@ export class NotificationService {
   </script>
 </body>
 </html>`;
-  }
-
-  /**
-   * Log decomposition to output channel
-   */
-  private logDecomposition(notification: DecompositionNotification): void {
-    this.outputChannel.appendLine('');
-    this.outputChannel.appendLine('='.repeat(60));
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] Task Decomposition`);
-    this.outputChannel.appendLine('='.repeat(60));
-    this.outputChannel.appendLine(`Original Task: ${notification.originalTaskTitle}`);
-    this.outputChannel.appendLine(`Subtasks: ${notification.subtaskCount}`);
-    this.outputChannel.appendLine('');
-    notification.subtasks.forEach((subtask, index) => {
-      this.outputChannel.appendLine(
-        `  ${index + 1}. ${subtask.title} (${subtask.estimated_effort}min, ${subtask.priority})`
-      );
-    });
-    this.outputChannel.appendLine('');
-    this.outputChannel.appendLine(
-      `Timeline Impact: ${notification.impact.timeline_change_minutes} minutes`
-    );
-    if (notification.impact.parallel_opportunities.length > 0) {
-      this.outputChannel.appendLine('Parallel Opportunities:');
-      notification.impact.parallel_opportunities.forEach((opp) => {
-        this.outputChannel.appendLine(`  - ${opp}`);
-      });
-    }
-    this.outputChannel.appendLine('='.repeat(60));
-  }
-
-  /**
-   * Show a simple notification
-   */
-  async showNotification(
-    message: string,
-    level: NotificationLevel = 'info',
-    actions?: NotificationAction[]
-  ): Promise<string | undefined> {
-    const showFn = {
-      info: vscode.window.showInformationMessage,
-      warning: vscode.window.showWarningMessage,
-      error: vscode.window.showErrorMessage,
-      success: vscode.window.showInformationMessage,
-    }[level];
-
-    const actionLabels = actions?.map((a) => a.label) || [];
-    const result = await showFn(message, ...actionLabels);
-
-    if (result && actions) {
-      const selectedAction = actions.find((a) => a.label === result);
-      if (selectedAction) {
-        await selectedAction.callback();
-      }
     }
 
-    return result;
-  }
+    /**
+     * Log decomposition to output channel
+     */
+    private logDecomposition(notification: DecompositionNotification): void {
+        this.outputChannel.appendLine('');
+        this.outputChannel.appendLine('='.repeat(60));
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Task Decomposition`);
+        this.outputChannel.appendLine('='.repeat(60));
+        this.outputChannel.appendLine(`Original Task: ${notification.originalTaskTitle}`);
+        this.outputChannel.appendLine(`Subtasks: ${notification.subtaskCount}`);
+        this.outputChannel.appendLine('');
+        notification.subtasks.forEach((subtask, index) => {
+            this.outputChannel.appendLine(
+                `  ${index + 1}. ${subtask.title} (${subtask.estimated_effort}min, ${subtask.priority})`
+            );
+        });
+        this.outputChannel.appendLine('');
+        this.outputChannel.appendLine(
+            `Timeline Impact: ${notification.impact.timeline_change_minutes} minutes`
+        );
+        if (notification.impact.parallel_opportunities.length > 0) {
+            this.outputChannel.appendLine('Parallel Opportunities:');
+            notification.impact.parallel_opportunities.forEach((opp) => {
+                this.outputChannel.appendLine(`  - ${opp}`);
+            });
+        }
+        this.outputChannel.appendLine('='.repeat(60));
+    }
 
-  /**
-   * Show output channel
-   */
-  show(): void {
-    this.outputChannel.show();
-  }
+    /**
+     * Show a simple notification
+     */
+    async showNotification(
+        message: string,
+        level: NotificationLevel = 'info',
+        actions?: NotificationAction[]
+    ): Promise<string | undefined> {
+        const showFn = {
+            info: vscode.window.showInformationMessage,
+            warning: vscode.window.showWarningMessage,
+            error: vscode.window.showErrorMessage,
+            success: vscode.window.showInformationMessage,
+        }[level];
 
-  /**
-   * Dispose resources
-   */
-  dispose(): void {
-    this.outputChannel.dispose();
-  }
+        const actionLabels = actions?.map((a) => a.label) || [];
+        const result = await showFn(message, ...actionLabels);
+
+        if (result && actions) {
+            const selectedAction = actions.find((a) => a.label === result);
+            if (selectedAction) {
+                await selectedAction.callback();
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Show output channel
+     */
+    show(): void {
+        this.outputChannel.show();
+    }
+
+    /**
+     * Dispose resources
+     */
+    dispose(): void {
+        this.outputChannel.dispose();
+    }
 }

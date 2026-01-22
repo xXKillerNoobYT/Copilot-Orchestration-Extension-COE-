@@ -2354,3 +2354,917 @@ This super-detailed Evolution Phase now provides a complete, self-sustaining mod
 
 Next: Prototype pattern detection engine? Or expand RL dataset format?
 
+# Updated AI Teams Documentation for Copilot Orchestration Extension (COE)
+
+**Version**: 5.4 – Integrated Ticket System for AI-Human Interactions  
+**Date**: January 21, 2026  
+**Status**: Documentation Improved – This update introduces a comprehensive **Ticket System** as the primary mechanism for AI-to-Human and Human-to-AI interactions, replacing or supplementing any chat-based flows. The system ensures all tasks, todos, questions, changes, or clarifications are handled through structured tickets, promoting clarity, traceability, and efficiency. This aligns with the modular "one thing at a time" philosophy (v4.9) by treating each interaction as a single, atomic ticket. It is enforced as a high-priority process, with a dedicated **Clarity Agent** (new sub-agent under the Boss Team) to verify responses and iterate until resolved. The ticket system is not a real-time chat — it is asynchronous, auditable, and designed to minimize misunderstandings while fitting within context limits (v3.2). This enhancement improves the overall plan for handling human involvement in backend/AI-heavy workflows, reducing ambiguity in evolutions, updates, and delegations.  
+**Synced with**: Previous updates (v5.3), `code master Full plan.ipynb`, `CONSOLIDATED-MASTER-PLAN.md`, `02-Agent-Role-Definitions.md`, `05-MCP-API-Reference.md`.  
+**Key Insights**: 
+- Ticket system enforces structured communication, avoiding chat sprawl and token waste.
+- High-priority Clarity Agent acts as a "gatekeeper" for quality, using iterative replies within the ticket thread.
+- Integrates with priorities (v2.9): P1 tickets get immediate notifications and faster Clarity checks.
+- 14B Optimizations: Ticket threads are context-broken (v3.3) to stay under limits; LM calls for clarity checks are prompt-efficient.
+
+This update refines the Code Master extension plan by making human-AI collaboration more reliable and focused, especially for tasks requiring precise answers or changes.
+
+---
+
+## New Section: Ticket System for AI-Human Interactions
+
+**Description**: The Ticket System replaces unstructured chats with a formal, asynchronous ticketing mechanism for all AI-to-Human queries (e.g., needing clarification) and Human-to-AI requests (e.g., changes, questions). Tickets are single-threaded records that enforce clarity through iterative refinement, managed by the high-priority **Clarity Agent**. This ensures:
+- No real-time chat — all communication is ticket-based to maintain focus and auditability.
+- Proper resolution: Questions/changes are refined until "clear and properly answered."
+- Traceability: Every interaction is logged as part of the plan evolution (v5.3), with ties to tasks/todos.
+
+The system is stored in a dedicated SQLite table (`tickets.db`) and exposed via the VS Code sidebar for easy user access.
+
+#### Key Principles
+- **Asynchronous & Structured**: Tickets are created, replied to, and resolved without blocking workflows — AI continues on other tasks while waiting.
+- **Clarity Enforcement**: No ticket closes until the Clarity Agent confirms the response is "properly and clearly" addressed.
+- **High-Priority Handling**: P1 tickets notify users immediately (e.g., VS Code alert); others are batched.
+- **No Chat Fallback**: Explicitly forbidden — all interactions route through tickets to avoid context sprawl.
+- **Integration with Priorities**: P1 tickets get boosted Clarity checks (e.g., faster LM analysis).
+- **Token Safety**: Ticket threads are auto-broken (v3.3) if >80% limit; summaries handed over.
+
+#### Ticket Structure (JSON Schema – Stored in DB)
+```json
+{
+  "ticket_id": "string (e.g., TK-0789)",  // Auto-generated, unique
+  "type": "enum (ai_to_human | human_to_ai)",
+  "status": "enum (open | in_review | resolved | rejected | escalated)",
+  "priority": "integer (1-3, ties to task priority)",
+  "creator": "string (agent_name or 'user')",
+  "assignee": "string (default: 'Clarity Agent' for ai_to_human)",
+  "task_id": "string | null (linked task)",
+  "title": "string (short, e.g., 'Clarify DB Choice for To Do List')",
+  "description": "string (initial question/change request, max 800 chars)",
+  "thread": "array of objects (replies, chronological)",
+  "replies": [
+    {
+      "reply_id": "string",
+      "author": "string (agent or user)",
+      "content": "string (max 1200 chars)",
+      "timestamp": "ISO string",
+      "clarity_score": "integer (0-100, Clarity Agent assessment)",
+      "needs_followup": "boolean"
+    }
+  ],
+  "resolution": "string | null (final clear answer/solution)",
+  "created_at": "ISO string",
+  "updated_at": "ISO string",
+  "history": "array (versioned changes, for audit)"
+}
+```
+
+#### Clarity Agent (New High-Priority Sub-Agent under Boss Team)
+- **Role**: Dedicated "refiner" that reviews every ticket reply for clarity, completeness, and accuracy. If not satisfied, it replies within the ticket thread with follow-up questions.  
+- **Priority**: Always P1 — runs immediately on new replies (via WebSocket trigger).  
+- **Behavior**: Uses 14B LM for assessment (token-limited prompt); scores replies 0-100; if <85, auto-replies "Not clear – please elaborate on {specific_point}."  
+- **YAML Template** (abridged):
+  ```yaml
+  agent_role: "High-priority clarity enforcer for ticket replies"
+  checklists:
+    - id: CL1
+      desc: "Check reply for completeness (answers all points?)"
+    - id: CL2
+      desc: "Verify clarity (no ambiguity, specific?)"
+    - id: CL3
+      desc: "Assess accuracy (aligns to plan/PRD?)"
+  prompts:
+    - id: P1
+      template: "Review reply {reply_content} for ticket {ticket_id}. Score 0-100 on clarity/completeness/accuracy. If <85, suggest follow-up questions. Priority: {priority_level}."
+  ```
+- **LM Assessment Prompt** (for scoring):
+  ```
+  Reply: {reply_content}
+  Original Question: {ticket_desc}
+  Score clarity (0-100): Is it unambiguous, specific, actionable?
+  Score completeness: Does it fully address the query?
+  Score accuracy: Aligns to plan {plan_snippet}?
+  If total <85, generate 1–3 targeted follow-up questions.
+  Keep under 400 tokens.
+  ```
+
+#### Ticket Creation & Resolution Process
+
+1. **Creation (AI-to-Human)**:  
+   - Trigger: AI needs clarification (e.g., Coding AI ambiguity → MCP askQuestion escalates).  
+   - Boss creates ticket: Auto-title/desc from query; assigns to user.  
+   - Notify: VS Code sidebar alert ("New Ticket TK-0789 – Needs Your Input").
+
+2. **Creation (Human-to-AI)**:  
+   - User: Sidebar "Create Ticket" button → form for title/type/desc.  
+   - Assigns to relevant agent (e.g., "Change Request" → Planning Team).
+
+3. **Reply Loop** (Iterative Refinement):  
+   - User/AI replies via sidebar thread UI (text box + submit).  
+   - Clarity Agent auto-reviews (within 5–15s):  
+     - If score ≥85 → mark "Clear" + proceed to resolution.  
+     - If <85 → auto-reply in thread: "Not fully clear – please clarify {point1}, {point2}."  
+   - Max Iterations: 5 (configurable) – if exceeded, escalate to Boss/user modal.
+
+4. **Resolution**:  
+   - Clarity Agent confirms "Resolved" (score 85+).  
+   - AI acts on final clear answer (e.g., Coding AI resumes).  
+   - Close ticket; log to history for patterns.
+
+#### Flow Charts for Ticket System
+
+#### High-Level Ticket Lifecycle (Mermaid)
+
+```mermaid
+graph TD
+    A[Trigger: AI Needs Human Input<br>or Human Requests Change] --> B[Create Ticket<br>Auto-Title/Desc/Priority]
+    B --> C[Assign: User for AI-to-Human<br>Agent for Human-to-AI]
+    C --> D[Notify User/Agent<br>Sidebar Alert + Thread UI]
+    D --> E[Reply Submitted<br>User or AI]
+    E --> F[Clarity Agent Review<br>LM Score 0-100]
+    F --> G{Score >=85?}
+    G -->|No| H[Auto-Reply in Thread<br>"Not clear – clarify {points}"]
+    H --> E  # Loop, max 5
+    G -->|Yes| I[Mark Clear<br>Proceed to Action]
+    I --> J[Resolve & Close Ticket<br>Log to History]
+    J --> K[Feed to Critic Patterns<br>for Evolution]
+```
+
+#### ASCII Fallback (Lifecycle)
+
+```
+Trigger (AI Query or Human Request)
+   ↓
+Create Ticket (Title/Desc/Priority)
+   ↓
+Assign (User or Agent)
+   ↓
+Notify (Sidebar Alert)
+   ↓
+Reply Submitted
+   ↓
+Clarity Review (LM Score)
+   ↓ Score >=85? ──No──► Auto-Reply ("Clarify...")
+      ↓                   ↑ Loop (max 5)
+   Yes
+Resolve & Close
+   ↓
+Log to History → Critic Patterns → Evolution
+```
+
+#### Clarity Review Sub-Flow (Mermaid – LM Decision)
+
+```mermaid
+graph TD
+    R1[New Reply] --> R2[Extract Content + Original Query]
+    R2 --> R3[LM Call: Score Clarity/Completeness/Accuracy]
+    R3 --> R4[Compute Total Score<br>(weighted avg)]
+    R4 --> R5{>=85?}
+    R5 -->|Yes| R6[Mark Clear + Notify Resolver]
+    R5 -->|No| R7[Generate 1–3 Follow-Ups<br>Based on Weak Areas]
+    R7 --> R8[Post Auto-Reply in Thread]
+    R8 --> R9[Iteration Count++<br>If >5 → Escalate to Boss]
+    R9 --> R1  # Wait for next reply
+```
+
+#### ASCII Fallback (Clarity Sub-Flow)
+
+```
+New Reply
+   ↓
+Extract Content + Query
+   ↓
+LM Score (Clarity/Complete/Accurate)
+   ↓
+Total Score (Avg)
+   ↓ >=85? ──Yes──► Mark Clear + Notify
+      ↓ No
+Generate Follow-Ups (1–3)
+   ↓
+Post Auto-Reply
+   ↓
+Iteration++ >5? ──Yes──► Escalate (Boss/User Modal)
+   ↓ No
+Wait for Next Reply
+```
+
+### Implementation Notes for Ticket System
+
+**Ticket DB Schema** (SQLite)
+```sql
+CREATE TABLE tickets (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  priority INTEGER NOT NULL DEFAULT 2,
+  creator TEXT NOT NULL,
+  assignee TEXT NOT NULL,
+  task_id TEXT,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  thread JSON,  -- array of replies
+  resolution TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Clarity Agent Pseudocode** (Review Function)
+```typescript
+async function reviewTicketReply(ticketId: string, reply: Reply) {
+  const ticket = getTicket(ticketId);
+  const prompt = buildClarityPrompt(ticket.description, reply.content, ticket.priority);
+
+  const lmResponse = await call14BLM(prompt);  // Token-limited <800
+
+  const scores = parseLMResponse(lmResponse);  // {clarity: 90, complete: 85, accurate: 95}
+  const total = (scores.clarity + scores.complete + scores.accurate) / 3;
+
+  if (total >= 85) {
+    ticket.status = 'resolved';
+    ticket.resolution = reply.content;  // or refined summary
+    notifyAssignee('Resolved');
+  } else {
+    const followUps = generateFollowUpsFromLM(lmResponse);  // 1–3 questions
+    postAutoReply(ticketId, followUps.join('\n'));
+    if (ticket.thread.length >= 5) escalateToBoss(ticketId);
+  }
+
+  updateTicket(ticket);
+}
+```
+
+**LM Prompt for Clarity Scoring** (Detailed)
+```
+Original Ticket Question/Request: {ticket_desc}
+New Reply: {reply_content}
+Priority: {priority_level} (higher = stricter)
+
+Score 0-100:
+- Clarity: Unambiguous, specific language?
+- Completeness: Fully addresses all points?
+- Accuracy: Aligns to plan/PRD {plan_snippet}?
+
+Total Score: Average of above.
+If <85, generate 1–3 precise follow-up questions to clarify weak areas.
+Keep response under 400 tokens. Output JSON: {scores: {clarity, complete, accurate}, total, follow_ups: array}
+```
+
+### Testing & Validation for Ticket System
+
+- **Unit Tests**: 20+ (e.g., "Score 90+ → resolve", "Score 70 + follow-ups generated").
+- **E2E Tests**: 10+ (e.g., "AI query → ticket create → user reply unclear → Clarity auto-reply → clear reply → resolve").
+- **Edge Cases**: Max iterations hit → escalation; P1 ticket → immediate notify.
+- **User Test**: 5 users simulate "change request" → measure clarity iterations needed (target <2 avg).
+
+This super-detailed ticket system ensures precise, structured AI-human collaboration in the Code Master extension, eliminating chat ambiguity.
+
+Next: Prototype ticket sidebar UI? Or expand Clarity Agent template?
+
+# Updated AI Teams Documentation for Copilot Orchestration Extension (COE)
+
+**Version**: 5.5 – Prototype: Ticket Sidebar UI  
+**Date**: January 21, 2026  
+**Status**: Documentation Improved – This version delivers a detailed, ready-to-implement prototype specification for the **Ticket Sidebar UI** in the VS Code extension. The UI is the primary user-facing interface for the Ticket System (introduced in v5.4), providing full visibility and control over all AI-to-human and human-to-AI interactions. It is designed to feel native to VS Code, minimize friction, and support the high-priority Clarity Agent workflow without turning into a chat-like experience.
+
+The sidebar is the single source of truth for tickets — no separate views or floating windows. It is always available, collapsible, and context-aware.
+
+---
+
+## Ticket Sidebar UI – Prototype Specification
+
+### Location & Activation
+
+- **Panel ID**: `coe-tickets` (contributes to `contributes.views` in `package.json`)
+- **Icon**: Custom SVG (ticket + AI icon) or Codicon `ticket`
+- **Title**: “Tickets” (configurable label: “AI–Human Tickets”, “Clarifications & Changes”)
+- **Position**: Right sidebar (default), user can drag to left or bottom
+- **Activation Triggers**:
+  - New ticket created (AI or user) → auto-open + flash badge
+  - User clicks “Create Ticket” command
+  - Sidebar icon clicked (persistent)
+  - Notification banner click (“New Ticket TK-0789”)
+
+### Layout & Structure
+
+**Top Bar (Persistent Header)**
+
+- Title: “Tickets”  
+- Badge: Number of open tickets (red dot if any P1)  
+- Filter dropdown: All / Open / Resolved / P1 Only / My Tickets  
+- Search input (fuzzy match on title/description)  
+- “+ New Ticket” button (primary accent color)
+
+**Main Content Area (Scrollable List)**
+
+Each ticket is a **collapsible card**:
+
+```text
+Ticket TK-0789 ────────────────────────────────────────
+[Status Badge] Open   [Priority Badge] P1   [Type] AI → Human
+Title: Clarify DB choice for To Do List CRUD
+Created: 2 min ago by Coding Agent
+Last updated: 1 min ago
+
+▼ Expanded View
+Description:
+Which database should we use for task storage?
+Options considered: SQLite (simple) vs PostgreSQL (scalable + pgvector for future embeddings).
+
+Current thread:
+[Reply 1] 2026-01-21 21:15 – Coding Agent
+We need clarification on storage. Current plan assumes local but P1 scalability may require more.
+
+[Reply 2] (awaiting user)
+
+Clarity Agent status: Awaiting clear answer
+Suggested follow-up: “Do you prefer SQLite for MVP speed or PostgreSQL for future vector search?”
+
+[Text input box + Send button]
+```
+
+**Collapsed View** (default for list)
+- Single line: `TK-0789 P1 Open – Clarify DB choice for To Do List CRUD`
+
+**Visual Style Guidelines**
+- Use VS Code theme colors (foreground, background, badge, accent)
+- Priority badges: P1 red, P2 orange, P3 gray
+- Status badges: Open (blue), In Review (purple), Resolved (green), Rejected (gray)
+- Thread replies indented, with author avatar/icon (agent = robot, user = person)
+- Unread indicator: blue dot on card if new reply
+- Hover effect: subtle background highlight + “View Full Thread” tooltip
+
+### Interactions & Actions
+
+**Per-Ticket Actions (in expanded card header)**
+
+- Reply (text input + Send) – only visible if assigned to user
+- Mark Resolved (green button) – user or Clarity Agent can use
+- Escalate (red flag icon) – sends to Boss for manual review
+- Archive (gray button) – moves to “Resolved” filter
+- View Linked Task (link icon) – jumps to task card in other sidebar section
+- Copy Prompt for Copilot (purple button) – copies ready-to-paste prompt with ticket context
+
+**Global Actions (top bar)**
+
+- Refresh (sync icon)
+- Bulk actions: Mark all P3 as read, Archive resolved
+- Settings gear: “Auto-open new P1 tickets”, “Notification sound”, “Default assignee”
+
+**Clarity Agent Auto-Replies**
+- Appear as gray cards in thread with “Clarity Agent” label
+- Example:  
+  ```
+  Clarity Agent (auto) 21:17
+  Reply not fully clear. Please specify:
+  1. Do you want local-only storage (SQLite)?
+  2. Should we plan for vector embeddings now?
+  ```
+
+**Token Safety Indicator**
+- Small pill in card footer if thread nearing limit:  
+  “Thread 2.8k / 3.5k tokens – reply soon to avoid break”
+
+### Technical Implementation Outline
+
+**package.json Contributions**
+
+```json
+"contributes": {
+  "views": {
+    "explorer": [
+      {
+        "id": "coe-tickets",
+        "name": "Tickets",
+        "icon": "$(ticket)",
+        "contextualTitle": "AI–Human Tickets"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": "coe.createTicket",
+      "title": "Create New Ticket",
+      "icon": "$(add)"
+    },
+    {
+      "command": "coe.openTickets",
+      "title": "Open Tickets Sidebar"
+    }
+  ]
+}
+```
+
+**Webview Structure (Vue-like pseudocode)**
+
+```vue
+<template>
+  <div class="tickets-sidebar">
+    <!-- Top Bar -->
+    <div class="header">
+      <span class="title">Tickets <span class="badge">{{ openCount }}</span></span>
+      <select v-model="filter">...</select>
+      <input v-model="search" placeholder="Search tickets..." />
+      <button @click="createNewTicket">+ New</button>
+    </div>
+
+    <!-- Ticket List -->
+    <div class="list">
+      <TicketCard
+        v-for="ticket in filteredTickets"
+        :key="ticket.id"
+        :ticket="ticket"
+        :expanded="expandedTicketId === ticket.id"
+        @toggle="toggleExpand(ticket.id)"
+        @reply="handleReply(ticket.id, $event)"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup>
+const tickets = ref([]);          // loaded from extension host
+const filter = ref('open');
+const search = ref('');
+const expandedTicketId = ref(null);
+
+const filteredTickets = computed(() => {
+  let list = tickets.value;
+  if (filter.value === 'open') list = list.filter(t => t.status === 'open');
+  if (search.value) list = list.filter(t => t.title.toLowerCase().includes(search.value.toLowerCase()));
+  return list.sort((a, b) => b.priority - a.priority || b.updated_at - a.updated_at);
+});
+
+function toggleExpand(id) {
+  expandedTicketId.value = expandedTicketId.value === id ? null : id;
+}
+
+function handleReply(ticketId, content) {
+  vscode.postMessage({
+    command: 'submitTicketReply',
+    ticketId,
+    content
+  });
+}
+
+// Listen for updates from extension
+window.addEventListener('message', event => {
+  const msg = event.data;
+  if (msg.command === 'updateTickets') tickets.value = msg.tickets;
+});
+</script>
+```
+
+**Extension Host – Ticket Management**
+
+```ts
+// On ticket creation / reply
+function handleTicketEvent(event: TicketEvent) {
+  const ticket = updateOrCreateTicket(event);
+  clarityAgent.reviewReply(ticket.id, event.reply);
+
+  // Broadcast to webview
+  webview.postMessage({
+    command: 'updateTickets',
+    tickets: getAllTickets()
+  });
+
+  // P1 notification
+  if (ticket.priority === 1 && ticket.type === 'ai_to_human') {
+    vscode.window.showInformationMessage(`New P1 Ticket: ${ticket.title}`, 'View');
+  }
+}
+```
+
+**Clarity Agent Trigger**
+- WebSocket listener on reply submit → immediate review call  
+- If score <85 → auto-post reply in thread → notify user
+
+### Prototype Validation Plan
+
+- **Unit Tests**: Ticket creation, filtering, sorting, Clarity scoring logic
+- **E2E Tests**: “AI creates ticket → user sees alert → replies unclear → Clarity auto-reply → clear reply → resolve”
+- **UX Test**: 5 users create/change tickets → measure avg iterations (target <2.5), satisfaction ≥4.2/5
+- **Token Test**: Long thread → auto-break + handover summary in next reply
+
+This Ticket Sidebar UI prototype delivers a clean, powerful, non-chat interface for human-AI coordination in the Code Master extension.
+
+Next: Prototype the Clarity Agent LM prompt & scoring logic? Or expand ticket creation form UI?
+
+Here are several detailed UI mockups for the **Ticket Sidebar** (and related ticket interactions) in the Code Master extension.  
+All mockups are described in text form using a clean, VS Code-native style (colors, icons, spacing, typography). They are ready to hand off to a designer/developer for implementation.
+
+### 1. Main Ticket Sidebar – Collapsed & Expanded States
+
+**Collapsed View (Default – list only)**
+
+```
+Tickets (4 open)   [badge: 1 P1 red dot]
+
+TK-0789  P1  Open  Clarify DB choice for To Do List CRUD
+TK-0792  P2  Open  Change request: Add vector search to Calendar
+TK-0795  P3  In Review  Question about pgvector indexing
+TK-0798  P1  Open  Urgent: LLM context overflow in task routing
+
+[ + New Ticket ]   [ Search tickets... ]
+```
+
+**Expanded Ticket Card (when clicked)**
+
+```
+TK-0789 ──────────────────────────────────────────────
+P1 · Open · AI → Human · Created 8 min ago by Coding Agent
+
+Clarify DB choice for To Do List CRUD
+
+Description:
+Which database should we use for task storage?
+Options considered:
+• SQLite (simple, fast MVP, local-only)
+• PostgreSQL (scalable, pgvector for future embeddings)
+
+Current thread:
+┌─────────────────────────────────────────────────────┐
+│ Coding Agent   21:15                                │
+│ We need clarification on storage. Current plan      │
+│ assumes local but P1 scalability may require more.  │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ Clarity Agent (auto)   21:17                        │
+│ Reply not fully clear. Please specify:              │
+│ 1. Do you prefer SQLite for MVP speed?              │
+│ 2. Should we plan for vector embeddings now?        │
+└─────────────────────────────────────────────────────┘
+
+[ Text input area – multi-line ]
+Reply here...
+
+[ Send ]   [ Mark Resolved ]   [ Escalate ]   [ Archive ]
+```
+
+### 2. New Ticket Creation Form (Modal / Inline Panel)
+
+**Triggered by “+ New Ticket” button**
+
+```
+Create New Ticket
+──────────────────────────────────────────────────────
+
+Type:               [▼ Human → AI ]   [ AI → Human ]
+Priority:           [ P1 – Critical ]  [ P2 ] [ P3 ]
+Linked Task:        [ T-0789 – To Do List CRUD ]  (optional)
+
+Title (required):
+[ Change request: Add vector search to Calendar     ]
+
+Description / Question (required):
+[ I want to add semantic search to the Calendar view
+  using embeddings. Should we use pgvector or another
+  vector DB? Also, how should we handle chunking?     ]
+
+Suggested Assignee: [ Planning Team ]  [▼ drop-down ]
+
+[ Cancel ]          [ Create Ticket ]
+```
+
+### 3. Ticket Notification Banner (Top of Sidebar or Editor)
+
+**Appears when new P1 ticket arrives – dismissible**
+
+```
+New P1 Ticket: Clarify DB choice for To Do List CRUD
+Created by Coding Agent  •  2 minutes ago
+
+[ View Ticket ]     [ Snooze 30 min ]     [x Dismiss ]
+```
+
+### 4. Reply Thread with Clarity Agent Feedback
+
+**Inside expanded ticket card – thread view**
+
+```
+Thread
+──────────────────────────────────────────────────────
+
+Coding Agent   21:15
+We need clarification on storage. Current plan assumes local but P1 scalability may require more.
+
+User           21:18
+Use PostgreSQL with pgvector for embeddings.
+
+Clarity Agent (auto)   21:19
+Reply scored 72/100 – not fully clear.
+Missing details:
+• Confirm whether embeddings should be generated on task creation or on-demand
+• Should we add a separate embeddings table or use existing?
+Please reply with more specifics.
+
+User           21:22
+On-demand, and add a separate table 'task_embeddings' with columns id, task_id, vector (vector(384))
+
+Clarity Agent (auto)   21:23
+Reply scored 94/100 – clear & complete.
+Ticket can now be resolved.
+[ Mark Resolved ]
+```
+
+### 5. Ticket Resolution Confirmation (Inline Banner)
+
+**Appears after Clarity Agent approves final reply**
+
+```
+Ticket TK-0789 Resolved
+──────────────────────────────────────────────────────
+Final clear answer accepted by Clarity Agent.
+Resolution: PostgreSQL + pgvector, on-demand embeddings, separate 'task_embeddings' table.
+
+[ View Full Thread ]   [ Archive Ticket ]   [ Create Follow-up Task ]
+```
+
+### 6. Settings Panel for Ticket System (Gear icon in sidebar header)
+
+**Collapsible section at bottom of sidebar**
+
+```
+Ticket Settings
+──────────────────────────────────────────────────────
+• Auto-open new P1 tickets               [✔ Enabled]
+• Notification sound for P1              [✔ Enabled]
+• Default ticket assignee                [ Planning Team ▼ ]
+• Max reply iterations before escalation [ 5 ]
+• Clarity Agent strictness               [ Medium ▼ ]  (Low / Medium / High)
+• Show resolved tickets in list          [ Off ▼ ]
+• Auto-archive resolved after            [ 7 days ▼ ]
+```
+
+### Technical Notes for Implementation
+
+**Webview Message Types** (extension ↔ webview)
+
+```ts
+// From extension to webview
+interface UpdateTicketsMessage {
+  command: 'updateTickets';
+  tickets: Ticket[];          // full ticket objects
+}
+
+interface UpdateSingleTicketMessage {
+  command: 'updateTicket';
+  ticketId: string;
+  ticket: Ticket;
+}
+
+interface ClarityAutoReplyMessage {
+  command: 'clarityAutoReply';
+  ticketId: string;
+  reply: Reply;
+}
+
+// From webview to extension
+interface SubmitReplyMessage {
+  command: 'submitTicketReply';
+  ticketId: string;
+  content: string;
+}
+
+interface CreateTicketMessage {
+  command: 'createTicket';
+  ticket: Partial<Ticket>;
+}
+
+interface MarkResolvedMessage {
+  command: 'markResolved';
+  ticketId: string;
+}
+```
+
+**Clarity Auto-Reply Trigger**
+- On `submitTicketReply` received → immediately call Clarity Agent review  
+- If score <85 → post auto-reply via `postMessage` back to webview
+
+**Performance & Token Guard**
+- Thread content sent to Clarity Agent is pre-broken if >80% limit (v3.3)  
+- Only last 5 replies + original description sent (summary of older if needed)
+
+**Accessibility**
+- ARIA labels on cards, badges, buttons  
+- Keyboard navigation: Arrow keys to move between tickets, Enter to expand/reply  
+- High-contrast support for badges & progress indicators
+
+This Ticket Sidebar UI prototype is clean, native-feeling, and fully supports the non-chat, clarity-enforced ticket philosophy.
+
+Next requested focus:  
+- Prototype the Clarity Agent LM prompt & scoring logic?  
+- Expand ticket creation form UI with validation?  
+- Or move to another part of the roadmap (e.g., backend simulator metrics)?  
+
+Let me know.
+
+Here are several detailed UI mockups for the **Ticket Sidebar** (and related ticket interactions) in the Code Master extension.  
+All mockups are described in text form using a clean, VS Code-native style (colors, icons, spacing, typography). They are ready to hand off to a designer/developer for implementation.
+
+### 1. Main Ticket Sidebar – Collapsed & Expanded States
+
+**Collapsed View (Default – list only)**
+
+```
+Tickets (4 open)   [badge: 1 P1 red dot]
+
+TK-0789  P1  Open  Clarify DB choice for To Do List CRUD
+TK-0792  P2  Open  Change request: Add vector search to Calendar
+TK-0795  P3  In Review  Question about pgvector indexing
+TK-0798  P1  Open  Urgent: LLM context overflow in task routing
+
+[ + New Ticket ]   [ Search tickets... ]
+```
+
+**Expanded Ticket Card (when clicked)**
+
+```
+TK-0789 ──────────────────────────────────────────────
+P1 · Open · AI → Human · Created 8 min ago by Coding Agent
+
+Clarify DB choice for To Do List CRUD
+
+Description:
+Which database should we use for task storage?
+Options considered:
+• SQLite (simple, fast MVP, local-only)
+• PostgreSQL (scalable, pgvector for future embeddings)
+
+Current thread:
+┌─────────────────────────────────────────────────────┐
+│ Coding Agent   21:15                                │
+│ We need clarification on storage. Current plan      │
+│ assumes local but P1 scalability may require more.  │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ Clarity Agent (auto)   21:17                        │
+│ Reply not fully clear. Please specify:              │
+│ 1. Do you prefer SQLite for MVP speed?              │
+│ 2. Should we plan for vector embeddings now?        │
+└─────────────────────────────────────────────────────┘
+
+[ Text input area – multi-line ]
+Reply here...
+
+[ Send ]   [ Mark Resolved ]   [ Escalate ]   [ Archive ]
+```
+
+### 2. New Ticket Creation Form (Modal / Inline Panel)
+
+**Triggered by “+ New Ticket” button**
+
+```
+Create New Ticket
+──────────────────────────────────────────────────────
+
+Type:               [▼ Human → AI ]   [ AI → Human ]
+Priority:           [ P1 – Critical ]  [ P2 ] [ P3 ]
+Linked Task:        [ T-0789 – To Do List CRUD ]  (optional)
+
+Title (required):
+[ Change request: Add vector search to Calendar     ]
+
+Description / Question (required):
+[ I want to add semantic search to the Calendar view
+  using embeddings. Should we use pgvector or another
+  vector DB? Also, how should we handle chunking?     ]
+
+Suggested Assignee: [ Planning Team ]  [▼ drop-down ]
+
+[ Cancel ]          [ Create Ticket ]
+```
+
+### 3. Ticket Notification Banner (Top of Sidebar or Editor)
+
+**Appears when new P1 ticket arrives – dismissible**
+
+```
+New P1 Ticket: Clarify DB choice for To Do List CRUD
+Created by Coding Agent  •  2 minutes ago
+
+[ View Ticket ]     [ Snooze 30 min ]     [x Dismiss ]
+```
+
+### 4. Reply Thread with Clarity Agent Feedback
+
+**Inside expanded ticket card – thread view**
+
+```
+Thread
+──────────────────────────────────────────────────────
+
+Coding Agent   21:15
+We need clarification on storage. Current plan assumes local but P1 scalability may require more.
+
+User           21:18
+Use PostgreSQL with pgvector for embeddings.
+
+Clarity Agent (auto)   21:19
+Reply scored 72/100 – not fully clear.
+Missing details:
+• Confirm whether embeddings should be generated on task creation or on-demand
+• Should we add a separate embeddings table or use existing?
+Please reply with more specifics.
+
+User           21:22
+On-demand, and add a separate table 'task_embeddings' with columns id, task_id, vector (vector(384))
+
+Clarity Agent (auto)   21:23
+Reply scored 94/100 – clear & complete.
+Ticket can now be resolved.
+[ Mark Resolved ]
+```
+
+### 5. Ticket Resolution Confirmation (Inline Banner)
+
+**Appears after Clarity Agent approves final reply**
+
+```
+Ticket TK-0789 Resolved
+──────────────────────────────────────────────────────
+Final clear answer accepted by Clarity Agent.
+Resolution: PostgreSQL + pgvector, on-demand embeddings, separate 'task_embeddings' table.
+
+[ View Full Thread ]   [ Archive Ticket ]   [ Create Follow-up Task ]
+```
+
+### 6. Settings Panel for Ticket System (Gear icon in sidebar header)
+
+**Collapsible section at bottom of sidebar**
+
+```
+Ticket Settings
+──────────────────────────────────────────────────────
+• Auto-open new P1 tickets               [✔ Enabled]
+• Notification sound for P1              [✔ Enabled]
+• Default ticket assignee                [ Planning Team ▼ ]
+• Max reply iterations before escalation [ 5 ]
+• Clarity Agent strictness               [ Medium ▼ ]  (Low / Medium / High)
+• Show resolved tickets in list          [ Off ▼ ]
+• Auto-archive resolved after            [ 7 days ▼ ]
+```
+
+### Technical Notes for Implementation
+
+**Webview Message Types** (extension ↔ webview)
+
+```ts
+// From extension to webview
+interface UpdateTicketsMessage {
+  command: 'updateTickets';
+  tickets: Ticket[];          // full ticket objects
+}
+
+interface UpdateSingleTicketMessage {
+  command: 'updateTicket';
+  ticketId: string;
+  ticket: Ticket;
+}
+
+interface ClarityAutoReplyMessage {
+  command: 'clarityAutoReply';
+  ticketId: string;
+  reply: Reply;
+}
+
+// From webview to extension
+interface SubmitReplyMessage {
+  command: 'submitTicketReply';
+  ticketId: string;
+  content: string;
+}
+
+interface CreateTicketMessage {
+  command: 'createTicket';
+  ticket: Partial<Ticket>;
+}
+
+interface MarkResolvedMessage {
+  command: 'markResolved';
+  ticketId: string;
+}
+```
+
+**Clarity Auto-Reply Trigger**
+- On `submitTicketReply` received → immediately call Clarity Agent review  
+- If score <85 → post auto-reply via `postMessage` back to webview
+
+**Performance & Token Guard**
+- Thread content sent to Clarity Agent is pre-broken if >80% limit (v3.3)  
+- Only last 5 replies + original description sent (summary of older if needed)
+
+**Accessibility**
+- ARIA labels on cards, badges, buttons  
+- Keyboard navigation: Arrow keys to move between tickets, Enter to expand/reply  
+- High-contrast support for badges & progress indicators
+
+This Ticket Sidebar UI prototype is clean, native-feeling, and fully supports the non-chat, clarity-enforced ticket philosophy.
+
+Next requested focus:  
+- Prototype the Clarity Agent LM prompt & scoring logic?  
+- Expand ticket creation form UI with validation?  
+- Or move to another part of the roadmap (e.g., backend simulator metrics)?  
+
+Let me know.
