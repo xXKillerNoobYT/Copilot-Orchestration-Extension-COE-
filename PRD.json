@@ -2530,9 +2530,150 @@
         }
       ],
       "created_at": "2026-01-22T06:01:25Z",
-      "updated_at": "2026-01-22T06:01:25Z",
+      "updated_at": "2026-01-22T06:10:04Z",
       "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/217",
-      "body": "# GUI Usability Verification: Multiple UI Components Not Working Properly\n\n## Severity\n**P1** - Multiple core UI features are non-functional, impacting user experience\n\n## Description\nSeveral key GUI components in the VS Code extension are either not working properly or showing \"command not found\" errors. This requires a comprehensive verification and fix of the UI layer.\n\n## Affected Components\n\n### 1. LLM Configuration\n- **Status**: Not working properly\n- **Expected**: Should allow users to co"
+      "body": "# GUI Usability Verification: Multiple UI Components Not Working Properly\n\n# GUI Usability Verification: Multiple UI Components Not Working Properly\n\n## Severity\n**P1** - Multiple core UI features are non-functional, impacting user experience\n\n## Description\nSeveral key GUI components in the VS Code extension are either not working properly or showing 'command not found' errors. This requires a comprehensive verification and fix of the UI layer.\n\n## Sub-Issues Created\n- **#218** - LLM Configurat"
+    },
+    {
+      "number": 218,
+      "title": "Sub-Issue: LLM Configuration Component Not Working",
+      "state": "open",
+      "priority": "MEDIUM",
+      "type": "Bug",
+      "labels": [
+        {
+          "id": 9921722742,
+          "name": "bug",
+          "color": "d73a4a",
+          "description": "Something isn't working"
+        },
+        {
+          "id": 10020385330,
+          "name": "P1",
+          "color": "ededed"
+        },
+        {
+          "id": 10040858592,
+          "name": "vscode-extension",
+          "color": "ededed"
+        },
+        {
+          "id": 10040873407,
+          "name": "settings",
+          "color": "ededed"
+        }
+      ],
+      "created_at": "2026-01-22T06:08:59Z",
+      "updated_at": "2026-01-22T06:08:59Z",
+      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/218",
+      "body": "# Sub-Issue: LLM Configuration Component Not Working\n\n**Parent Issue:** #217\n\n## Component\nLLM Configuration\n\n## Status\nNot working properly\n\n## Expected Behavior\nShould allow users to configure LLM settings including:\n- Base URL (LM Studio endpoint)\n- API Key\n- Default model\n- Temperature\n- Timeout settings\n\n## Actual Behavior\nComponent is not functioning as expected. Users cannot properly configure LLM settings.\n\n## Steps to Reproduce\n1. Open VS Code with COE extension\n2. Access LLM Configurat"
+    },
+    {
+      "number": 219,
+      "title": "Sub-Issue: Planning Phase Command Not Found",
+      "state": "open",
+      "priority": "MEDIUM",
+      "type": "Beta",
+      "labels": [
+        {
+          "id": 9921722742,
+          "name": "bug",
+          "color": "d73a4a",
+          "description": "Something isn't working"
+        },
+        {
+          "id": 10020385330,
+          "name": "P1",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429234,
+          "name": "beta",
+          "color": "ededed"
+        },
+        {
+          "id": 10040858592,
+          "name": "vscode-extension",
+          "color": "ededed"
+        }
+      ],
+      "created_at": "2026-01-22T06:09:30Z",
+      "updated_at": "2026-01-22T06:09:30Z",
+      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/219",
+      "body": "# Sub-Issue: Planning Phase Command Not Found\n\n**Parent Issue:** #217\n\n## Component\nPlanning Phase Command\n\n## Status\nCommand not found error\n\n## Expected Behavior\nShould initiate the planning phase workflow showing:\n- 10-question design workflow\n- Scope definition\n- Dependency mapping\n- Task structure creation\n\n## Actual Behavior\nError: \\command 'copilot-orchestrator.planningPhase' not found\\\n\n## Steps to Reproduce\n1. Open VS Code with COE extension\n2. Click 'Planning Phase' button\n3. Observe e"
+    },
+    {
+      "number": 220,
+      "title": "Sub-Issue: Open Orchestrator Panel Command Not Found",
+      "state": "open",
+      "priority": "MEDIUM",
+      "type": "Beta",
+      "labels": [
+        {
+          "id": 9921722742,
+          "name": "bug",
+          "color": "d73a4a",
+          "description": "Something isn't working"
+        },
+        {
+          "id": 10020385330,
+          "name": "P1",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429234,
+          "name": "beta",
+          "color": "ededed"
+        },
+        {
+          "id": 10040858592,
+          "name": "vscode-extension",
+          "color": "ededed"
+        }
+      ],
+      "created_at": "2026-01-22T06:09:30Z",
+      "updated_at": "2026-01-22T06:09:30Z",
+      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/220",
+      "body": "# Sub-Issue: Open Orchestrator Panel Command Not Found\n\n**Parent Issue:** #217\n\n## Component\nOpen Orchestrator Panel Command\n\n## Status\nCommand not found error\n\n## Expected Behavior\nShould open the orchestrator panel showing:\n- Task list\n- Agent status\n- Real-time metrics\n- Dashboard controls\n\n## Actual Behavior\nError: \\command 'copilot-orchestrator.showPanel' not found\\\n\n## Steps to Reproduce\n1. Open VS Code with COE extension\n2. Click 'Open Orchestrator Panel' button\n3. Observe error message\n\n"
+    },
+    {
+      "number": 221,
+      "title": "Sub-Issue: Interactive Plan Builder Opens Blank",
+      "state": "open",
+      "priority": "MEDIUM",
+      "type": "Beta",
+      "labels": [
+        {
+          "id": 9921722742,
+          "name": "bug",
+          "color": "d73a4a",
+          "description": "Something isn't working"
+        },
+        {
+          "id": 10020385330,
+          "name": "P1",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429234,
+          "name": "beta",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429256,
+          "name": "frontend",
+          "color": "ededed"
+        },
+        {
+          "id": 10040858592,
+          "name": "vscode-extension",
+          "color": "ededed"
+        }
+      ],
+      "created_at": "2026-01-22T06:09:31Z",
+      "updated_at": "2026-01-22T06:09:31Z",
+      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/221",
+      "body": "# Sub-Issue: Interactive Plan Builder Opens Blank\n\n**Parent Issue:** #217\n\n## Component\nInteractive Plan Builder Panel\n\n## Status\nOpens blank/empty\n\n## Expected Behavior\nShould display the interactive plan builder interface with:\n- Drag-and-drop task builder\n- Dependency linking\n- Timeline visualization\n- Template library\n- 10-question design workflow\n\n## Actual Behavior\nPanel opens but displays a blank screen with no controls or content.\n\n## Steps to Reproduce\n1. Open VS Code with COE extension"
     }
   ],
   "execution_timeline": {
