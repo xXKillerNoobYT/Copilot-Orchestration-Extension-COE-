@@ -131,21 +131,21 @@ export class PlanBuilderPanel {
     try {
       // Log the error details
       console.error('[PlanBuilder] User reported error:', errorInfo);
-      
+
       // Format error message for user display
       const errorSummary = [
         `Error reported at ${errorInfo.timestamp}`,
         `Message: ${errorInfo.message}`,
         errorInfo.stack ? `\nStack trace available in console` : ''
       ].filter(Boolean).join('\n');
-      
+
       // Show error message to user with option to copy details
       const action = await vscode.window.showErrorMessage(
         `[Plan Builder] ${errorSummary}`,
         'Copy Error Details',
         'Dismiss'
       );
-      
+
       if (action === 'Copy Error Details') {
         // Format full error details for clipboard
         const fullDetails = [
@@ -155,7 +155,7 @@ export class PlanBuilderPanel {
           `User Agent: ${errorInfo.userAgent}`,
           errorInfo.stack ? `\nStack Trace:\n${errorInfo.stack}` : ''
         ].filter(Boolean).join('\n');
-        
+
         await vscode.env.clipboard.writeText(fullDetails);
         vscode.window.showInformationMessage('Error details copied to clipboard');
       }

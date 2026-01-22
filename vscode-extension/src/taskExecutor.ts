@@ -5,6 +5,8 @@ import { TaskGraphGenerator, TaskGraph } from './taskGraphGenerator';
 import { CopilotDispatcher, MemoryEntry, PromptPayload } from './copilotDispatcher';
 import { defaultAgentProfileLoader } from './agentProfiles';
 import { CopilotAgentClient, AgentExecutionRequest } from './services/copilotAgentClient';
+import { AgentTeam } from './routing/taskRouter';
+import { normalizeEffort } from './taskParser';
 
 export interface TaskExecutionResult {
   taskId: string;
@@ -152,9 +154,10 @@ export class TaskExecutor {
       // Step 1: Mark task as in-progress
       await this.updateTaskStatus(task.id, 'in-progress');
 
-      // Step 2: Select agent based on task type
-      const agentName = this.selectAgent(task);
-      console.log(`Selected agent: ${agentName}`);
+      // Step 2: Select team based on PRD F038 and map to agent
+      const team = this.getTeamForTask(task);
+      const agentName = this.mapTeamToAgent(team);
+      console.log(`Selected team: ${team} → agent: ${agentName}`);
 
       // Step 3: Generate prompt via Dispatcher
       const contextFiles = await this.gatherContextFiles(task);
@@ -233,20 +236,51 @@ export class TaskExecutor {
   }
 
   /**
-   * Select appropriate agent based on task type and priority
+   * Determine agent team per PRD F038.
+   * - Routes by estimated hours (>1hr → Decomposition)
+   * - Routes by status (completed → Verification)
+   * - Routes questions to Answer Team (heuristic: title contains '?')
+   * - Default route to Planning Team
    */
-  private selectAgent(task: ParsedTask): string {
-    const typeToAgent: Record<string, string> = {
-      feature: 'coder',
-      bug: 'coder',
-      refactor: 'architect',
-      testing: 'tester',
-      documentation: 'coder',
-      architecture: 'architect',
-      maintenance: 'coder',
-    };
+  private getTeamForTask(task: ParsedTask): AgentTeam {
+    // Status-based routing: completed → Verification
+    if (task.status === 'completed') {
+      return AgentTeam.Verification;
+    }
 
-    return typeToAgent[task.type || 'feature'] || 'coder';
+    // Estimate-based routing: > 1 hour → Decomposition
+    const minutes = task.estimate ? normalizeEffort(task.estimate) : 0;
+    if (minutes > 60) {
+      return AgentTeam.Decomposition;
+    }
+
+    // Question/context routing heuristic: title contains '?' or labels include 'question'
+    const titleHasQuestion = task.title.includes('?');
+    const labelsIncludeQuestion = (task.labels || []).some(l => l.toLowerCase() === 'question');
+    if (titleHasQuestion || labelsIncludeQuestion) {
+      return AgentTeam.Answer;
+    }
+
+    // Default to Planning
+    return AgentTeam.Planning;
+  }
+
+  /**
+   * Map agent team to agent name used in prompts/dispatch.
+   */
+  private mapTeamToAgent(team: AgentTeam): string {
+    switch (team) {
+      case AgentTeam.Planning:
+        return 'planner';
+      case AgentTeam.Answer:
+        return 'reviewer';
+      case AgentTeam.Decomposition:
+        return 'architect';
+      case AgentTeam.Verification:
+        return 'tester';
+      default:
+        return 'coder';
+    }
   }
 
   /**
