@@ -14,6 +14,11 @@
 
 import { AgentTeam, routeTask, Task } from '../routing/taskRouter';
 
+/** Optional hooks to integrate external agents */
+export interface BossAIHooks {
+    onDecomposition?: (task: Task) => Promise<void> | void;
+}
+
 /**
  * Team status tracked by Boss AI
  */
@@ -67,8 +72,9 @@ export class BossAICoordinator {
     private teamStates: Map<AgentTeam, AgentTeamState> = new Map();
     private settings: CoordinationSettings;
     private metrics: SystemMetrics;
+    private hooks?: BossAIHooks;
 
-    constructor(settings?: Partial<CoordinationSettings>) {
+    constructor(settings?: Partial<CoordinationSettings>, hooks?: BossAIHooks) {
         this.settings = {
             autoDecompose: true,
             requireVisualVerification: true,
@@ -78,6 +84,7 @@ export class BossAICoordinator {
             timeout: 30000,
             ...settings,
         };
+        this.hooks = hooks;
 
         this.metrics = {
             tasksCreated: 0,
@@ -111,6 +118,14 @@ export class BossAICoordinator {
         // Update metrics
         this.metrics.tasksCreated++;
         this.updateMetricsTimestamp();
+
+        // Auto-trigger decomposition when configured
+        if (team === AgentTeam.Decomposition && this.settings.autoDecompose && this.hooks?.onDecomposition) {
+            // Fire-and-forget to avoid blocking routing
+            Promise.resolve(this.hooks.onDecomposition(task)).catch(err => {
+                console.warn('[BossAICoordinator] onDecomposition hook error:', err);
+            });
+        }
 
         return team;
     }
@@ -241,6 +256,13 @@ export class BossAICoordinator {
      */
     updateSettings(settings: Partial<CoordinationSettings>): void {
         this.settings = { ...this.settings, ...settings };
+    }
+
+    /**
+     * Register integration hooks (e.g., DecompositionAgent)
+     */
+    setHooks(hooks: BossAIHooks): void {
+        this.hooks = hooks;
     }
 
     /**
