@@ -102,6 +102,14 @@ export {
   VerificationOptions,
 } from './verificationAgent';
 
+// Decomposition agent
+export {
+  DecompositionAgent,
+  defaultDecompositionAgent,
+  DecompositionAgentOptions,
+  DecompositionSummary,
+} from './decompositionAgent';
+
 // LLM configuration helper
 export {
   readLlmConfig,

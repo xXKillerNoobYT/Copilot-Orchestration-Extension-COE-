@@ -2363,6 +2363,125 @@
       "updated_at": "2026-01-22T02:47:53Z",
       "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/210",
       "body": "# Verification \u2013 Data Flow & State Management (child of #199)\n\nParent: #199\n\n### Goal\nVerify data flow/state management per PRD/architecture docs, including WebSocket eventing and persistence correctness.\n\n### Scope\n- Cross-check against `Docs/Plans/COE-Master-Plan/04-Data-Flow-State-Management.md` and architecture diagrams.\n- Validate WebSocket event propagation, reconnect behavior, and state hydration on reconnect.\n- Confirm persistence layers (SQLite WAL, caches) behave per spec and recover g"
+    },
+    {
+      "number": 211,
+      "title": "Sprint 2.1: Plan Decomposition Engine (F002)",
+      "state": "open",
+      "priority": "MEDIUM",
+      "type": "Beta",
+      "labels": [
+        {
+          "id": 10014504090,
+          "name": "feature",
+          "color": "ededed"
+        },
+        {
+          "id": 10020385328,
+          "name": "P0",
+          "color": "ededed"
+        },
+        {
+          "id": 10020385332,
+          "name": "backend",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429234,
+          "name": "beta",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429237,
+          "name": "sprint-2",
+          "color": "ededed"
+        }
+      ],
+      "created_at": "2026-01-22T03:19:24Z",
+      "updated_at": "2026-01-22T03:19:24Z",
+      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/211",
+      "body": "# Sprint 2.1: Plan Decomposition Engine (F002)\n\nPart of: Sprint 2 (Jan 27-Feb 1)\nRelated: BETA-ROADMAP.md, PRD.md (F002)\nPriority: P0 \u2013 Critical Path\nEstimated: 3 days\n\nGoal\nImplement a backend Plan Decomposition Engine that converts high-level plans into atomic 15\u201345 minute subtasks with dependency detection, DAG validation, and critical path calculation.\n\nAcceptance Criteria\n- PlanDecompositionService implements task generation, dependency detection, DAG validation, critical path, and timeline"
+    },
+    {
+      "number": 212,
+      "title": "Sprint 2.3: Enhanced GitHub Sync (F028)",
+      "state": "open",
+      "priority": "MEDIUM",
+      "type": "Beta",
+      "labels": [
+        {
+          "id": 10014504090,
+          "name": "feature",
+          "color": "ededed"
+        },
+        {
+          "id": 10020385328,
+          "name": "P0",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429234,
+          "name": "beta",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429237,
+          "name": "sprint-2",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429259,
+          "name": "github-integration",
+          "color": "ededed"
+        }
+      ],
+      "created_at": "2026-01-22T03:19:24Z",
+      "updated_at": "2026-01-22T03:19:24Z",
+      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/212",
+      "body": "# Sprint 2.3: Enhanced GitHub Sync (F028)\n\nPart of: Sprint 2 (Jan 27-Feb 1)\nRelated: BETA-ROADMAP.md, PRD.md (F028), GITHUB-API-RATE-LIMIT-OPTIMIZATION.md\nPriority: P0 \u2013 Critical Path\nEstimated: 1 day\n\nGoal\nOptimize GitHub Issues bi-directional sync with batching, caching, GraphQL, and rate-limit backoff to achieve 99% accuracy and consistent 5-minute intervals.\n\nAcceptance Criteria\n- Batch aggregator implemented (max 50 requests/batch; 5\u201310s flush window).\n- Local cache (5-minute TTL) with inva"
+    },
+    {
+      "number": 213,
+      "title": "Sprint 2.2: Task Decomposition Agent (F011)",
+      "state": "open",
+      "priority": "MEDIUM",
+      "type": "Beta",
+      "labels": [
+        {
+          "id": 10014504090,
+          "name": "feature",
+          "color": "ededed"
+        },
+        {
+          "id": 10020385328,
+          "name": "P0",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429234,
+          "name": "beta",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429237,
+          "name": "sprint-2",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429254,
+          "name": "ai-agent",
+          "color": "ededed"
+        },
+        {
+          "id": 10040429256,
+          "name": "frontend",
+          "color": "ededed"
+        }
+      ],
+      "created_at": "2026-01-22T03:19:24Z",
+      "updated_at": "2026-01-22T03:19:24Z",
+      "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/213",
+      "body": "# Sprint 2.2: Task Decomposition Agent (F011)\n\nPart of: Sprint 2 (Jan 27-Feb 1)\nRelated: BETA-ROADMAP.md, PRD.md (F011)\nPriority: P0 \u2013 Critical Path\nEstimated: 2 days\n\nGoal\nImplement a VS Code extension agent that detects tasks >60 minutes and generates 3\u20135 subtasks using AI, preserving parent-child relationships and updating the task graph.\n\nAcceptance Criteria\n- DecompositionAgent.ts monitors queue and detects decomposition triggers (>60min or flag).\n- Generates 3\u20135 subtasks via Copilot/GPT wi"
     }
   ],
   "execution_timeline": {

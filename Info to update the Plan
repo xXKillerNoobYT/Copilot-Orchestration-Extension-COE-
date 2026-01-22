@@ -1,0 +1,600 @@
+# Updated AI Teams Documentation for Copilot Orchestration Extension (COE)
+
+**Version**: 4.4 – Prototype: Adaptive Wizard Paths  
+**Date**: January 21, 2026  
+**Status**: Documentation Improved – Added a concrete prototype specification for **Adaptive Wizard Paths** in the Interactive Design Phase (Planning Wizard). This is a user-facing improvement prioritized as P1 in the previous planning-phase enhancements discussion. The prototype focuses on making the wizard feel intelligent and respectful of user time/expertise by dynamically skipping, reordering, or condensing questions based on early inputs (role, focus, project scale, etc.).
+
+The goal is to reduce average planning time by 30–50% for users who don’t need the full 10-question flow, while preserving completeness for complex projects.
+
+---
+
+## Prototype: Adaptive Wizard Paths
+
+### High-Level Goals of the Prototype
+- Demonstrate dynamic question flow based on user role / declared focus
+- Show measurable time savings (target: 15–25 min for “backend-focused” or “MVP-only” users)
+- Prove UI responsiveness (<300 ms path changes)
+- Validate integration with priority system (v2.9) and context limiting (v3.2)
+- Collect feedback points for Critic Team to propose future path refinements via UV tasks
+
+### Core Adaptive Logic (Decision Tree)
+
+The wizard starts with a very short “fast-path” triage (2–3 mandatory questions), then branches.
+
+```mermaid
+graph TD
+    A[Start Wizard] --> B[Question 0: Project Scale<br>MVP / Small / Medium / Large / Enterprise]
+    B --> C[Question 1: Primary Focus<br>Frontend/UI • Backend/Data • Full Stack • Custom]
+    C --> D{User selected role/focus?}
+    D -->|Frontend/UI| E[Visual Designer Path<br>15–20 min • Skip Q6–9]
+    D -->|Backend/Data| F[Backend-Focused Path<br>18–25 min • Skip Q1–4, condense Q5–10]
+    D -->|Full Stack| G[Technical Architect Path<br>40–55 min • Full 10 questions]
+    D -->|Custom| H[Show all 10 questions<br>with reordering option]
+    E --> I[Dynamic Priority Suggestion<br>UI components → P1 by default]
+    F --> J[Dynamic Priority Suggestion<br>Data & API → P1 by default]
+    G --> K[Manual Priority Assignment<br>Full control]
+    H --> L[User reorders via drag-drop]
+```
+
+### Mandatory Triage Questions (First 2–3)
+
+1. **Project Scale** (single select)  
+   Options: MVP (quick prototype), Small (single feature), Medium (multi-page app), Large (multiple modules), Enterprise (scalability + compliance)  
+   Impact:  
+   - MVP / Small → aggressively condense wizard (max 5–6 questions)  
+   - Large / Enterprise → keep full flow + add extra validation steps
+
+2. **Primary Focus / Role** (single select + optional multi)  
+   Options:  
+   - Frontend / Visual Design  
+   - Backend / Data / APIs  
+   - Full Stack  
+   - Custom (show all questions)  
+   Impact:  
+   - Frontend → skip data storage, auth depth, backend tooling questions  
+   - Backend → skip layout, color theme, UI component questions  
+   - Full Stack → full flow, but suggest priority grouping early
+
+3. **Optional Quick Priority Triage** (only shown for Medium+ scale)  
+   “Which parts matter most right now?” (multi-select)  
+   - Core business logic / CRUD  
+   - User authentication & security  
+   - Visual design & UX  
+   - Scalability & performance  
+   - Integrations (3rd party APIs)  
+   → Used to pre-tag P1 areas before full decomposition
+
+### Dynamic Path Examples
+
+#### Example 1: “MVP – Backend-Focused” User (e.g., To Do List API first)
+
+- Q0: Project Scale → MVP  
+- Q1: Primary Focus → Backend/Data  
+- Path chosen: Backend-Focused (18–22 min)  
+- Skipped: Q1 (Page Layout), Q2 (Color Theme), Q3 (Task Display Format), Q4 (Dependency Viz style)  
+- Condensed: Q5–Q10 into 4 combined questions  
+- Auto-suggested priorities:  
+  - P1: Data Storage, AI Assistance Level  
+  - P2: Timeline Representation  
+  - P3: Collaboration Model, Visual Designer extras  
+- Preview Panel: Shows simplified backend architecture diagram instead of full UI mock
+
+#### Example 2: “Medium – Frontend-Heavy” User (e.g., Calendar UI polish)
+
+- Q0: Medium  
+- Q1: Frontend/UI  
+- Path: Visual Designer + partial full-stack  
+- Skipped: Deep backend questions (Q8 Collaboration Model, Q9 Data Storage details)  
+- Kept + emphasized: Layout, Colors, Task Display, Dependency Viz  
+- Auto-priority:  
+  - P1: Page Layout, Color Theme, Task Display  
+  - P2: Dependency Visualization, User Input Style  
+  - P3: AI Assistance, Data Storage
+
+### Technical Implementation Outline
+
+**Wizard State Machine** (Vue Composition API – simplified)
+
+```ts
+const wizardState = reactive({
+  currentStep: 0,
+  answers: {} as Record<string, any>,
+  pathMode: 'full' as 'full' | 'frontend' | 'backend' | 'mvp' | 'custom',
+  skippedQuestions: new Set<number>(),
+  prioritySuggestions: {} as Record<string, 1 | 2 | 3>
+})
+
+const questions = ref([
+  { id: 0, text: "Project Scale?", options: ["MVP", "Small", "Medium", "Large", "Enterprise"] },
+  { id: 1, text: "Primary Focus?", options: ["Frontend/UI", "Backend/Data", "Full Stack", "Custom"] },
+  // ... Q2–Q9
+])
+
+watch(() => wizardState.answers, (newAnswers) => {
+  // Triage logic after first two questions
+  if (newAnswers[0] && newAnswers[1]) {
+    if (newAnswers[0] === 'MVP' || newAnswers[0] === 'Small') {
+      wizardState.pathMode = 'mvp'
+      skipQuestions([2,3,4,6,7,8]) // skip most UI polish & collaboration
+    } else if (newAnswers[1] === 'Frontend/UI') {
+      wizardState.pathMode = 'frontend'
+      skipQuestions([5,8,9]) // skip deep backend
+    } else if (newAnswers[1] === 'Backend/Data') {
+      wizardState.pathMode = 'backend'
+      skipQuestions([1,2,3,4]) // skip UI layout & colors
+    }
+  }
+
+  // Auto-suggest priorities based on answers
+  if (newAnswers[1] === 'Backend/Data') {
+    wizardState.prioritySuggestions['Data Storage'] = 1
+    wizardState.prioritySuggestions['AI Assistance Level'] = 1
+  }
+}, { deep: true })
+
+function skipQuestions(ids: number[]) {
+  ids.forEach(id => wizardState.skippedQuestions.add(id))
+}
+```
+
+**Preview Panel Updates**  
+- Use computed property that filters questions based on `skippedQuestions` and `pathMode`
+- Render simplified previews for skipped paths (e.g., text summary instead of full UI mock)
+
+**Performance Guardrails**  
+- Path decision must be <100 ms (pure JS)
+- Preview re-render <300 ms (Vue reactivity)
+- LM calls for suggestions only on explicit user request or at end of triage
+
+### Testing & Validation Plan
+
+- **Unit Tests** (Jest)
+  - Path mode selection correctness
+  - Skipped question list accuracy
+  - Priority suggestion mapping
+
+- **E2E Tests** (Playwright / Cypress)
+  - Select “MVP + Backend” → verify only ~6 questions shown
+  - Select “Full Stack” → all 10 questions visible
+  - Change role mid-wizard → path re-evaluates correctly
+
+- **User Simulation**
+  - 5 personas: MVP backend, medium frontend, enterprise full-stack, custom, small UI-only
+  - Measure average questions answered & time-to-plan
+
+### Recommended Next Steps (Prototype Timeline)
+
+1. **Week 3 (Jan 21–28)**  
+   - Implement triage questions + basic path switching logic  
+   - Add skip logic & computed filtered question list
+
+2. **Week 4 (Jan 28–Feb 4)**  
+   - Wire up preview panel to show condensed views for skipped paths  
+   - Add auto-priority suggestions
+
+3. **Week 5 (Feb 4–11)**  
+   - E2E tests for all main paths  
+   - Sidebar feedback during path changes (“Adapting wizard to Backend focus…”)
+
+4. **User Feedback Loop**  
+   - Beta test with 5–8 users (including @WeirdTooLLC)  
+   - Track drop-off points, time savings, satisfaction score
+
+This prototype makes the planning phase dramatically more user-friendly and time-efficient, especially for developers who already know their focus area.
+
+Let me know if you want:
+
+- Full Vue component pseudocode (wizard container + triage logic)
+- Wireframe sketch description for triage UI
+- E2E test case examples
+- Critic monitoring spec for wizard usage patterns
+
+Happy to zoom in on whichever piece moves the needle fastest.
+
+# Updated AI Teams Documentation for Copilot Orchestration Extension (COE)
+
+**Version**: 4.5 – Prototype: Real-Time Plan Impact Simulator  
+**Date**: January 21, 2026  
+**Status**: Documentation Improved – Detailed prototype specification for the **Real-Time Plan Impact Simulator** in the Interactive Design Phase (center Preview Panel of the Planning Wizard). This is the second high-impact (P1) user-side improvement identified in the planning phase enhancements. The simulator provides immediate, visual feedback on how wizard choices affect downstream plan elements (tasks, dependencies, timeline, risks, resource needs), helping users make informed decisions without completing the full flow.  
+**Goal**: Reduce "surprise rework" by 40–60% and increase user confidence in early choices (especially for modular apps like To Do List + Calendar).
+
+---
+
+## Prototype: Real-Time Plan Impact Simulator
+
+### High-Level Goals of the Prototype
+- Show meaningful downstream consequences of each wizard answer within <400 ms  
+- Visualize trade-offs (e.g., "Local Storage = fast MVP but poor sync")  
+- Highlight priority-sensitive impacts (P1 modules affected in red/green)  
+- Keep cognitive load low — no overwhelming data dumps  
+- Allow users to "try before buy" without committing  
+- Collect usage data for Critic Team to propose better simulators via UV tasks
+
+### Core Functionality
+
+**What it simulates (on every wizard change):**
+
+1. **Task Count & Breakdown**  
+   - Total estimated tasks  
+   - Split by priority (P1 / P2 / P3)  
+   - Split by module (To Do List, Calendar, Shared Backend, etc.)
+
+2. **Timeline & Effort Estimate**  
+   - Rough total hours (based on task count × average effort)  
+   - Critical path length (longest dependency chain)  
+   - Bottleneck indicators (e.g., "Auth dependency blocks 60% of tasks")
+
+3. **Risk & Trade-off Flags**  
+   - Scalability warning (e.g., "Local Storage → sync issues for multi-device")  
+   - Security/compliance notes (e.g., "No auth selected → P1 risk")  
+   - Dependency conflicts (e.g., "Calendar requires To Do List API")
+
+4. **Resource & Tech Stack Implications**  
+   - Suggested libraries/frameworks (e.g., "Vue + Pinia for To Do List state")  
+   - Potential 3rd-party needs (e.g., "Calendar sync → consider Firebase")  
+   - Database choice impact (e.g., "SQLite → simple, but SQLite → limited concurrency")
+
+### Visual Design (Preview Panel)
+
+**Layout (center panel – responsive webview)**
+
+```
+┌───────────────────────────────────────────────────────┐
+│                  Plan Impact Simulator                │
+├─────────────┬───────────────────────┬─────────────────┤
+│ Metric      │ Current Estimate      │ Delta / Warning │
+├─────────────┼───────────────────────┼─────────────────┤
+│ Total Tasks │ 28                    │ +4 from last    │
+│ P1 Tasks    │ 12 (To Do List: 9)    │ Green – focused │
+│ Timeline    │ ~18–24 hours          │ Critical path:  │
+│             │                       │ 9 tasks         │
+│ Risks       │ Medium (storage sync) │ Local Storage   │
+│             │                       │ → multi-device  │
+│             │                       │ issues          │
+│ Tech Stack  │ Vue + SQLite + Node   │ Suggested:      │
+│             │                       │ Pinia for state │
+└─────────────┴───────────────────────┴─────────────────┘
+
+[Small Mermaid dependency graph – nodes colored by priority]
+[Hover tooltips on graph nodes: "Blocks Calendar sync"]
+```
+
+**Visual Elements**
+- Progress-ring or mini Gantt for timeline
+- Color-coded badges: Green (good), Yellow (warning), Red (high risk)
+- Delta indicators: ↑↓ arrows + numbers (e.g., "+3 tasks", "–2h")
+- Priority highlighting: P1 nodes bold + green border
+- Collapse/expand sections for low cognitive load
+
+### Technical Implementation Outline (Vue + Webview)
+
+**Data Flow**
+1. User answers question → Vue emits `answerChanged` event  
+2. Wizard container computes new answers snapshot  
+3. Sends lightweight payload to extension host via `postMessage`:
+   ```ts
+   {
+     type: 'simulatePlanImpact',
+     answers: { q1: 'Local Storage', q5: 'P1 To Do List', ... },
+     currentPriorityMap: { 'To Do List': 1, 'Calendar': 3 }
+   }
+   ```
+4. Extension host (TypeScript) receives message  
+5. Runs fast LM simulation or rule-based estimator  
+6. Returns structured impact result  
+7. Webview updates UI with new numbers + graph
+
+**Fast Estimator Logic (Hybrid Rule + LM)**
+
+```ts
+async function simulateImpact(answers: Record<string, any>, priorityMap: Record<string, number>) {
+  // Phase 1: Rule-based quick calc (very fast)
+  let baseTasks = 15; // default small app
+  if (answers.scale === 'MVP') baseTasks = 8;
+  if (answers.scale === 'Large') baseTasks = 35;
+
+  let p1Tasks = 0;
+  Object.entries(priorityMap).forEach(([mod, pri]) => {
+    if (pri === 1) p1Tasks += Math.round(baseTasks * 0.4);
+  });
+
+  let timelineHours = baseTasks * 1.2; // avg 1.2h/task
+
+  // Phase 2: Light LM call if needed (cached + throttled)
+  let risks = [];
+  if (answers.storage === 'Local Storage' && priorityMap['Calendar'] <= 2) {
+    risks.push({
+      level: 'medium',
+      text: 'Local Storage may cause sync issues for Calendar on multiple devices'
+    });
+  }
+
+  // Optional LM enrichment (only if user has enabled "Deep Simulation")
+  if (useDeepSim) {
+    const lmResult = await call14bLM({
+      prompt: `Given answers: ${JSON.stringify(answers)}\nPriorities: ${JSON.stringify(priorityMap)}\nEstimate: tasks, hours, risks, tech suggestions. Keep under 200 tokens.`
+    });
+    // parse & merge
+  }
+
+  return {
+    totalTasks: baseTasks,
+    p1Tasks,
+    timelineHours: Math.round(timelineHours),
+    risks,
+    suggestedTech: ['Vue 3', 'Pinia', 'SQLite (local)'],
+    graphData: generateMermaidJSON(priorityMap) // for dependency viz
+  };
+}
+```
+
+**Token & Latency Guardrails**
+- Rule-based path: <50 ms
+- LM enrichment: throttled to 1 call per 5 seconds, cached per answer combination
+- Total context per LM call: <1,200 tokens (fits 3,500 min safely)
+
+### Testing & Validation Plan
+
+**Unit Tests** (Jest)
+- "MVP + Backend → 8–12 tasks, P1 heavy on data"
+- "Local Storage + Calendar P2 → medium sync risk flagged"
+- "Large scale → timeline >30h warning"
+
+**E2E Tests** (Playwright)
+- Change storage choice → simulator updates within 400 ms
+- Select P1 To Do List → graph highlights + P1 badge appears
+- Toggle deep sim → LM call happens, result merges
+
+**User Simulation**
+- 6 scenarios: MVP backend, medium frontend, large full-stack, etc.
+- Metrics: time-to-complete wizard, user satisfaction (quick survey), rework rate
+
+### Recommended Next Steps (Prototype Timeline – Jan 2026)
+
+1. **Week 3 (Jan 21–28)**  
+   - Implement basic rule-based simulator (task count, timeline, simple risks)  
+   - Hook into wizard answer change event → postMessage → update preview panel
+
+2. **Week 4 (Jan 28–Feb 4)**  
+   - Add Mermaid dependency graph rendering  
+   - Implement priority highlighting & badges  
+   - Add LM enrichment toggle + throttling
+
+3. **Week 5 (Feb 4–11)**  
+   - E2E tests for responsiveness and accuracy  
+   - Sidebar feedback during simulation ("Calculating impact…")  
+   - Beta test with 5 users (focus on To Do List / Calendar scenarios)
+
+4. **Critic Feedback Loop**  
+   - Monitor simulator usage (e.g., how often risks are ignored)  
+   - Generate UV tasks for improvements (e.g., "Add mobile sync risk rule")
+
+This prototype significantly improves user confidence and decision quality during planning, making the Code Master extension feel truly intelligent and time-saving.
+
+Let me know if you want:
+
+- Full Vue component pseudocode (wizard + simulator integration)  
+- Mermaid graph generation helper function  
+- LM prompt template specifically for impact simulation  
+- Detailed E2E test script outline  
+- User survey questions for beta feedback
+
+Happy to drill into whichever piece accelerates the prototype most.
+
+```typescript
+/**
+ * Generates Mermaid graph syntax (flowchart LR) for the current plan impact simulation.
+ * 
+ * The graph shows:
+ * - Modules as nodes, colored by priority
+ * - Dependencies as arrows
+ * - Critical path highlighted (bold + thicker line)
+ * - Warnings/risks as node subtitles or edge labels
+ * 
+ * @param impactData - The output from simulateImpact()
+ * @param options - Customization flags
+ * @returns string - Valid Mermaid markdown code block content
+ */
+function generateMermaidImpactGraph(
+  impactData: {
+    totalTasks: number;
+    p1Tasks: number;
+    timelineHours: number;
+    risks: Array<{ level: 'low'|'medium'|'high'; text: string }>;
+    suggestedTech: string[];
+    modules: Array<{
+      name: string;
+      priority: 1|2|3;
+      tasks: number;
+      dependencies: string[];   // names of other modules it depends on
+      status?: 'complete'|'in_progress'|'blocked'|'risk';
+      riskLevel?: 'low'|'medium'|'high';
+    }>;
+  },
+  options: {
+    theme?: 'default' | 'dark' | 'neutral';
+    showRiskLabels?: boolean;
+    highlightCriticalPath?: boolean;
+    maxNodeLabelLength?: number; // default 24
+  } = {}
+): string {
+  const {
+    theme = 'default',
+    showRiskLabels = true,
+    highlightCriticalPath = true,
+    maxNodeLabelLength = 24
+  } = options;
+
+  // ── Theme setup ────────────────────────────────────────────────────────
+  const themeDef = theme === 'dark'
+    ? '%%{init: {"theme": "dark"}}%%\n'
+    : theme === 'neutral'
+      ? '%%{init: {"theme": "neutral"}}%%\n'
+      : '';
+
+  // ── Node styling by priority ───────────────────────────────────────────
+  const styleRules = `
+    classDef p1 fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff,font-weight:bold;
+    classDef p2 fill:#FFB300,stroke:#FF8F00,stroke-width:2px;
+    classDef p3 fill:#90A4AE,stroke:#607D8B,stroke-width:1px;
+    classDef blocked stroke-dasharray: 5 5,stroke:#F44336;
+    classDef risk-high fill:#EF5350 !important;
+    classDef risk-medium fill:#FFB74D !important;
+  `;
+
+  // ── Build nodes ────────────────────────────────────────────────────────
+  const nodes: string[] = [];
+  const nodeClasses: string[] = [];
+
+  for (const mod of impactData.modules) {
+    let label = mod.name.length > maxNodeLabelLength
+      ? mod.name.substring(0, maxNodeLabelLength - 3) + '...'
+      : mod.name;
+
+    if (mod.tasks) {
+      label += `\\n(${mod.tasks} tasks)`;
+    }
+
+    if (mod.status === 'blocked') {
+      label += '\\nBLOCKED';
+    }
+
+    let nodeId = mod.name.replace(/\W+/g, '_'); // safe id
+
+    nodes.push(`${nodeId}["${label}"]`);
+
+    // Priority class
+    let cls = `p${mod.priority}`;
+    if (mod.status === 'blocked') cls += ' blocked';
+    if (mod.riskLevel) cls += ` risk-${mod.riskLevel}`;
+    nodeClasses.push(`class ${nodeId} ${cls};`);
+  }
+
+  // ── Build edges ────────────────────────────────────────────────────────
+  const edges: string[] = [];
+
+  for (const mod of impactData.modules) {
+    const fromId = mod.name.replace(/\W+/g, '_');
+    for (const depName of mod.dependencies || []) {
+      const toId = depName.replace(/\W+/g, '_');
+      let edgeStyle = '-->';
+
+      // Critical path edge (heuristic: if both ends are P1 and long chain)
+      if (highlightCriticalPath && mod.priority === 1 && impactData.modules.find(m => m.name === depName)?.priority === 1) {
+        edgeStyle = '==>';
+      }
+
+      edges.push(`${fromId} ${edgeStyle} ${toId}`);
+    }
+  }
+
+  // ── Risk labels on edges (optional) ────────────────────────────────────
+  if (showRiskLabels && impactData.risks.length > 0) {
+    // Simple heuristic: attach first risk to first risky edge
+    if (edges.length > 0) {
+      const [from, arrow, to] = edges[0].split(/\s+/);
+      edges[0] = `${from} ${arrow}|Risk: ${impactData.risks[0].text}| ${to}`;
+    }
+  }
+
+  // ── Assemble full Mermaid code ────────────────────────────────────────
+  const mermaidCode = `
+${themeDef}
+flowchart LR
+  ${nodes.join('\n  ')}
+  
+  ${edges.join('\n  ')}
+  
+  ${nodeClasses.join('\n  ')}
+
+  %% Legend
+  subgraph Legend
+    direction LR
+    P1[p1 - Critical]:::p1
+    P2[p2 - Important]:::p2
+    P3[p3 - Nice-to-have]:::p3
+  end
+  `;
+
+  return mermaidCode.trim();
+}
+```
+
+### Usage Example (inside simulateImpact result)
+
+```ts
+return {
+  // ... other fields
+  graphMermaid: generateMermaidImpactGraph(impactData, {
+    theme: 'dark',
+    showRiskLabels: true,
+    highlightCriticalPath: true,
+    maxNodeLabelLength: 28
+  })
+};
+```
+
+### Webview Rendering (Vue / Markdown)
+
+In the preview panel component:
+
+```vue
+<template>
+  <div v-if="impactData?.graphMermaid" class="graph-container">
+    <Mermaid :chart="impactData.graphMermaid" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import Mermaid from 'vue-mermaid-component'; // or custom wrapper
+defineProps<{ impactData: any }>();
+</script>
+
+<style scoped>
+.graph-container {
+  margin-top: 1rem;
+  border: 1px solid var(--vscode-editor-lineHighlightBorder);
+  border-radius: 4px;
+  padding: 0.5rem;
+  background: var(--vscode-editor-background);
+}
+</style>
+```
+
+### Features & Enhancements Already Included
+
+- Priority-based node styling (p1 bold green, p3 muted gray)
+- Blocked nodes dashed red outline
+- Risk level fill overrides (high = red background)
+- Critical path heuristic highlighting (thicker arrow)
+- Compact legend subgraph
+- Safe node IDs (no spaces/special chars)
+- Truncated long labels with ellipsis
+
+### Next Steps & Variations to Consider
+
+1. **Interactive Clicking**  
+   Make nodes clickable → scroll to relevant wizard question or show task preview.
+
+2. **Critical Path Real Calculation**  
+   Replace heuristic with actual longest-path algorithm (DAG longest path).
+
+3. **Risk Edge Labels**  
+   Show all risks as edge labels (may need zoomable graph).
+
+4. **Color Theme Sync**  
+   Auto-detect VS Code theme → switch Mermaid theme (dark/light/neutral).
+
+5. **Fallback Rendering**  
+   If Mermaid fails to render → show static text summary instead.
+
+Would you like:
+
+- A version with real longest-path critical path calculation  
+- Clickable node → wizard jump logic  
+- Dark/light theme auto-detection code  
+- Static fallback text renderer  
+- Playwright test for graph rendering correctness
+
+Just tell me which direction to go next.
+

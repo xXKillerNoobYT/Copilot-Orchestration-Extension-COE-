@@ -27,6 +27,7 @@ Always consult PRD before starting a task, making architecture choices, or valid
 - Create issues for bugs, blockers, clarifications, observations, and future tasks. Use labels: `bug`, `task`, `enhancement`, `blocked`, `beta`, `urgent`, `needs-review`.
 - Issue content: title; priority; repro steps (if bug); expected vs actual; environment; logs; minimal repro; suggested fix. Assign an owner, request reviewers, and update with progress/PR/CI links. Close referencing PR/commit.
 - Observations: create lightweight issues; tag `enhancement` or `task`. If blocking, mark PR `blocked` and surface needed decision in the issue body.
+- use tools to update and manage issues on github.
 
 ### Bug reporting template
 Title; Severity (P0/P1/P2); Steps to reproduce; Expected; Actual; Environment; Logs/test output; Minimal repro; Suggested fix.
