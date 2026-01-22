@@ -188,7 +188,7 @@ export class SettingsPanel {
   private async _testConnection(config: ConnectionConfig) {
     // Get timeout configuration at function scope (used in catch block)
     const timeoutConfig = readLlmTimeoutConfig();
-    const testTimeout = timeoutConfig.config.testConnectionMs;
+    const testTimeout = timeoutConfig?.config?.testConnectionMs || 120000; // Default 2 minutes
 
     try {
       // Create a provider instance using the config from the webview
@@ -852,7 +852,7 @@ description: "Agent description"
 
     <!-- Programming Orchestrator Tab -->
     <div class="tab-content" id="orchestrator">
-      ${this.orchestratorManager.getTabHtml()}
+      ${this.orchestratorManager?.getTabHtml() || '<p>Loading orchestrator...</p>'}
     </div>
   </div>
 
@@ -901,12 +901,18 @@ description: "Agent description"
 
     // Save settings
     document.getElementById('saveSettings').addEventListener('click', () => {
+      const baseUrlEl = document.getElementById('baseUrl');
+      const apiKeyEl = document.getElementById('apiKey');
+      const modelEl = document.getElementById('model');
+      const temperatureEl = document.getElementById('temperature');
+      const timeoutEl = document.getElementById('timeout');
+      
       const config = {
-        baseUrl: document.getElementById('baseUrl').value,
-        apiKey: document.getElementById('apiKey').value,
-        model: document.getElementById('model').value,
-        temperature: document.getElementById('temperature').value,
-        timeout: document.getElementById('timeout').value,
+        baseUrl: baseUrlEl?.value || 'http://localhost:1234',
+        apiKey: apiKeyEl?.value || '',
+        model: modelEl?.value || '',
+        temperature: temperatureEl?.value || '0.7',
+        timeout: timeoutEl?.value || '30000',
       };
       vscode.postMessage({ command: 'saveSettings', config });
     });
@@ -917,12 +923,21 @@ description: "Agent description"
       
       switch (message.command) {
         case 'settingsLoaded':
-          document.getElementById('baseUrl').value = message.config.baseUrl;
-          document.getElementById('apiKey').value = message.config.apiKey;
-          document.getElementById('model').value = message.config.model;
-          document.getElementById('temperature').value = message.config.temperature;
-          document.getElementById('timeout').value = message.config.timeout;
-          updateEndpoints(message.config.baseUrl);
+          const baseUrlEl = document.getElementById('baseUrl');
+          const apiKeyEl = document.getElementById('apiKey');
+          const modelEl = document.getElementById('model');
+          const temperatureEl = document.getElementById('temperature');
+          const timeoutEl = document.getElementById('timeout');
+          
+          if (baseUrlEl) baseUrlEl.value = message.config.baseUrl || 'http://localhost:1234';
+          if (apiKeyEl) apiKeyEl.value = message.config.apiKey || '';
+          if (modelEl) modelEl.value = message.config.model || '';
+          if (temperatureEl) temperatureEl.value = message.config.temperature || 0.7;
+          if (timeoutEl) timeoutEl.value = message.config.timeout || 30000;
+          
+          if (message.config.baseUrl) {
+            updateEndpoints(message.config.baseUrl);
+          }
           break;
 
         case 'modelsLoaded':

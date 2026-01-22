@@ -26,7 +26,8 @@ This index provides a roadmap to all the AI Teams documentation updates (version
 
 ### User Interaction & Experience
 7. [Ticket System Specification](TICKET-SYSTEM-SPECIFICATION.md) - v5.4-5.5
-8. [Project Roadmap (Detailed)](PROJECT-ROADMAP-DETAILED.md) - v5.1
+8. [Answer AI Team Specification](ANSWER-AI-TEAM-SPECIFICATION.md) - v5.6
+9. [Project Roadmap (Detailed)](PROJECT-ROADMAP-DETAILED.md) - v5.1
 
 ### 🔗 Existing COE Documentation (Pre-v4.4)
 9. [Agent Role Definitions](COE-Master-Plan/02-Agent-Role-Definitions.md) - Complete agent specs
@@ -202,6 +203,20 @@ This index provides a roadmap to all the AI Teams documentation updates (version
 - Webview message types for extension integration
 
 **Location**: [Ticket System Specification](TICKET-SYSTEM-SPECIFICATION.md#ticket-sidebar-ui--prototypes)
+
+---
+
+### v5.6 - Answer AI Team Deep Dive
+**Key Innovation**: Standalone trigger system for on-demand question resolution
+
+**Core Features**:
+- 5+ standalone triggers (MCP, user, planning, verification, Copilot)
+- Confidence-based escalation (<70% → ticket)
+- Token-efficient responses (<1000 tokens)
+- Priority-aware processing (P1 <15s)
+- Evolvable trigger types via UV tasks
+
+**Location**: [Answer AI Team Specification](ANSWER-AI-TEAM-SPECIFICATION.md)
 
 ---
 

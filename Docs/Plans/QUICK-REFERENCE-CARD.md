@@ -21,8 +21,8 @@
 | **Backend/AI project setup** | [Planning Wizard Spec](PLANNING-WIZARD-SPECIFICATION.md) | §3 Backend Focus |
 | **Impact simulation** | [Planning Wizard Spec](PLANNING-WIZARD-SPECIFICATION.md) | §2 Real-Time Simulator |
 | **Update existing plan** | [Plan Updating Process](PLAN-UPDATING-PROCESS.md) | All sections |
-| **Atomic task breakdown** | [Modular Execution](MODULAR-EXECUTION-PHILOSOPHY.md) | §2 Breakdown Rules |
-| **Project timeline** | [Project Roadmap](PROJECT-ROADMAP-DETAILED.md) | Timeline Summary |
+| **Atomic task breakdown** | [Modular Execution](MODULAR-EXECUTION-PHILOSOPHY.md) | §2 Breakdown Rules || **Answer Team triggers** | [Answer AI Team Spec](ANSWER-AI-TEAM-SPECIFICATION.md) | Standalone Triggers |
+| **Answer Team YAML** | [Answer AI Team Spec](ANSWER-AI-TEAM-SPECIFICATION.md) | YAML Configuration || **Project timeline** | [Project Roadmap](PROJECT-ROADMAP-DETAILED.md) | Timeline Summary |
 | **Phase details (1-6)** | [Project Roadmap](PROJECT-ROADMAP-DETAILED.md) | Phase sections |
 | **Program birth to growth** | [Program Lifecycle](PROGRAM-LIFECYCLE-MODEL.md) | §2-3 Birth & Growth |
 | **Self-improvement system** | [Evolution Phase](EVOLUTION-PHASE-DEEP-DIVE.md) | All sections |

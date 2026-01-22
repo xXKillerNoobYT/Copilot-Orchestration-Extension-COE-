@@ -2146,7 +2146,7 @@
       "type": "Task",
       "labels": [],
       "created_at": "2026-01-22T02:45:13Z",
-      "updated_at": "2026-01-22T02:45:13Z",
+      "updated_at": "2026-01-22T04:33:55Z",
       "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/192",
       "body": "# Multi-Agent Orchestration Core + Dashboard (PRD F013/F016/F024)\n\n### Goal\nImplement Programming Orchestrator routing and live dashboard with coordination toggles and metrics.\n\n### Scope\n- Routing logic: estimatedHours > 1 \u2192 decomposition; status=done \u2192 verification; requiresContext \u2192 Answer Team; default \u2192 Planning.\n- Dashboard: team cards (Planning/Answer/Decomposition/Verification), current task, metrics, last activity.\n- Coordination toggles: auto-decompose, require visual verification, mul"
     },
@@ -2158,7 +2158,7 @@
       "type": "Task",
       "labels": [],
       "created_at": "2026-01-22T02:45:18Z",
-      "updated_at": "2026-01-22T02:45:18Z",
+      "updated_at": "2026-01-22T04:34:47Z",
       "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/193",
       "body": "# Visual Verification Workflow + Smart Checklist (PRD F005/F019/F023)\n\n### Goal\nDeliver the visual verification panel with server controls, smart checklist, design system references, and plan excerpt.\n\n### Scope\n- Server control panel: Start/Stop/Restart with status indicators.\n- Checklist auto-generated from acceptance criteria; pass/fail with investigation task creation (severity + screenshot upload).\n- Inline design tokens (colors/typography) and component references; plan excerpt with highli"
     },
@@ -2400,7 +2400,7 @@
         }
       ],
       "created_at": "2026-01-22T03:19:24Z",
-      "updated_at": "2026-01-22T03:19:24Z",
+      "updated_at": "2026-01-22T04:34:47Z",
       "url": "https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/211",
       "body": "# Sprint 2.1: Plan Decomposition Engine (F002)\n\nPart of: Sprint 2 (Jan 27-Feb 1)\nRelated: BETA-ROADMAP.md, PRD.md (F002)\nPriority: P0 \u2013 Critical Path\nEstimated: 3 days\n\nGoal\nImplement a backend Plan Decomposition Engine that converts high-level plans into atomic 15\u201345 minute subtasks with dependency detection, DAG validation, and critical path calculation.\n\nAcceptance Criteria\n- PlanDecompositionService implements task generation, dependency detection, DAG validation, critical path, and timeline"
     }

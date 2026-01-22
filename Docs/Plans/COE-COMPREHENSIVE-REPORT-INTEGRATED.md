@@ -28,7 +28,7 @@ This document maps all content from the "Copilot Orchestration Extension (COE) �
 - ✅ Boss AI Team (Supervisor patterns, LangGraph)
 - ✅ Planning Team (Atomic decomposition, adaptive paths)
 - ✅ Orchestrator/Coding Team (One-thing-at-a-time enforcement)
-- ✅ Answer Team (askQuestion resolution)
+- ✅ Answer Team (askQuestion resolution) - **Deep Dive in v5.6**
 - ✅ Verification Team (Atomic checks, evolving checklists)
 - ✅ Critic Team (Pattern detection, UV proposals)
 - ✅ Scraper Team (Output verification)
@@ -368,7 +368,7 @@ After comprehensive review of both the report and existing documentation, here's
 
 ### ✅ Fully Documented (No Gaps)
 
-1. **Agent Teams** - All 10 teams with YAML configs
+1. **Agent Teams** - All 10 teams with YAML configs (**v5.6 adds Answer Team deep dive**)
 2. **MCP Tools** - All 6 tools with complete schemas
 3. **Error Handling** - Complete registry + retry policies
 4. **Context Management** - Full strategies + pseudocode
@@ -380,6 +380,23 @@ After comprehensive review of both the report and existing documentation, here's
 10. **Copilot Integration** - Full integration guide
 11. **Roadmap** - 6-phase detailed timeline
 12. **Lifecycle Model** - Birth/Growth/Evolution/Refinement
+13. **Answer AI Team** - Standalone triggers & operations (**NEW in v5.6**)
+
+### 📍 Latest Addition (v5.6)
+
+**Answer AI Team Deep Dive Specification**
+
+Provides comprehensive documentation on:
+- Team structure (Lead Agent, Knowledge Retriever, Escalator)
+- 5+ standalone triggers for independent activation
+- YAML configuration with evolvable trigger types
+- Confidence-based escalation (<70% → ticket)
+- Token-efficient responses (<1000 tokens)
+- Priority-aware processing (P1 <15s)
+- Integration with Ticket System, Clarity Agent, Researcher Team
+- Complete flow charts and implementation roadmap
+
+**Document**: [ANSWER-AI-TEAM-SPECIFICATION.md](ANSWER-AI-TEAM-SPECIFICATION.md)
 
 ---
 
@@ -396,6 +413,7 @@ After comprehensive review of both the report and existing documentation, here's
 | **Plan update process** | [PLAN-UPDATING-PROCESS.md](PLAN-UPDATING-PROCESS.md) |
 | **Evolution mechanics** | [EVOLUTION-PHASE-DEEP-DIVE.md](EVOLUTION-PHASE-DEEP-DIVE.md) |
 | **Ticket system & UI** | [TICKET-SYSTEM-SPECIFICATION.md](TICKET-SYSTEM-SPECIFICATION.md) |
+| **Answer AI Team & triggers** | [ANSWER-AI-TEAM-SPECIFICATION.md](ANSWER-AI-TEAM-SPECIFICATION.md) |
 | **Copilot integration** | [COE-Master-Plan/09-Copilot-Integration-System.md](COE-Master-Plan/09-Copilot-Integration-System.md) |
 | **Project timeline** | [PROJECT-ROADMAP-DETAILED.md](PROJECT-ROADMAP-DETAILED.md) |
 | **Program lifecycle** | [PROGRAM-LIFECYCLE-MODEL.md](PROGRAM-LIFECYCLE-MODEL.md) |

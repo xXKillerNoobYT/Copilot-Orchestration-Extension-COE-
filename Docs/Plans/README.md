@@ -18,6 +18,7 @@
 - **Program Lifecycle Model** (v5.2) - Birth → Growth → Evolution → Refinement
 - **Evolution Phase Deep Dive** (v5.3) - Self-healing engine for continuous improvement
 - **Ticket System Specification** (v5.4-v5.5) - Structured AI-human interactions with Clarity Agent
+- **Answer AI Team Specification** (v5.6) - On-demand question resolution with standalone triggers
 
 ### 📚 Quick Access
 

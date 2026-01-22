@@ -235,6 +235,52 @@ Docs/Plans/AI-Teams-Documentation/
             ├── 4. Notification banner
             ├── 5. Reply thread with Clarity feedback
             └── 6. Settings panel
+
+└── 🔍 ANSWER AI TEAM (v5.6)
+    └── ANSWER-AI-TEAM-SPECIFICATION.md
+        │
+        ├── Team Structure
+        │   ├── Lead Answer Agent
+        │   ├── Knowledge Retriever
+        │   └── Escalator
+        │
+        ├── Standalone Triggers (Independent Activation)
+        │   ├── 1. MCP askQuestion (primary)
+        │   ├── 2. User Direct Query (via tickets)
+        │   ├── 3. Planning Ambiguity (background)
+        │   ├── 4. Verification Low-Confidence
+        │   ├── 5. Copilot Delegation Issue
+        │   └── 6+ Evolvable Triggers
+        │
+        ├── YAML Configuration
+        │   ├── Activation mode (trigger-only)
+        │   ├── Response depth & token limits
+        │   ├── Escalation threshold (0.7)
+        │   └── Trigger definitions
+        │
+        └── Integration Points
+            ├── MCP Tools (askQuestion, reportIssue)
+            ├── Ticket System (escalation path)
+            ├── Context Management (breaking)
+            ├── Researcher Team (delegation)
+            └── Clarity Agent (validation)
+        │   ├── 4. Follow-ups (if <85)
+        │   └── 5. Resolution (≥85 + close)
+        │
+        ├── Clarity Agent
+        │   ├── YAML template (checklists + prompts)
+        │   ├── LM assessment (clarity/completeness/accuracy)
+        │   ├── Score calculation
+        │   ├── Follow-up generation
+        │   └── Max 5 iterations
+        │
+        └── UI Prototypes (6 mockups)
+            ├── 1. Main sidebar (collapsed list)
+            ├── 2. Expanded ticket card
+            ├── 3. New ticket form
+            ├── 4. Notification banner
+            ├── 5. Reply thread with Clarity feedback
+            └── 6. Settings panel
 ```
 
 ---
