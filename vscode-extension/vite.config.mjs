@@ -11,6 +11,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'dist/planBuilder'),
     emptyOutDir: true,
+    manifest: true,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'resources/planBuilder/index.html')

@@ -355,45 +355,63 @@ export class PlanBuilderPanel {
 
   private _getHtmlForWebview(webview: vscode.Webview): string {
     // Get paths to resources as URIs using dynamic asset discovery
-    const assetsPath = vscode.Uri.joinPath(this._extensionUri, 'dist', 'planBuilder', 'assets');
-    
+    const buildRoot = vscode.Uri.joinPath(this._extensionUri, 'dist', 'planBuilder');
+    const assetsPath = vscode.Uri.joinPath(buildRoot, 'assets');
+
     let styleUri: vscode.Uri | undefined;
     let scriptUri: vscode.Uri | undefined;
-    
-    try {
-      // Dynamically discover CSS and JS files (handles hash changes from Vite builds)
-      const assetsDir = assetsPath.fsPath;
-      
-      if (fs.existsSync(assetsDir)) {
-        const files = fs.readdirSync(assetsDir);
-        
-        // Find main CSS file matching Vite's hashed output (e.g., main-XXXXXXXX.css or index-XXXXXXXX.css)
-        const cssFile = files.find((f: string) =>
-          /^(main|index)-[a-zA-Z0-9]+\.css$/.test(f)
-        );
-        
-        // Find main JS file matching Vite's hashed output (e.g., main-XXXXXXXX.js or index-XXXXXXXX.js)
-        const jsFile = files.find((f: string) =>
-          /^(main|index)-[a-zA-Z0-9]+\.js$/.test(f)
-        );
-        
-        if (cssFile) {
-          styleUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsPath, cssFile));
-        }
-        
-        if (jsFile) {
-          scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsPath, jsFile));
-        }
-      }
-    } catch (error) {
-      console.error('[PlanBuilder] Error discovering assets:', error);
+
+    // 1) Prefer manifest-based discovery (handles any entrypoint naming)
+    const manifestResult = this._resolveAssetsFromManifest(buildRoot.fsPath, webview);
+    if (manifestResult) {
+      styleUri = manifestResult.styleUri;
+      scriptUri = manifestResult.scriptUri;
     }
-    
+
+    // 2) Fallback to regex discovery if manifest is missing or incomplete
+    if (!styleUri || !scriptUri) {
+      try {
+        const assetsDir = assetsPath.fsPath;
+
+        if (fs.existsSync(assetsDir)) {
+          const files = fs.readdirSync(assetsDir);
+
+          // Find main CSS file matching Vite's hashed output (e.g., main-XXXXXXXX.css or index-XXXXXXXX.css)
+          const cssFile = files.find((f: string) =>
+            /^(main|index)-[a-zA-Z0-9]+\.css$/.test(f)
+          );
+
+          // Find main JS file matching Vite's hashed output (e.g., main-XXXXXXXX.js or index-XXXXXXXX.js)
+          const jsFile = files.find((f: string) =>
+            /^(main|index)-[a-zA-Z0-9]+\.js$/.test(f)
+          );
+
+          if (cssFile) {
+            styleUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsPath, cssFile));
+          }
+
+          if (jsFile) {
+            scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsPath, jsFile));
+          }
+
+          console.log('[PlanBuilder] Asset discovery (regex) located:', { cssFile, jsFile });
+        } else {
+          console.warn('[PlanBuilder] Assets directory not found:', assetsDir);
+        }
+      } catch (error) {
+        console.error('[PlanBuilder] Error discovering assets via fallback:', error);
+      }
+    }
+
     // Fallback: If assets not found, show helpful error message
     if (!styleUri || !scriptUri) {
-      console.warn('[PlanBuilder] Plan Builder assets not found. Run "npm run build:vue" to build the Vue app.');
-      return this._getErrorHtml('Plan Builder Not Built', 
-        'The Plan Builder Vue app has not been built yet. Please run <code>npm run build:vue</code> in the vscode-extension directory, then reload VS Code.');
+      console.warn('[PlanBuilder] Plan Builder assets not found. Run "npm run build:vue" to build the Vue app.', {
+        buildRoot: buildRoot.fsPath,
+        assetsPath: assetsPath.fsPath
+      });
+      return this._getErrorHtml('Plan Builder Not Built',
+        `The Plan Builder Vue app has not been built yet or assets are missing.
+Please run <code>npm run build:vue</code> in the <code>vscode-extension</code> directory, then reload VS Code. Looked in: <code>${assetsPath.fsPath}</code>.`);
     }
 
     // Use a nonce to only allow specific scripts to be run
@@ -421,6 +439,58 @@ export class PlanBuilderPanel {
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>
       </html>`;
+  }
+
+  /**
+   * Resolve hashed asset file names via Vite manifest (preferred strategy)
+   * This handles any future changes to entrypoint naming beyond main/index.
+   */
+  private _resolveAssetsFromManifest(buildRootFsPath: string, webview: vscode.Webview): { styleUri?: vscode.Uri; scriptUri?: vscode.Uri } | null {
+    const manifestPath = path.join(buildRootFsPath, 'manifest.json');
+
+    if (!fs.existsSync(manifestPath)) {
+      console.warn('[PlanBuilder] manifest.json not found, falling back to regex asset discovery');
+      return null;
+    }
+
+    try {
+      const manifestRaw = fs.readFileSync(manifestPath, 'utf-8');
+      const manifest = JSON.parse(manifestRaw);
+
+      const candidateKeys = [
+        'resources/planBuilder/index.html',
+        'resources/planBuilder/main.ts',
+        'index.html',
+        'main.ts'
+      ];
+
+      const entryKey = candidateKeys.find((key) => manifest[key]);
+
+      if (!entryKey) {
+        console.warn('[PlanBuilder] No matching entry found in manifest.json');
+        return null;
+      }
+
+      const entry = manifest[entryKey];
+      const jsFile: string | undefined = entry?.file;
+      const cssFile: string | undefined = Array.isArray(entry?.css) ? entry.css[0] : undefined;
+
+      const buildRootUri = vscode.Uri.file(buildRootFsPath);
+
+      const scriptUri = jsFile
+        ? webview.asWebviewUri(vscode.Uri.joinPath(buildRootUri, jsFile))
+        : undefined;
+      const styleUri = cssFile
+        ? webview.asWebviewUri(vscode.Uri.joinPath(buildRootUri, cssFile))
+        : undefined;
+
+      console.log('[PlanBuilder] Asset discovery (manifest) located:', { jsFile, cssFile });
+
+      return { styleUri, scriptUri };
+    } catch (error) {
+      console.error('[PlanBuilder] Failed to parse manifest.json:', error);
+      return null;
+    }
   }
 
   private _getErrorHtml(title: string, message: string): string {

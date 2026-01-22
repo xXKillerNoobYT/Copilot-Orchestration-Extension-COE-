@@ -1,6 +1,8 @@
 # PRD Synchronization Status - January 19, 2026
 
-**Status**: ✅ SYNCHRONIZED - All PRD files are up-to-date
+> ⚠️ **Outdated Notice (January 21, 2026)**: PRD is now v2.0.0 dated 2026-01-21. The Current-Status folder and this sync log need refresh to reflect the plan alignment audit (see PRD.md/PRD.json `plan_alignment_audit`).
+
+**Status**: ✅ SYNCHRONIZED - All PRD files are up-to-date *(as of Jan 19; needs refresh)*
 
 ---
 

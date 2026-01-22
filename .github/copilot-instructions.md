@@ -76,6 +76,7 @@
 - **⭐ `PRD.json` & `PRD.md`** ⭐ **MOST IMPORTANT! PRIMARY SOURCE OF TRUTH!** Complete feature specifications, requirements, acceptance criteria, and AI Teams roadmap (58 features across 10 categories). Check these BEFORE starting any task.
 - **`Docs/Plans/AI-TEAMS-STAGING-PLAN.md`** 3-stage rollout for AI Teams (23 new features F036-F056). Boss AI, LangGraph, AutoGen, context limiting, agent evolution.
 - **`Docs/Plans/CONSOLIDATED-MASTER-PLAN.md`** v3.0 master plan with AI Teams integration. References PRD as source of truth.
+- **`PRD.ipynb`** Jupyter notebook to regenerate PRD files when upstream docs change. it updates both `PRD.json` and `PRD.md` will follow. So update the file the notebook uses as source of truth first. then run the notebook to regenerate both files. make sure it's properly updated the files.
 - **`Docs/Current-Status/`** ⭐ **AI AGENTS: READ THIS FIRST!** Live project state with READY-TO-WORK.md (what to do), BLOCKED-TASKS.md (what to avoid), OPEN-ISSUES.md (GitHub status), INCOMPLETE-WORK.md (all undone tasks), PRIORITY-QUEUE.md (what's next). Updated hourly from GitHub API.
 - `Docs/PROJECT-RUNBOOK.md` (execution order, task expectations, commands), `Docs/GITHUB-ISSUES-PLAN.md` (issue mappings), `Docs/README.md` (doc navigation), `COPILOT-WORKFLOW-QUICKSTART.md` (autonomous Copilot flow). Issues are mirrored in `.github/issues/` via GitHub Issues Sync.
 - PRD regeneration: Run `PRD.ipynb` when upstream docs change to update both `PRD.json` and `PRD.md`.
@@ -160,3 +161,12 @@ Only create reports in `reports/` when:
 - **Jest sanity-check**:
 	- **Expected behavior**: The Jest sanity-check file should report exactly one intentionally failing test and one intentionally skipped test, both clearly labeled as sanity checks.
 	- **Troubleshooting**: If either sanity-check test does not appear in the VS Code Problems panel or Jest output, the test runner configuration is broken and must be fixed before proceeding.
+
+
+- **Current project goal.**
+- Improve test coverage and reliability across all components.
+- Maintain high code quality through rigorous testing and CI/CD practices.
+- Working beta version of the instructions file for the repository.
+- Working beta version of the program that can be used to continue devlopment.---
+name: Repository Coding and Documentation Standards
+description: This file outlines the coding and documentation standards for the repository.

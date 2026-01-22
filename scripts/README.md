@@ -142,3 +142,64 @@ bash scripts/verify-features.sh
 **Created**: January 21, 2026  
 **Issue**: #177  
 **Purpose**: Automated branch cleanup for repository maintenance
+---
+
+## PRD Maintenance Scripts
+
+### sync-prd-sources.py
+
+**Purpose**: Validates PRD source files are up to date before generating PRD.md/PRD.json
+
+**When to use**:
+- Before running PRD.ipynb
+- After completing features
+- Weekly as part of project health check
+
+**Usage**:
+```bash
+# Validate only (check if files need updates)
+python scripts/sync-prd-sources.py
+
+# Validate and show what would be updated
+python scripts/sync-prd-sources.py --update
+```
+
+**What it checks**:
+1. ✅ COMPREHENSIVE-AUDIT-UNDONE-TASKS.md age (<7 days)
+2. ✅ Docs/Current-Status/INCOMPLETE-WORK.md age (<3 days)
+3. ✅ Sync between audit file and INCOMPLETE-WORK.md
+4. ✅ PRD.md plan_alignment_audit accuracy
+
+**Exit codes**:
+- `0` = All files in sync, safe to generate PRD
+- `1` = Files need updates, see output for instructions
+
+### PRD Update Workflow
+
+When features are completed:
+
+```bash
+# Step 1: Update audit file
+# Edit: COMPREHENSIVE-AUDIT-UNDONE-TASKS.md
+#   - Mark completed items as ✅ COMPLETE
+#   - Move to "COMPLETED" section
+#   - Update Executive Summary counts
+#   - Update date in header
+
+# Step 2: Validate sync
+python scripts/sync-prd-sources.py
+
+# Step 3: If validation passes, regenerate PRD
+# Open PRD.ipynb in VS Code/Jupyter
+# Run all cells
+
+# Step 4: Commit all changes
+git add COMPREHENSIVE-AUDIT-UNDONE-TASKS.md
+git add Docs/Current-Status/*.md
+git add PRD.md PRD.json
+git commit -m "chore: update PRD - completed [feature names]"
+```
+
+See also:
+- `COMPREHENSIVE-AUDIT-UNDONE-TASKS.md` Section 11 (Update Procedure)
+- `PRD.ipynb` Cell "PRD Maintenance Guide"

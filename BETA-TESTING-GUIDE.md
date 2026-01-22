@@ -28,14 +28,40 @@ This beta release includes a **fully functional task management system** with:
    - `reportTaskStatus` - Updates task status with audit trail
    - Other 4 tools available but using placeholder implementations
 
-4. **Full Test Coverage**
-   - 890 tests passing
-   - 56 test suites all green
-   - TypeScript: 0 compilation errors
+4. **Test Infrastructure**
+   - **890+ tests passing** across 56 test suites
+   - **Test reporting verified**: Intentional sanity check tests prove:
+     - ✅ Passing tests reported correctly
+     - ✅ Failing tests reported to VS Code Problems panel
+     - ✅ Skipped tests reported correctly
+   - **TypeScript**: 0 compilation errors
+   - **Framework**: Jest configured with coverage thresholds
 
 ---
 
-## 📋 Beta Test Scenarios
+## 🧪 Understanding Test Results (Sanity Checks)
+
+When you run tests, you'll see:
+
+```
+Tests: 1 failed, 1 skipped, 892 passed
+Test Suites: 56 passed, 56 total
+```
+
+**This is EXPECTED and CORRECT!** ✅
+
+The **1 failing test** and **1 skipped test** are **intentional sanity checks** that prove the test infrastructure is working:
+
+| Test | Purpose | Location |
+|------|---------|----------|
+| ❌ **SANITY CHECK: intentional failure** | Proves failing tests are reported to VS Code Problems panel | `jest-sanity-check.test.ts:25` |
+| ⏭️ **SANITY CHECK: intentional skip** | Proves skipped tests are reported correctly | `jest-sanity-check.test.ts:31` |
+
+**If these tests do NOT appear in your test output, the test reporting system is broken.**
+
+**These are NOT bugs** - they're permanent infrastructure validators. They prove the test pipeline works correctly. All other 890+ tests pass.
+
+---
 
 ### Scenario 1: Create a Simple Project Plan
 
@@ -63,73 +89,44 @@ This beta release includes a **fully functional task management system** with:
 
 ---
 
-### Scenario 2: Test Task Management via MCP
+### Scenario 2: Test Task Management via Database
 
 **Goal**: Verify database integration and task queue
 
 **Steps**:
 
-1. **Populate database with test tasks**:
+1. **Inspect the database directly**:
    ```bash
+   # Navigate to vscode-extension folder
    cd vscode-extension
-   node -e "
-   const { TaskManager } = require('./src/services/taskManager.ts');
-   const manager = TaskManager.getInstance('./test-tasks.db');
    
-   // Create sample tasks
-   manager.createTask({
-     project_id: 'test-project',
-     name: 'Setup database',
-     description: 'Initialize SQLite database',
-     task_type: 'maintenance',
-     priority: 'critical',
-     estimated_effort: 120
-   });
+   # Open SQLite shell (requires sqlite3 CLI tool)
+   sqlite3 data/tasks.db
    
-   manager.createTask({
-     project_id: 'test-project',
-     name: 'Implement API',
-     description: 'Build REST API endpoints',
-     task_type: 'feature',
-     priority: 'high',
-     estimated_effort: 480
-   });
-   
-   console.log('✓ Test tasks created');
-   manager.close();
-   "
+   # Inside sqlite3 shell:
+   sqlite> .schema tasks
+   sqlite> SELECT COUNT(*) as total_tasks FROM tasks;
+   sqlite> SELECT id, name, status, priority FROM tasks ORDER BY priority;
+   sqlite> .quit
    ```
 
-2. **Query next task** (simulating MCP call):
+2. **View audit log for a task**:
    ```bash
-   node -e "
-   const { TaskManager } = require('./src/services/taskManager.ts');
-   const manager = TaskManager.getInstance('./test-tasks.db');
+   sqlite3 data/tasks.db
    
-   const task = manager.getNextTask({ filter: 'ready' });
-   console.log('Next task:', JSON.stringify(task, null, 2));
+   sqlite> SELECT * FROM tasks LIMIT 1;
+   # Copy the task ID from output
    
-   manager.close();
-   "
+   sqlite> SELECT action, timestamp FROM audit_log WHERE task_id = '[task-id]' ORDER BY timestamp DESC;
+   sqlite> .quit
    ```
 
-3. **Update task status**:
+3. **Reset database for fresh testing**:
    ```bash
-   node -e "
-   const { TaskManager } = require('./src/services/taskManager.ts');
-   const manager = TaskManager.getInstance('./test-tasks.db');
+   # Delete database file to start over
+   rm data/tasks.db
    
-   const task = manager.getNextTask();
-   const updated = manager.updateTaskStatus(
-     task.id, 
-     'in_progress', 
-     { actual_effort: 60 },
-     task.version
-   );
-   
-   console.log('✓ Task updated:', updated.status);
-   manager.close();
-   "
+   # Restart VS Code or reload window - database will be recreated automatically
    ```
 
 **Expected Results**:
@@ -147,69 +144,71 @@ This beta release includes a **fully functional task management system** with:
 
 **Steps**:
 ```bash
-node -e "
-const { TaskManager } = require('./src/services/taskManager.ts');
-const manager = TaskManager.getInstance('./test-tasks.db');
+cd vscode-extension
 
-const tasks = manager.getAllTasks();
-if (tasks.length === 0) {
-  console.log('No tasks found');
-  process.exit(0);
-}
+# Open database
+sqlite3 data/tasks.db
 
-const taskId = tasks[0].id;
-const audit = manager.getAuditLog(taskId);
+# Inside sqlite3 shell - view audit log for a task:
+sqlite> SELECT id FROM tasks LIMIT 1;
+# Copy the task ID
 
-console.log('Audit log entries:', audit.length);
-audit.forEach(entry => {
-  console.log(\`  - \${entry.action} at \${entry.timestamp}\`);
-});
+sqlite> SELECT action, agent_type, timestamp FROM audit_log 
+        WHERE task_id = '[task-id]' 
+        ORDER BY timestamp DESC;
 
-manager.close();
-"
+# Sample output:
+# status_changed | NULL | 2026-01-21 15:30:45
+# created       | NULL | 2026-01-21 15:30:40
+
+sqlite> .quit
 ```
 
 **Expected Results**:
-- ✅ Audit log has entries for all operations
+- ✅ Audit log has entries for creation and updates
 - ✅ Timestamps are accurate
-- ✅ Action descriptions are clear
+- ✅ Action descriptions are clear ('created', 'status_changed', etc.)
 
 ---
 
-### Scenario 4: Test Optimistic Locking
+### Scenario 4: Test Optimistic Locking (Concurrent Modification Protection)
 
-**Goal**: Verify concurrent modification protection
+**Goal**: Verify concurrent modification protection works
 
 **Steps**:
+
+Optimistic locking is **automatically tested by the test suite**:
 ```bash
-node -e "
-const { TaskManager } = require('./src/services/taskManager.ts');
-const manager = TaskManager.getInstance('./test-tasks.db');
+cd vscode-extension
 
-const task = manager.getNextTask();
-console.log('Original version:', task.version);
+# Run the optimistic locking tests specifically:
+npm run test:jest -- --testNamePattern="optimistic"
+```
 
-// Try to update with wrong version (simulating concurrent modification)
-try {
-  manager.updateTaskStatus(
-    task.id,
-    'blocked',
-    {},
-    task.version - 1  // Wrong version!
-  );
-  console.log('❌ ERROR: Should have thrown version mismatch error');
-} catch (error) {
-  console.log('✓ Correctly caught concurrent modification:', error.message);
-}
+This will show:
+- ✅ Tests pass when version numbers match
+- ✅ Tests fail when version numbers don't match (concurrent modification detected)
+- ✅ Error messages are clear and actionable
 
-manager.close();
-"
+**What It Does**:
+1. **Task has a `version` field** - increments with every update
+2. **When updating**, you must provide the **current version**
+3. **If version doesn't match**, the update fails with: `"Concurrent modification detected"`
+4. **This prevents data loss** when multiple processes update simultaneously
+
+**Example Scenario**:
+```
+Process A reads task (version 1)
+Process B reads task (version 1)
+Process B updates task → version becomes 2
+Process A tries to update with version 1 → ERROR "version mismatch"
+Process A must re-read task (now version 2) and retry
 ```
 
 **Expected Results**:
-- ✅ Throws error on version mismatch
-- ✅ No data corruption
-- ✅ Error message is clear
+- ✅ No silent data overwrites
+- ✅ Concurrent modifications detected and reported
+- ✅ Safe retry pattern works correctly
 
 ---
 
@@ -241,9 +240,22 @@ npm run build:mcp        # Rebuild MCP server only
 
 ### Run Tests
 ```bash
-npm run test:jest        # Run all tests (watch mode)
-npm test                 # Run tests once
-npm run test:jest -- --coverage  # With coverage report
+cd vscode-extension
+
+# Run all tests (watch mode - reruns on file changes)
+npm run test:jest
+
+# Run all tests once and exit
+npm test
+
+# Run tests with coverage report
+npm run test:jest -- --coverage
+
+# Run specific test file
+npm run test:jest -- --testPathPattern="sanity"
+
+# Run tests matching a pattern
+npm run test:jest -- --testNamePattern="TaskManager"
 ```
 
 ### Debug Logs
@@ -254,10 +266,19 @@ DEBUG=copilot-orchestrator:* npm run compile
 
 ### Database Inspection
 ```bash
-# Open SQLite database directly
-sqlite3 vscode-extension/data/tasks.db
-sqlite> SELECT COUNT(*) FROM tasks;
-sqlite> SELECT id, name, status, priority FROM tasks;
+# Open SQLite database directly (requires sqlite3 CLI tool)
+# Install: brew install sqlite3 (macOS) or apt-get install sqlite3 (Linux)
+
+cd vscode-extension
+sqlite3 data/tasks.db
+
+# Useful commands inside sqlite3:
+sqlite> .schema              # Show all table definitions
+sqlite> SELECT * FROM tasks LIMIT 5;  # View first 5 tasks
+sqlite> SELECT COUNT(*) FROM tasks;   # Count tasks
+sqlite> SELECT * FROM audit_log WHERE task_id = '[id]';  # View audit trail
+sqlite> .tables              # List all tables
+sqlite> .quit                # Exit sqlite3
 ```
 
 ---
