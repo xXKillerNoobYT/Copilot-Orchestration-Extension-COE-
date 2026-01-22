@@ -3,6 +3,8 @@
  * Provides common functionality for backend integration, error handling, and WebSocket broadcasting
  */
 
+import { getAuditLogger } from '../auditLogger';
+
 /**
  * Error handling configuration
  */
@@ -84,12 +86,28 @@ export abstract class MCPHandlerBase {
     handlerName: string,
     args: any
   ): Promise<T> {
+    const startTime = Date.now();
+    const timestamp = new Date().toISOString();
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < this.errorConfig.retryAttempts; attempt++) {
       try {
         // Wrap operation with timeout
         const result = await this.withTimeout(operation(), this.errorConfig.timeout);
+        
+        // Log successful execution
+        const duration_ms = Date.now() - startTime;
+        const logger = getAuditLogger();
+        logger.log({
+          timestamp,
+          action: 'tool_call_success',
+          toolName: handlerName,
+          args,
+          result,
+          duration_ms,
+          metadata: { attempt: attempt + 1 }
+        });
+        
         return result;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
@@ -105,6 +123,19 @@ export abstract class MCPHandlerBase {
 
     // All retries failed - add to dead letter queue
     this.addToDeadLetterQueue(handlerName, args, lastError!);
+
+    // Log failure
+    const duration_ms = Date.now() - startTime;
+    const logger = getAuditLogger();
+    logger.log({
+      timestamp,
+      action: 'tool_call_failed',
+      toolName: handlerName,
+      args,
+      error: lastError?.message,
+      duration_ms,
+      metadata: { retryAttempts: this.errorConfig.retryAttempts }
+    });
 
     throw new Error(
       `${handlerName} failed after ${this.errorConfig.retryAttempts} attempts: ${lastError?.message}`

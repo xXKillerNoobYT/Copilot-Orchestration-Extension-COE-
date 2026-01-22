@@ -28,6 +28,9 @@ import { handleGetContextBundle } from './handlers/getContextBundle';
 import { handleReportTestFailure } from './handlers/reportTestFailure';
 import { handleReportVerificationResult } from './handlers/reportVerificationResult';
 
+// Audit logging
+import { getAuditLogger } from './auditLogger';
+
 /**
  * Extension-only MCP tools exposed to GitHub Copilot coding agent
  */
@@ -409,11 +412,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
  * Start the MCP server
  */
 async function main() {
+  // Initialize audit logger
+  const auditLogger = getAuditLogger();
+  auditLogger.initialize();
+  
+  // Set up WebSocket callback for event streaming
+  auditLogger.setWebSocketCallback((event) => {
+    // Log to stderr (stdout is reserved for MCP protocol)
+    console.error('[WebSocket Event]', JSON.stringify(event));
+  });
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
   // Log to stderr (stdout is reserved for MCP protocol)
-  console.error('Copilot Orchestrator MCP Server started');
+  console.error('Copilot Orchestrator MCP Server started with audit logging');
+  console.error('Audit database initialized with WAL mode');
 }
 
 main().catch((error) => {
