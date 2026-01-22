@@ -1513,7 +1513,7 @@ description: "Agent description"
       }
 
       const teamType = team as AgentTeamType;
-      
+
       // Load or create profile
       let profile = await this.agentProfileLoader.loadFromWorkspace(teamType);
       if (!profile) {
@@ -1524,12 +1524,12 @@ description: "Agent description"
       if (config.profileYaml) {
         // If YAML is provided, parse and validate it
         const result = await this.agentProfileLoader.loadFromYaml(config.profileYaml);
-        
+
         if (result.errors.length > 0) {
           // Show validation errors
           const errorMessages = result.errors.map(e => `${e.field}: ${e.message}`).join('\n');
           vscode.window.showErrorMessage(`Profile validation failed:\n${errorMessages}`);
-          
+
           this._panel.webview.postMessage({
             command: 'teamConfigurationError',
             team: team,
@@ -1537,7 +1537,7 @@ description: "Agent description"
           });
           return;
         }
-        
+
         profile = result.profile!;
       } else {
         // Update individual fields from config
@@ -1560,7 +1560,7 @@ description: "Agent description"
 
       // Save to workspace
       const saveResult = await this.agentProfileLoader.saveToWorkspace(profile);
-      
+
       if (!saveResult.success) {
         throw new Error(saveResult.error || 'Failed to save profile');
       }
@@ -1607,14 +1607,14 @@ description: "Agent description"
       }
 
       const teamType = team as AgentTeamType;
-      
+
       // Load profile from workspace or get default
       const profile = await this.agentProfileLoader.loadFromWorkspace(teamType);
-      
+
       if (profile) {
         // Convert profile to YAML for display
         const yamlContent = this.agentProfileLoader.exportToYaml(profile);
-        
+
         this._panel.webview.postMessage({
           command: 'teamConfigurationLoaded',
           team: team,
@@ -1648,7 +1648,7 @@ description: "Agent description"
   private async _uploadTeamProfile(team: string): Promise<void> {
     try {
       const result = await this.agentProfileLoader.uploadProfile();
-      
+
       if (result.errors.length > 0) {
         const errorMessages = result.errors.map(e => `${e.field}: ${e.message}`).join('\n');
         vscode.window.showErrorMessage(`Profile upload failed:\n${errorMessages}`);
@@ -1658,13 +1658,13 @@ description: "Agent description"
       if (result.profile) {
         // Convert profile to YAML and send to webview
         const yamlContent = this.agentProfileLoader.exportToYaml(result.profile);
-        
+
         this._panel.webview.postMessage({
           command: 'teamProfileUploaded',
           team: team,
           profileYaml: yamlContent,
         });
-        
+
         vscode.window.showInformationMessage('Profile uploaded successfully!');
       }
     } catch (error) {
@@ -1685,7 +1685,7 @@ description: "Agent description"
 
       const teamType = team as AgentTeamType;
       const profile = await this.agentProfileLoader.loadFromWorkspace(teamType);
-      
+
       if (!profile) {
         vscode.window.showWarningMessage('No profile to download. Using default profile.');
         const defaultProfile = this.agentProfileLoader.getDefaultProfile(teamType);
@@ -1693,7 +1693,7 @@ description: "Agent description"
       } else {
         await this.agentProfileLoader.downloadProfile(profile);
       }
-      
+
       vscode.window.showInformationMessage('Profile downloaded successfully!');
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to download profile: ${error}`);
@@ -1713,16 +1713,16 @@ description: "Agent description"
 
       const teamType = team as AgentTeamType;
       const defaultProfile = this.agentProfileLoader.getDefaultProfile(teamType);
-      
+
       // Convert to YAML and send to webview
       const yamlContent = this.agentProfileLoader.exportToYaml(defaultProfile);
-      
+
       this._panel.webview.postMessage({
         command: 'teamProfileReset',
         team: team,
         profileYaml: yamlContent,
       });
-      
+
       vscode.window.showInformationMessage(`${this.getTeamDisplayName(team)} profile reset to defaults!`);
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to reset profile: ${error}`);
