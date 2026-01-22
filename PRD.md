@@ -1998,144 +1998,414 @@ Real-time dashboard showing team status, metrics, and coordination toggles
 
 ---
 
-## Current Sprint GitHub Issues
+## Open GitHub Issues (Beta Roadmap)
 
-**Sprint**: Week 1-2 (Jan 11-21, 2026)  
-**Total Effort**: 20-28 hours
+**Total Open Issues**: 20  
+**Loaded from**: `.vscode/github-issues/*.md` (synced from GitHub)
 
-### Issue #1: [CRITICAL] Fix Git state, design system integration, and test suite 🔴
+### Issue #191: Interactive Plan Builder + DAG Validation (PRD F001/F002/F017/F032) 🟡
 
-**Priority**: CRITICAL | **Type**: Bug + Chore | **Effort**: 3-4 hours  
-**Milestone**: Week 1 (Jan 11-14)
-
-**Description:**
-Fix three critical blockers preventing project execution:
-1. Git repository in inconsistent state (uncommitted changes in vscode-extension/)
-2. Design system integration incomplete (temporary markers in planIntegration.ts)
-3. Test suite partially disabled (design system tests with .disabled extension)
-
-**Acceptance Criteria:**
-- [ ] All uncommitted changes properly committed or reverted
-- [ ] Git working directory is clean (git status shows 'nothing to commit')
-- [ ] Design system imports restored in planIntegration.ts
-- [ ] No 'TEMPORARY' markers remaining in codebase
-- [ ] Design system tests re-enabled (74+ tests)
-- [ ] All 74+ design tests passing (100% pass rate)
-- [ ] TypeScript compilation succeeds (0 errors)
-- [ ] 4+ atomic git commits with clear messages
-- [ ] Code Master alignment verified
-- [ ] Documentation updated in Docs folder
-
-**Definition of Done:**
-- ✅ Git Clean
-- ✅ Design System Operational
-- ✅ Tests Passing (74/74)
-- ✅ No TypeScript Errors
-- ✅ Ready for Issue #2
-
-**Files to Modify:**
-- `vscode-extension/src/planBuilder/planIntegration.ts`
-- `vscode-extension/src/planBuilder/designSystem/tokenGenerator.test.ts.disabled`
-- `vscode-extension/src/planBuilder/designSystem/validator.test.ts.disabled`
-- `_ZENTASKS/tasks.json`
-- `Docs/Plan/CODE-MASTER-ALIGNMENT.md`
-
-### Issue #2: [HIGH] Implement live preview system with real-time design updates 🟠
-
-**Priority**: HIGH | **Type**: Feature | **Effort**: 5-8 hours  
-**Milestone**: Week 1-2 (Jan 12-14)
-
-**⚠️  Blocker**: Must complete ISSUE #1 first
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
 
 **Description:**
-Implement real-time preview system for interactive design phase.
-Allows users to see design changes as they modify wizard answers with <500ms latency.
+# Interactive Plan Builder + DAG Validation (PRD F001/F002/F017/F032)
 
-**Acceptance Criteria:**
-- [ ] PreviewEngine renders all 10 wizard pages correctly
-- [ ] WizardStateObserver detects all answer changes
-- [ ] Preview updates <500ms after wizard change (verified with performance test)
-- [ ] Feedback indicators display correctly (compatibility, impact)
-- [ ] No console errors or warnings
-- [ ] >75% code coverage for new code
-- [ ] All unit tests passing (100%)
-- [ ] All integration tests passing (100%)
-- [ ] All performance tests passing
-- [ ] TypeScript compilation succeeds (0 errors)
-- [ ] No new lint/type errors introduced
-- [ ] New code follows project patterns and conventions
+### Goal
+Ship the 10-question design workflow, task generation with dependencies, DAG validation, critical path highlighting, and template library (≥5 templates).
 
-**Definition of Done:**
-- ✅ Preview Engine Operational (<500ms latency)
-- ✅ All 10 Wizard Pages Render
-- ✅ Feedback System Working
-- ✅ Tests Passing (>75% coverage)
-- ✅ No TypeScript Errors
-- ✅ Ready for ISSUE #3
+### Scope
+- Plan creation UI with Quick/Standard/Comprehensive paths for the 10 questions.
+- Generate plan.json + metadata.json with dependencies; block cycles; highlight critical path; timeline estimation.
+- Template library for microservice/API/UI component at mi
 
-**Files to Create:**
-- `vscode-extension/src/components/preview/PreviewEngine.ts`
-- `vscode-extension/src/components/preview/WizardStateObserver.ts`
-- `vscode-extension/src/components/preview/PreviewFeedback.ts`
-- `vscode-extension/src/components/preview/PreviewContainer.vue`
-- `vscode-extension/src/components/preview/PreviewEngine.test.ts`
-- `vscode-extension/src/components/preview/WizardStateObserver.test.ts`
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/191
 
-**Files to Modify:**
-- `vscode-extension/src/planBuilder/wizardContainer.ts`
-- `vscode-extension/src/planBuilder/wizardContainer.vue`
+### Issue #192: Multi-Agent Orchestration Core + Dashboard (PRD F013/F016/F024) 🟡
 
-### Issue #3: [HIGH] Implement automatic task decomposition from plans 🟠
-
-**Priority**: HIGH | **Type**: Feature | **Effort**: 12-16 hours  
-**Milestone**: Week 2 (Jan 14-21)
-
-**⚠️  Blocker**: Must complete ISSUE #1 first (ISSUE #2 is independent)
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
 
 **Description:**
-Implement Plan Decomposition Engine for automatic task generation.
-Core mechanism that turns wizard output into executable task queue with dependency detection.
+# Multi-Agent Orchestration Core + Dashboard (PRD F013/F016/F024)
 
-**Acceptance Criteria:**
-- [ ] PlanDecompositionService created and tested
-- [ ] WizardPlanParserService created and tested
-- [ ] /api/v1/plans/{id}/decompose endpoint working
-- [ ] Features correctly decomposed into 15-45 min subtasks
-- [ ] Dependencies automatically detected from feature text
-- [ ] Circular dependencies prevented (algorithm verified)
-- [ ] Priority assignments correct (HIGH/MEDIUM/LOW)
-- [ ] Critical path identified and marked
-- [ ] Handles 50+ features without issues (performance test)
-- [ ] >75% code coverage for new code
-- [ ] All 27+ unit tests passing
-- [ ] All integration tests passing
-- [ ] No new PHP syntax errors
-- [ ] No new lint/type errors introduced
-- [ ] WebSocket broadcast working (UI updates in real-time)
+### Goal
+Implement Programming Orchestrator routing and live dashboard with coordination toggles and metrics.
 
-**Definition of Done:**
-- ✅ Plan → Task Conversion Operational
-- ✅ 27+ Tests Passing (>75% coverage)
-- ✅ Circular Dependencies Prevented
-- ✅ Priority Assignment Working
-- ✅ Critical Path Analysis Active
-- ✅ No PHP Errors
-- ✅ Ready for Integration Testing
+### Scope
+- Routing logic: estimatedHours > 1 → decomposition; status=done → verification; requiresContext → Answer Team; default → Planning.
+- Dashboard: team cards (Planning/Answer/Decomposition/Verification), current task, metrics, last activity.
+- Coordination toggles: auto-decompose, require visual verification, mul
 
-**Files to Create:**
-- `app/Services/PlanDecompositionService.php`
-- `app/Services/WizardPlanParserService.php`
-- `app/Http/Controllers/PlanDecompositionController.php`
-- `tests/Feature/PlanDecompositionTest.php`
-- `tests/Unit/Services/PlanDecompositionServiceTest.php`
-- `tests/Unit/Services/WizardPlanParserServiceTest.php`
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/192
 
-**Files to Modify:**
-- `routes/api.php`
-- `app/Models/Plan.php`
-- `Docs/Plan/CODE-MASTER-ALIGNMENT.md`
+### Issue #193: Visual Verification Workflow + Smart Checklist (PRD F005/F019/F023) 🟡
 
-### Execution Timeline
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Visual Verification Workflow + Smart Checklist (PRD F005/F019/F023)
+
+### Goal
+Deliver the visual verification panel with server controls, smart checklist, design system references, and plan excerpt.
+
+### Scope
+- Server control panel: Start/Stop/Restart with status indicators.
+- Checklist auto-generated from acceptance criteria; pass/fail with investigation task creation (severity + screenshot upload).
+- Inline design tokens (colors/typography) and component references; plan excerpt with highli
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/193
+
+### Issue #194: MCP Server Tools (6) + Audit Logging 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# MCP Server Tools (6) + Audit Logging
+
+### Goal
+Implement MCP server with required tools and audit logging per PRD.
+
+### Scope
+- Tools: getNextTask, reportTaskStatus, reportObservation, reportTestFailure, reportVerificationResult, askQuestion.
+- JSON-RPC 2.0 endpoints with Zod validation; 30s timeout, 3 retries, DLQ behavior.
+- WebSocket event streaming (taskCreated/Updated, observationLogged, etc.).
+- SQLite WAL persistence; error handling and backoff.
+- Audit log for all actions with timestam
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/194
+
+### Issue #195: GitHub Issues Bi-Directional Sync (PRD F028) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# GitHub Issues Bi-Directional Sync (PRD F028)
+
+### Goal
+Deliver 5-minute GitHub Issues bi-directional sync with comments and sub-issue linking.
+
+### Scope
+- Auto-create Issue on task creation with labels/milestone.
+- Status sync both directions; comments → observations; parent/child linking.
+- Rate-limit optimization: batch ≤50, backoff, cache TTL 5m; GraphQL usage to reduce calls.
+- Conflict resolution: last-write-wins + manual merge UI.
+
+### Acceptance Criteria (US006)
+- Task ↔ Issue state st
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/195
+
+### Issue #196: Context Bundles + Answer Team Q&A (PRD F008/F010/F018) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Context Bundles + Answer Team Q&A (PRD F008/F010/F018)
+
+### Goal
+Provide context-aware Q&A with confidence scoring and source citations.
+
+### Scope
+- Context bundle generator (plan sections, code refs, docs, history) with token limits.
+- Answer Team endpoint with semantic search + confidence threshold 0.7; escalate if below threshold.
+- UI to ask questions from task view; return citations (plan/file/doc paths).
+
+### Acceptance Criteria (US002)
+- Task card shows acceptance criteria + linked fil
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/196
+
+### Issue #197: Testing & CI Hardening for Beta 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Testing & CI Hardening for Beta
+
+### Goal
+Keep all test suites green with coverage targets and CI enforcement.
+
+### Scope
+- Ensure Laravel `php artisan test`, root Jest, context-manager Jest, vscode-extension Jest all green; sanity-check file shows one intentional fail + one skip.
+- Add CI pipeline to run lint + tests on PRs; ensure TypeScript/Vite builds clean.
+- Document commands in QUICK-REFERENCE and PROJECT-RUNBOOK; mark any skipped tests with issue link/timeline.
+
+### Acceptance Criteria
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/197
+
+### Issue #198: PRD Validation & Sync Guardrail 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# PRD Validation & Sync Guardrail
+
+### Goal
+Keep PRD.json and PRD.md in sync with source docs and fail CI on drift.
+
+### Scope
+- Script/notebook automation to regenerate PRD.json and PRD.md from PRD.ipynb when source docs change.
+- Validation step in CI to flag mismatches or missing fields.
+- Document the process in PROJECT-RUNBOOK (when/how to run, triggers).
+
+### Acceptance Criteria
+- Single command/notebook updates both PRD files deterministically.
+- CI fails if PRD files are out-of-sync with
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/198
+
+### Issue #199: Cross-Area Information Verification Sweep (all PRD areas) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Cross-Area Information Verification Sweep (all PRD areas)
+
+### Goal
+Verify that documented specs, acceptance criteria, and implementation status align across all PRD areas before beta.
+
+### Scope
+- Review PRD.json/PRD.md against implementation for all major areas (plan builder, orchestration, verification, MCP, GitHub sync, Q&A, testing/CI).
+- Confirm acceptance criteria mapped to tests/docs; flag gaps or contradictions.
+- Produce a checklist of verified items and a punch list of gaps.
+
+### Ac
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/199
+
+### Issue #200: Deep-Dive & Flagging Pipeline for PRD/Implementation Mismatches 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Deep-Dive & Flagging Pipeline for PRD/Implementation Mismatches
+
+### Goal
+Establish a repeatable deep-dive process to detect and flag mismatches between PRD specs and implementation.
+
+### Scope
+- Build/extend a checker that scans code/tests vs PRD feature IDs and acceptance criteria to flag missing/contradictory coverage.
+- Define “flagging” outputs: GitHub labels, issue creation, or CI annotations when drift is detected.
+- Document how to run the deep-dive and interpret flags.
+
+### Acceptance
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/200
+
+### Issue #201: Verification – GitHub Sync (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – GitHub Sync (child of #199)
+
+Parent: #199
+
+### Goal
+Verify GitHub Issues bi-directional sync: creation, status sync, comments→observations, sub-issue linking, rate limit handling (F028).
+
+### Scope
+- Create tasks and observe GitHub Issues creation with labels/milestones.
+- Status sync both directions; comments mirrored; parent/child linking.
+- Rate-limit/backoff/GraphQL batching behaviors.
+- Conflict resolution UI last-write-wins.
+
+### Acceptance Criteria
+- Pass/fail per PRD ite
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/201
+
+### Issue #202: Verification – Visual Verification Workflow (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – Visual Verification Workflow (child of #199)
+
+Parent: #199
+
+### Goal
+Verify visual verification panel: server controls, smart checklist, design refs, investigation tasks (F005/F019/F023).
+
+### Scope
+- Start/Stop/Restart controls and status indicators.
+- Checklist generation from acceptance criteria; pass/fail flow; screenshot + severity capture.
+- Design tokens/typography references and plan excerpt display; latency <500ms.
+
+### Acceptance Criteria
+- Each PRD item marked pass/fa
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/202
+
+### Issue #203: Verification – Multi-Agent Orchestration Dashboard (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – Multi-Agent Orchestration Dashboard (child of #199)
+
+Parent: #199
+
+### Goal
+Verify Programming Orchestrator routing, dashboard metrics, coordination toggles, and plan selector (F013/F016/F024).
+
+### Scope
+- Exercise routing rules across scenarios; confirm toggles affect behavior.
+- Validate live metrics and team status cards update via WebSocket (<500ms target).
+- Check plan selector Load/Refresh/New flows.
+
+### Acceptance Criteria
+- PRD acceptance items marked pass/fail with ev
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/203
+
+### Issue #204: Verification – Context Bundles & Q&A (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – Context Bundles & Q&A (child of #199)
+
+Parent: #199
+
+### Goal
+Verify context bundle assembly, Answer Team Q&A confidence thresholds, citations, and escalation (F008/F010/F018).
+
+### Scope
+- Generate bundles (plan/code/docs/history) within token limits.
+- Q&A responses with ≥0.7 confidence include citations; <0.7 escalates/asks clarification.
+- Task card shows acceptance criteria + linked files/docs.
+
+### Acceptance Criteria
+- PRD items marked pass/fail with evidence; gaps logged
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/204
+
+### Issue #205: Verification – PRD & Docs Sync (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – PRD & Docs Sync (child of #199)
+
+Parent: #199
+
+### Goal
+Verify PRD.json/PRD.md and docs are in sync with sources and code.
+
+### Scope
+- Run PRD regeneration; compare outputs; check for drift.
+- Cross-check docs (CONSOLIDATED-MASTER-PLAN, MCP ref, Architecture) against implementation highlights.
+- Ensure runbook/quick-reference reflect current commands/tests.
+
+### Acceptance Criteria
+- Drift report generated; PRD/docs alignment marked pass/fail; gaps logged.
+
+### Validation
+- Reg
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/205
+
+### Issue #206: Verification – MCP Server Tools & Audit Log (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – MCP Server Tools & Audit Log (child of #199)
+
+Parent: #199
+
+### Goal
+Verify MCP tools (6), JSON-RPC schemas, retries, WebSocket events, and audit logging (F025/F027/F030 equivalents).
+
+### Scope
+- Exercise getNextTask, reportTaskStatus, reportObservation, reportTestFailure, reportVerificationResult, askQuestion with happy/failure paths.
+- Confirm validation, timeouts (30s), retries (3), DLQ, SQLite WAL persistence.
+- Verify WebSocket events emitted; audit log entries with timest
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/206
+
+### Issue #207: Verification – Testing & CI (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – Testing & CI (child of #199)
+
+Parent: #199
+
+### Goal
+Verify all suites, coverage targets, sanity-check tests, and CI enforcement.
+
+### Scope
+- Laravel, root Jest, context-manager Jest, vscode-extension Jest all green; sanity-check file shows one intentional fail + one skip in Problems panel.
+- Coverage targets: context-manager ≥80%, extension ≥50%.
+- CI runs lint/tests and fails on errors; TypeScript/Vite builds clean.
+
+### Acceptance Criteria
+- Pass/fail checklist with evidence
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/207
+
+### Issue #208: Verification – Plan Builder & DAG (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – Plan Builder & DAG (child of #199)
+
+Parent: #199
+
+### Goal
+Verify Interactive Plan Builder (10-question flow), DAG validation, critical path, templates, and exports match PRD (F001/F002/F017/F032).
+
+### Scope
+- Walk through Quick/Standard/Comprehensive flows; confirm tasks+dependencies generated and cycles blocked.
+- Validate critical path highlighting and timeline estimation logic.
+- Check template library (≥5) and save/load/export (JSON/Markdown) behavior.
+- Map acceptance cri
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/208
+
+### Issue #209: Verification – Design System & Live Preview Latency (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – Design System & Live Preview Latency (child of #199)
+
+Parent: #199
+
+### Goal
+Verify design system integration, Live Preview latency budget (<500ms), and design tokens alignment in UI flows.
+
+### Scope
+- Confirm Color/Typo/Spacing tokens match Docs and are rendered in Design System Editor/verification panels.
+- Validate Live Preview update latency <500ms under typical edit operations.
+- Check component previews and design references in visual verification panel are accurate and c
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/209
+
+### Issue #210: Verification – Data Flow & State Management (child of #199) 🟡
+
+**Priority**: MEDIUM | **Type**: Task | **State**: open  
+
+**Description:**
+# Verification – Data Flow & State Management (child of #199)
+
+Parent: #199
+
+### Goal
+Verify data flow/state management per PRD/architecture docs, including WebSocket eventing and persistence correctness.
+
+### Scope
+- Cross-check against `Docs/Plans/COE-Master-Plan/04-Data-Flow-State-Management.md` and architecture diagrams.
+- Validate WebSocket event propagation, reconnect behavior, and state hydration on reconnect.
+- Confirm persistence layers (SQLite WAL, caches) behave per spec and recover g
+
+**GitHub URL**: https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/issues/210
+
+### Sprint Execution Timeline (Legacy)
 
 **Week 1 (Jan 11-14)**
 - Issue #1: 3-4 hrs - Fri-Sat
@@ -2301,6 +2571,6 @@ Core mechanism that turns wizard output into executable task queue with dependen
 
 ## Document Control
 
-**Generated**: 2026-01-21 20:02:18  
+**Generated**: 2026-01-21 20:08:48  
 **Generated by**: AI-Optimized PRD Notebook  
 **Source**: Copilot Orchestration Extension project documentation

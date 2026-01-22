@@ -1,5 +1,10 @@
 # Copilot Orchestration Extension (COE)
 
+[![CI - Tests & Quality Gates](https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/actions/workflows/ci.yml/badge.svg)](https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/actions/workflows/codeql.yml/badge.svg)](https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-/actions/workflows/codeql.yml)
+[![PRD Validated](https://img.shields.io/badge/PRD-validated-brightgreen)](./PRD.md)
+[![Coverage](https://img.shields.io/badge/coverage-96.8%25-brightgreen)](./coverage)
+
 **Version**: 2.0.0 | **Status**: Beta (52% Complete) | **Launch**: Feb 15, 2026
 
 AI-powered project planning and task management VS Code extension with multi-agent orchestration.

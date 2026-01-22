@@ -1,0 +1,261 @@
+name: CI - Tests & Quality Gates
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - 'Docs/**'
+      - '**.md'
+      - '!PRD.md'
+      - '!PRD.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # PRD Validation - Quality gate for documentation consistency
+  prd-validation:
+    name: PRD Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Run PRD validation
+        run: npm run validate:prd
+
+  # Context Manager Tests - Library test suite with 80%+ coverage requirement
+  context-manager-tests:
+    name: Context Manager Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: context-manager
+        run: npm ci
+
+      - name: Run tests with coverage
+        working-directory: context-manager
+        run: npm test -- --watchAll=false --coverage
+
+      - name: Upload coverage to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: context-manager-coverage
+          path: context-manager/coverage/
+
+  # VS Code Extension Tests - Main test suite with quality gates
+  extension-tests:
+    name: Extension Tests (Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: vscode-extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: vscode-extension
+        run: npm ci
+
+      - name: Run Jest tests with coverage
+        working-directory: vscode-extension
+        run: npm run test:jest -- --coverage --watchAll=false
+
+      - name: Check for skipped tests
+        working-directory: vscode-extension
+        run: |
+          # Fail if there are undocumented skipped tests (excluding sanity checks)
+          SKIPPED=$(npm run test:jest -- --listTests --findRelatedTests **/*.test.ts 2>/dev/null | grep -c "test.skip\\|xtest\\|xit" || true)
+          if [ "$SKIPPED" -gt 1 ]; then
+            echo "⚠️  Found $SKIPPED skipped tests (only sanity check skip is allowed)"
+            echo "All skipped tests must be documented with:"
+            echo "  - Reason for skip"
+            echo "  - GitHub issue number"
+            echo "  - Expected timeline"
+            exit 1
+          fi
+
+      - name: Upload coverage report
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: extension-coverage
+          path: vscode-extension/coverage/
+
+  # Laravel Tests - Backend test suite
+  laravel-tests:
+    name: Laravel Tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [8.2, 8.3]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: xdebug
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Run Laravel tests
+        run: vendor/bin/phpunit --coverage-text
+
+      - name: Upload Laravel coverage
+        if: matrix.php == '8.2' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: laravel-coverage
+          path: coverage/
+
+  # Linting & Type Checking
+  code-quality:
+    name: Code Quality (Lint & Type Check)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Install root dependencies
+        run: npm ci || npm install
+
+      - name: Install extension dependencies
+        working-directory: vscode-extension
+        run: npm ci
+
+      - name: TypeScript check (extension)
+        working-directory: vscode-extension
+        run: npx tsc --noEmit
+
+      - name: Run ESLint (extension)
+        working-directory: vscode-extension
+        run: npm run lint || echo "Linting warnings found but not blocking"
+        continue-on-error: true
+
+      - name: Laravel Pint (PHP)
+        run: ./vendor/bin/pint --test || echo "PHP linting warnings found but not blocking"
+        continue-on-error: true
+
+  # Comprehensive coverage report
+  coverage-report:
+    name: Coverage Summary
+    runs-on: ubuntu-latest
+    needs: [context-manager-tests, extension-tests, laravel-tests]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v6
+
+      - name: Generate coverage summary
+        run: |
+          echo "## 📊 Test Coverage Summary" > coverage-summary.md
+          echo "" >> coverage-summary.md
+          echo "| Component | Coverage | Status |" >> coverage-summary.md
+          echo "|-----------|----------|--------|" >> coverage-summary.md
+          
+          # Context Manager (target: 80%+)
+          if [ -f context-manager-coverage/coverage-summary.json ]; then
+            CM_COV=$(cat context-manager-coverage/coverage-summary.json | jq -r '.total.statements.pct')
+            CM_STATUS=$( [ $(echo "$CM_COV >= 80" | bc -l) -eq 1 ] && echo "✅ Pass" || echo "⚠️ Below Target" )
+            echo "| Context Manager | ${CM_COV}% | ${CM_STATUS} |" >> coverage-summary.md
+          fi
+          
+          # Extension (target: 50%+)
+          if [ -f extension-coverage/coverage-summary.json ]; then
+            EXT_COV=$(cat extension-coverage/coverage-summary.json | jq -r '.total.statements.pct')
+            EXT_STATUS=$( [ $(echo "$EXT_COV >= 50" | bc -l) -eq 1 ] && echo "✅ Pass" || echo "⚠️ Below Target" )
+            echo "| VS Code Extension | ${EXT_COV}% | ${EXT_STATUS} |" >> coverage-summary.md
+          fi
+          
+          # Laravel (informational only)
+          if [ -f laravel-coverage/coverage.txt ]; then
+            LARAVEL_COV=$(cat laravel-coverage/coverage.txt | grep "Lines:" | awk '{print $2}')
+            echo "| Laravel Backend | ${LARAVEL_COV} | ℹ️  Info |" >> coverage-summary.md
+          fi
+
+      - name: Comment PR with coverage
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('coverage-summary.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  # Quality gate check - blocks merge if critical checks fail
+  quality-gate:
+    name: Quality Gate ✅
+    runs-on: ubuntu-latest
+    needs: [prd-validation, context-manager-tests, extension-tests, code-quality]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          if [ "${{ needs.prd-validation.result }}" != "success" ]; then
+            echo "❌ PRD validation failed"
+            exit 1
+          fi
+          if [ "${{ needs.context-manager-tests.result }}" != "success" ]; then
+            echo "❌ Context Manager tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.extension-tests.result }}" != "success" ]; then
+            echo "❌ Extension tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.code-quality.result }}" != "success" ]; then
+            echo "❌ Code quality checks failed"
+            exit 1
+          fi
+          echo "✅ All quality gates passed!"

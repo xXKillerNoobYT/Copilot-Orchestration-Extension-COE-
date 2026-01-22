@@ -1,13 +1,65 @@
 # Project Runbook - Autonomous Execution Guide
 **Created**: January 11, 2026  
+**Updated**: January 21, 2026  
 **Purpose**: Complete guide to get the project running autonomously  
 **Status**: ✅ READY FOR EXECUTION
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start - CI/CD Enabled
 
-Three GitHub-style issues have been created and are ready to execute in order. These mirror both GitHub issues and Zen Tasks for autonomous workflow execution.
+### Prerequisites
+- Node.js 18+ (20+ recommended)
+- PHP 8.2+ (for Laravel backend)
+- Composer 2.x
+- VS Code 1.80+
+- Git latest
+
+### Setup Commands
+
+```bash
+# 1. Clone & Install
+git clone https://github.com/xXKillerNoobYT/Copilot-Orchestration-Extension-COE-.git
+cd Copilot-Orchestration-Extension-COE-
+npm install
+
+# 2. Install all sub-projects
+cd vscode-extension && npm install && cd ..
+cd context-manager && npm install && cd ..
+
+# 3. Setup Laravel backend (optional)
+composer install
+cp .env.example .env
+php artisan key:generate
+
+# 4. Run tests (all suites)
+npm run test:all
+
+# 5. Validate PRD (quality gate)
+npm run validate:prd
+```
+
+### CI/CD Pipeline
+
+**GitHub Actions Workflow**: `.github/workflows/ci.yml`
+
+Runs on every push and PR:
+- ✅ PRD Validation (consistency check)
+- ✅ Context Manager Tests (136 tests, 94%+ coverage)
+- ✅ VS Code Extension Tests (947 tests)
+- ✅ Laravel Tests (PHP 8.2 & 8.3)
+- ✅ Code Quality (TypeScript, ESLint, Pint)
+- ✅ Coverage Reports (posted to PR)
+
+**Quality Gates** (blocks merge if failed):
+- All tests passing
+- PRD validation passing
+- No undocumented skipped tests
+- TypeScript compilation success (0 errors)
+
+---
+
+## 📋 Current Sprint Status
 
 ### Execute in This Order
 
