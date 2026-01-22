@@ -11,6 +11,9 @@ This index provides a roadmap to all the AI Teams documentation updates (version
 
 ## Quick Navigation
 
+### 📘 Core Documentation
+0. **[COE Comprehensive Report - Integrated](COE-COMPREHENSIVE-REPORT-INTEGRATED.md)** ⭐ **COMPLETE MAPPING** - Shows how all comprehensive report content maps to documentation
+
 ### Core Planning Documents
 1. [Planning Wizard Specification](PLANNING-WIZARD-SPECIFICATION.md) - v4.4-4.8
 2. [Plan Updating Process](PLAN-UPDATING-PROCESS.md) - v5.0
@@ -24,6 +27,13 @@ This index provides a roadmap to all the AI Teams documentation updates (version
 ### User Interaction & Experience
 7. [Ticket System Specification](TICKET-SYSTEM-SPECIFICATION.md) - v5.4-5.5
 8. [Project Roadmap (Detailed)](PROJECT-ROADMAP-DETAILED.md) - v5.1
+
+### 🔗 Existing COE Documentation (Pre-v4.4)
+9. [Agent Role Definitions](COE-Master-Plan/02-Agent-Role-Definitions.md) - Complete agent specs
+10. [MCP API Reference](COE-Master-Plan/05-MCP-API-Reference.md) - All tool schemas
+11. [Context Management System](COE-Master-Plan/08-Context-Management-System.md) - Breaking strategies
+12. [Copilot Integration System](COE-Master-Plan/09-Copilot-Integration-System.md) - Workspace delegation
+13. [MCP Error Codes Registry](COE-Master-Plan/10-MCP-Error-Codes-Registry.md) - Error handling
 
 ---
 

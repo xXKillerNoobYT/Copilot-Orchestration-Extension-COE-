@@ -23,6 +23,7 @@
 
 | Document | Purpose |
 |----------|---------|
+| 🎯 [**COE Comprehensive Report - Integrated**](COE-COMPREHENSIVE-REPORT-INTEGRATED.md) | **COMPLETE MAPPING** - Shows how all comprehensive report content maps to documentation |
 | 📖 [**AI Teams Documentation Index**](AI-TEAMS-DOCUMENTATION-INDEX.md) | **START HERE** - Master index with version history & navigation |
 | 🗺️ [**Visual Documentation Map**](VISUAL-DOCUMENTATION-MAP.md) | At-a-glance hierarchy & flow diagrams |
 | 🎯 [**Quick Reference Card**](QUICK-REFERENCE-CARD.md) | Fast lookup by topic + metrics cheat sheet |
