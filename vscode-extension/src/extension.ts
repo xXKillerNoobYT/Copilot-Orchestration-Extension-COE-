@@ -273,8 +273,6 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-
-
   // ============ Audit Dashboard Command ============
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
