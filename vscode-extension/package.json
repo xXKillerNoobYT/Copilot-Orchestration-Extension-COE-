@@ -626,7 +626,7 @@
     "build:mcp": "tsc -p src/mcp-server/tsconfig.json",
     "watch": "webpack --watch --mode development --stats=errors-warnings",
     "lint": "echo 'no lint configured'",
-    "test": "npm run test:watch",
+    "test": "npm run test:unit",
     "test:watch": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --watch --coverage --maxWorkers=1 --passWithNoTests",
     "test:unit": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --forceExit --passWithNoTests",
     "test:jest": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --forceExit --passWithNoTests",
