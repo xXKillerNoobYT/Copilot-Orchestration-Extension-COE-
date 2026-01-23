@@ -3,7 +3,7 @@ import { validateAgentProfile } from '../agentProfileValidator';
 describe('Agent Profile Validator', () => {
 	test('valid agent profile', () => {
 		const profile = {
-			version: '1.0',
+			version: 1,
 			name: 'John Doe',
 			email: 'john.doe@example.com',
 			role: 'agent',
@@ -17,7 +17,7 @@ describe('Agent Profile Validator', () => {
 
 	test('invalid agent profile - missing name', () => {
 		const profile = {
-			version: '1.0',
+			version: 1,
 			email: 'john.doe@example.com',
 			role: 'agent',
 		};
@@ -28,7 +28,7 @@ describe('Agent Profile Validator', () => {
 
 	test('invalid agent profile - missing role', () => {
 		const profile = {
-			version: '1.0',
+			version: 1,
 			name: 'John Doe',
 			email: 'john.doe@example.com',
 		};

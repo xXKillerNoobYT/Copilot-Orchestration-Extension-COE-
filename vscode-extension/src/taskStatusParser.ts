@@ -98,7 +98,7 @@ export class TaskStatusParser {
     }
 
     // Dependencies
-    if (task.dependencies.length > 0) {
+    if (task.dependencies && task.dependencies.length > 0) {
       parts.push(`Dependencies: ${task.dependencies.length}`);
     }
 
