@@ -10,398 +10,398 @@ jest.mock('../taskFileCodeLens');
 jest.mock('../taskStatusParser');
 
 describe('TaskFileDocumentWatcher', () => {
-  let watcher: TaskFileDocumentWatcher;
-  let mockCodeLensProvider: jest.Mocked<TaskFileCodeLensProvider>;
-  let mockParser: jest.Mocked<TaskStatusParser>;
-  let mockDisposables: vscode.Disposable[];
+    let watcher: TaskFileDocumentWatcher;
+    let mockCodeLensProvider: jest.Mocked<TaskFileCodeLensProvider>;
+    let mockParser: jest.Mocked<TaskStatusParser>;
+    let mockDisposables: vscode.Disposable[];
 
-  beforeEach(() => {
-    jest.clearAllMocks();
+    beforeEach(() => {
+        jest.clearAllMocks();
 
-    mockCodeLensProvider = {} as any;
-    mockParser = {
-      parseTaskFile: jest.fn(),
-      buildStatusDisplay: jest.fn(),
-    } as any;
+        mockCodeLensProvider = {} as any;
+        mockParser = {
+            parseTaskFile: jest.fn(),
+            buildStatusDisplay: jest.fn(),
+        } as any;
 
-    (TaskStatusParser as jest.MockedClass<typeof TaskStatusParser>).mockImplementation(() => mockParser);
+        (TaskStatusParser as jest.MockedClass<typeof TaskStatusParser>).mockImplementation(() => mockParser);
 
-    // Mock VS Code APIs
-    (vscode.window as any) = {
-      createTextEditorDecorationType: jest.fn(() => ({
-        dispose: jest.fn(),
-      })),
-      createStatusBarItem: jest.fn(() => ({
-        text: '',
-        tooltip: '',
-        show: jest.fn(),
-        hide: jest.fn(),
-        dispose: jest.fn(),
-      })),
-      showInformationMessage: jest.fn(),
-      showWarningMessage: jest.fn(),
-      activeTextEditor: undefined,
-    };
+        // Mock VS Code APIs
+        (vscode.window as any) = {
+            createTextEditorDecorationType: jest.fn(() => ({
+                dispose: jest.fn(),
+            })),
+            createStatusBarItem: jest.fn(() => ({
+                text: '',
+                tooltip: '',
+                show: jest.fn(),
+                hide: jest.fn(),
+                dispose: jest.fn(),
+            })),
+            showInformationMessage: jest.fn(),
+            showWarningMessage: jest.fn(),
+            activeTextEditor: undefined,
+        };
 
-    (vscode.workspace as any) = {
-      createFileSystemWatcher: jest.fn(() => ({
-        onDidCreate: jest.fn((callback, context, disposables) => {
-          return { dispose: jest.fn() };
-        }),
-        onDidChange: jest.fn((callback, context, disposables) => {
-          return { dispose: jest.fn() };
-        }),
-        onDidDelete: jest.fn((callback, context, disposables) => {
-          return { dispose: jest.fn() };
-        }),
-        dispose: jest.fn(),
-      })),
-      onDidChangeTextDocument: jest.fn((callback, context, disposables) => {
-        return { dispose: jest.fn() };
-      }),
-      findFiles: jest.fn(() => Promise.resolve([])),
-      openTextDocument: jest.fn(),
-    };
+        (vscode.workspace as any) = {
+            createFileSystemWatcher: jest.fn(() => ({
+                onDidCreate: jest.fn((callback, context, disposables) => {
+                    return { dispose: jest.fn() };
+                }),
+                onDidChange: jest.fn((callback, context, disposables) => {
+                    return { dispose: jest.fn() };
+                }),
+                onDidDelete: jest.fn((callback, context, disposables) => {
+                    return { dispose: jest.fn() };
+                }),
+                dispose: jest.fn(),
+            })),
+            onDidChangeTextDocument: jest.fn((callback, context, disposables) => {
+                return { dispose: jest.fn() };
+            }),
+            findFiles: jest.fn(() => Promise.resolve([])),
+            openTextDocument: jest.fn(),
+        };
 
-    (vscode.ThemeColor as any) = jest.fn((name) => ({ name }));
-    (vscode.StatusBarAlignment as any) = { Right: 2, Left: 1 };
+        (vscode.ThemeColor as any) = jest.fn((name) => ({ name }));
+        (vscode.StatusBarAlignment as any) = { Right: 2, Left: 1 };
 
-    mockDisposables = [];
+        mockDisposables = [];
 
-    watcher = new TaskFileDocumentWatcher(mockCodeLensProvider);
-  });
-
-  describe('constructor', () => {
-    it('should create watcher instance', () => {
-      expect(watcher).toBeDefined();
+        watcher = new TaskFileDocumentWatcher(mockCodeLensProvider);
     });
 
-    it('should create status parser', () => {
-      expect(TaskStatusParser).toHaveBeenCalled();
+    describe('constructor', () => {
+        it('should create watcher instance', () => {
+            expect(watcher).toBeDefined();
+        });
+
+        it('should create status parser', () => {
+            expect(TaskStatusParser).toHaveBeenCalled();
+        });
+
+        it('should create decoration type', () => {
+            expect(vscode.window.createTextEditorDecorationType).toHaveBeenCalled();
+        });
+
+        it('should create status bar item', () => {
+            expect(vscode.window.createStatusBarItem).toHaveBeenCalledWith(
+                vscode.StatusBarAlignment.Right,
+                100
+            );
+        });
     });
 
-    it('should create decoration type', () => {
-      expect(vscode.window.createTextEditorDecorationType).toHaveBeenCalled();
+    describe('startWatching', () => {
+        it('should create file system watcher for .task.md files', () => {
+            const disposables = watcher.startWatching();
+
+            expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith('**/*.task.md');
+            expect(disposables.length).toBeGreaterThan(0);
+        });
+
+        it('should return disposables', () => {
+            const disposables = watcher.startWatching();
+
+            expect(Array.isArray(disposables)).toBe(true);
+            expect(disposables.length).toBeGreaterThan(0);
+        });
+
+        it('should set up file creation handler', () => {
+            const mockWatcher = {
+                onDidCreate: jest.fn(),
+                onDidChange: jest.fn(),
+                onDidDelete: jest.fn(),
+                dispose: jest.fn(),
+            };
+
+            (vscode.workspace.createFileSystemWatcher as jest.Mock).mockReturnValue(mockWatcher);
+
+            watcher.startWatching();
+
+            expect(mockWatcher.onDidCreate).toHaveBeenCalled();
+        });
+
+        it('should set up file change handler', () => {
+            const mockWatcher = {
+                onDidCreate: jest.fn(),
+                onDidChange: jest.fn(),
+                onDidDelete: jest.fn(),
+                dispose: jest.fn(),
+            };
+
+            (vscode.workspace.createFileSystemWatcher as jest.Mock).mockReturnValue(mockWatcher);
+
+            watcher.startWatching();
+
+            expect(mockWatcher.onDidChange).toHaveBeenCalled();
+        });
+
+        it('should set up file deletion handler', () => {
+            const mockWatcher = {
+                onDidCreate: jest.fn(),
+                onDidChange: jest.fn(),
+                onDidDelete: jest.fn(),
+                dispose: jest.fn(),
+            };
+
+            (vscode.workspace.createFileSystemWatcher as jest.Mock).mockReturnValue(mockWatcher);
+
+            watcher.startWatching();
+
+            expect(mockWatcher.onDidDelete).toHaveBeenCalled();
+        });
     });
 
-    it('should create status bar item', () => {
-      expect(vscode.window.createStatusBarItem).toHaveBeenCalledWith(
-        vscode.StatusBarAlignment.Right,
-        100
-      );
-    });
-  });
+    describe('onTaskFileCreated', () => {
+        it('should show notification when task file is created', async () => {
+            const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
 
-  describe('startWatching', () => {
-    it('should create file system watcher for .task.md files', () => {
-      const disposables = watcher.startWatching();
+            // Access private method through type assertion
+            await (watcher as any).onTaskFileCreated(mockUri);
 
-      expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith('**/*.task.md');
-      expect(disposables.length).toBeGreaterThan(0);
-    });
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Task file created')
+            );
+        });
 
-    it('should return disposables', () => {
-      const disposables = watcher.startWatching();
+        it('should update task metadata after creation', async () => {
+            const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
+            const updateSpy = jest.spyOn(watcher as any, 'updateTaskMetadata').mockResolvedValue(undefined);
 
-      expect(Array.isArray(disposables)).toBe(true);
-      expect(disposables.length).toBeGreaterThan(0);
-    });
+            await (watcher as any).onTaskFileCreated(mockUri);
 
-    it('should set up file creation handler', () => {
-      const mockWatcher = {
-        onDidCreate: jest.fn(),
-        onDidChange: jest.fn(),
-        onDidDelete: jest.fn(),
-        dispose: jest.fn(),
-      };
-
-      (vscode.workspace.createFileSystemWatcher as jest.Mock).mockReturnValue(mockWatcher);
-
-      watcher.startWatching();
-
-      expect(mockWatcher.onDidCreate).toHaveBeenCalled();
+            expect(updateSpy).toHaveBeenCalledWith(mockUri);
+        });
     });
 
-    it('should set up file change handler', () => {
-      const mockWatcher = {
-        onDidCreate: jest.fn(),
-        onDidChange: jest.fn(),
-        onDidDelete: jest.fn(),
-        dispose: jest.fn(),
-      };
+    describe('onTaskFileChanged', () => {
+        it('should update task metadata when file changes', async () => {
+            const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
+            const updateSpy = jest.spyOn(watcher as any, 'updateTaskMetadata').mockResolvedValue(undefined);
 
-      (vscode.workspace.createFileSystemWatcher as jest.Mock).mockReturnValue(mockWatcher);
+            await (watcher as any).onTaskFileChanged(mockUri);
 
-      watcher.startWatching();
-
-      expect(mockWatcher.onDidChange).toHaveBeenCalled();
+            expect(updateSpy).toHaveBeenCalledWith(mockUri);
+        });
     });
 
-    it('should set up file deletion handler', () => {
-      const mockWatcher = {
-        onDidCreate: jest.fn(),
-        onDidChange: jest.fn(),
-        onDidDelete: jest.fn(),
-        dispose: jest.fn(),
-      };
+    describe('onTaskFileDeleted', () => {
+        it('should show notification when task file is deleted', async () => {
+            const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
 
-      (vscode.workspace.createFileSystemWatcher as jest.Mock).mockReturnValue(mockWatcher);
+            await (watcher as any).onTaskFileDeleted(mockUri);
 
-      watcher.startWatching();
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Task file deleted')
+            );
+        });
 
-      expect(mockWatcher.onDidDelete).toHaveBeenCalled();
-    });
-  });
+        it('should remove task from active metadata', async () => {
+            const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
 
-  describe('onTaskFileCreated', () => {
-    it('should show notification when task file is created', async () => {
-      const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
+            // Add task to active metadata first
+            (watcher as any).activeTaskMetadata.set(mockUri.fsPath, {
+                id: 'task-001',
+                title: 'Test Task',
+            });
 
-      // Access private method through type assertion
-      await (watcher as any).onTaskFileCreated(mockUri);
+            await (watcher as any).onTaskFileDeleted(mockUri);
 
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Task file created')
-      );
+            expect((watcher as any).activeTaskMetadata.has(mockUri.fsPath)).toBe(false);
+        });
     });
 
-    it('should update task metadata after creation', async () => {
-      const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
-      const updateSpy = jest.spyOn(watcher as any, 'updateTaskMetadata').mockResolvedValue(undefined);
+    describe('onEditorChanged', () => {
+        it('should handle editor change for .task.md file', () => {
+            const mockEditor = {
+                document: {
+                    uri: { fsPath: '/path/to/task-001.task.md' },
+                    getText: jest.fn(() => 'task content'),
+                },
+            } as any;
 
-      await (watcher as any).onTaskFileCreated(mockUri);
+            (watcher as any).onEditorChanged(mockEditor);
 
-      expect(updateSpy).toHaveBeenCalledWith(mockUri);
-    });
-  });
+            // Should process the editor change
+            expect(mockEditor.document.uri.fsPath).toContain('.task.md');
+        });
 
-  describe('onTaskFileChanged', () => {
-    it('should update task metadata when file changes', async () => {
-      const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
-      const updateSpy = jest.spyOn(watcher as any, 'updateTaskMetadata').mockResolvedValue(undefined);
+        it('should ignore editor change for non-task files', () => {
+            const mockEditor = {
+                document: {
+                    uri: { fsPath: '/path/to/regular.md' },
+                    getText: jest.fn(() => 'content'),
+                },
+            } as any;
 
-      await (watcher as any).onTaskFileChanged(mockUri);
+            (watcher as any).onEditorChanged(mockEditor);
 
-      expect(updateSpy).toHaveBeenCalledWith(mockUri);
-    });
-  });
+            // Should ignore non-task files
+            expect(mockEditor.document.uri.fsPath).not.toContain('.task.md');
+        });
 
-  describe('onTaskFileDeleted', () => {
-    it('should show notification when task file is deleted', async () => {
-      const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
-
-      await (watcher as any).onTaskFileDeleted(mockUri);
-
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Task file deleted')
-      );
-    });
-
-    it('should remove task from active metadata', async () => {
-      const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
-      
-      // Add task to active metadata first
-      (watcher as any).activeTaskMetadata.set(mockUri.fsPath, {
-        id: 'task-001',
-        title: 'Test Task',
-      });
-
-      await (watcher as any).onTaskFileDeleted(mockUri);
-
-      expect((watcher as any).activeTaskMetadata.has(mockUri.fsPath)).toBe(false);
-    });
-  });
-
-  describe('onEditorChanged', () => {
-    it('should handle editor change for .task.md file', () => {
-      const mockEditor = {
-        document: {
-          uri: { fsPath: '/path/to/task-001.task.md' },
-          getText: jest.fn(() => 'task content'),
-        },
-      } as any;
-
-      (watcher as any).onEditorChanged(mockEditor);
-
-      // Should process the editor change
-      expect(mockEditor.document.uri.fsPath).toContain('.task.md');
+        it('should handle undefined editor', () => {
+            expect(() => (watcher as any).onEditorChanged(undefined)).not.toThrow();
+        });
     });
 
-    it('should ignore editor change for non-task files', () => {
-      const mockEditor = {
-        document: {
-          uri: { fsPath: '/path/to/regular.md' },
-          getText: jest.fn(() => 'content'),
-        },
-      } as any;
+    describe('onDocumentChanged', () => {
+        it('should handle document change event', () => {
+            const mockEvent = {
+                document: {
+                    uri: { fsPath: '/path/to/task-001.task.md' },
+                    getText: jest.fn(() => 'updated content'),
+                },
+                contentChanges: [],
+            } as any;
 
-      (watcher as any).onEditorChanged(mockEditor);
+            expect(() => (watcher as any).onDocumentChanged(mockEvent)).not.toThrow();
+        });
 
-      // Should ignore non-task files
-      expect(mockEditor.document.uri.fsPath).not.toContain('.task.md');
+        it('should ignore changes to non-task files', () => {
+            const mockEvent = {
+                document: {
+                    uri: { fsPath: '/path/to/regular.md' },
+                    getText: jest.fn(() => 'content'),
+                },
+                contentChanges: [],
+            } as any;
+
+            (watcher as any).onDocumentChanged(mockEvent);
+
+            expect(mockEvent.document.uri.fsPath).not.toContain('.task.md');
+        });
     });
 
-    it('should handle undefined editor', () => {
-      expect(() => (watcher as any).onEditorChanged(undefined)).not.toThrow();
-    });
-  });
+    describe('scanExistingFiles', () => {
+        it('should scan for existing .task.md files', async () => {
+            const mockUris = [
+                { fsPath: '/path/to/task-001.task.md' },
+                { fsPath: '/path/to/task-002.task.md' },
+            ] as vscode.Uri[];
 
-  describe('onDocumentChanged', () => {
-    it('should handle document change event', () => {
-      const mockEvent = {
-        document: {
-          uri: { fsPath: '/path/to/task-001.task.md' },
-          getText: jest.fn(() => 'updated content'),
-        },
-        contentChanges: [],
-      } as any;
+            (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockUris);
 
-      expect(() => (watcher as any).onDocumentChanged(mockEvent)).not.toThrow();
-    });
+            await (watcher as any).scanExistingFiles();
 
-    it('should ignore changes to non-task files', () => {
-      const mockEvent = {
-        document: {
-          uri: { fsPath: '/path/to/regular.md' },
-          getText: jest.fn(() => 'content'),
-        },
-        contentChanges: [],
-      } as any;
+            expect(vscode.workspace.findFiles).toHaveBeenCalledWith('**/*.task.md');
+        });
 
-      (watcher as any).onDocumentChanged(mockEvent);
+        it('should handle empty workspace', async () => {
+            (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
 
-      expect(mockEvent.document.uri.fsPath).not.toContain('.task.md');
-    });
-  });
+            await expect((watcher as any).scanExistingFiles()).resolves.not.toThrow();
+        });
 
-  describe('scanExistingFiles', () => {
-    it('should scan for existing .task.md files', async () => {
-      const mockUris = [
-        { fsPath: '/path/to/task-001.task.md' },
-        { fsPath: '/path/to/task-002.task.md' },
-      ] as vscode.Uri[];
+        it('should handle scan errors gracefully', async () => {
+            (vscode.workspace.findFiles as jest.Mock).mockRejectedValue(new Error('Scan failed'));
 
-      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockUris);
-
-      await (watcher as any).scanExistingFiles();
-
-      expect(vscode.workspace.findFiles).toHaveBeenCalledWith('**/*.task.md');
+            await expect((watcher as any).scanExistingFiles()).resolves.not.toThrow();
+        });
     });
 
-    it('should handle empty workspace', async () => {
-      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+    describe('updateTaskMetadata', () => {
+        it('should parse task file and update metadata', async () => {
+            const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
+            const mockDocument = {
+                getText: jest.fn(() => '---\nid: task-001\n---\nContent'),
+            } as any;
 
-      await expect((watcher as any).scanExistingFiles()).resolves.not.toThrow();
+            (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue(mockDocument);
+
+            mockParser.parseTaskFile.mockReturnValue({
+                task: {
+                    id: 'task-001',
+                    title: 'Test Task',
+                    description: '',
+                    subtasks: [],
+                    assignees: [],
+                    labels: [],
+                },
+                errors: [],
+            });
+
+            await (watcher as any).updateTaskMetadata(mockUri);
+
+            expect(mockParser.parseTaskFile).toHaveBeenCalled();
+        });
+
+        it('should handle parsing errors', async () => {
+            const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
+            const mockDocument = {
+                getText: jest.fn(() => 'invalid'),
+            } as any;
+
+            (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue(mockDocument);
+
+            mockParser.parseTaskFile.mockReturnValue({
+                task: null,
+                errors: ['Parse error'],
+            });
+
+            await expect((watcher as any).updateTaskMetadata(mockUri)).resolves.not.toThrow();
+        });
+
+        it('should handle file read errors', async () => {
+            const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
+
+            (vscode.workspace.openTextDocument as jest.Mock).mockRejectedValue(new Error('File not found'));
+
+            await expect((watcher as any).updateTaskMetadata(mockUri)).resolves.not.toThrow();
+        });
     });
 
-    it('should handle scan errors gracefully', async () => {
-      (vscode.workspace.findFiles as jest.Mock).mockRejectedValue(new Error('Scan failed'));
+    describe('disposal', () => {
+        it('should dispose of decoration type', () => {
+            const decorationType = (watcher as any).decorationType;
 
-      await expect((watcher as any).scanExistingFiles()).resolves.not.toThrow();
-    });
-  });
+            expect(decorationType).toBeDefined();
+            expect(typeof decorationType.dispose).toBe('function');
+        });
 
-  describe('updateTaskMetadata', () => {
-    it('should parse task file and update metadata', async () => {
-      const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
-      const mockDocument = {
-        getText: jest.fn(() => '---\nid: task-001\n---\nContent'),
-      } as any;
+        it('should dispose of status bar item', () => {
+            const statusBarItem = (watcher as any).statusBarItem;
 
-      (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue(mockDocument);
+            expect(statusBarItem).toBeDefined();
+            expect(typeof statusBarItem.dispose).toBe('function');
+        });
 
-      mockParser.parseTaskFile.mockReturnValue({
-        task: {
-          id: 'task-001',
-          title: 'Test Task',
-          description: '',
-          subtasks: [],
-          assignees: [],
-          labels: [],
-        },
-        errors: [],
-      });
+        it('should dispose of all watchers', () => {
+            const disposables = watcher.startWatching();
 
-      await (watcher as any).updateTaskMetadata(mockUri);
-
-      expect(mockParser.parseTaskFile).toHaveBeenCalled();
+            disposables.forEach(d => {
+                expect(typeof d.dispose).toBe('function');
+            });
+        });
     });
 
-    it('should handle parsing errors', async () => {
-      const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
-      const mockDocument = {
-        getText: jest.fn(() => 'invalid'),
-      } as any;
+    describe('edge cases', () => {
+        it('should handle multiple simultaneous file changes', async () => {
+            const mockUris = [
+                { fsPath: '/path/to/task-001.task.md' },
+                { fsPath: '/path/to/task-002.task.md' },
+                { fsPath: '/path/to/task-003.task.md' },
+            ] as vscode.Uri[];
 
-      (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue(mockDocument);
+            const updateSpy = jest.spyOn(watcher as any, 'updateTaskMetadata').mockResolvedValue(undefined);
 
-      mockParser.parseTaskFile.mockReturnValue({
-        task: null,
-        errors: ['Parse error'],
-      });
+            await Promise.all(mockUris.map(uri => (watcher as any).onTaskFileChanged(uri)));
 
-      await expect((watcher as any).updateTaskMetadata(mockUri)).resolves.not.toThrow();
+            expect(updateSpy).toHaveBeenCalledTimes(3);
+        });
+
+        it('should handle tasks with special characters in filename', async () => {
+            const mockUri = { fsPath: '/path/to/task-001-特殊字符.task.md' } as vscode.Uri;
+
+            await expect((watcher as any).onTaskFileCreated(mockUri)).resolves.not.toThrow();
+        });
+
+        it('should handle very long file paths', async () => {
+            const longPath = '/path/' + 'to/'.repeat(100) + 'task-001.task.md';
+            const mockUri = { fsPath: longPath } as vscode.Uri;
+
+            await expect((watcher as any).onTaskFileCreated(mockUri)).resolves.not.toThrow();
+        });
     });
-
-    it('should handle file read errors', async () => {
-      const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
-
-      (vscode.workspace.openTextDocument as jest.Mock).mockRejectedValue(new Error('File not found'));
-
-      await expect((watcher as any).updateTaskMetadata(mockUri)).resolves.not.toThrow();
-    });
-  });
-
-  describe('disposal', () => {
-    it('should dispose of decoration type', () => {
-      const decorationType = (watcher as any).decorationType;
-      
-      expect(decorationType).toBeDefined();
-      expect(typeof decorationType.dispose).toBe('function');
-    });
-
-    it('should dispose of status bar item', () => {
-      const statusBarItem = (watcher as any).statusBarItem;
-      
-      expect(statusBarItem).toBeDefined();
-      expect(typeof statusBarItem.dispose).toBe('function');
-    });
-
-    it('should dispose of all watchers', () => {
-      const disposables = watcher.startWatching();
-
-      disposables.forEach(d => {
-        expect(typeof d.dispose).toBe('function');
-      });
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle multiple simultaneous file changes', async () => {
-      const mockUris = [
-        { fsPath: '/path/to/task-001.task.md' },
-        { fsPath: '/path/to/task-002.task.md' },
-        { fsPath: '/path/to/task-003.task.md' },
-      ] as vscode.Uri[];
-
-      const updateSpy = jest.spyOn(watcher as any, 'updateTaskMetadata').mockResolvedValue(undefined);
-
-      await Promise.all(mockUris.map(uri => (watcher as any).onTaskFileChanged(uri)));
-
-      expect(updateSpy).toHaveBeenCalledTimes(3);
-    });
-
-    it('should handle tasks with special characters in filename', async () => {
-      const mockUri = { fsPath: '/path/to/task-001-特殊字符.task.md' } as vscode.Uri;
-
-      await expect((watcher as any).onTaskFileCreated(mockUri)).resolves.not.toThrow();
-    });
-
-    it('should handle very long file paths', async () => {
-      const longPath = '/path/' + 'to/'.repeat(100) + 'task-001.task.md';
-      const mockUri = { fsPath: longPath } as vscode.Uri;
-
-      await expect((watcher as any).onTaskFileCreated(mockUri)).resolves.not.toThrow();
-    });
-  });
 });

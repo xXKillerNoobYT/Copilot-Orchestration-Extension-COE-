@@ -43,7 +43,7 @@ export class TaskStatusParser {
         priority: frontMatter.priority,
         status: frontMatter.status,
         dependencies: Array.isArray(frontMatter.dependencies) ? frontMatter.dependencies : [],
-        assignees: Array.isArray(frontMatter.assignees) 
+        assignees: Array.isArray(frontMatter.assignees)
           ? frontMatter.assignees.filter(isValidAgentType)
           : [],
         labels: Array.isArray(frontMatter.labels) ? frontMatter.labels : [],
