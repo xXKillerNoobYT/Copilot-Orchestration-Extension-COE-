@@ -20,7 +20,7 @@ if (typeof jest !== 'undefined' && jest.fn) {
     });
   } catch {
     // Fallback
-    mockFn = () => () => {};
+    mockFn = () => () => { };
   }
 }
 
@@ -28,7 +28,7 @@ if (typeof jest !== 'undefined' && jest.fn) {
 const createMock = () => {
   if (typeof jest !== 'undefined') return jest.fn();
   // Return a basic function for now, vi will be injected
-  const fn: any = () => {};
+  const fn: any = () => { };
   fn.mockReturnValue = () => fn;
   fn.mockResolvedValue = () => fn;
   return fn;
@@ -39,7 +39,7 @@ const createMock = () => {
 export class Disposable {
   private disposed = false;
 
-  constructor(private fn: () => void) {}
+  constructor(private fn: () => void) { }
 
   dispose() {
     if (!this.disposed) {
@@ -56,7 +56,7 @@ export class Disposable {
 // VS Code RelativePattern
 // Reference: https://code.visualstudio.com/api/references/vscode-api#RelativePattern
 export class RelativePattern {
-  constructor(public base: any, public pattern: string) {}
+  constructor(public base: any, public pattern: string) { }
 }
 
 // VS Code Uri
@@ -105,7 +105,7 @@ export class TreeItem {
   command?: any;
   tooltip?: string;
   contextValue?: string;
-  
+
   constructor(label: string, collapsibleState?: number) {
     this.label = label;
   }
@@ -115,7 +115,7 @@ export class TreeItem {
 // Reference: https://code.visualstudio.com/api/references/vscode-api#ThemeIcon
 export class ThemeIcon {
   id: string;
-  
+
   constructor(id: string) {
     this.id = id;
   }
@@ -142,6 +142,8 @@ export const window = {
   createOutputChannel: createMock(),
   createStatusBarItem: createMock(),
   createTerminal: createMock(),
+  withProgress: createMock(),
+  showTextDocument: createMock(),
   activeTextEditor: undefined,
   visibleTextEditors: [],
 };
@@ -195,7 +197,7 @@ export const Position = mockFn((line: number, character: number) => ({
   character,
 }));
 
-export const EventEmitter = jest.fn(function() {
+export const EventEmitter = jest.fn(function () {
   const listeners: Function[] = [];
   return {
     fire: jest.fn((data?: any) => {
@@ -236,6 +238,12 @@ export enum ViewColumn {
 export enum StatusBarAlignment {
   Left = 1,
   Right = 2,
+}
+
+export enum ProgressLocation {
+  SourceControl = 1,
+  Window = 10,
+  Notification = 15,
 }
 
 export enum QuickPickItemKind {

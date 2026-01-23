@@ -2,10 +2,20 @@
  * Unit tests for requestVerification handler
  * Tests verification request creation in backend
  */
-
+// @ts-ignore TS2835 - ts-jest handles .ts imports in CommonJS mode
 import { handleRequestVerification } from '../requestVerification';
 
 global.fetch = jest.fn() as jest.Mock;
+
+// Mock the AuditLogger
+jest.mock('../../auditLogger', () => ({
+  getAuditLogger: jest.fn(() => ({
+    initialize: jest.fn().mockReturnValue(undefined),
+    log: jest.fn().mockReturnValue(1),
+    setWebSocketCallback: jest.fn(),
+    queryLogs: jest.fn().mockReturnValue([]),
+  })),
+}));
 
 describe('handleRequestVerification', () => {
   beforeEach(() => {

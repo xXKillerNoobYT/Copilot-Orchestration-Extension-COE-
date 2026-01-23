@@ -77,3 +77,51 @@ Title; Severity (P0/P1/P2); Steps to reproduce; Expected; Actual; Environment; L
 - Scan repo root for `PRD.json` and `PRD.md`, validate them.
 - Produce a 4–6 item beta roadmap mapped to PRD acceptance criteria.
 - Ensure **≥3 open issues**; create new ones if below threshold (label/assign/describe).
+
+## Testing checklist quick reference
+
+### Testing Checklist for Proper Coverage and Program Reliability
+This checklist provides a comprehensive guide to ensure your project has proper test coverage and reliability. Use it to design, implement, execute, and maintain effective tests across your codebase.
+#### Test Design
+- [ ] **Define scope** — List features, modules, and user flows to be tested.  
+- [ ] **Identify test types** — Unit; integration; end to end; regression; performance; security; accessibility.  
+- [ ] **Map requirements to tests** — Every requirement or user story has at least one test case.  
+- [ ] **Specify acceptance criteria** — Clear pass/fail conditions for each test.  
+- [ ] **Design edge case and negative tests** — Include boundary values, invalid inputs, and error paths.  
+- [ ] **Plan test data** — Realistic, anonymized, and repeatable datasets; include fixtures for edge cases.
+
+
+#### Test Implementation
+- [ ] **Write small, focused unit tests** — One behavior per test; fast and deterministic.  
+- [ ] **Use meaningful test names** — Describe behavior and expected outcome.  
+- [ ] **Assert behavior, not implementation** — Verify outputs and side effects, avoid fragile internals.  
+- [ ] **Mock and stub responsibly** — Mock external services; keep mocks minimal and documented.  
+- [ ] **Cover integration points** — Database, message queues, external APIs, and file systems.  
+- [ ] **Include end to end scenarios** — Critical user journeys validated from UI/API to persistence.  
+- [ ] **Add performance and load tests** — Baseline response times and resource usage under expected load.  
+- [ ] **Add security and vulnerability tests** — Authentication, authorization, input validation, and common exploits.
+
+#### Test Execution and Automation
+- [ ] **Automate test runs** — Local dev, pull requests, and CI pipelines run relevant suites.  
+- [ ] **Enforce pre-merge checks** — Block merges when critical tests fail or coverage drops below threshold.  
+- [ ] **Use environment parity** — CI environment mirrors production configuration and secrets handling.  
+- [ ] **Isolate tests** — Ensure tests can run in parallel and do not share mutable global state.  
+- [ ] **Record and surface artifacts** — Logs, screenshots, traces, and test reports attached to CI runs.  
+- [ ] **Handle flaky tests** — Track, quarantine, and fix flaky tests; do not ignore failures.
+
+#### Quality Metrics and Reporting
+- [ ] **Set coverage targets** — Define minimum line/branch coverage per module and overall.  
+- [ ] **Measure meaningful coverage** — Prefer branch and mutation testing to validate test effectiveness.  
+- [ ] **Track test execution time** — Monitor slow tests and optimize or split them.  
+- [ ] **Report failures clearly** — CI notifications include failing test, stack trace, and reproduction steps.  
+- [ ] **Monitor post-release** — Use telemetry and error tracking to detect gaps in test coverage.
+
+#### Maintenance and Governance
+- [ ] **Review tests in code review** — Treat tests as production code; require reviews and approvals.  
+- [ ] **Keep tests up to date** — Update or remove tests when requirements or implementations change.  
+- [ ] **Document test strategy** — Where tests live, how to run them, and how to add new tests.  
+- [ ] **Schedule periodic audits** — Review coverage, flaky tests, and test debt quarterly.  
+- [ ] **Train the team** — Share best practices for writing reliable, maintainable tests.  
+- [ ] **Automate cleanup** — Remove obsolete fixtures, unused mocks, and deprecated test helpers.
+
+Use this checklist as a template and adapt thresholds, tools, and processes to your project and risk profile.

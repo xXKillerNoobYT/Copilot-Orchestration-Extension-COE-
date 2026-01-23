@@ -239,7 +239,7 @@ export async function executeLlmCommandStreaming(): Promise<void> {
                 outputChannel.updateProgress(chunk.progress);
                 const increment = chunk.progress - previousProgress;
                 previousProgress = chunk.progress;
-                progress.report({ 
+                progress.report({
                   message: `Streaming... ${chunk.progress}%`,
                   increment: increment > 0 ? increment : undefined
                 });

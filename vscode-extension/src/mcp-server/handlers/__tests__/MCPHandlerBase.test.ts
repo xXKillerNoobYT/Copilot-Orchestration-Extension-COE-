@@ -2,20 +2,42 @@
  * Unit tests for MCPHandlerBase class
  * Tests retry logic, timeout, error handling, and dead-letter queue
  */
-
+// @ts-ignore TS2835 - ts-jest handles .ts imports in CommonJS mode
 import { MCPHandlerBase, DEFAULT_ERROR_CONFIG } from '../MCPHandlerBase';
 
+// Mock the AuditLogger
+jest.mock('../../auditLogger', () => ({
+  getAuditLogger: jest.fn(() => ({
+    initialize: jest.fn().mockReturnValue(undefined),
+    log: jest.fn().mockReturnValue(1),
+    setWebSocketCallback: jest.fn(),
+    queryLogs: jest.fn().mockReturnValue([]),
+  })),
+}));
+
 class TestHandler extends MCPHandlerBase {
+  constructor(errorConfig?: any, maxDeadLetterQueueSize?: number) {
+    super(errorConfig, maxDeadLetterQueueSize);
+  }
+
   public async testExecuteWithRetry<T>(operation: () => Promise<T>, args: any): Promise<T> {
-    return this.executeWithRetry(operation, 'TestHandler', args);
+    return (this as any).executeWithRetry(operation, 'TestHandler', args);
   }
 
   public testFormatSuccess(data: any) {
-    return this.formatSuccess(data);
+    return (this as any).formatSuccess(data);
   }
 
   public testFormatError(error: Error | string, context?: any) {
-    return this.formatError(error, context);
+    return (this as any).formatError(error, context);
+  }
+
+  public getDeadLetterQueue() {
+    return (this as any).deadLetterQueue as any[];
+  }
+
+  public clearDeadLetterQueue() {
+    (this as any).deadLetterQueue = [];
   }
 }
 

@@ -2,10 +2,20 @@
  * Unit tests for listActiveTasks handler
  * Tests filtering and pagination with backend API
  */
-
+// @ts-ignore TS2835 - ts-jest handles .ts imports in CommonJS mode
 import { handleListActiveTasks } from '../listActiveTasks';
 
 global.fetch = jest.fn() as jest.Mock;
+
+// Mock the AuditLogger
+jest.mock('../../auditLogger', () => ({
+  getAuditLogger: jest.fn(() => ({
+    initialize: jest.fn().mockReturnValue(undefined),
+    log: jest.fn().mockReturnValue(1),
+    setWebSocketCallback: jest.fn(),
+    queryLogs: jest.fn().mockReturnValue([]),
+  })),
+}));
 
 describe('handleListActiveTasks', () => {
   beforeEach(() => {

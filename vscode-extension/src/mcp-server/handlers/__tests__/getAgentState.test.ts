@@ -2,10 +2,20 @@
  * Unit tests for getAgentState handler
  * Tests agent metrics and state retrieval
  */
-
+// @ts-ignore TS2835 - ts-jest handles .ts imports in CommonJS mode
 import { handleGetAgentState } from '../getAgentState';
 
 global.fetch = jest.fn() as jest.Mock;
+
+// Mock the AuditLogger
+jest.mock('../../auditLogger', () => ({
+  getAuditLogger: jest.fn(() => ({
+    initialize: jest.fn().mockReturnValue(undefined),
+    log: jest.fn().mockReturnValue(1),
+    setWebSocketCallback: jest.fn(),
+    queryLogs: jest.fn().mockReturnValue([]),
+  })),
+}));
 
 describe('handleGetAgentState', () => {
   beforeEach(() => {

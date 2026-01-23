@@ -61,21 +61,23 @@ module.exports = {
     '!src/**/__tests__/**',
     '!src/**/__mocks__/**'
   ],
-  
+
   coverageDirectory: 'coverage/jest',
-  
+
   /**
    * Multiple coverage reporters for analysis and CI/CD integration
    * See: https://jestjs.io/docs/configuration#coveragereporters-arraystring
    */
   coverageReporters: ['text', 'lcov', 'html'],
-  
+
   /**
    * Mock for VSCode extension API
    * Reference: https://jestjs.io/docs/mock-functions#mocking-modules
    */
   moduleNameMapper: {
     '^vscode$': '<rootDir>/src/__mocks__/vscode.ts',
+    // Map .js extensions to .ts for TypeScript source files
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
 
   /**
@@ -155,14 +157,14 @@ module.exports = {
    * See: https://jestjs.io/docs/setup-teardown for state management
    */
   maxWorkers: 1,
-  
+
   workerIdleMemoryLimit: '512MB',
 
   /**
    * Stability Improvements
    * Reference: https://jestjs.io/docs/troubleshooting
    */
-  
+
   // Force exit after tests - prevents hanging from unclosed handles
   forceExit: true,
 

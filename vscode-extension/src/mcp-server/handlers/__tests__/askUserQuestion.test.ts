@@ -2,10 +2,20 @@
  * Unit tests for askUserQuestion handler
  * Tests question creation in backend
  */
-
+// @ts-ignore TS2835 - ts-jest handles .ts imports in CommonJS mode
 import { handleAskUserQuestion } from '../askUserQuestion';
 
 global.fetch = jest.fn() as jest.Mock;
+
+// Mock the AuditLogger
+jest.mock('../../auditLogger', () => ({
+  getAuditLogger: jest.fn(() => ({
+    initialize: jest.fn().mockReturnValue(undefined),
+    log: jest.fn().mockReturnValue(1),
+    setWebSocketCallback: jest.fn(),
+    queryLogs: jest.fn().mockReturnValue([]),
+  })),
+}));
 
 describe('handleAskUserQuestion', () => {
   beforeEach(() => {
@@ -139,14 +149,10 @@ describe('handleAskUserQuestion', () => {
 
     const result = await handleAskUserQuestion({ question: 'Test?' });
 
-    expect(result).toEqual({
-      content: [
-        {
-          type: 'text',
-          text: expect.stringContaining('Failed to create question'),
-        },
-      ],
-    });
+    expect(result.content).toBeDefined();
+    expect(result.content[0].type).toBe('text');
+    const errorText = JSON.parse(result.content[0].text);
+    expect(errorText.error).toContain('Failed to create question');
   });
 
   it('should include note about WebSocket and polling', async () => {

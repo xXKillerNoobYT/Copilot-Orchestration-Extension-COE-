@@ -9,7 +9,6 @@
     "moduleResolution": "node16",
     "outDir": "dist",
     "sourceMap": true,
-    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -25,7 +24,8 @@
     ]
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "tests/**/*"
   ],
   "exclude": [
     "node_modules",

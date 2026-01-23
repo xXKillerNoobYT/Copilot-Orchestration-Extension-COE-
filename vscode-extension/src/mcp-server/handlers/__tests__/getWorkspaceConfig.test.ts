@@ -2,8 +2,18 @@
  * Unit tests for getWorkspaceConfig handler
  * Tests environment-based configuration
  */
-
+// @ts-ignore TS2835 - ts-jest handles .ts imports in CommonJS mode
 import { handleGetWorkspaceConfig } from '../getWorkspaceConfig';
+
+// Mock the AuditLogger
+jest.mock('../../auditLogger', () => ({
+  getAuditLogger: jest.fn(() => ({
+    initialize: jest.fn().mockReturnValue(undefined),
+    log: jest.fn().mockReturnValue(1),
+    setWebSocketCallback: jest.fn(),
+    queryLogs: jest.fn().mockReturnValue([]),
+  })),
+}));
 
 describe('handleGetWorkspaceConfig', () => {
   beforeEach(() => {

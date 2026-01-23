@@ -2,10 +2,20 @@
  * Unit tests for reportVerificationResult handler
  * Tests verification result submission and task status updates
  */
-
+// @ts-ignore TS2835 - ts-jest handles .ts imports in CommonJS mode
 import { handleReportVerificationResult } from '../reportVerificationResult';
 
 global.fetch = jest.fn() as jest.Mock;
+
+// Mock the AuditLogger
+jest.mock('../../auditLogger', () => ({
+  getAuditLogger: jest.fn(() => ({
+    initialize: jest.fn().mockReturnValue(undefined),
+    log: jest.fn().mockReturnValue(1),
+    setWebSocketCallback: jest.fn(),
+    queryLogs: jest.fn().mockReturnValue([]),
+  })),
+}));
 
 // Mock the validation module
 jest.mock('../../agentValidation', () => ({
