@@ -1,4 +1,4 @@
-import { ArchitectureSuggestions } from '../planBuilder/architectureSuggestions';
+import * as architectureSuggestions from '../architectureSuggestions';
 
 jest.mock('vscode');
 
@@ -7,9 +7,10 @@ describe('ArchitectureSuggestions', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(ArchitectureSuggestions).toBeDefined();
+  describe('Module', () => {
+    it('should be defined as a module', () => {
+      expect(architectureSuggestions).toBeDefined();
+      expect(typeof architectureSuggestions).toBe('object');
     });
   });
 

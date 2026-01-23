@@ -1,4 +1,4 @@
-import { PlanBuilderPanel } from '../panels/planBuilderPanel';
+import { PlanBuilderPanel } from '../planBuilderPanel';
 
 jest.mock('vscode');
 

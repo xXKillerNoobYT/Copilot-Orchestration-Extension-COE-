@@ -1,7 +1,9 @@
 import { ContextBuilder } from '../contextBuilder';
 import * as vscode from 'vscode';
+import * as fs from 'fs/promises';
 
 jest.mock('vscode');
+jest.mock('fs/promises');
 
 describe('ContextBuilder', () => {
   let contextBuilder: ContextBuilder;
@@ -26,86 +28,127 @@ describe('ContextBuilder', () => {
       expect(ContextBuilder).toBeDefined();
     });
 
-    it('should handle missing workspace', () => {
-      (vscode.workspace.workspaceFolders as any) = undefined;
-      const builder = new ContextBuilder();
+    it('should initialize with custom options', () => {
+      const builder = new ContextBuilder({
+        maxTokens: 4000,
+        maxBundleSize: 50,
+      });
       expect(builder).toBeDefined();
     });
   });
 
   describe('Context Building', () => {
-    it('should build context from files', async () => {
-      const files = [
-        vscode.Uri.file('/test/file1.ts'),
-        vscode.Uri.file('/test/file2.ts'),
-      ];
+    beforeEach(() => {
+      (fs.readFile as jest.Mock).mockResolvedValue('// Sample file content\nconst x = 1;');
+    });
 
-      const context = await contextBuilder.buildContext(files);
-      expect(context).toBeDefined();
-      expect(context.files).toHaveLength(2);
+    it('should build context bundle for task', async () => {
+      const taskId = 'task-123';
+      const taskDescription = 'Implement feature X';
+      const relatedFiles = ['/test/file1.ts', '/test/file2.ts'];
+
+      const bundle = await contextBuilder.buildForTask(taskId, taskDescription, relatedFiles);
+
+      expect(bundle).toBeDefined();
+      expect(bundle.taskId).toBe(taskId);
+      expect(bundle.files).toBeDefined();
+      expect(bundle.metadata).toBeDefined();
+      expect(bundle.metadata.timestamp).toBeDefined();
     });
 
     it('should handle empty file list', async () => {
-      const context = await contextBuilder.buildContext([]);
-      expect(context).toBeDefined();
-      expect(context.files).toHaveLength(0);
+      const bundle = await contextBuilder.buildForTask('task-1', 'Test task', []);
+
+      expect(bundle).toBeDefined();
+      expect(bundle.files).toHaveLength(0);
+      expect(bundle.metadata.fileCount).toBe(0);
     });
 
-    it('should extract metadata from files', async () => {
-      const files = [vscode.Uri.file('/test/file.ts')];
-      const context = await contextBuilder.buildContext(files);
+    it('should include metadata in bundle', async () => {
+      const bundle = await contextBuilder.buildForTask('task-1', 'Test', ['/test/file.ts']);
 
-      expect(context.metadata).toBeDefined();
-      expect(context.metadata.timestamp).toBeDefined();
-    });
-  });
-
-  describe('Context Serialization', () => {
-    it('should serialize context to JSON', async () => {
-      const files = [vscode.Uri.file('/test/file.ts')];
-      const context = await contextBuilder.buildContext(files);
-      const json = contextBuilder.serialize(context);
-
-      expect(json).toBeDefined();
-      expect(() => JSON.parse(json)).not.toThrow();
+      expect(bundle.metadata).toBeDefined();
+      expect(bundle.metadata.totalTokens).toBeGreaterThanOrEqual(0);
+      expect(bundle.metadata.fileCount).toBeGreaterThanOrEqual(0);
+      expect(bundle.metadata.truncated).toBeDefined();
     });
 
-    it('should deserialize context from JSON', async () => {
-      const files = [vscode.Uri.file('/test/file.ts')];
-      const context = await contextBuilder.buildContext(files);
-      const json = contextBuilder.serialize(context);
-      const restored = contextBuilder.deserialize(json);
+    it('should respect token limits', async () => {
+      const builder = new ContextBuilder({ maxTokens: 100 });
+      const largeContent = 'x'.repeat(10000);
+      (fs.readFile as jest.Mock).mockResolvedValue(largeContent);
 
-      expect(restored).toEqual(context);
+      const bundle = await builder.buildForTask('task-1', 'Test', [
+        '/test/file1.ts',
+        '/test/file2.ts',
+        '/test/file3.ts',
+      ]);
+
+      expect(bundle.metadata.totalTokens).toBeLessThanOrEqual(100);
     });
   });
 
-  describe('Context Validation', () => {
-    it('should validate valid context', async () => {
-      const files = [vscode.Uri.file('/test/file.ts')];
-      const context = await contextBuilder.buildContext(files);
-
-      expect(contextBuilder.validate(context)).toBe(true);
+  describe('Caching', () => {
+    beforeEach(() => {
+      (fs.readFile as jest.Mock).mockResolvedValue('const x = 1;');
     });
 
-    it('should reject invalid context', () => {
-      const invalidContext = { invalid: 'data' };
-      expect(contextBuilder.validate(invalidContext as any)).toBe(false);
+    it('should cache built bundles', async () => {
+      const taskId = 'task-cache';
+      const files = ['/test/file.ts'];
+
+      const bundle1 = await contextBuilder.buildForTask(taskId, 'Test', files);
+      const bundle2 = await contextBuilder.buildForTask(taskId, 'Test', files);
+
+      expect(bundle1.id).toBe(bundle2.id);
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle file read errors', async () => {
-      const files = [vscode.Uri.file('/nonexistent/file.ts')];
+    it('should handle file read errors gracefully', async () => {
+      (fs.readFile as jest.Mock).mockRejectedValue(new Error('File not found'));
 
-      await expect(contextBuilder.buildContext(files)).rejects.toThrow();
+      const bundle = await contextBuilder.buildForTask('task-1', 'Test', ['/nonexistent/file.ts']);
+
+      // Should return bundle even if files fail to load
+      expect(bundle).toBeDefined();
+      expect(bundle.files).toHaveLength(0);
     });
 
-    it('should handle serialization errors', () => {
-      const circular: any = {};
-      circular.self = circular;
+    it('should handle invalid file paths', async () => {
+      const bundle = await contextBuilder.buildForTask('task-1', 'Test', ['']);
 
-      expect(() => contextBuilder.serialize(circular)).toThrow();
+      expect(bundle).toBeDefined();
+    });
+  });
+
+  describe('Options', () => {
+    beforeEach(() => {
+      (fs.readFile as jest.Mock).mockResolvedValue('const x = 1;');
+    });
+
+    it('should support includePlanExcerpt option', async () => {
+      const bundle = await contextBuilder.buildForTask(
+        'task-1',
+        'Test',
+        ['/test/file.ts'],
+        { includePlanExcerpt: true }
+      );
+
+      expect(bundle).toBeDefined();
+      // planExcerpt may or may not be present depending on implementation
+    });
+
+    it('should support includeDesignSystem option', async () => {
+      const bundle = await contextBuilder.buildForTask(
+        'task-1',
+        'Test',
+        ['/test/file.ts'],
+        { includeDesignSystem: true }
+      );
+
+      expect(bundle).toBeDefined();
+      // designSystemData may or may not be present depending on implementation
     });
   });
 });

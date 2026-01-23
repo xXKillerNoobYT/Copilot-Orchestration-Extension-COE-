@@ -1,4 +1,4 @@
-import { GetNextTask } from '../mcp-server/handlers/getNextTask';
+import { handleGetNextTask } from '../getNextTask';
 
 jest.mock('vscode');
 
@@ -9,7 +9,7 @@ describe('GetNextTask', () => {
 
   describe('Initialization', () => {
     it('should initialize correctly', () => {
-      expect(GetNextTask).toBeDefined();
+      expect(handleGetNextTask).toBeDefined();
     });
   });
 

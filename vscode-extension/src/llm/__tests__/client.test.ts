@@ -1,4 +1,4 @@
-import { Client } from '../llm/client';
+import { buildRequestHeaders, buildRequestBody, type ChatCompletionsRequest } from '../client';
 
 jest.mock('vscode');
 
@@ -7,9 +7,12 @@ describe('Client', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(Client).toBeDefined();
+  describe('Exports', () => {
+    it('should export request builder functions', () => {
+      expect(buildRequestHeaders).toBeDefined();
+      expect(buildRequestBody).toBeDefined();
+      expect(typeof buildRequestHeaders).toBe('function');
+      expect(typeof buildRequestBody).toBe('function');
     });
   });
 

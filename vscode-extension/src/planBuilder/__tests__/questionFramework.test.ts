@@ -1,4 +1,4 @@
-import { QuestionFramework } from '../planBuilder/questionFramework';
+import { QuestionFramework } from '../questionFramework';
 
 jest.mock('vscode');
 

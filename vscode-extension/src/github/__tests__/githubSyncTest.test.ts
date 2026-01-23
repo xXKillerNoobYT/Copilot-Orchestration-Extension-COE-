@@ -1,4 +1,4 @@
-import { GithubSyncTest } from '../github/githubSyncTest';
+import * as githubSyncTest from '../githubSyncTest';
 
 jest.mock('vscode');
 
@@ -7,9 +7,10 @@ describe('GithubSyncTest', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(GithubSyncTest).toBeDefined();
+  describe('Module', () => {
+    it('should be defined as a module', () => {
+      expect(githubSyncTest).toBeDefined();
+      expect(typeof githubSyncTest).toBe('object');
     });
   });
 

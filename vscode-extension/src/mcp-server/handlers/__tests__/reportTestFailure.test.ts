@@ -1,4 +1,4 @@
-import { ReportTestFailure } from '../mcp-server/handlers/reportTestFailure';
+import { handleReportTestFailure } from '../reportTestFailure';
 
 jest.mock('vscode');
 
@@ -9,7 +9,7 @@ describe('ReportTestFailure', () => {
 
   describe('Initialization', () => {
     it('should initialize correctly', () => {
-      expect(ReportTestFailure).toBeDefined();
+      expect(handleReportTestFailure).toBeDefined();
     });
   });
 

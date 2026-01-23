@@ -1,10 +1,16 @@
 import * as vscode from 'vscode';
-import { executeLLMTestCommand } from '../executeLLMTest';
+import {
+  runExecuteLlmTests,
+  createTestExecutionContext,
+  validateExecutionContext,
+  mockLlmResponses,
+  MockCopilotDispatcher
+} from '../executeLLMTest';
 
 jest.mock('vscode');
 jest.mock('../../llm/client');
 
-describe('executeLLMTest Command', () => {
+describe('executeLLMTest Module', () => {
   let mockContext: vscode.ExtensionContext;
   let mockOutputChannel: vscode.OutputChannel;
 
@@ -37,57 +43,113 @@ describe('executeLLMTest Command', () => {
     jest.clearAllMocks();
   });
 
-  describe('Command Registration', () => {
-    it('should register command successfully', () => {
-      const disposable = executeLLMTestCommand(mockContext);
-      expect(disposable).toBeDefined();
-      expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
-        'copilot-orchestration.executeLLMTest',
-        expect.any(Function)
-      );
+  describe('Mock LLM Responses', () => {
+    it('should have success response with correct structure', () => {
+      expect(mockLlmResponses.success).toBeDefined();
+      expect(mockLlmResponses.success.id).toBeDefined();
+      expect(mockLlmResponses.success.choices).toHaveLength(1);
+      expect(mockLlmResponses.success.choices[0].message.role).toBe('assistant');
+      expect(mockLlmResponses.success.choices[0].message.content).toBeDefined();
+      expect(mockLlmResponses.success.choices[0].finish_reason).toBe('stop');
     });
 
-    it('should add disposable to context subscriptions', () => {
-      executeLLMTestCommand(mockContext);
-      expect(mockContext.subscriptions.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('Test Execution', () => {
-    it('should execute test and show output channel', async () => {
-      const mockDisposable = { dispose: jest.fn() };
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callback();
-        return mockDisposable;
-      });
-
-      executeLLMTestCommand(mockContext);
-
-      expect(mockOutputChannel.clear).toHaveBeenCalled();
-      expect(mockOutputChannel.show).toHaveBeenCalled();
-    });
-
-    it('should handle errors gracefully', async () => {
-      const error = new Error('Test execution failed');
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callback();
-        throw error;
-      });
-
-      expect(() => executeLLMTestCommand(mockContext)).toThrow();
+    it('should have error response with correct structure', () => {
+      expect(mockLlmResponses.error).toBeDefined();
+      expect(mockLlmResponses.error.error).toBeDefined();
+      expect(mockLlmResponses.error.error.message).toBe('Invalid request');
+      expect(mockLlmResponses.error.error.type).toBe('invalid_request_error');
     });
   });
 
-  describe('Output Formatting', () => {
-    it('should format output with timestamps', async () => {
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callback();
-        return { dispose: jest.fn() };
-      });
+  describe('MockCopilotDispatcher', () => {
+    it('should create dispatcher instance', () => {
+      const dispatcher = new MockCopilotDispatcher();
+      expect(dispatcher).toBeDefined();
+      expect(typeof dispatcher.composePrompt).toBe('function');
+    });
 
-      executeLLMTestCommand(mockContext);
+    it('should compose prompt with task ID', async () => {
+      const dispatcher = new MockCopilotDispatcher();
+      const result = await dispatcher.composePrompt('test-task-123');
 
-      expect(mockOutputChannel.appendLine).toHaveBeenCalled();
+      expect(result).toBeDefined();
+      expect(result.taskId).toBe('test-task-123');
+      expect(result.agent).toBeDefined();
+      expect(result.agent.name).toBe('coder');
+      expect(result.task).toBeDefined();
+      expect(result.task.id).toBe('test-task-123');
+    });
+  });
+
+  describe('createTestExecutionContext', () => {
+    it('should create execution context with defaults', () => {
+      const context = createTestExecutionContext();
+
+      expect(context).toBeDefined();
+      expect(context.taskId).toBeDefined();
+      expect(context.startTime).toBeDefined();
+      expect(typeof context.startTime).toBe('number');
+    });
+
+    it('should accept overrides', () => {
+      const customTaskId = 'custom-task-456';
+      const context = createTestExecutionContext({ taskId: customTaskId });
+
+      expect(context.taskId).toBe(customTaskId);
+    });
+
+    it('should include timing information', () => {
+      const startTime = Date.now();
+      const endTime = startTime + 5000;
+      const context = createTestExecutionContext({ startTime, endTime });
+
+      expect(context.startTime).toBe(startTime);
+      expect(context.endTime).toBe(endTime);
+      if (context.endTime) {
+        expect(context.endTime - context.startTime).toBe(5000);
+      }
+    });
+  });
+
+  describe('validateExecutionContext', () => {
+    it('should validate valid context', () => {
+      const context = createTestExecutionContext();
+      const errors = validateExecutionContext(context);
+
+      expect(Array.isArray(errors)).toBe(true);
+      expect(errors.length).toBe(0);
+    });
+
+    it('should detect missing taskId', () => {
+      const context = createTestExecutionContext({ taskId: '' });
+      const errors = validateExecutionContext(context);
+
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some(e => e.includes('taskId'))).toBe(true);
+    });
+  });
+
+  describe('runExecuteLlmTests', () => {
+    it('should be defined as a function', () => {
+      expect(typeof runExecuteLlmTests).toBe('function');
+    });
+
+    it('should execute without throwing', () => {
+      // Mock console methods to avoid test output pollution
+      const originalLog = console.log;
+      const originalError = console.error;
+      const originalAssert = console.assert;
+
+      console.log = jest.fn();
+      console.error = jest.fn();
+      console.assert = jest.fn();
+
+      expect(() => runExecuteLlmTests()).not.toThrow();
+
+      // Restore console methods
+      console.log = originalLog;
+      console.error = originalError;
+      console.assert = originalAssert;
     });
   });
 });

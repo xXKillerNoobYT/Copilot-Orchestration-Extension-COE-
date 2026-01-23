@@ -1,4 +1,4 @@
-import { LlmPrompts } from '../planBuilder/llmPrompts';
+import * as llmPrompts from '../llmPrompts';
 
 jest.mock('vscode');
 
@@ -7,9 +7,10 @@ describe('LlmPrompts', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(LlmPrompts).toBeDefined();
+  describe('Module', () => {
+    it('should be defined as a module', () => {
+      expect(llmPrompts).toBeDefined();
+      expect(typeof llmPrompts).toBe('object');
     });
   });
 

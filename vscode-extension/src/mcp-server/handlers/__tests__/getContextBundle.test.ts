@@ -1,4 +1,4 @@
-import { GetContextBundle } from '../mcp-server/handlers/getContextBundle';
+import { handleGetContextBundle } from '../getContextBundle';
 
 jest.mock('vscode');
 
@@ -9,7 +9,7 @@ describe('GetContextBundle', () => {
 
   describe('Initialization', () => {
     it('should initialize correctly', () => {
-      expect(GetContextBundle).toBeDefined();
+      expect(handleGetContextBundle).toBeDefined();
     });
   });
 

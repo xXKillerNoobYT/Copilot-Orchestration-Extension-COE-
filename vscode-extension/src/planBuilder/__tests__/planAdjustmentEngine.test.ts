@@ -1,4 +1,4 @@
-import { PlanAdjustmentEngine } from '../planBuilder/planAdjustmentEngine';
+import { PlanAdjustmentEngine } from '../planAdjustmentEngine';
 
 jest.mock('vscode');
 

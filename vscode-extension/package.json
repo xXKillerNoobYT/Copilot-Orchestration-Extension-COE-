@@ -622,6 +622,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "webpack --mode production --stats=errors-only && npm run build:vue && npm run build:mcp",
+    "build": "npm run compile",
     "build:vue": "vite build",
     "build:mcp": "tsc -p src/mcp-server/tsconfig.json",
     "watch": "webpack --watch --mode development --stats=errors-warnings",

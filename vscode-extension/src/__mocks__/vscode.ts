@@ -62,11 +62,49 @@ export class RelativePattern {
 // VS Code Uri
 // Reference: https://code.visualstudio.com/api/references/vscode-api#Uri
 export class Uri {
-  static file(path: string) {
-    return { fsPath: path, scheme: 'file' } as any;
+  public fsPath: string;
+  public scheme: string;
+  public authority?: string;
+  public path: string;
+  public query?: string;
+  public fragment?: string;
+
+  constructor(scheme: string, authority: string, path: string, query: string, fragment: string) {
+    this.scheme = scheme;
+    this.authority = authority;
+    this.path = path;
+    this.query = query;
+    this.fragment = fragment;
+    this.fsPath = path;
   }
-  static parse(value: string) {
-    return { fsPath: value, scheme: 'file' } as any;
+
+  static file(path: string): Uri {
+    const uri = new Uri('file', '', path, '', '');
+    uri.fsPath = path;
+    return uri;
+  }
+
+  static parse(value: string): Uri {
+    return new Uri('file', '', value, '', '');
+  }
+
+  static joinPath(base: Uri, ...pathSegments: string[]): Uri {
+    const joined = [base.fsPath || base.path, ...pathSegments].join('/').replace(/\/+/g, '/');
+    return Uri.file(joined);
+  }
+
+  with(change: { scheme?: string; authority?: string; path?: string; query?: string; fragment?: string }): Uri {
+    return new Uri(
+      change.scheme ?? this.scheme,
+      change.authority ?? this.authority ?? '',
+      change.path ?? this.path,
+      change.query ?? this.query ?? '',
+      change.fragment ?? this.fragment ?? ''
+    );
+  }
+
+  toString(): string {
+    return `${this.scheme}://${this.authority || ''}${this.path}${this.query ? '?' + this.query : ''}${this.fragment ? '#' + this.fragment : ''}`;
   }
 }
 
@@ -139,8 +177,39 @@ export const window = {
   showWarningMessage: createMock(),
   showQuickPick: createMock(),
   showInputBox: createMock(),
+  showSaveDialog: createMock(),
+  showOpenDialog: createMock(),
   createOutputChannel: createMock(),
-  createStatusBarItem: createMock(),
+  createStatusBarItem: mockFn(() => ({
+    text: '',
+    show: mockFn(),
+    hide: mockFn(),
+    dispose: mockFn(),
+    alignment: undefined,
+    priority: undefined,
+    tooltip: undefined,
+    color: undefined,
+    backgroundColor: undefined,
+    command: undefined,
+  })),
+  createWebviewPanel: mockFn((viewType: string, title: string, showOptions: any, options?: any) => ({
+    webview: {
+      html: '',
+      options: options || {},
+      onDidReceiveMessage: mockFn(() => ({ dispose: mockFn() })),
+      postMessage: mockFn(),
+      asWebviewUri: mockFn((uri: any) => uri),
+    },
+    title,
+    viewType,
+    options,
+    visible: true,
+    active: true,
+    onDidDispose: mockFn(() => ({ dispose: mockFn() })),
+    onDidChangeViewState: mockFn(() => ({ dispose: mockFn() })),
+    reveal: mockFn(),
+    dispose: mockFn(),
+  })),
   createTerminal: createMock(),
   withProgress: createMock(),
   showTextDocument: createMock(),

@@ -1,112 +1,162 @@
 import * as vscode from 'vscode';
 import { testConnectionCommand } from '../testConnection';
+import { readLlmConfig } from '../../config/llmConfig';
+import { createOpenAIClient } from '../../llm/openaiClient';
 
 jest.mock('vscode');
+jest.mock('../../config/llmConfig');
+jest.mock('../../llm/openaiClient');
 
 describe('testConnection Command', () => {
-  let mockContext: vscode.ExtensionContext;
+  let mockStatusBarItem: any;
+  let mockClient: any;
 
   beforeEach(() => {
-    mockContext = {
-      subscriptions: [],
-    } as any;
+    jest.clearAllMocks();
 
+    // Mock status bar item
+    mockStatusBarItem = {
+      text: '',
+      show: jest.fn(),
+      hide: jest.fn(),
+      dispose: jest.fn(),
+    };
+
+    (vscode.window.createStatusBarItem as jest.Mock).mockReturnValue(mockStatusBarItem);
     (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
     (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
-    (vscode.window.withProgress as jest.Mock).mockImplementation(async (options, task) => {
-      return await task({ report: jest.fn() }, {} as any);
-    });
+
+    // Mock LLM client
+    mockClient = {
+      sendChat: jest.fn().mockResolvedValue({ choices: [{ message: { content: 'pong' } }] }),
+    };
+    (createOpenAIClient as jest.Mock).mockReturnValue(mockClient);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe('Command Registration', () => {
-    it('should register test connection command', () => {
-      const disposable = testConnectionCommand(mockContext);
-      expect(disposable).toBeDefined();
-      expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
-        'copilot-orchestration.testConnection',
-        expect.any(Function)
-      );
-    });
-  });
-
-  describe('Connection Testing', () => {
-    it('should show progress during connection test', async () => {
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
+  describe('Successful Connection', () => {
+    it('should show status bar during connection test', async () => {
+      (readLlmConfig as jest.Mock).mockReturnValue({
+        isConfigured: true,
+        config: {
+          apiKey: 'test-key',
+          endpoint: 'https://api.openai.com',
+          model: 'gpt-4',
+          timeoutMs: 30000,
+        },
+        issues: [],
       });
 
-      testConnectionCommand(mockContext);
-      if (callbackFn) await callbackFn();
+      await testConnectionCommand();
 
-      expect(vscode.window.withProgress).toHaveBeenCalledWith(
-        expect.objectContaining({
-          location: vscode.ProgressLocation.Notification,
-          title: expect.stringContaining('connection'),
-        }),
-        expect.any(Function)
+      expect(vscode.window.createStatusBarItem).toHaveBeenCalledWith(
+        vscode.StatusBarAlignment.Left,
+        99
       );
+      expect(mockStatusBarItem.show).toHaveBeenCalled();
+      expect(mockStatusBarItem.text).toBe('$(check) LLM OK');
     });
 
     it('should show success message on successful connection', async () => {
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
+      (readLlmConfig as jest.Mock).mockReturnValue({
+        isConfigured: true,
+        config: {
+          apiKey: 'test-key',
+          endpoint: 'https://api.openai.com',
+          model: 'gpt-4',
+          timeoutMs: 30000,
+        },
+        issues: [],
       });
 
-      testConnectionCommand(mockContext);
-      if (callbackFn) await callbackFn();
+      await testConnectionCommand();
 
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('success')
+        'LLM connection successful.'
       );
     });
 
-    it('should show error message on connection failure', async () => {
-      (vscode.window.withProgress as jest.Mock).mockImplementation(async (options, task) => {
-        throw new Error('Connection failed');
+    it('should call LLM client with correct parameters', async () => {
+      (readLlmConfig as jest.Mock).mockReturnValue({
+        isConfigured: true,
+        config: {
+          apiKey: 'test-key',
+          endpoint: 'https://api.openai.com',
+          model: 'gpt-4',
+          timeoutMs: 30000,
+        },
+        issues: [],
       });
 
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
-      });
+      await testConnectionCommand();
 
-      testConnectionCommand(mockContext);
-      if (callbackFn) {
-        try {
-          await callbackFn();
-        } catch (e) {
-          expect(vscode.window.showErrorMessage).toHaveBeenCalled();
-        }
-      }
+      expect(mockClient.sendChat).toHaveBeenCalledWith(
+        [
+          { role: 'system', content: 'ping' },
+          { role: 'user', content: 'ping' },
+        ],
+        { temperature: 0, timeoutMs: 5000 }
+      );
     });
   });
 
-  describe('Progress Reporting', () => {
-    it('should report progress increments', async () => {
-      const mockProgress = { report: jest.fn() };
-      (vscode.window.withProgress as jest.Mock).mockImplementation(async (options, task) => {
-        return await task(mockProgress, {} as any);
+  describe('Configuration Issues', () => {
+    it('should show error when configuration is incomplete', async () => {
+      (readLlmConfig as jest.Mock).mockReturnValue({
+        isConfigured: false,
+        issues: ['API key is missing', 'Endpoint is not configured'],
       });
 
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
+      await testConnectionCommand();
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'LLM configuration is incomplete: API key is missing; Endpoint is not configured'
+      );
+      expect(mockStatusBarItem.show).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Connection Failure', () => {
+    it('should show error message on connection failure', async () => {
+      (readLlmConfig as jest.Mock).mockReturnValue({
+        isConfigured: true,
+        config: {
+          apiKey: 'test-key',
+          endpoint: 'https://api.openai.com',
+          model: 'gpt-4',
+          timeoutMs: 30000,
+        },
+        issues: [],
+      });
+      mockClient.sendChat.mockRejectedValue(new Error('Network error'));
+
+      await testConnectionCommand();
+
+      expect(mockStatusBarItem.text).toBe('$(error) LLM Failed');
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'LLM connection failed: Network error'
+      );
+    });
+
+    it('should dispose status bar item after timeout', async () => {
+      jest.useFakeTimers();
+      (readLlmConfig as jest.Mock).mockReturnValue({
+        isConfigured: true,
+        config: {
+          apiKey: 'test-key',
+          endpoint: 'https://api.openai.com',
+          model: 'gpt-4',
+          timeoutMs: 30000,
+        },
+        issues: [],
       });
 
-      testConnectionCommand(mockContext);
-      if (callbackFn) await callbackFn();
+      await testConnectionCommand();
 
-      expect(mockProgress.report).toHaveBeenCalled();
+      expect(mockStatusBarItem.dispose).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(2000);
+      expect(mockStatusBarItem.dispose).toHaveBeenCalled();
+
+      jest.useRealTimers();
     });
   });
 });

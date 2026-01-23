@@ -1,4 +1,4 @@
-import { AgentValidation } from '../mcp-server/agentValidation';
+import { AgentErrorCode, validateInput, formatAgentError } from '../agentValidation';
 
 jest.mock('vscode');
 
@@ -7,9 +7,11 @@ describe('AgentValidation', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(AgentValidation).toBeDefined();
+  describe('Exports', () => {
+    it('should export validation functions', () => {
+      expect(AgentErrorCode).toBeDefined();
+      expect(validateInput).toBeDefined();
+      expect(formatAgentError).toBeDefined();
     });
   });
 

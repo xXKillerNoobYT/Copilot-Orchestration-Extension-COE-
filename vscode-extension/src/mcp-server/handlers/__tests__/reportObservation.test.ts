@@ -1,4 +1,4 @@
-import { ReportObservation } from '../mcp-server/handlers/reportObservation';
+import { handleReportObservation } from '../reportObservation';
 
 jest.mock('vscode');
 
@@ -9,7 +9,7 @@ describe('ReportObservation', () => {
 
   describe('Initialization', () => {
     it('should initialize correctly', () => {
-      expect(ReportObservation).toBeDefined();
+      expect(handleReportObservation).toBeDefined();
     });
   });
 

@@ -3,10 +3,22 @@ import * as fs from 'fs';
 import { registerMCPConfigCommands } from '../mcpConfigCommands';
 
 jest.mock('vscode');
-jest.mock('fs');
+jest.mock('fs', () => ({
+  promises: {
+    access: jest.fn(),
+    readFile: jest.fn(),
+    writeFile: jest.fn(),
+    mkdir: jest.fn(),
+  },
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  writeFileSync: jest.fn(),
+  readFileSync: jest.fn(),
+}));
 
 describe('MCP Config Commands', () => {
   let mockContext: vscode.ExtensionContext;
+  const mockFsPromises = fs.promises as jest.Mocked<typeof fs.promises>;
 
   beforeEach(() => {
     mockContext = {
@@ -24,8 +36,20 @@ describe('MCP Config Commands', () => {
     (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
     (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
     (vscode.window.showInputBox as jest.Mock).mockResolvedValue(undefined);
+    (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue(undefined);
     (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue({});
     (vscode.window.showTextDocument as jest.Mock).mockResolvedValue({});
+    (vscode.window.createTerminal as jest.Mock).mockReturnValue({
+      show: jest.fn(),
+      sendText: jest.fn(),
+      dispose: jest.fn(),
+    });
+    (vscode.env.clipboard.writeText as jest.Mock) = jest.fn().mockResolvedValue(undefined);
+    (vscode.commands.executeCommand as jest.Mock).mockResolvedValue(undefined);
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (vscode.extensions.getExtension as jest.Mock).mockReturnValue({
+      extensionPath: '/test/extension',
+    });
   });
 
   afterEach(() => {
@@ -36,8 +60,17 @@ describe('MCP Config Commands', () => {
     it('should register all MCP config commands', () => {
       registerMCPConfigCommands(mockContext);
 
+      // Verify specific command registrations
       expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
-        expect.stringContaining('mcp'),
+        'copilot-orchestrator.copyMCPServerPath',
+        expect.any(Function)
+      );
+      expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+        'copilot-orchestrator.generateMCPConfig',
+        expect.any(Function)
+      );
+      expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
+        'copilot-orchestrator.testMCPServer',
         expect.any(Function)
       );
     });
@@ -50,13 +83,13 @@ describe('MCP Config Commands', () => {
   });
 
   describe('Config File Operations', () => {
-    it('should create MCP config file if not exists', async () => {
-      (fs.promises.access as jest.Mock).mockRejectedValue(new Error('ENOENT'));
-      (fs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
+    it('should copy MCP server path to clipboard', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (vscode.env.clipboard.writeText as jest.Mock).mockResolvedValue(undefined);
 
       let callbackFn: any;
       (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        if (cmd.includes('openMCPConfig')) {
+        if (cmd === 'copilot-orchestrator.copyMCPServerPath') {
           callbackFn = callback;
         }
         return { dispose: jest.fn() };
@@ -65,15 +98,18 @@ describe('MCP Config Commands', () => {
       registerMCPConfigCommands(mockContext);
       if (callbackFn) await callbackFn();
 
-      expect(fs.promises.writeFile).toHaveBeenCalled();
+      expect(vscode.env.clipboard.writeText).toHaveBeenCalled();
+      expect(vscode.window.showInformationMessage).toHaveBeenCalled();
     });
 
-    it('should open existing MCP config file', async () => {
-      (fs.promises.access as jest.Mock).mockResolvedValue(undefined);
+    it('should generate MCP config and copy to clipboard', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (vscode.env.clipboard.writeText as jest.Mock).mockResolvedValue(undefined);
+      (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
 
       let callbackFn: any;
       (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        if (cmd.includes('openMCPConfig')) {
+        if (cmd === 'copilot-orchestrator.generateMCPConfig') {
           callbackFn = callback;
         }
         return { dispose: jest.fn() };
@@ -82,26 +118,24 @@ describe('MCP Config Commands', () => {
       registerMCPConfigCommands(mockContext);
       if (callbackFn) await callbackFn();
 
+      expect(vscode.env.clipboard.writeText).toHaveBeenCalled();
       expect(vscode.workspace.openTextDocument).toHaveBeenCalled();
     });
   });
 
-  describe('Config Validation', () => {
-    it('should validate MCP config structure', async () => {
-      const validConfig = {
-        mcpServers: {
-          'test-server': {
-            command: 'node',
-            args: ['server.js']
-          }
-        }
+  describe('Server Testing', () => {
+    it('should create terminal to test MCP server', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      const mockTerminal = {
+        show: jest.fn(),
+        sendText: jest.fn(),
+        dispose: jest.fn(),
       };
-
-      (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(validConfig));
+      (vscode.window.createTerminal as jest.Mock).mockReturnValue(mockTerminal);
 
       let callbackFn: any;
       (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        if (cmd.includes('validateMCPConfig')) {
+        if (cmd === 'copilot-orchestrator.testMCPServer') {
           callbackFn = callback;
         }
         return { dispose: jest.fn() };
@@ -110,19 +144,17 @@ describe('MCP Config Commands', () => {
       registerMCPConfigCommands(mockContext);
       if (callbackFn) await callbackFn();
 
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('valid')
-      );
+      expect(vscode.window.createTerminal).toHaveBeenCalledWith('MCP Server Test');
+      expect(mockTerminal.show).toHaveBeenCalled();
+      expect(mockTerminal.sendText).toHaveBeenCalled();
     });
 
-    it('should detect invalid MCP config', async () => {
-      const invalidConfig = { invalid: 'structure' };
-
-      (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify(invalidConfig));
+    it('should show error if extension not found', async () => {
+      (vscode.extensions.getExtension as jest.Mock).mockReturnValue(undefined);
 
       let callbackFn: any;
       (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        if (cmd.includes('validateMCPConfig')) {
+        if (cmd === 'copilot-orchestrator.testMCPServer') {
           callbackFn = callback;
         }
         return { dispose: jest.fn() };
@@ -131,23 +163,17 @@ describe('MCP Config Commands', () => {
       registerMCPConfigCommands(mockContext);
       if (callbackFn) await callbackFn();
 
-      expect(vscode.window.showErrorMessage).toHaveBeenCalled();
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Extension not found');
     });
   });
 
-  describe('Server Management', () => {
-    it('should add new MCP server', async () => {
-      (vscode.window.showInputBox as jest.Mock)
-        .mockResolvedValueOnce('new-server')
-        .mockResolvedValueOnce('node')
-        .mockResolvedValueOnce('server.js');
-
-      (fs.promises.readFile as jest.Mock).mockResolvedValue(JSON.stringify({ mcpServers: {} }));
-      (fs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
+  describe('Extension Detection', () => {
+    it('should handle missing extension', async () => {
+      (vscode.extensions.getExtension as jest.Mock).mockReturnValue(undefined);
 
       let callbackFn: any;
       (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        if (cmd.includes('addMCPServer')) {
+        if (cmd === 'copilot-orchestrator.copyMCPServerPath') {
           callbackFn = callback;
         }
         return { dispose: jest.fn() };
@@ -156,34 +182,15 @@ describe('MCP Config Commands', () => {
       registerMCPConfigCommands(mockContext);
       if (callbackFn) await callbackFn();
 
-      expect(vscode.window.showInformationMessage).toHaveBeenCalled();
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Extension not found');
     });
 
-    it('should handle cancellation when adding server', async () => {
-      (vscode.window.showInputBox as jest.Mock).mockResolvedValue(undefined);
+    it('should handle missing MCP server binary', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       let callbackFn: any;
       (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        if (cmd.includes('addMCPServer')) {
-          callbackFn = callback;
-        }
-        return { dispose: jest.fn() };
-      });
-
-      registerMCPConfigCommands(mockContext);
-      if (callbackFn) await callbackFn();
-
-      expect(fs.promises.writeFile).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle missing workspace', async () => {
-      (vscode.workspace.workspaceFolders as any) = undefined;
-
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        if (cmd.includes('openMCPConfig')) {
+        if (cmd === 'copilot-orchestrator.copyMCPServerPath') {
           callbackFn = callback;
         }
         return { dispose: jest.fn() };
@@ -193,16 +200,19 @@ describe('MCP Config Commands', () => {
       if (callbackFn) await callbackFn();
 
       expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('workspace')
+        expect.stringContaining('not found')
       );
     });
+  });
 
-    it('should handle file system errors', async () => {
-      (fs.promises.access as jest.Mock).mockRejectedValue(new Error('Permission denied'));
+  describe('Error Handling', () => {
+    it('should handle errors during copy operation', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (vscode.env.clipboard.writeText as jest.Mock).mockRejectedValue(new Error('Clipboard error'));
 
       let callbackFn: any;
       (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        if (cmd.includes('openMCPConfig')) {
+        if (cmd === 'copilot-orchestrator.copyMCPServerPath') {
           callbackFn = callback;
         }
         return { dispose: jest.fn() };
@@ -211,7 +221,29 @@ describe('MCP Config Commands', () => {
       registerMCPConfigCommands(mockContext);
       if (callbackFn) await callbackFn();
 
-      expect(vscode.window.showErrorMessage).toHaveBeenCalled();
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to copy path')
+      );
+    });
+
+    it('should handle errors during config generation', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (vscode.env.clipboard.writeText as jest.Mock).mockRejectedValue(new Error('Clipboard error'));
+
+      let callbackFn: any;
+      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
+        if (cmd === 'copilot-orchestrator.generateMCPConfig') {
+          callbackFn = callback;
+        }
+        return { dispose: jest.fn() };
+      });
+
+      registerMCPConfigCommands(mockContext);
+      if (callbackFn) await callbackFn();
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to generate config')
+      );
     });
   });
 });

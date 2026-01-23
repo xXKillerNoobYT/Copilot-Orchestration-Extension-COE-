@@ -1,4 +1,4 @@
-import { AuditDashboardPanel } from '../panels/auditDashboardPanel';
+import { AuditDashboardPanel } from '../auditDashboardPanel';
 
 jest.mock('vscode');
 

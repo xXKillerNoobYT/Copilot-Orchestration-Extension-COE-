@@ -1,4 +1,4 @@
-import { WebhookHandler } from '../github/webhookHandler';
+import { WebhookProcessor, parseIssueWebhook } from '../webhookHandler';
 
 jest.mock('vscode');
 
@@ -7,9 +7,11 @@ describe('WebhookHandler', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(WebhookHandler).toBeDefined();
+  describe('Exports', () => {
+    it('should export webhook processing functions', () => {
+      expect(WebhookProcessor).toBeDefined();
+      expect(parseIssueWebhook).toBeDefined();
+      expect(typeof WebhookProcessor).toBe('function');
     });
   });
 

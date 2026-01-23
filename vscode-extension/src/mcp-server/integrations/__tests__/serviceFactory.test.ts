@@ -1,4 +1,4 @@
-import { ServiceFactory } from '../mcp-server/integrations/serviceFactory';
+import { getTaskManager, getGitHubIntegration, resetServices } from '../serviceFactory.js';
 
 jest.mock('vscode');
 
@@ -7,9 +7,12 @@ describe('ServiceFactory', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(ServiceFactory).toBeDefined();
+  describe('Exports', () => {
+    it('should export service factory functions', () => {
+      expect(getTaskManager).toBeDefined();
+      expect(getGitHubIntegration).toBeDefined();
+      expect(resetServices).toBeDefined();
+      expect(typeof getTaskManager).toBe('function');
     });
   });
 

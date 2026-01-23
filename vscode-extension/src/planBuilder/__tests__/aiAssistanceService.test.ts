@@ -1,4 +1,4 @@
-import { AiAssistanceService } from '../planBuilder/aiAssistanceService';
+import { AiAssistanceService } from '../aiAssistanceService';
 
 jest.mock('vscode');
 

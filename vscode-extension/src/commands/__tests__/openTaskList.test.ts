@@ -1,35 +1,47 @@
 import * as vscode from 'vscode';
-import { openTaskListCommand } from '../openTaskList';
+import { registerOpenTaskListCommand, openTaskList } from '../openTaskList';
 
 jest.mock('vscode');
+jest.mock('fs/promises', () => ({
+  access: jest.fn(),
+  readdir: jest.fn(),
+  mkdir: jest.fn(),
+  writeFile: jest.fn(),
+}));
+
+import * as fs from 'fs/promises';
 
 describe('openTaskList Command', () => {
   let mockContext: vscode.ExtensionContext;
-  let mockPanel: vscode.WebviewPanel;
 
   beforeEach(() => {
-    mockPanel = {
-      webview: {
-        html: '',
-        postMessage: jest.fn(),
-        onDidReceiveMessage: jest.fn(),
-      },
-      reveal: jest.fn(),
-      dispose: jest.fn(),
-      onDidDispose: jest.fn(),
-    } as any;
+    jest.clearAllMocks();
 
     mockContext = {
       subscriptions: [],
       extensionUri: vscode.Uri.file('/test/extension'),
+      extensionPath: '/test/extension',
       globalState: {
         get: jest.fn().mockReturnValue([]),
         update: jest.fn(),
       },
     } as any;
 
-    (vscode.window.createWebviewPanel as jest.Mock).mockReturnValue(mockPanel);
+    (vscode.workspace.workspaceFolders as any) = [
+      { uri: vscode.Uri.file('/test/workspace') }
+    ];
     (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
+    (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue(undefined);
+    (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+    (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue({});
+    (vscode.window.showTextDocument as jest.Mock).mockResolvedValue({});
+    (vscode.commands.registerCommand as jest.Mock).mockReturnValue({ dispose: jest.fn() });
+    
+    // Mock fs.promises methods with default implementations
+    (fs.access as jest.Mock).mockResolvedValue(undefined);
+    (fs.readdir as jest.Mock).mockResolvedValue([]);
+    (fs.mkdir as jest.Mock).mockResolvedValue(undefined);
+    (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -38,153 +50,119 @@ describe('openTaskList Command', () => {
 
   describe('Command Registration', () => {
     it('should register openTaskList command', () => {
-      const disposable = openTaskListCommand(mockContext);
-      expect(disposable).toBeDefined();
+      registerOpenTaskListCommand(mockContext);
       expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
-        'copilot-orchestration.openTaskList',
+        'copilot-orchestrator.openTaskList',
         expect.any(Function)
       );
+      expect(mockContext.subscriptions.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Panel Creation', () => {
-    it('should create webview panel with correct options', async () => {
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
-      });
+  describe('Task File Operations', () => {
+    it('should open tasks.json when it exists', async () => {
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
 
-      openTaskListCommand(mockContext);
-      if (callbackFn) await callbackFn();
+      await openTaskList();
 
-      expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.stringContaining('Task'),
-        expect.any(Number),
-        expect.objectContaining({
-          enableScripts: true,
-          retainContextWhenHidden: true,
-        })
+      expect(vscode.workspace.openTextDocument).toHaveBeenCalled();
+      expect(vscode.window.showTextDocument).toHaveBeenCalled();
+    });
+
+    it('should open first task markdown file when tasks.json does not exist', async () => {
+      (fs.access as jest.Mock)
+        .mockResolvedValueOnce(undefined) // _ZENTASKS exists
+        .mockRejectedValueOnce(new Error('ENOENT')); // tasks.json doesn't exist
+      (fs.readdir as jest.Mock).mockResolvedValue(['TASK-001.md', 'TASK-002.md'] as any);
+
+      await openTaskList();
+
+      expect(fs.readdir).toHaveBeenCalled();
+      expect(vscode.workspace.openTextDocument).toHaveBeenCalled();
+    });
+  });
+
+  describe('Folder Creation', () => {
+    it('should create _ZENTASKS folder when it does not exist', async () => {
+      (fs.access as jest.Mock).mockRejectedValue(new Error('ENOENT'));
+      (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Create Folder');
+
+      await openTaskList();
+
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Task folder not found'),
+        'Create Folder',
+        'Cancel'
+      );
+      expect(fs.mkdir).toHaveBeenCalled();
+      expect(fs.writeFile).toHaveBeenCalled();
+    });
+
+    it('should show message when no task files found', async () => {
+      (fs.access as jest.Mock)
+        .mockResolvedValueOnce(undefined) // _ZENTASKS exists
+        .mockRejectedValueOnce(new Error('ENOENT')); // tasks.json doesn't exist
+      (fs.readdir as jest.Mock).mockResolvedValue([] as any);
+
+      await openTaskList();
+
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        expect.stringContaining('No task files found')
       );
     });
+  });
 
-    it('should reuse existing panel if already open', async () => {
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
-      });
+  describe('Error Handling', () => {
+    it('should show warning when no workspace folder is open', async () => {
+      (vscode.workspace.workspaceFolders as any) = undefined;
 
-      openTaskListCommand(mockContext);
+      await openTaskList();
 
-      if (callbackFn) {
-        await callbackFn();
-        await callbackFn();
-      }
+      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No workspace folder open');
+    });
 
-      expect(mockPanel.reveal).toHaveBeenCalled();
+    it('should handle cancellation of folder creation', async () => {
+      (fs.access as jest.Mock).mockRejectedValue(new Error('ENOENT'));
+      (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Cancel');
+
+      await openTaskList();
+
+      expect(fs.mkdir).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors during folder creation', async () => {
+      (fs.access as jest.Mock).mockRejectedValue(new Error('ENOENT'));
+      (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Create Folder');
+      (fs.mkdir as jest.Mock).mockRejectedValue(new Error('Permission denied'));
+
+      await openTaskList();
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to create task folder')
+      );
     });
   });
 
-  describe('Task List Display', () => {
-    it('should display task list in webview', async () => {
-      const mockTasks = [
-        { id: '1', title: 'Task 1', status: 'pending' },
-        { id: '2', title: 'Task 2', status: 'complete' },
-      ];
+  describe('Task File Filtering', () => {
+    it('should only open markdown files starting with TASK-', async () => {
+      (fs.access as jest.Mock)
+        .mockResolvedValueOnce(undefined) // _ZENTASKS exists
+        .mockRejectedValueOnce(new Error('ENOENT')); // tasks.json doesn't exist
+      (fs.readdir as jest.Mock).mockResolvedValue([
+        'README.md',
+        'TASK-001.md',
+        'notes.txt',
+        'TASK-002.md'
+      ] as any);
 
-      (mockContext.globalState.get as jest.Mock).mockReturnValue(mockTasks);
+      await openTaskList();
 
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
-      });
-
-      openTaskListCommand(mockContext);
-      if (callbackFn) await callbackFn();
-
-      expect(mockPanel.webview.html).toBeTruthy();
-    });
-
-    it('should handle empty task list', async () => {
-      (mockContext.globalState.get as jest.Mock).mockReturnValue([]);
-
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
-      });
-
-      openTaskListCommand(mockContext);
-      if (callbackFn) await callbackFn();
-
-      expect(mockPanel.webview.html).toContain('No tasks');
-    });
-  });
-
-  describe('Task Interactions', () => {
-    it('should handle task selection', async () => {
-      const mockMessageHandler = jest.fn();
-      (mockPanel.webview.onDidReceiveMessage as jest.Mock).mockImplementation(handler => {
-        mockMessageHandler.mockImplementation(handler);
-        return { dispose: jest.fn() };
-      });
-
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
-      });
-
-      openTaskListCommand(mockContext);
-      if (callbackFn) await callbackFn();
-
-      mockMessageHandler({ type: 'selectTask', taskId: '1' });
-      expect(mockMessageHandler).toHaveBeenCalled();
-    });
-
-    it('should handle task status update', async () => {
-      const mockMessageHandler = jest.fn();
-      (mockPanel.webview.onDidReceiveMessage as jest.Mock).mockImplementation(handler => {
-        mockMessageHandler.mockImplementation(handler);
-        return { dispose: jest.fn() };
-      });
-
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
-      });
-
-      openTaskListCommand(mockContext);
-      if (callbackFn) await callbackFn();
-
-      mockMessageHandler({ type: 'updateStatus', taskId: '1', status: 'complete' });
-      expect(mockContext.globalState.update).toHaveBeenCalled();
-    });
-  });
-
-  describe('Panel Disposal', () => {
-    it('should clean up resources on panel close', async () => {
-      let disposeHandler: any;
-      (mockPanel.onDidDispose as jest.Mock).mockImplementation(handler => {
-        disposeHandler = handler;
-        return { dispose: jest.fn() };
-      });
-
-      let callbackFn: any;
-      (vscode.commands.registerCommand as jest.Mock).mockImplementation((cmd, callback) => {
-        callbackFn = callback;
-        return { dispose: jest.fn() };
-      });
-
-      openTaskListCommand(mockContext);
-      if (callbackFn) await callbackFn();
-
-      if (disposeHandler) disposeHandler();
-      expect(disposeHandler).toBeDefined();
+      // Should open the first TASK-*.md file
+      expect(vscode.workspace.openTextDocument).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fsPath: expect.stringContaining('TASK-001.md')
+        })
+      );
     });
   });
 });

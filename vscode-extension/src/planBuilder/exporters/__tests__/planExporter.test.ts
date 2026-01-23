@@ -1,4 +1,4 @@
-import { PlanExporter } from '../planBuilder/exporters/planExporter';
+import { PlanExporter } from '../planExporter';
 
 jest.mock('vscode');
 

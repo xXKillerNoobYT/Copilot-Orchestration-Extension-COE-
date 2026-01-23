@@ -1,4 +1,4 @@
-import { PlanContextService } from '../planBuilder/services/PlanContextService';
+import { PlanContextService } from '../PlanContextService';
 
 jest.mock('vscode');
 

@@ -1,4 +1,4 @@
-import { GithubIntegration } from '../mcp-server/integrations/githubIntegration';
+import { GitHubIntegration } from '../githubIntegration';
 
 jest.mock('vscode');
 
@@ -9,7 +9,7 @@ describe('GithubIntegration', () => {
 
   describe('Initialization', () => {
     it('should initialize correctly', () => {
-      expect(GithubIntegration).toBeDefined();
+      expect(GitHubIntegration).toBeDefined();
     });
   });
 

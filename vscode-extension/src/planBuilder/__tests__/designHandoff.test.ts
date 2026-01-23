@@ -1,4 +1,4 @@
-import { DesignHandoff } from '../planBuilder/designHandoff';
+import * as designHandoff from '../designHandoff';
 
 jest.mock('vscode');
 
@@ -7,9 +7,10 @@ describe('DesignHandoff', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(DesignHandoff).toBeDefined();
+  describe('Module', () => {
+    it('should be defined as a module', () => {
+      expect(designHandoff).toBeDefined();
+      expect(typeof designHandoff).toBe('object');
     });
   });
 

@@ -1,4 +1,4 @@
-import { ReportTaskStatus } from '../mcp-server/handlers/reportTaskStatus';
+import { handleReportTaskStatus } from '../reportTaskStatus';
 
 jest.mock('vscode');
 
@@ -9,7 +9,7 @@ describe('ReportTaskStatus', () => {
 
   describe('Initialization', () => {
     it('should initialize correctly', () => {
-      expect(ReportTaskStatus).toBeDefined();
+      expect(handleReportTaskStatus).toBeDefined();
     });
   });
 

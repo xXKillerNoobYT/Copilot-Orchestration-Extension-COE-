@@ -1,4 +1,4 @@
-import { PlanValidator } from '../planBuilder/planValidator';
+import { PlanValidator } from '../planValidator';
 
 jest.mock('vscode');
 

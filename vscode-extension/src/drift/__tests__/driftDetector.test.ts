@@ -1,4 +1,4 @@
-import { DriftDetector } from '../drift/driftDetector';
+import { DriftDetector } from '../driftDetector';
 
 jest.mock('vscode');
 

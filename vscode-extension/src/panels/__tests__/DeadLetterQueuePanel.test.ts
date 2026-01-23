@@ -1,4 +1,4 @@
-import { DeadLetterQueuePanel } from '../panels/DeadLetterQueuePanel';
+import { DeadLetterQueuePanel } from '../DeadLetterQueuePanel';
 
 jest.mock('vscode');
 

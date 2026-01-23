@@ -1,4 +1,4 @@
-import { GithubClient } from '../github/githubClient';
+import { GitHubClient } from '../githubClient';
 
 jest.mock('vscode');
 
@@ -7,9 +7,10 @@ describe('GithubClient', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(GithubClient).toBeDefined();
+  describe('Class Export', () => {
+    it('should export GitHubClient class', () => {
+      expect(GitHubClient).toBeDefined();
+      expect(typeof GitHubClient).toBe('function');
     });
   });
 

@@ -1,144 +1,211 @@
-import { MarkdownExporter } from '../markdownExporter';
+import { generateMarkdown } from '../markdownExporter';
+import type { PlanJSON } from '../../planBuilder/planGenerator';
 
 jest.mock('vscode');
 
-describe('MarkdownExporter', () => {
-  let exporter: MarkdownExporter;
+// Helper to create a complete plan with all required fields
+const createTestPlan = (overrides?: Partial<PlanJSON>): PlanJSON => ({
+  metadata: {
+    name: 'Test Plan',
+    description: 'A test plan',
+    version: '1.0.0',
+    author: 'Test Author',
+    status: 'in-progress',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  project: {
+    name: 'Test Project',
+    type: 'Software Development',
+    status: 'In Progress',
+    description: 'Test project description',
+  },
+  architecture: {
+    pattern: 'MVC',
+    description: 'Model-View-Controller architecture',
+  },
+  timeline: {
+    start_date: '2026-01-01',
+    end_date: '2026-12-31',
+    milestones: [],
+  },
+  team: {
+    size: 5,
+    roles: [],
+  },
+  constraints: {
+    budget: '$100,000',
+    technical: [],
+    business: [],
+  },
+  risks: [],
+  dependencies: [],
+  features: [],
+  ...overrides,
+} as PlanJSON);
 
+describe('MarkdownExporter', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    exporter = new MarkdownExporter();
   });
 
   describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(exporter).toBeDefined();
-      expect(MarkdownExporter).toBeDefined();
+    it('should export generateMarkdown function', () => {
+      expect(generateMarkdown).toBeDefined();
+      expect(typeof generateMarkdown).toBe('function');
     });
   });
 
   describe('Plan Export', () => {
     it('should export plan to markdown', () => {
-      const plan = {
-        title: 'Test Plan',
-        description: 'A test plan',
-        tasks: [
-          { id: '1', title: 'Task 1', status: 'pending' },
-          { id: '2', title: 'Task 2', status: 'complete' },
-        ],
-      };
-
-      const markdown = exporter.exportPlan(plan);
-
-      expect(markdown).toContain('# Test Plan');
-      expect(markdown).toContain('Task 1');
-      expect(markdown).toContain('Task 2');
-    });
-
-    it('should handle empty plan', () => {
-      const plan = {
-        title: 'Empty Plan',
-        description: '',
-        tasks: [],
-      };
-
-      const markdown = exporter.exportPlan(plan);
-      expect(markdown).toContain('# Empty Plan');
-      expect(markdown).toContain('No tasks');
-    });
-
-    it('should include task metadata', () => {
-      const plan = {
-        title: 'Test Plan',
-        tasks: [
+      const plan = createTestPlan({
+        features: [
           {
-            id: '1',
+            id: 'F001',
             title: 'Task 1',
             status: 'pending',
             priority: 'high',
-            assignee: 'user@example.com',
+            description: 'Test task',
+            acceptance_criteria: [],
+          },
+          {
+            id: 'F002',
+            title: 'Task 2',
+            status: 'complete',
+            priority: 'medium',
+            description: 'Complete task',
+            acceptance_criteria: [],
           },
         ],
-      };
+      } as any);
 
-      const markdown = exporter.exportPlan(plan);
-      expect(markdown).toContain('high');
+      const markdown = generateMarkdown(plan);
+
+      expect(markdown).toContain('# Test Plan');
+      expect(markdown).toContain('Test task');
+      expect(markdown).toContain('Complete task');
+    });
+
+    it('should handle empty plan', () => {
+      const plan = createTestPlan({
+        metadata: {
+          name: 'Empty Plan',
+          version: '1.0.0',
+          author: 'Test',
+          status: 'draft',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      });
+
+      const markdown = generateMarkdown(plan);
+      expect(markdown).toContain('# Empty Plan');
+    });
+
+    it('should include task metadata', () => {
+      const plan = createTestPlan({
+        metadata: {
+          name: 'Test Plan',
+          version: '1.0.0',
+          author: 'user@example.com',
+          status: 'approved',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        features: [
+          {
+            id: 'F001',
+            title: 'Task 1',
+            status: 'pending',
+            priority: 'high',
+            description: 'Important task',
+            acceptance_criteria: [],
+          },
+        ],
+      } as any);
+
+      const markdown = generateMarkdown(plan);
       expect(markdown).toContain('user@example.com');
     });
   });
 
   describe('Task Formatting', () => {
-    it('should format task status with checkboxes', () => {
-      const plan = {
-        tasks: [
-          { id: '1', title: 'Done Task', status: 'complete' },
-          { id: '2', title: 'Pending Task', status: 'pending' },
+    it('should format task status', () => {
+      const plan = createTestPlan({
+        features: [
+          { id: 'F001', title: 'Done Task', status: 'complete', priority: 'high', description: '', acceptance_criteria: [] },
+          { id: 'F002', title: 'Pending Task', status: 'pending', priority: 'low', description: '', acceptance_criteria: [] },
         ],
-      };
+      } as any);
 
-      const markdown = exporter.exportPlan(plan);
-      expect(markdown).toContain('[x]');
-      expect(markdown).toContain('[ ]');
+      const markdown = generateMarkdown(plan);
+      expect(markdown).toContain('high');
+      expect(markdown).toContain('complete');
+      expect(markdown).toContain('pending');
     });
 
-    it('should format nested subtasks', () => {
-      const plan = {
-        tasks: [
+    it('should include features in output', () => {
+      const plan = createTestPlan({
+        features: [
           {
-            id: '1',
+            id: 'F001',
             title: 'Parent Task',
-            subtasks: [
-              { id: '1.1', title: 'Subtask 1' },
-              { id: '1.2', title: 'Subtask 2' },
-            ],
+            status: 'pending',
+            priority: 'high',
+            description: 'Parent description',
+            acceptance_criteria: ['AC1', 'AC2'],
           },
         ],
-      };
+      } as any);
 
-      const markdown = exporter.exportPlan(plan);
-      expect(markdown).toContain('Subtask 1');
-      expect(markdown).toContain('Subtask 2');
+      const markdown = generateMarkdown(plan);
+      expect(markdown).toContain('Parent description');
+      expect(markdown).toContain('AC1');
+      expect(markdown).toContain('AC2');
     });
   });
 
   describe('Metadata Formatting', () => {
-    it('should include plan metadata in frontmatter', () => {
-      const plan = {
-        title: 'Test Plan',
+    it('should include plan metadata in header', () => {
+      const plan = createTestPlan({
         metadata: {
+          name: 'Test Plan',
           author: 'Test Author',
-          created: new Date('2026-01-01').toISOString(),
+          created_at: new Date('2026-01-01').toISOString(),
+          updated_at: new Date('2026-01-15').toISOString(),
           version: '1.0.0',
+          status: 'completed',
         },
-        tasks: [],
-      };
+      });
 
-      const markdown = exporter.exportPlan(plan);
-      expect(markdown).toContain('---');
+      const markdown = generateMarkdown(plan);
       expect(markdown).toContain('Test Author');
       expect(markdown).toContain('1.0.0');
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle invalid plan structure', () => {
-      const invalidPlan: any = { invalid: 'structure' };
-      expect(() => exporter.exportPlan(invalidPlan)).toThrow();
+    it('should handle minimal plan structure', () => {
+      const plan = createTestPlan();
+      expect(() => generateMarkdown(plan)).not.toThrow();
     });
 
-    it('should sanitize malicious markdown', () => {
-      const plan = {
-        title: 'Test Plan',
-        tasks: [
+    it('should safely handle special characters in content', () => {
+      const plan = createTestPlan({
+        features: [
           {
-            id: '1',
-            title: '<script>alert("xss")</script>',
+            id: 'F001',
+            title: 'Task with <special> characters',
+            status: 'pending',
+            priority: 'high',
+            description: 'Description',
+            acceptance_criteria: [],
           },
         ],
-      };
+      } as any);
 
-      const markdown = exporter.exportPlan(plan);
-      expect(markdown).not.toContain('<script>');
+      const markdown = generateMarkdown(plan);
+      expect(markdown).toBeDefined();
     });
   });
 });

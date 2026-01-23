@@ -1,4 +1,4 @@
-import { PromptCache } from '../llm/promptCache';
+import { PromptCache } from '../promptCache';
 
 jest.mock('vscode');
 

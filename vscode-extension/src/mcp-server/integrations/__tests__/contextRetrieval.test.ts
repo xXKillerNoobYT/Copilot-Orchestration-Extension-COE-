@@ -1,4 +1,4 @@
-import { ContextRetrieval } from '../mcp-server/integrations/contextRetrieval';
+import { ContextRetrieval } from '../contextRetrieval';
 
 jest.mock('vscode');
 

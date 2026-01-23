@@ -1,4 +1,4 @@
-import { LlmResponsePanel } from '../panels/llmResponsePanel';
+import * as llmResponsePanel from '../llmResponsePanel';
 
 jest.mock('vscode');
 
@@ -7,9 +7,10 @@ describe('LlmResponsePanel', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(LlmResponsePanel).toBeDefined();
+  describe('Module', () => {
+    it('should be defined as a module', () => {
+      expect(llmResponsePanel).toBeDefined();
+      expect(typeof llmResponsePanel).toBe('object');
     });
   });
 

@@ -1,15 +1,15 @@
-import { LlmExecutionIntegration } from '../integration/llmExecutionIntegration';
+import { LLMExecutionIntegration } from '../llmExecutionIntegration';
 
 jest.mock('vscode');
 
-describe('LlmExecutionIntegration', () => {
+describe('LLMExecutionIntegration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('Initialization', () => {
     it('should initialize correctly', () => {
-      expect(LlmExecutionIntegration).toBeDefined();
+      expect(LLMExecutionIntegration).toBeDefined();
     });
   });
 

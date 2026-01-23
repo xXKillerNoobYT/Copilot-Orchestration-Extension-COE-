@@ -1,4 +1,4 @@
-import { PlanDiff } from '../planBuilder/planDiff';
+import * as planDiff from '../planDiff';
 
 jest.mock('vscode');
 
@@ -7,9 +7,10 @@ describe('PlanDiff', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(PlanDiff).toBeDefined();
+  describe('Module', () => {
+    it('should be defined as a module', () => {
+      expect(planDiff).toBeDefined();
+      expect(typeof planDiff).toBe('object');
     });
   });
 

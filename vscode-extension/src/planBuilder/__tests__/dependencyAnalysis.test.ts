@@ -1,4 +1,4 @@
-import { DependencyAnalysis } from '../planBuilder/dependencyAnalysis';
+import * as dependencyAnalysis from '../dependencyAnalysis';
 
 jest.mock('vscode');
 
@@ -7,9 +7,10 @@ describe('DependencyAnalysis', () => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(DependencyAnalysis).toBeDefined();
+  describe('Module', () => {
+    it('should be defined as a module', () => {
+      expect(dependencyAnalysis).toBeDefined();
+      expect(typeof dependencyAnalysis).toBe('object');
     });
   });
 

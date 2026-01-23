@@ -1,4 +1,4 @@
-import { TaskManager } from '../mcp-server/integrations/taskManager';
+import { TaskManager } from '../taskManager.js';
 
 jest.mock('vscode');
 

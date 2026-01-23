@@ -1,4 +1,4 @@
-import { TokenGenerator } from '../planBuilder/designSystem/tokenGenerator';
+import { DesignTokenGenerator } from '../tokenGenerator';
 
 jest.mock('vscode');
 
@@ -9,7 +9,7 @@ describe('TokenGenerator', () => {
 
   describe('Initialization', () => {
     it('should initialize correctly', () => {
-      expect(TokenGenerator).toBeDefined();
+      expect(DesignTokenGenerator).toBeDefined();
     });
   });
 

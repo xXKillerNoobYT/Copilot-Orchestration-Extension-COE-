@@ -1,15 +1,19 @@
-import { PlanPersistence } from '../planBuilder/planPersistence';
+import { savePlan, loadPlan, listPlans, deletePlan, type SavedPlan } from '../planPersistence';
 
 jest.mock('vscode');
+jest.mock('../../services/mcpClient');
 
 describe('PlanPersistence', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('Initialization', () => {
-    it('should initialize correctly', () => {
-      expect(PlanPersistence).toBeDefined();
+  describe('Exports', () => {
+    it('should export persistence functions', () => {
+      expect(savePlan).toBeDefined();
+      expect(loadPlan).toBeDefined();
+      expect(listPlans).toBeDefined();
+      expect(deletePlan).toBeDefined();
     });
   });
 
