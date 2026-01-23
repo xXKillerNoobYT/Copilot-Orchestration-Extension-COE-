@@ -446,7 +446,7 @@ Please run <code>npm run build:vue</code> in the <code>vscode-extension</code> d
    * This handles any future changes to entrypoint naming beyond main/index.
    */
   private _resolveAssetsFromManifest(buildRootFsPath: string, webview: vscode.Webview): { styleUri?: vscode.Uri; scriptUri?: vscode.Uri } | null {
-    const manifestPath = path.join(buildRootFsPath, 'manifest.json');
+    const manifestPath = path.join(buildRootFsPath, '.vite', 'manifest.json');
 
     if (!fs.existsSync(manifestPath)) {
       console.warn('[PlanBuilder] manifest.json not found, falling back to regex asset discovery');
@@ -458,9 +458,9 @@ Please run <code>npm run build:vue</code> in the <code>vscode-extension</code> d
       const manifest = JSON.parse(manifestRaw);
 
       const candidateKeys = [
+        'index.html',
         'resources/planBuilder/index.html',
         'resources/planBuilder/main.ts',
-        'index.html',
         'main.ts'
       ];
 
