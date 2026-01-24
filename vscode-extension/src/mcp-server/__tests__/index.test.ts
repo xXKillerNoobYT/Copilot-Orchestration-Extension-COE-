@@ -7,6 +7,11 @@ describe('MCP Server Index', () => {
     jest.clearAllMocks();
   });
 
+  afterAll(async () => {
+    // Clean up any open handles from MCP server
+    await new Promise(resolve => setImmediate(resolve));
+  });
+
   describe('Initialization', () => {
     it('should export module correctly', () => {
       expect(mcpServerExports).toBeDefined();

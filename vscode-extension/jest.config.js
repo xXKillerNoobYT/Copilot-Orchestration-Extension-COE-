@@ -183,6 +183,12 @@ module.exports = {
   restoreMocks: true,
 
   /**
+   * Test Location Tracking
+   * Enables line numbers in test results for VS Code Problems integration
+   */
+  testLocationInResults: true,
+
+  /**
    * Logging
    * See: https://jestjs.io/docs/configuration#verbose-boolean
    */

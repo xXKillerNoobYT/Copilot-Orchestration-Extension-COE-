@@ -430,7 +430,10 @@ async function main() {
   console.error('Audit database initialized with WAL mode');
 }
 
-main().catch((error) => {
-  console.error('Fatal error in MCP server:', error);
-  process.exit(1);
-});
+// Only run main() if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  main().catch((error) => {
+    console.error('Fatal error in MCP server:', error);
+    process.exit(1);
+  });
+}
