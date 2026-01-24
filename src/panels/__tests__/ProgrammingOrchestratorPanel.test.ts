@@ -21,7 +21,7 @@ describe('ProgrammingOrchestratorPanel', () => {
     beforeEach(() => {
         // Setup mocks
         mockExtensionUri = { fsPath: '/test/path', scheme: 'file' } as any;
-        
+
         mockWebview = {
             html: '',
             postMessage: jest.fn(),
@@ -177,10 +177,10 @@ describe('ProgrammingOrchestratorPanel', () => {
             ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
 
             const messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
-            
+
             // Clear previous calls
             jest.clearAllMocks();
-            
+
             messageHandler({ type: 'refreshDashboard' });
 
             expect(mockWebview.postMessage).toHaveBeenCalledWith(
@@ -192,7 +192,7 @@ describe('ProgrammingOrchestratorPanel', () => {
     describe('Panel Lifecycle', () => {
         it('should clean up on dispose', () => {
             jest.useFakeTimers();
-            
+
             const panel = ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
 
             // Trigger dispose
@@ -214,7 +214,7 @@ describe('ProgrammingOrchestratorPanel', () => {
 
         it('should allow recreation after disposal', () => {
             const panel1 = ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
-            
+
             // Dispose
             const disposeHandler = (mockWebviewPanel.onDidDispose as jest.Mock).mock.calls[0][0];
             disposeHandler();
@@ -271,7 +271,7 @@ describe('ProgrammingOrchestratorPanel', () => {
     describe('Performance Requirements', () => {
         it('should update dashboard within 500ms latency requirement', (done) => {
             const startTime = Date.now();
-            
+
             ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
 
             // Check when first update arrives

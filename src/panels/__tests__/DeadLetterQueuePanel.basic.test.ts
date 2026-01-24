@@ -14,8 +14,13 @@ describe('DeadLetterQueuePanel', () => {
     let mockExtensionUri: vscode.Uri;
     let mockDlqService: jest.Mocked<DeadLetterQueueService>;
     let mockPanel: any;
+    let disposeCallback: (() => void) | undefined;
+    let isDisposing: boolean;
 
     beforeEach(() => {
+        disposeCallback = undefined;
+        isDisposing = false;
+        
         mockPanel = {
             webview: {
                 html: '',
@@ -23,15 +28,23 @@ describe('DeadLetterQueuePanel', () => {
                 postMessage: jest.fn(),
                 asWebviewUri: jest.fn((uri) => uri),
             },
-            onDidDispose: jest.fn(),
+            onDidDispose: jest.fn((callback) => {
+                disposeCallback = callback;
+            }),
             reveal: jest.fn(),
-            dispose: jest.fn(),
+            dispose: jest.fn(() => {
+                // Prevent infinite recursion - only trigger callback once
+                if (!isDisposing && disposeCallback) {
+                    isDisposing = true;
+                    disposeCallback();
+                }
+            }),
         };
 
         (vscode.window as any).createWebviewPanel = jest.fn().mockReturnValue(mockPanel);
 
         mockExtensionUri = { fsPath: '/test/extension', toString: () => '/test/extension' } as vscode.Uri;
-        
+
         mockDlqService = {
             getEntries: jest.fn().mockResolvedValue([]),
             addEntry: jest.fn(),
