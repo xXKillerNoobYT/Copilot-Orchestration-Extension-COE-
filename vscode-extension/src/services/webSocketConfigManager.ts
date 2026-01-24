@@ -27,7 +27,7 @@ export class WebSocketConfigManager {
    */
   static getConfig(): WebSocketSettings {
     const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
-    
+
     const appKey = config.get<string>('appKey');
     const effectiveAppKey = (appKey === undefined || appKey === null) ? 'default-app-key' : appKey;
 
@@ -231,7 +231,7 @@ export class WebSocketConfigManager {
 
     vscode.window.showInformationMessage(
       `[WebSocket] Testing connection to ${config.driver}://` +
-        `${config.host || config.cluster}:${config.port || 'default'}...`
+      `${config.host || config.cluster}:${config.port || 'default'}...`
     );
 
     try {

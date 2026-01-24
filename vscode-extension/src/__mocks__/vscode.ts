@@ -179,7 +179,16 @@ export const window = {
   showInputBox: createMock(),
   showSaveDialog: createMock(),
   showOpenDialog: createMock(),
-  createOutputChannel: createMock(),
+  createOutputChannel: mockFn(() => ({
+    appendLine: mockFn(),
+    append: mockFn(),
+    clear: mockFn(),
+    show: mockFn(),
+    hide: mockFn(),
+    dispose: mockFn(),
+    name: 'Test Output Channel',
+    onDidDispose: mockFn(() => ({ dispose: mockFn() })),
+  })),
   createStatusBarItem: mockFn(() => ({
     text: '',
     show: mockFn(),

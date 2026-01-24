@@ -282,7 +282,7 @@ describe('TaskManager', () => {
         version: 1
       };
 
-      const update: UpdateTaskInput = { 
+      const update: UpdateTaskInput = {
         priority: 'high'
       };
 
@@ -429,22 +429,34 @@ describe('TaskManager', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle invalid task input', async () => {
+    it('should handle invalid task input', () => {
       const invalidInput: any = {
         // Missing required fields
         project_id: 'proj-1'
+        // Missing: name, task_type
       };
 
-      // Should throw validation error
-      await expect(manager.createTask(invalidInput)).rejects.toThrow();
+      // Database will throw error for missing fields
+      mockDb.run.mockImplementation(() => {
+        throw new Error('NOT NULL constraint failed: tasks.name');
+      });
+
+      expect(() => manager.createTask(invalidInput)).toThrow();
     });
 
     it('should handle database connection failure', () => {
-      (Database as jest.MockedClass<typeof Database>).mockImplementation(() => {
+      // Reset singleton instance first
+      TaskManager.resetInstance();
+
+      // Make Database constructor throw
+      (Database as jest.MockedClass<typeof Database>).mockImplementationOnce(() => {
         throw new Error('Connection failed');
       });
 
-      expect(() => TaskManager.getInstance('/invalid/path')).toThrow();
+      expect(() => TaskManager.getInstance('/invalid/path')).toThrow('Connection failed');
+
+      // Restore for other tests
+      (Database as jest.MockedClass<typeof Database>).mockImplementation(() => mockDb);
     });
   });
 

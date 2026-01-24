@@ -1,6 +1,6 @@
 ---
 description: Validate user stories by generating Playwright tests from an attached .txt file, running them against a provided URL, and reporting the results. The goal is to ensure that the user stories are fully covered by the tests and to identify any failures or gaps in functionality.
-tools: ['playwright/*']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'updateUserPreferences', 'memory', 'todo']
 agent: agent
 ---
 

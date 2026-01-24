@@ -1,6 +1,6 @@
 ---
 description: Compare live website UI against Figma design references. Automatically captures screenshots and generates an HTML report with visual differences, comparison scores, and improvement recommendations.
-tools: ['playwright/*', 'copilot/auto']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'updateUserPreferences', 'memory', 'todo']
 agent: agent
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: Centralized routing tool that intelligently routes user requests to appropriate specialized prompts based on command keywords and input patterns. Routes to generate_tests, compare_design, or validate_user_story_tests prompts.
-tools: ['playwright/*']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'updateUserPreferences', 'memory', 'todo']
 agent: agent
 ---
 

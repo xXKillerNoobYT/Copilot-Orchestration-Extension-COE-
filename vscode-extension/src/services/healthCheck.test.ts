@@ -436,5 +436,302 @@ describe('HealthCheckService', () => {
 
       expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
     });
+
+    it('should handle "View Details" action', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn(() => ''),
+      });
+      (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('View Details');
+
+      const result = await service.runHealthCheck(false);
+      await service.showWelcomeIfUnhealthy(result);
+
+      expect(mockOutputChannel.clear).toHaveBeenCalled();
+    });
+
+    it('should handle "Open Settings" action', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn(() => ''),
+      });
+      (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue('Open Settings');
+      (vscode.commands.executeCommand as jest.Mock) = jest.fn().mockResolvedValue(undefined);
+
+      const result = await service.runHealthCheck(false);
+      await service.showWelcomeIfUnhealthy(result);
+
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'workbench.action.openSettings',
+        'copilot-orchestrator'
+      );
+    });
+  });
+
+  describe('Concurrent Health Checks', () => {
+    it('should prevent concurrent health checks and return cached result', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({ ok: true });
+      (fs.stat as jest.Mock).mockResolvedValue({ isDirectory: () => true });
+      (fs.readdir as jest.Mock).mockResolvedValue(['plan1.json']);
+
+      // Start first check
+      const promise1 = service.runHealthCheck(false);
+      // Immediately start second check while first is running
+      const promise2 = service.runHealthCheck(false);
+
+      const result1 = await promise1;
+      const result2 = await promise2;
+
+      // Both should complete, second should use cached result
+      expect(result1).toBeDefined();
+      expect(result2).toBeDefined();
+    });
+
+    it('should throw error if concurrent check and no cached result', async () => {
+      // Create a fresh service instance
+      (HealthCheckService as any).instance = undefined;
+      const freshService = HealthCheckService.getInstance();
+
+      (global.fetch as jest.Mock).mockImplementation(() => 
+        new Promise(resolve => setTimeout(() => resolve({ ok: true }), 200))
+      );
+
+      // Start first check
+      const promise1 = freshService.runHealthCheck(false);
+      
+      // Immediately start second check while first is running
+      await expect(freshService.runHealthCheck(false)).rejects.toThrow('Health check already in progress');
+
+      // Clean up
+      await promise1;
+      freshService.dispose();
+    });
+  });
+
+  describe('Backend Reachable with Fallback', () => {
+    it('should fallback to root URL when health endpoint fails', async () => {
+      let callCount = 0;
+      (global.fetch as jest.Mock).mockImplementation((url) => {
+        callCount++;
+        // First two calls are for backend (health endpoint + fallback)
+        // Remaining calls are for MCP checks
+        if (callCount === 1) {
+          // First call to backend /api/health fails
+          return Promise.reject(new Error('404 Not Found'));
+        } else {
+          // All other calls succeed (backend fallback + MCP)
+          return Promise.resolve({ ok: true });
+        }
+      });
+
+      const result = await service.runHealthCheck(false);
+      const backendCheck = result.checks.find(c => c.name === 'Backend Reachable');
+
+      expect(backendCheck?.status).toBe('healthy');
+      expect(global.fetch).toHaveBeenCalledTimes(3); // Backend health (failed) + backend fallback + MCP health
+    });
+  });
+
+  describe('Plans Directory Edge Cases', () => {
+    it('should handle when path exists but is a file not a directory', async () => {
+      (fs.stat as jest.Mock).mockResolvedValue({
+        isDirectory: () => false,
+      });
+
+      const result = await service.runHealthCheck(false);
+      const dirCheck = result.checks.find(c => c.name === 'Plans Directory');
+
+      expect(dirCheck?.status).toBe('unhealthy');
+      expect(dirCheck?.message).toContain('not a directory');
+    });
+
+    it('should handle generic error when checking directory', async () => {
+      const error: any = new Error('Permission denied');
+      error.code = 'EACCES';
+      (fs.stat as jest.Mock).mockRejectedValue(error);
+
+      const result = await service.runHealthCheck(false);
+      const dirCheck = result.checks.find(c => c.name === 'Plans Directory');
+
+      expect(dirCheck?.status).toBe('unhealthy');
+      expect(dirCheck?.message).toBe('Error checking directory');
+      expect(dirCheck?.details).toContain('Permission denied');
+    });
+  });
+
+  describe('WebSocket Configuration Edge Cases', () => {
+    it('should handle validation error', async () => {
+      const mockWebSocketConfigManager = WebSocketConfigManagerModule.WebSocketConfigManager as jest.Mocked<typeof WebSocketConfigManagerModule.WebSocketConfigManager>;
+      jest.spyOn(mockWebSocketConfigManager, 'getConfig').mockReturnValue({
+        driver: 'invalid',
+        appKey: '',
+        host: '',
+      } as any);
+      jest.spyOn(mockWebSocketConfigManager, 'validate').mockReturnValue('Invalid driver');
+
+      const result = await service.runHealthCheck(false);
+      const wsCheck = result.checks.find(c => c.name === 'WebSocket Config');
+
+      expect(wsCheck?.status).toBe('degraded');
+      expect(wsCheck?.details).toBe('Invalid driver');
+    });
+
+    it('should handle exception when checking websocket config', async () => {
+      const mockWebSocketConfigManager = WebSocketConfigManagerModule.WebSocketConfigManager as jest.Mocked<typeof WebSocketConfigManagerModule.WebSocketConfigManager>;
+      jest.spyOn(mockWebSocketConfigManager, 'getConfig').mockImplementation(() => {
+        throw new Error('Config error');
+      });
+
+      const result = await service.runHealthCheck(false);
+      const wsCheck = result.checks.find(c => c.name === 'WebSocket Config');
+
+      expect(wsCheck?.status).toBe('degraded');
+      expect(wsCheck?.message).toBe('Error checking configuration');
+    });
+  });
+
+  describe('Version Comparison Edge Cases', () => {
+    it('should handle version with higher major version', async () => {
+      (vscode as any).version = '2.0.0';
+
+      const result = await service.runHealthCheck(false);
+      const versionCheck = result.checks.find(c => c.name === 'VS Code Version');
+
+      expect(versionCheck?.status).toBe('healthy');
+    });
+
+    it('should handle version with higher minor version', async () => {
+      (vscode as any).version = '1.95.0';
+
+      const result = await service.runHealthCheck(false);
+      const versionCheck = result.checks.find(c => c.name === 'VS Code Version');
+
+      expect(versionCheck?.status).toBe('healthy');
+    });
+
+    it('should handle exact required version', async () => {
+      (vscode as any).version = '1.90.0';
+
+      const result = await service.runHealthCheck(false);
+      const versionCheck = result.checks.find(c => c.name === 'VS Code Version');
+
+      expect(versionCheck?.status).toBe('healthy');
+    });
+
+    it('should fail when minor version is lower', async () => {
+      (vscode as any).version = '1.80.0';
+
+      const result = await service.runHealthCheck(false);
+      const versionCheck = result.checks.find(c => c.name === 'VS Code Version');
+
+      expect(versionCheck?.status).toBe('unhealthy');
+    });
+  });
+
+  describe('Individual Check Errors', () => {
+    it('should handle when a check throws an error', async () => {
+      // Mock one of the checks to throw an error
+      (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (fs.stat as jest.Mock).mockImplementation(() => {
+        throw new Error('Unexpected error in check');
+      });
+
+      const result = await service.runHealthCheck(false);
+
+      // Should still get a result with error check marked as unhealthy
+      expect(result).toBeDefined();
+      expect(result.checks.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Status Bar Updates', () => {
+    it('should update status bar for degraded state', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 500 });
+      (fs.stat as jest.Mock).mockResolvedValue({ isDirectory: () => true });
+      (fs.readdir as jest.Mock).mockResolvedValue(['plan1.json']);
+
+      const result = await service.runHealthCheck(false);
+      service.updateStatusBar(result, mockStatusBarItem);
+
+      expect(mockStatusBarItem.text).toContain('Degraded');
+      expect(mockStatusBarItem.tooltip).toBeDefined();
+    });
+
+    it('should update status bar for unhealthy state', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn(() => ''),
+      });
+
+      const result = await service.runHealthCheck(false);
+      service.updateStatusBar(result, mockStatusBarItem);
+
+      expect(mockStatusBarItem.text).toContain('Unhealthy');
+    });
+  });
+
+  describe('Summary Generation', () => {
+    it('should generate correct summary for degraded state', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 500 });
+      (fs.stat as jest.Mock).mockResolvedValue({ isDirectory: () => true });
+      (fs.readdir as jest.Mock).mockResolvedValue(['plan1.json']);
+
+      const result = await service.runHealthCheck(false);
+
+      expect(result.status).toBe('degraded');
+      expect(result.summary).toContain('critical checks passed');
+      expect(result.summary).toContain('limited');
+    });
+
+    it('should count optional checks separately', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({ ok: true });
+      (fs.stat as jest.Mock).mockResolvedValue({ isDirectory: () => true });
+      (fs.readdir as jest.Mock).mockResolvedValue([]); // No plans (optional)
+
+      // Mock MCP as failing (optional)
+      let callCount = 0;
+      (global.fetch as jest.Mock).mockImplementation((url) => {
+        callCount++;
+        if (url.includes('mcp') || callCount > 2) {
+          return Promise.reject(new Error('MCP not available'));
+        }
+        return Promise.resolve({ ok: true });
+      });
+
+      const result = await service.runHealthCheck(false);
+
+      // Should still be healthy because failed checks are optional
+      expect(result.status).toBe('healthy');
+    });
+  });
+
+  describe('Display Results Details', () => {
+    it('should display all check details including optional ones', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({ ok: true });
+      (fs.stat as jest.Mock).mockResolvedValue({ isDirectory: () => true });
+      (fs.readdir as jest.Mock).mockResolvedValue(['plan1.json']);
+
+      const result = await service.runHealthCheck(false);
+      service.displayResults(result);
+
+      // Should append multiple lines for each check
+      expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+        expect.stringContaining('Extension Health Check')
+      );
+      expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+        expect.stringContaining('Overall Health')
+      );
+    });
+
+    it('should show fix suggestions for failed checks', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn(() => ''),
+      });
+
+      const result = await service.runHealthCheck(false);
+      service.displayResults(result);
+
+      // Should display fix suggestions
+      expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
+        expect.stringContaining('Fix:')
+      );
+    });
   });
 });

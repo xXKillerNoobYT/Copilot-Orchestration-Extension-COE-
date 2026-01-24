@@ -1,6 +1,6 @@
 ---
 description: Generate detailed Playwright tests based on an exploration of the website, focusing on each module individually. The goal is to generate comprehensive test cases with at least 80% test coverage per module. For each module, create separate test files, execute them individually, and provide module-wise test coverage reports. Ensure to explore all functionalities, handle edge cases, and implement the tests iteratively.
-tools: ['playwright/*']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'updateUserPreferences', 'memory', 'todo']
 agent: agent
 ---
 
