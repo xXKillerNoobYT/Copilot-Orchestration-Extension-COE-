@@ -9,6 +9,8 @@ jest.mock('vscode');
 jest.mock('../copilotDispatcher');
 jest.mock('../llm/openaiClient');
 jest.mock('../config/llmConfig');
+jest.mock('../ui/streamingOutputChannel.js');
+jest.mock('../services/streamingClient.js');
 
 describe('executeLLM Command', () => {
     let mockShowQuickPick: jest.Mock;
@@ -254,7 +256,6 @@ describe('executeLLM Command', () => {
         });
 
         it('should handle streaming responses', async () => {
-            mockShowQuickPick.mockResolvedValue('Select Task');
             mockShowInputBox
                 .mockResolvedValueOnce('TASK-456')
                 .mockResolvedValueOnce('planner');
@@ -266,6 +267,8 @@ describe('executeLLM Command', () => {
                     provider: 'openai',
                     apiKey: 'test-key',
                     endpoint: 'https://api.openai.com/v1',
+                    temperature: 0.7,
+                    timeoutMs: 30000,
                 },
             };
 
@@ -286,7 +289,10 @@ describe('executeLLM Command', () => {
                 },
                 context: { files: [] },
                 memory: [],
-                messages: [],
+                messages: [
+                    { role: 'system', content: 'You are a planner' },
+                    { role: 'user', content: 'Plan this task' },
+                ],
             };
 
             const mockDispatcher = {
@@ -295,27 +301,50 @@ describe('executeLLM Command', () => {
 
             (CopilotDispatcher as jest.Mock).mockImplementation(() => mockDispatcher);
 
-            const mockClient = {
-                sendChatStreaming: jest.fn().mockImplementation(async function* () {
-                    yield 'Chunk 1';
-                    yield 'Chunk 2';
-                    yield 'Chunk 3';
+            // Mock the streaming output channel
+            const mockOutputChannel = {
+                startStream: jest.fn(),
+                appendChunk: jest.fn(),
+                updateProgress: jest.fn(),
+                endStream: jest.fn(),
+                showError: jest.fn(),
+            };
+
+            const { getStreamingOutputChannel } = await import('../ui/streamingOutputChannel.js');
+            (getStreamingOutputChannel as jest.Mock).mockReturnValue(mockOutputChannel);
+
+            // Mock the streaming client
+            const mockStreamingClient = {
+                streamChat: jest.fn().mockImplementation(async (messages, callbacks, options) => {
+                    // Simulate streaming chunks
+                    if (callbacks.onChunk) {
+                        callbacks.onChunk({ type: 'text', content: 'Chunk 1' });
+                        callbacks.onChunk({ type: 'text', content: 'Chunk 2' });
+                        callbacks.onChunk({ type: 'progress', progress: 50 });
+                        callbacks.onChunk({ type: 'text', content: 'Chunk 3' });
+                        callbacks.onChunk({ type: 'done' });
+                    }
+                    if (callbacks.onComplete) {
+                        callbacks.onComplete({ success: true });
+                    }
                 }),
             };
 
-            (createOpenAIClient as jest.Mock).mockReturnValue(mockClient);
+            const { createStreamingClient } = await import('../services/streamingClient.js');
+            (createStreamingClient as jest.Mock).mockReturnValue(mockStreamingClient);
 
             mockWithProgress.mockImplementation(async (options, callback) => {
                 const progress = { report: jest.fn() };
-                return callback(progress);
+                const cancellationToken = { isCancellationRequested: false };
+                return callback(progress, cancellationToken);
             });
-
-            mockOpenTextDocument.mockResolvedValue({});
 
             await executeLlmCommandStreaming();
 
             expect(mockDispatcher.composePrompt).toHaveBeenCalled();
-            expect(mockClient.sendChatStreaming).toHaveBeenCalled();
+            expect(mockStreamingClient.streamChat).toHaveBeenCalled();
+            expect(mockOutputChannel.startStream).toHaveBeenCalledWith('TASK-456', 'planner');
+            expect(mockOutputChannel.endStream).toHaveBeenCalled();
         });
     });
 });

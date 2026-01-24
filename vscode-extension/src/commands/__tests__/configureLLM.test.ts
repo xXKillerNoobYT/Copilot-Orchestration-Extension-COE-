@@ -15,6 +15,7 @@ describe('configureLlmCommand', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.restoreAllMocks();
 
         mockContext = {
             extensionUri: vscode.Uri.file('/mock/extension/path'),
@@ -50,36 +51,46 @@ describe('configureLlmCommand', () => {
         } as vscode.ExtensionContext;
     });
 
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
     it('should be defined', () => {
         expect(configureLlmCommand).toBeDefined();
     });
 
     it('should call SettingsPanel.createOrShow with extension URI', async () => {
-        const createOrShowSpy = jest.spyOn(SettingsPanel, 'createOrShow');
+        const createOrShowMock = jest.fn();
+        (SettingsPanel.createOrShow as jest.Mock) = createOrShowMock;
 
         await configureLlmCommand(mockContext);
 
-        expect(createOrShowSpy).toHaveBeenCalledTimes(1);
-        expect(createOrShowSpy).toHaveBeenCalledWith(mockContext.extensionUri);
+        expect(createOrShowMock).toHaveBeenCalledTimes(1);
+        expect(createOrShowMock).toHaveBeenCalledWith(mockContext.extensionUri);
     });
 
     it('should handle SettingsPanel creation errors gracefully', async () => {
         const error = new Error('Failed to create panel');
-        jest.spyOn(SettingsPanel, 'createOrShow').mockImplementation(() => {
+        const createOrShowMock = jest.fn(() => {
             throw error;
         });
+        (SettingsPanel.createOrShow as jest.Mock) = createOrShowMock;
 
         await expect(configureLlmCommand(mockContext)).rejects.toThrow('Failed to create panel');
     });
 
     it('should work with different extension URIs', async () => {
         const customUri = vscode.Uri.file('/custom/path');
-        mockContext.extensionUri = customUri;
+        const customContext = {
+            ...mockContext,
+            extensionUri: customUri,
+        } as vscode.ExtensionContext;
 
-        const createOrShowSpy = jest.spyOn(SettingsPanel, 'createOrShow');
+        const createOrShowMock = jest.fn();
+        (SettingsPanel.createOrShow as jest.Mock) = createOrShowMock;
 
-        await configureLlmCommand(mockContext);
+        await configureLlmCommand(customContext);
 
-        expect(createOrShowSpy).toHaveBeenCalledWith(customUri);
+        expect(createOrShowMock).toHaveBeenCalledWith(customUri);
     });
 });

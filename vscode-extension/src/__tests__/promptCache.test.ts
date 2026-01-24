@@ -293,26 +293,18 @@ describe('PromptCache', () => {
         });
 
         it('should load cache from disk', () => {
-            const savedData = JSON.stringify({
-                entries: [
-                    {
-                        key: 'saved-key',
-                        payload: JSON.stringify({ data: 'saved' }),
-                        timestamp: Date.now(),
-                        accessCount: 0,
-                        lastAccessed: Date.now(),
-                    },
-                ],
-                stats: {
-                    totalEntries: 1,
-                    totalSize: 100,
-                    hits: 0,
-                    misses: 0,
-                    evictions: 0,
-                    compressions: 0,
+            // The loadCache method expects an array of entries directly or an object with entries property
+            const savedData = JSON.stringify([
+                {
+                    key: 'saved-key',
+                    payload: JSON.stringify({ data: 'saved' }),
+                    timestamp: Date.now(),
+                    accessCount: 0,
+                    lastAccessed: Date.now(),
                 },
-            });
+            ]);
 
+            mockFs.existsSync.mockReturnValue(true);
             mockFs.readFileSync.mockReturnValue(savedData);
 
             const newCache = new PromptCache(testWorkspaceFolder);
@@ -341,17 +333,24 @@ describe('PromptCache', () => {
             const smallCache = new PromptCache(testWorkspaceFolder, 1024 * 1024, 3);
 
             await smallCache.store('key-1', { data: '1' });
+            // Small delay to ensure different timestamps
+            await new Promise(resolve => setTimeout(resolve, 10));
             await smallCache.store('key-2', { data: '2' });
+            await new Promise(resolve => setTimeout(resolve, 10));
             await smallCache.store('key-3', { data: '3' });
+            await new Promise(resolve => setTimeout(resolve, 10));
 
             // Access key-1 to make it more recently used
             await smallCache.get('key-1');
+            await new Promise(resolve => setTimeout(resolve, 10));
 
             // Add key-4, should evict key-2 (least recently used)
             await smallCache.store('key-4', { data: '4' });
 
             expect(smallCache.has('key-1')).toBe(true);
             expect(smallCache.has('key-4')).toBe(true);
+            // key-2 should have been evicted
+            expect(smallCache.has('key-2')).toBe(false);
         });
     });
 
