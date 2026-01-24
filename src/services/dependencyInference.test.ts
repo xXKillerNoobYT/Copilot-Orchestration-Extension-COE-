@@ -21,57 +21,67 @@ describe('DependencyInferenceEngine', () => {
     sampleTasks = [
       {
         id: 'TASK-001',
-        name: 'Setup database schema',
+        title: 'Setup database schema',
         description: 'Create database migration',
         type: 'architecture',
         priority: 'high',
         dependencies: [],
-        subtasks: [],
         estimatedHours: 2,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'planning'
       },
       {
         id: 'TASK-002',
-        name: 'Create API endpoint',
+        title: 'Create API endpoint',
         description: 'Build REST API',
         type: 'feature',
         priority: 'high',
         dependencies: [],
-        subtasks: [],
         estimatedHours: 3,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'implementation'
       },
       {
         id: 'TASK-003',
-        name: 'Build UI component',
+        title: 'Build UI component',
         description: 'Frontend interface',
         type: 'feature',
         priority: 'medium',
         dependencies: [],
-        subtasks: [],
         estimatedHours: 4,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'implementation'
       },
       {
         id: 'TASK-004',
-        name: 'Test API endpoint',
+        title: 'Test API endpoint',
         description: 'Write tests',
         type: 'testing',
         priority: 'medium',
         dependencies: [],
-        subtasks: [],
         estimatedHours: 2,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'testing'
       },
       {
         id: 'TASK-005',
-        name: 'Document API',
+        title: 'Document API',
         description: 'Write documentation',
         type: 'documentation',
         priority: 'low',
         dependencies: [],
-        subtasks: [],
         estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'documentation'
       }
     ];
@@ -151,24 +161,28 @@ describe('DependencyInferenceEngine', () => {
       const independentTasks: GeneratedTask[] = [
         {
           id: 'TASK-A',
-          name: 'Independent task A',
+          title: 'Independent task A',
           description: 'No dependencies',
           type: 'feature',
           priority: 'medium',
           dependencies: [],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         },
         {
           id: 'TASK-B',
-          name: 'Independent task B',
+          title: 'Independent task B',
           description: 'No dependencies',
           type: 'feature',
           priority: 'medium',
           dependencies: [],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         }
       ];
@@ -185,35 +199,41 @@ describe('DependencyInferenceEngine', () => {
       const cyclicTasks: GeneratedTask[] = [
         {
           id: 'TASK-X',
-          name: 'Task X',
+          title: 'Task X',
           description: 'Depends on Y',
           type: 'feature',
           priority: 'medium',
           dependencies: ['TASK-Y'],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         },
         {
           id: 'TASK-Y',
-          name: 'Task Y',
+          title: 'Task Y',
           description: 'Depends on Z',
           type: 'feature',
           priority: 'medium',
           dependencies: ['TASK-Z'],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         },
         {
           id: 'TASK-Z',
-          name: 'Task Z',
+          title: 'Task Z',
           description: 'Depends on X (creates cycle)',
           type: 'feature',
           priority: 'medium',
           dependencies: ['TASK-X'],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         }
       ];
@@ -235,24 +255,28 @@ describe('DependencyInferenceEngine', () => {
       const cyclicTasks: GeneratedTask[] = [
         {
           id: 'TASK-A',
-          name: 'Task A',
+          title: 'Task A',
           description: 'Start of cycle',
           type: 'feature',
           priority: 'medium',
           dependencies: ['TASK-B'],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         },
         {
           id: 'TASK-B',
-          name: 'Task B',
+          title: 'Task B',
           description: 'Creates cycle back to A',
           type: 'feature',
           priority: 'medium',
           dependencies: ['TASK-A'],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         }
       ];
@@ -279,13 +303,15 @@ describe('DependencyInferenceEngine', () => {
       const ambiguousTasks: GeneratedTask[] = [
         {
           id: 'TASK-1',
-          name: 'Do something',
+          title: 'Do something',
           description: 'Vague description',
           type: 'feature',
           priority: 'medium',
           dependencies: [],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         }
       ];
@@ -319,24 +345,28 @@ describe('DependencyInferenceEngine', () => {
       const tasksWithSecurity: GeneratedTask[] = [
         {
           id: 'TASK-AUTH',
-          name: 'Implement authentication',
+          title: 'Implement authentication',
           description: 'Auth system',
           type: 'feature',
           priority: 'critical',
           dependencies: [],
-          subtasks: [],
           estimatedHours: 8,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'implementation'
         },
         {
           id: 'TASK-SEC',
-          name: 'Add security features',
+          title: 'Add security features',
           description: 'Security layer',
           type: 'feature',
           priority: 'high',
           dependencies: [],
-          subtasks: [],
           estimatedHours: 6,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'implementation'
         }
       ];
@@ -361,13 +391,15 @@ describe('DependencyInferenceEngine', () => {
     it('should handle single task', () => {
       const singleTask: GeneratedTask[] = [{
         id: 'TASK-ONLY',
-        name: 'Only task',
+        title: 'Only task',
         description: 'Single task',
         type: 'feature',
         priority: 'medium',
         dependencies: [],
-        subtasks: [],
         estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'any'
       }];
 
@@ -381,24 +413,28 @@ describe('DependencyInferenceEngine', () => {
       const tasksWithDeps: GeneratedTask[] = [
         {
           id: 'TASK-FIRST',
-          name: 'First',
+          title: 'First',
           description: 'First task',
           type: 'feature',
           priority: 'high',
           dependencies: [],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         },
         {
           id: 'TASK-SECOND',
-          name: 'Second',
+          title: 'Second',
           description: 'Second task',
           type: 'feature',
           priority: 'medium',
-          dependencies: ['TASK-FIRST'], // Pre-existing dependency
-          subtasks: [],
+          dependencies: ['TASK-FIRST'], // Pre-existing dependency,
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         }
       ];
@@ -413,24 +449,28 @@ describe('DependencyInferenceEngine', () => {
       const tasks: GeneratedTask[] = [
         {
           id: 'TASK-DB',
-          name: 'Setup database',
+          title: 'Setup database',
           description: 'Database migration',
           type: 'architecture',
           priority: 'high',
           dependencies: [],
-          subtasks: [],
           estimatedHours: 2,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'planning'
         },
         {
           id: 'TASK-API',
-          name: 'Create API endpoint',
+          title: 'Create API endpoint',
           description: 'API implementation',
           type: 'feature',
           priority: 'high',
-          dependencies: ['TASK-DB'], // Already depends on DB
-          subtasks: [],
+          dependencies: ['TASK-DB'], // Already depends on DB,
           estimatedHours: 3,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'implementation'
         }
       ];
@@ -444,3 +484,8 @@ describe('DependencyInferenceEngine', () => {
     });
   });
 });
+
+
+
+
+

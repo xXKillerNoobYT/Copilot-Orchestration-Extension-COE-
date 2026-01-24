@@ -14,13 +14,20 @@ export function formatMinutesToHours(minutes: number): number {
  * Format minutes to human-readable duration string
  */
 export function formatMinutesToDuration(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes}m`;
+  // Truncate decimals
+  const absMinutes = Math.floor(Math.abs(minutes));
+  const sign = minutes < 0 ? '-' : '';
+
+  if (absMinutes < 60) {
+    return `${sign}${absMinutes}m`;
   }
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
+  const hours = Math.floor(absMinutes / 60);
+  const remainingMinutes = absMinutes % 60;
   if (remainingMinutes === 0) {
-    return `${hours}h`;
+    return `${sign}${hours}h`;
+  }
+  if (sign) {
+    return `${sign}${hours}h ${sign}${remainingMinutes}m`;
   }
   return `${hours}h ${remainingMinutes}m`;
 }

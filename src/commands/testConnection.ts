@@ -19,7 +19,8 @@ export async function testConnectionCommand(): Promise<void> {
       { role: 'system', content: 'ping' },
       { role: 'user', content: 'ping' },
     ];
-    await client.sendChat(messages, { temperature: 0, timeoutMs: Math.min(5000, configState.config.timeoutMs) });
+    const timeout = configState.config.timeoutMs || 5000;
+    await client.sendChat(messages, { temperature: 0, timeoutMs: Math.min(5000, timeout) });
     status.text = '$(check) LLM OK';
     void vscode.window.showInformationMessage('LLM connection successful.');
   } catch (error) {

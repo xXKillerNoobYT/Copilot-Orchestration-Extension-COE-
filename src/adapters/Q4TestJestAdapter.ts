@@ -174,7 +174,7 @@ describe('${moduleName}', () => {
 
     if (scenario.inputData) {
       testCase += `    // Arrange\n`;
-      testCase += `    const testData = ${JSON.stringify(scenario.inputData, null(2 as unknown as number), 4)};\n`;
+      testCase += `    const testData = ${JSON.stringify(scenario.inputData, null, 4)};\n`;
     }
 
     testCase += `    // Act\n`;

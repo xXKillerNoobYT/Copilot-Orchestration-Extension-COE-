@@ -4,7 +4,7 @@ import { jest } from '@jest/globals';
 
 /** @aiContributed-2026-01-23 */
 describe('retryWithBackoff', () => {
-  const mockFn = jest.fn();
+  const mockFn = jest.fn<() => Promise<string>>();
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   beforeEach(() => {

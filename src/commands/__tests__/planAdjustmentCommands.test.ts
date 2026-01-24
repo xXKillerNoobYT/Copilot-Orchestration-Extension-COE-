@@ -61,6 +61,7 @@ describe('planAdjustmentCommands', () => {
                 store: jest.fn(),
                 delete: jest.fn(),
                 onDidChange: jest.fn(),
+                keys: jest.fn(() => Promise.resolve([])),
             },
             extensionMode: vscode.ExtensionMode.Development,
             storageUri: vscode.Uri.file('/mock/storage'),

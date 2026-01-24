@@ -44,10 +44,13 @@ describe('ToolSelector', () => {
 
     // Default connection state
     (mockMonitor.getState as jest.Mock).mockReturnValue({
-      websocket: 'connected',
-      docker: 'connected',
-      github: 'connected',
-      laravel: 'connected'
+      mcp: 'connected' as const,
+      websocket: 'connected' as const,
+      docker: 'connected' as const,
+      lastMcpCheck: new Date().toISOString(),
+      lastWsCheck: new Date().toISOString(),
+      lastDockerCheck: new Date().toISOString(),
+      retryCount: 0
     } as ConnectionState);
 
     selector = ToolSelector.getInstance();
@@ -179,14 +182,12 @@ describe('ToolSelector', () => {
       mockRouter.getProviders.mockReturnValue([networkProvider]);
       mockRouter.routeToolCall.mockResolvedValue(networkProvider);
       mockMonitor.getState.mockReturnValue({
-        websocket: 'disconnected',
-        docker: 'connected',
-        github: 'disconnected',
-        laravel: 'disconnected',
-        mcp: 'unknown',
-        lastMcpCheck: null,
-        lastWsCheck: null,
-        lastDockerCheck: null,
+        mcp: 'disconnected' as const,
+        websocket: 'disconnected' as const,
+        docker: 'connected' as const,
+        lastMcpCheck: new Date().toISOString(),
+        lastWsCheck: new Date().toISOString(),
+        lastDockerCheck: new Date().toISOString(),
         retryCount: 0
       } as ConnectionState);
 
@@ -199,14 +200,12 @@ describe('ToolSelector', () => {
     it('should handle offline scenario', async () => {
       mockRouter.getProviders.mockReturnValue([]);
       mockMonitor.getState.mockReturnValue({
-        websocket: 'disconnected',
-        docker: 'disconnected',
-        github: 'disconnected',
-        laravel: 'disconnected',
-        mcp: 'disconnected',
-        lastMcpCheck: null,
-        lastWsCheck: null,
-        lastDockerCheck: null,
+        mcp: 'disconnected' as const,
+        websocket: 'disconnected' as const,
+        docker: 'disconnected' as const,
+        lastMcpCheck: new Date().toISOString(),
+        lastWsCheck: new Date().toISOString(),
+        lastDockerCheck: new Date().toISOString(),
         retryCount: 0
       } as ConnectionState);
 
@@ -258,7 +257,7 @@ describe('ToolSelector', () => {
     it('should track performance metrics', async () => {
       const provider: ToolRoute = {
         name: 'test-tool',
-        provider: 'test',
+        provider: 'local',
         server: 'test',
         tags: [],
         enabled: true
@@ -277,7 +276,7 @@ describe('ToolSelector', () => {
     it.skip('should consider latency in selection criteria', async () => {
       const fastProvider: ToolRoute = {
         name: 'tool',
-        provider: 'fast',
+        provider: 'local',
         server: 'local',
         tags: ['fast'],
         enabled: true
@@ -285,7 +284,7 @@ describe('ToolSelector', () => {
 
       const slowProvider: ToolRoute = {
         name: 'tool',
-        provider: 'slow',
+        provider: 'docker',
         server: 'remote',
         tags: ['slow'],
         enabled: true
@@ -308,7 +307,7 @@ describe('ToolSelector', () => {
     it.skip('should filter providers requiring authentication', async () => {
       const authProvider: ToolRoute = {
         name: 'secure-tool',
-        provider: 'auth-required',
+        provider: 'docker',
         server: 'secure',
         tags: ['auth'],
         enabled: true
@@ -316,7 +315,7 @@ describe('ToolSelector', () => {
 
       const publicProvider: ToolRoute = {
         name: 'secure-tool',
-        provider: 'public',
+        provider: 'local',
         server: 'public',
         tags: [],
         enabled: true
@@ -363,7 +362,7 @@ describe('ToolSelector', () => {
     it.skip('should consider agent permissions', async () => {
       const restrictedProvider: ToolRoute = {
         name: 'admin-tool',
-        provider: 'admin',
+        provider: 'docker',
         server: 'admin',
         tags: ['admin'],
         enabled: true
@@ -371,7 +370,7 @@ describe('ToolSelector', () => {
 
       const publicProvider: ToolRoute = {
         name: 'admin-tool',
-        provider: 'public',
+        provider: 'local',
         server: 'public',
         tags: [],
         enabled: true
@@ -392,7 +391,7 @@ describe('ToolSelector', () => {
     it('should handle empty permissions', async () => {
       const provider: ToolRoute = {
         name: 'tool',
-        provider: 'provider',
+        provider: 'local',
         server: 'server',
         tags: [],
         enabled: true
@@ -427,7 +426,7 @@ describe('ToolSelector', () => {
 
       const provider: ToolRoute = {
         name: 'tool',
-        provider: 'provider',
+        provider: 'local',
         server: 'server',
         tags: [],
         enabled: true

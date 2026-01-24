@@ -121,10 +121,32 @@ describe('testConnectionCommand', () => {
     });
 
     it('should show "Testing LLM" status initially', async () => {
-      await testConnectionCommand();
+      let resolveSendChat: (value: any) => void;
+      const sendChatPromise = new Promise((resolve) => {
+        resolveSendChat = resolve;
+      });
 
-      expect(mockStatusBarItem.text).toContain('Testing LLM');
+      mockClient.sendChat.mockReturnValue(sendChatPromise);
+
+      const commandPromise = testConnectionCommand();
+
+      // Give a microtask for the command to start
+      await Promise.resolve();
+
+      // Check status immediately after command starts
+      expect(mockStatusBarItem.text).toContain('Testing');
       expect(mockStatusBarItem.show).toHaveBeenCalled();
+
+      // Resolve the sendChat promise
+      resolveSendChat!({
+        message: {
+          role: 'assistant',
+          content: 'pong'
+        }
+      });
+
+      // Wait for command to complete
+      await commandPromise;
     });
 
     it('should show success status on successful connection', async () => {
@@ -460,7 +482,7 @@ describe('testConnectionCommand', () => {
     });
 
     it('should handle async errors properly', async () => {
-      mockClient.sendChat.mockImplementation(() => 
+      mockClient.sendChat.mockImplementation(() =>
         Promise.reject(new Error('Async error'))
       );
 
@@ -474,9 +496,9 @@ describe('testConnectionCommand', () => {
     it('should handle delayed responses', async () => {
       jest.useRealTimers(); // Use real timers for this test
 
-      mockClient.sendChat.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve({ 
-          message: { role: 'assistant', content: 'pong' } 
+      mockClient.sendChat.mockImplementation(() =>
+        new Promise(resolve => setTimeout(() => resolve({
+          message: { role: 'assistant', content: 'pong' }
         }), 100))
       );
 

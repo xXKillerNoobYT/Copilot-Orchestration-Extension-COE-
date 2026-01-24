@@ -76,17 +76,17 @@ describe('DeadLetterQueuePanel', () => {
 
     describe('Panel Disposal', () => {
         it('should dispose panel', async () => {
-            const panel = DeadLetterQueuePanel.createOrShow(mockExtensionUri, mockDlqService);
+            DeadLetterQueuePanel.createOrShow(mockExtensionUri, mockDlqService);
             await new Promise(resolve => setTimeout(resolve, 0));
-            panel.dispose();
+            mockPanel.dispose();
 
             expect(mockPanel.dispose).toHaveBeenCalled();
         });
 
         it('should allow recreation after disposal', async () => {
-            const panel1 = DeadLetterQueuePanel.createOrShow(mockExtensionUri, mockDlqService);
+            DeadLetterQueuePanel.createOrShow(mockExtensionUri, mockDlqService);
             await new Promise(resolve => setTimeout(resolve, 0));
-            panel1.dispose();
+            mockPanel.dispose();
 
             const panel2 = DeadLetterQueuePanel.createOrShow(mockExtensionUri, mockDlqService);
             expect(panel2).toBeDefined();

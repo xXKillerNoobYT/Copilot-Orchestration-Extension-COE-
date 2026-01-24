@@ -1,5 +1,5 @@
 // ./errorHandler.web.spec.ts
-import { CircuitBreaker } from '../errorHandler.ts';
+import { CircuitBreaker } from '../errorHandler';
 
 /** @aiContributed-2026-01-23 */
 describe('CircuitBreaker - getState', () => {

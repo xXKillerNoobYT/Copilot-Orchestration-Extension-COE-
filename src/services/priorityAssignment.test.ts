@@ -20,57 +20,67 @@ describe('PriorityAssignmentEngine', () => {
     sampleTasks = [
       {
         id: 'TASK-001',
-        name: 'Setup infrastructure',
+        title: 'Setup infrastructure',
         description: 'Setup project infrastructure',
         type: 'architecture',
         priority: 'medium',
         dependencies: [],
-        subtasks: [],
         estimatedHours: 4,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'planning'
       },
       {
         id: 'TASK-002',
-        name: 'Implement feature A',
+        title: 'Implement feature A',
         description: 'Core feature',
         type: 'feature',
         priority: 'medium',
         dependencies: ['TASK-001'],
-        subtasks: [],
         estimatedHours: 8,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'implementation'
       },
       {
         id: 'TASK-003',
-        name: 'Implement feature B',
+        title: 'Implement feature B',
         description: 'Secondary feature',
         type: 'feature',
         priority: 'medium',
         dependencies: ['TASK-001'],
-        subtasks: [],
         estimatedHours: 6,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'implementation'
       },
       {
         id: 'TASK-004',
-        name: 'Test feature A',
+        title: 'Test feature A',
         description: 'Testing',
         type: 'testing',
         priority: 'medium',
         dependencies: ['TASK-002'],
-        subtasks: [],
         estimatedHours: 4,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'testing'
       },
       {
         id: 'TASK-005',
-        name: 'Document features',
+        title: 'Document features',
         description: 'Documentation',
         type: 'documentation',
         priority: 'medium',
         dependencies: ['TASK-002', 'TASK-003'],
-        subtasks: [],
         estimatedHours: 2,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'documentation'
       }
     ];
@@ -126,13 +136,15 @@ describe('PriorityAssignmentEngine', () => {
         ...sampleTasks,
         {
           id: 'TASK-BLOCKER',
-          name: 'Blocker task',
+          title: 'Blocker task',
           description: 'Blocks critical task',
           type: 'feature',
           priority: 'medium',
           dependencies: [],
-          subtasks: [],
           estimatedHours: 2,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'implementation'
         }
       ];
@@ -172,13 +184,15 @@ describe('PriorityAssignmentEngine', () => {
     it('should assign medium priority to tests of non-critical features', () => {
       const testTask: GeneratedTask = {
         id: 'TASK-TEST-B',
-        name: 'Test feature B',
+        title: 'Test feature B',
         description: 'Testing feature B',
         type: 'testing',
         priority: 'medium',
-        dependencies: ['TASK-003'], // Feature B is not critical
-        subtasks: [],
+        dependencies: ['TASK-003'], // Feature B is not critical,
         estimatedHours: 3,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'testing'
       };
 
@@ -292,13 +306,15 @@ describe('PriorityAssignmentEngine', () => {
     it('should handle single task', () => {
       const singleTask: GeneratedTask[] = [{
         id: 'TASK-ONLY',
-        name: 'Only task',
+        title: 'Only task',
         description: 'Single task',
         type: 'feature',
         priority: 'medium',
         dependencies: [],
-        subtasks: [],
         estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
         assignedAgent: 'any'
       }];
 
@@ -312,24 +328,28 @@ describe('PriorityAssignmentEngine', () => {
       const cyclicTasks: GeneratedTask[] = [
         {
           id: 'TASK-A',
-          name: 'Task A',
+          title: 'Task A',
           description: 'Circular A',
           type: 'feature',
           priority: 'medium',
           dependencies: ['TASK-B'],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         },
         {
           id: 'TASK-B',
-          name: 'Task B',
+          title: 'Task B',
           description: 'Circular B',
           type: 'feature',
           priority: 'medium',
           dependencies: ['TASK-A'],
-          subtasks: [],
           estimatedHours: 1,
+        details: '',
+        testStrategy: '',
+        status: 'pending',
           assignedAgent: 'any'
         }
       ];
@@ -389,3 +409,7 @@ describe('PriorityAssignmentEngine', () => {
     });
   });
 });
+
+
+
+

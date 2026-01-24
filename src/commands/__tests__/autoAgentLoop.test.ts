@@ -42,6 +42,7 @@ describe('AutoAgentLoopCommand', () => {
                 store: jest.fn(),
                 delete: jest.fn(),
                 onDidChange: jest.fn(),
+                keys: jest.fn(() => Promise.resolve([])),
             },
             extensionMode: vscode.ExtensionMode.Development,
             storageUri: vscode.Uri.file('/mock/storage'),
@@ -53,6 +54,7 @@ describe('AutoAgentLoopCommand', () => {
             asAbsolutePath: jest.fn((relativePath: string) => `/mock/extension/path/${relativePath}`),
             environmentVariableCollection: {} as any,
             extension: {} as any,
+            languageModelAccessInformation: {} as any,
         } as vscode.ExtensionContext;
 
         // Mock output channel

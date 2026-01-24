@@ -189,7 +189,16 @@ describe('TaskGenerator', () => {
 
       mockDecompositionEngine.decompose.mockImplementation(() => {
         callOrder.push('decompose');
-        return { tasks: [], warnings: [], stats: { total: 0, byType: {}, byAgent: {} } };
+        return { 
+          tasks: [], 
+          warnings: [], 
+          summary: { 
+            total_tasks: 0, 
+            tasks_per_feature: new Map(), 
+            total_estimated_hours: 0, 
+            task_types: new Map() 
+          } 
+        };
       });
 
       mockDependencyEngine.infer.mockImplementation(() => {
@@ -300,7 +309,12 @@ describe('TaskGenerator', () => {
       mockDecompositionEngine.decompose.mockReturnValue({
         tasks: [],
         warnings: ['Decomposition warning'],
-        stats: { total: 0, byType: {}, byAgent: {} }
+        summary: { 
+          total_tasks: 0, 
+          tasks_per_feature: new Map(), 
+          total_estimated_hours: 0, 
+          task_types: new Map() 
+        }
       });
 
       mockDependencyEngine.infer.mockReturnValue({

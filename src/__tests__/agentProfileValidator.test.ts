@@ -20,7 +20,7 @@ describe('Agent Profile Validator', () => {
 			version: 1,
 			email: 'john.doe@example.com',
 			role: 'agent',
-		};
+		} as any;
 		const result = validateAgentProfile(profile);
 		expect(result.valid).toBe(false);
 		expect(result.errors.some(e => e.field === 'name')).toBe(true);
@@ -31,7 +31,7 @@ describe('Agent Profile Validator', () => {
 			version: 1,
 			name: 'John Doe',
 			email: 'john.doe@example.com',
-		};
+		} as any;
 		const result = validateAgentProfile(profile);
 		expect(result.valid).toBe(false);
 		expect(result.errors.some(e => e.field === 'role')).toBe(true);
@@ -42,7 +42,7 @@ describe('Agent Profile Validator', () => {
 			name: 'John Doe',
 			email: 'john.doe@example.com',
 			role: 'agent',
-		};
+		} as any;
 		const result = validateAgentProfile(profile);
 		expect(result.valid).toBe(false);
 		expect(result.errors.some(e => e.field === 'version')).toBe(true);

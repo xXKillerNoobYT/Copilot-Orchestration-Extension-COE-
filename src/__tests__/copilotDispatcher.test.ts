@@ -23,10 +23,14 @@ describe('CopilotDispatcher', () => {
     jest.clearAllMocks();
 
     mockAgent = {
+      version: 1,
       name: 'test-coder',
       role: 'coder',
       instructions: 'You are a skilled developer. Write clean, tested code.',
-      tool_permissions: ['read', 'write'],
+      tool_permissions: {
+        read_files: true,
+        write_files: true,
+      },
       execution_constraints: {
         max_tokens: 4000,
         temperature: 0.7,
@@ -56,9 +60,8 @@ describe('CopilotDispatcher', () => {
     };
 
     mockAgentLoader = {
-      loadAgent: jest.fn().mockResolvedValue(mockAgent),
-      listAgents: jest.fn().mockResolvedValue([mockAgent]),
-      reloadAgents: jest.fn().mockResolvedValue(undefined),
+      loadProfile: jest.fn().mockResolvedValue(mockAgent),
+      loadAllProfiles: jest.fn().mockResolvedValue([mockAgent]),
     } as any;
 
     dispatcher = new CopilotDispatcher({
@@ -254,7 +257,7 @@ Description`);
     });
 
     it('should throw error when agent not found', async () => {
-      mockAgentLoader.loadAgent.mockRejectedValue(new Error('Agent not found'));
+      mockAgentLoader.loadProfile.mockRejectedValue(new Error('Agent not found'));
 
       await expect(
         dispatcher.composePrompt('TASK-123', { agentName: 'nonexistent' })
@@ -284,7 +287,7 @@ Description`);
     it('should handle agent without prompt templates', async () => {
       const agentWithoutTemplates = { ...mockAgent };
       delete (agentWithoutTemplates as any).prompt_templates;
-      mockAgentLoader.loadAgent.mockResolvedValue(agentWithoutTemplates);
+      mockAgentLoader.loadProfile.mockResolvedValue(agentWithoutTemplates);
 
       const payload = await dispatcher.composePrompt('TASK-123', {
         agentName: 'test-coder',

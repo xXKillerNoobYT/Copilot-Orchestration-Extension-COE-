@@ -430,7 +430,7 @@ describe('GitHubClient', () => {
                 json: async () => {
                     throw new Error('Invalid JSON');
                 },
-            } as Response);
+            } as unknown as Response);
 
             await expect(client.getIssue('test-owner', 'test-repo', 123)).rejects.toThrow();
         });

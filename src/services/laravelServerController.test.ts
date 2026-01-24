@@ -403,7 +403,7 @@ describe('LaravelServerController', () => {
             const healthy = await healthPromise;
 
             expect(healthy).toBe(false);
-            expect(mockHttpRequest.destroy).toHaveBeenCalled();
+            expect((mockHttpRequest as any).destroy).toHaveBeenCalled();
         });
     });
 

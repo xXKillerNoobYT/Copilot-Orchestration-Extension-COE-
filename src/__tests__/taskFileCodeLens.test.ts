@@ -55,9 +55,12 @@ describe('TaskFileCodeLensProvider', () => {
 
     describe('provideCodeLenses', () => {
         it('should return empty array for non-task files', async () => {
-            mockDocument.uri.fsPath = '/path/to/regular.md';
+            const nonTaskDoc = {
+                ...mockDocument,
+                uri: { fsPath: '/path/to/regular.md' },
+            } as any;
 
-            const result = await provider.provideCodeLenses(mockDocument, mockToken);
+            const result = await provider.provideCodeLenses(nonTaskDoc, mockToken);
 
             expect(result).toEqual([]);
             expect(mockParser.parseTaskFile).not.toHaveBeenCalled();
@@ -87,6 +90,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -111,11 +116,13 @@ describe('TaskFileCodeLensProvider', () => {
             const mockTask: ParsedTask = {
                 id: 'task-001',
                 title: 'Test Task',
-                status: 'in-progress' as TaskStatus,
+                status: 'in_progress' as TaskStatus,
                 description: 'Test description',
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -131,7 +138,7 @@ describe('TaskFileCodeLensProvider', () => {
 
             expect(statusLens).toBeDefined();
             expect(statusLens?.command?.title).toContain('Status:');
-            expect(statusLens?.command?.title).toContain('in-progress');
+            expect(statusLens?.command?.title).toContain('in_progress');
         });
 
         it('should provide Open Context CodeLens when context bundle exists', async () => {
@@ -143,6 +150,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -169,6 +178,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -194,6 +205,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -221,6 +234,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -245,6 +260,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -259,7 +276,7 @@ describe('TaskFileCodeLensProvider', () => {
         });
 
         it('should handle different status values', async () => {
-            const statuses: TaskStatus[] = ['pending', 'in-progress', 'completed', 'blocked'];
+            const statuses: TaskStatus[] = ['pending', 'in_progress', 'completed', 'blocked'];
 
             for (const status of statuses) {
                 const mockTask: ParsedTask = {
@@ -270,6 +287,8 @@ describe('TaskFileCodeLensProvider', () => {
                     subtasks: [],
                     assignees: [],
                     labels: [],
+                    dependencies: [],
+                    rawFrontMatter: {},
                 };
 
                 mockParser.parseTaskFile.mockReturnValue({
@@ -314,6 +333,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -338,6 +359,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -362,6 +385,8 @@ describe('TaskFileCodeLensProvider', () => {
                 subtasks: [],
                 assignees: [],
                 labels: [],
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -383,7 +408,7 @@ describe('TaskFileCodeLensProvider', () => {
             const mockTask: ParsedTask = {
                 id: 'task-001',
                 title: 'Complete Task',
-                status: 'in-progress' as TaskStatus,
+                status: 'in_progress' as TaskStatus,
                 priority: 'high',
                 type: 'feature',
                 context_bundle: 'bundle-123',
@@ -391,10 +416,12 @@ describe('TaskFileCodeLensProvider', () => {
                 github_issue_url: 'https://github.com/owner/repo/issues/456',
                 description: 'Test description',
                 subtasks: [],
-                assignees: ['auto-zen'],
+                assignees: ['planner'],
                 labels: ['backend'],
                 estimate: '4h',
                 due: '2026-01-30',
+                dependencies: [],
+                rawFrontMatter: {},
             };
 
             mockParser.parseTaskFile.mockReturnValue({

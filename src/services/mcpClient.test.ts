@@ -568,19 +568,19 @@ describe('MCPClient', () => {
   describe('Error Handling', () => {
     it('should handle network timeout', async () => {
       jest.useFakeTimers();
-      
-      (global.fetch as jest.Mock).mockImplementation(() => 
+
+      (global.fetch as jest.Mock).mockImplementation(() =>
         new Promise((resolve) => {
           setTimeout(resolve, 10000);
         })
       );
 
       const promise = client.getNextTask();
-      
+
       jest.runAllTimers();
-      
+
       await expect(promise).rejects.toThrow();
-      
+
       jest.useRealTimers();
     });
 
@@ -688,6 +688,9 @@ describe('MCPWebSocketListener', () => {
       event: jest.fn((handler) => ({ dispose: jest.fn() })),
       fire: jest.fn()
     };
+
+    // Reset singleton before mocking
+    (MCPWebSocketListener as any).instance = undefined;
 
     (vscode.EventEmitter as any) = jest.fn().mockImplementation(() => mockEmitter);
     listener = MCPWebSocketListener.getInstance();

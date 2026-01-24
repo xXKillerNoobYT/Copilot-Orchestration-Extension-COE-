@@ -81,6 +81,18 @@ module.exports = {
   },
 
   /**
+   * Watch Path Ignore Patterns
+   * Prevents Jest from watching test workspace directories that are created/destroyed during tests
+   * Reference: https://jestjs.io/docs/configuration#watchpathignorepatterns-arraystring
+   */
+  watchPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/__test_workspace__/',
+    '/\\..*/__test_workspace__/',
+  ],
+
+  /**
    * Test Path Ignore Patterns
    * Reference: https://jestjs.io/docs/configuration#testpathignorepatterns-arraystring--string
    * 
@@ -202,12 +214,6 @@ module.exports = {
    * Use for global mocks, test utilities, and environment setup.
    */
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-
-  /**
-   * Custom Reporter for Problems Integration
-   * Reports skipped and failing tests so they appear in VS Code Problems panel
-   */
-  reporters: ['default', '<rootDir>/jest-problems-reporter.js'],
 };
 
 

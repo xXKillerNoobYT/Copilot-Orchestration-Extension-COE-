@@ -306,7 +306,7 @@ describe('TaskFileDocumentWatcher', () => {
                 { fsPath: '/path/to/task-002.task.md' },
             ] as vscode.Uri[];
 
-            (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockUris);
+            (vscode.workspace.findFiles as any).mockResolvedValue(mockUris);
 
             await (watcher as any).scanExistingFiles();
 
@@ -314,7 +314,7 @@ describe('TaskFileDocumentWatcher', () => {
         });
 
         it('should handle empty workspace', async () => {
-            (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+            (vscode.workspace.findFiles as any).mockResolvedValue([]);
 
             // Should not throw
             await (watcher as any).scanExistingFiles();
@@ -322,7 +322,7 @@ describe('TaskFileDocumentWatcher', () => {
         });
 
         it('should handle scan errors gracefully', async () => {
-            (vscode.workspace.findFiles as jest.Mock).mockRejectedValue(new Error('Scan failed'));
+            (vscode.workspace.findFiles as any).mockRejectedValue(new Error('Scan failed'));
 
             // This method doesn't catch errors, so it will throw
             await expect((watcher as any).scanExistingFiles()).rejects.toThrow('Scan failed');
@@ -336,7 +336,7 @@ describe('TaskFileDocumentWatcher', () => {
 
             // Mock fs.readFile instead of openTextDocument
             (vscode.workspace.fs as any) = {
-                readFile: jest.fn().mockResolvedValue(mockContent),
+                readFile: jest.fn(() => Promise.resolve(mockContent)),
             };
 
             mockParser.parseTaskFile.mockReturnValue({
@@ -347,6 +347,8 @@ describe('TaskFileDocumentWatcher', () => {
                     subtasks: [],
                     assignees: [],
                     labels: [],
+                    dependencies: [],
+                    rawFrontMatter: {},
                 },
                 errors: [],
             });
@@ -362,7 +364,7 @@ describe('TaskFileDocumentWatcher', () => {
                 getText: jest.fn(() => 'invalid'),
             } as any;
 
-            (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue(mockDocument);
+            (vscode.workspace.openTextDocument as any).mockResolvedValue(mockDocument);
 
             mockParser.parseTaskFile.mockReturnValue({
                 task: null,
@@ -377,7 +379,7 @@ describe('TaskFileDocumentWatcher', () => {
         it('should handle file read errors', async () => {
             const mockUri = { fsPath: '/path/to/task-001.task.md' } as vscode.Uri;
 
-            (vscode.workspace.openTextDocument as jest.Mock).mockRejectedValue(new Error('File not found') as any);
+            (vscode.workspace.openTextDocument as any).mockRejectedValue(new Error('File not found'));
 
             // Should not throw
             await (watcher as any).updateTaskMetadata(mockUri);
