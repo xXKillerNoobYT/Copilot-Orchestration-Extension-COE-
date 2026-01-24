@@ -27,10 +27,13 @@ export class WebSocketConfigManager {
    */
   static getConfig(): WebSocketSettings {
     const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+    
+    const appKey = config.get<string>('appKey');
+    const effectiveAppKey = (appKey === undefined || appKey === null) ? 'default-app-key' : appKey;
 
     return {
       driver: config.get<'soketi' | 'pusher' | 'redis'>('driver') || 'soketi',
-      appKey: config.get<string>('appKey') || 'default-app-key',
+      appKey: effectiveAppKey,
       host: config.get<string>('host'),
       port: config.get<number>('port'),
       scheme: config.get<'http' | 'https'>('scheme'),
@@ -88,7 +91,7 @@ export class WebSocketConfigManager {
       return 'Redis requires host to be configured';
     }
 
-    if (settings.port && (settings.port < 1 || settings.port > 65535)) {
+    if (settings.port !== undefined && settings.port !== null && (settings.port < 1 || settings.port > 65535)) {
       return 'Port must be between 1 and 65535';
     }
 
