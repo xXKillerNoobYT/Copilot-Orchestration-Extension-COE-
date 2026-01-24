@@ -17,8 +17,10 @@ import { VisualVerificationPanel } from './panels/visualVerificationPanel';
 import { PlanAdjustmentWizard } from './panels/planAdjustmentWizard';
 import { PlanBuilderPanel } from './panels/planBuilderPanel';
 import { AuditDashboardPanel } from './panels/auditDashboardPanel';
+import { ProgrammingOrchestratorPanel } from './panels/ProgrammingOrchestratorPanel';
 import { DeadLetterQueuePanel } from './panels/DeadLetterQueuePanel';
 import { DeadLetterQueueService } from './services/deadLetterQueue';
+import { BossAICoordinator } from './orchestration/bossAI';
 import Database from 'better-sqlite3';
 import { WebSocketConfigManager } from './services/webSocketConfigManager';
 import { initializeWebSocketClient, disposeWebSocketClient } from './services/webSocketClient';
@@ -277,6 +279,18 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('copilot-orchestrator.showAuditDashboard', async () => {
       AuditDashboardPanel.createOrShow(context.extensionUri);
+    })
+  );
+
+  // ============ Programming Orchestrator Dashboard Command ============
+  let globalCoordinator: BossAICoordinator | undefined;
+  context.subscriptions.push(
+    vscode.commands.registerCommand('copilot-orchestrator.showProgrammingOrchestrator', async () => {
+      // Create coordinator if it doesn't exist
+      if (!globalCoordinator) {
+        globalCoordinator = new BossAICoordinator();
+      }
+      ProgrammingOrchestratorPanel.createOrShow(context.extensionUri, globalCoordinator);
     })
   );
 

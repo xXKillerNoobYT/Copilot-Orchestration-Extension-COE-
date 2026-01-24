@@ -238,6 +238,13 @@ export class BossAICoordinator {
     }
 
     /**
+     * Get team states map (for dashboard integration)
+     */
+    getTeamStates(): Map<AgentTeam, AgentTeamState> {
+        return new Map(this.teamStates);
+    }
+
+    /**
      * Get current system metrics
      */
     getMetrics(): SystemMetrics {

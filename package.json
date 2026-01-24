@@ -429,6 +429,12 @@
                 "icon": "$(report)"
             },
             {
+                "command": "copilot-orchestrator.showProgrammingOrchestrator",
+                "title": "Copilot Orchestrator: Show Programming Orchestrator",
+                "category": "Copilot Orchestrator",
+                "icon": "$(dashboard)"
+            },
+            {
                 "command": "copilot-orchestrator.showDeadLetterQueue",
                 "title": "Copilot Orchestrator: Show Dead Letter Queue",
                 "category": "Copilot Orchestrator",
