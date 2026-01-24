@@ -1,0 +1,62 @@
+{
+    "projectName": "Copilot Orchestrator",
+    "testFramework": "jest",
+    "aiProvider": "googleapis",
+    "autoValidateTests": true,
+    "maxFixAttempts": 3,
+    "testCommand": "npm run test:jest",
+    "testWatchCommand": "npm run test:jest:watch",
+    "testCoverageCommand": "npm run test:jest:coverage",
+    "testDirectory": "./src",
+    "testFilePattern": "**/*.test.ts",
+    "testNamePattern": "^(?!.*integration)",
+    "generatedTestPrefix": "Q4TEST_GEN_",
+    "mockingLibrary": "jest",
+    "coverageThreshold": {
+        "branches": 50,
+        "functions": 50,
+        "lines": 50,
+        "statements": 50
+    },
+    "testScenarioCategories": [
+        "critical",
+        "logical",
+        "error",
+        "edge"
+    ],
+    "customInstructions": [
+        "Use Jest syntax (describe, it, expect, jest.mock)",
+        "Mock VSCode extension API using src/__mocks__/vscode.ts",
+        "Use ts-jest transformer for TypeScript files",
+        "Add type assertions for TypeScript safety",
+        "Follow existing test patterns in src/__tests__",
+        "Include both positive and negative test cases"
+    ],
+    "fileGenerationPatterns": {
+        "serviceFile": "src/services/**/*.ts",
+        "testOutput": "src/services/**/*.test.ts",
+        "commandFile": "src/commands/**/*.ts",
+        "commandTestOutput": "src/commands/**/*.test.ts",
+        "extensionFile": "src/**/*.ts",
+        "extensionTestOutput": "src/**/__tests__/*.test.ts"
+    },
+    "firebase": {
+        "enabled": false,
+        "projectId": "",
+        "apiKey": ""
+    },
+    "testGeneration": {
+        "includeEdgeCases": true,
+        "includeErrorHandling": true,
+        "includeIntegration": false,
+        "generateBeforeEach": true,
+        "generateAfterEach": true,
+        "mockExternalDependencies": true,
+        "useTypescriptTypes": true
+    },
+    "vscode": {
+        "activityBar": "copilot-orchestrator.commands.openQ4Test",
+        "sidebarIcon": "beaker",
+        "commandPrefix": "q4test"
+    }
+}

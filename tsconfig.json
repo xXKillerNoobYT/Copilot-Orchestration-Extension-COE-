@@ -1,20 +1,38 @@
 {
-    "compilerOptions": {
-        "allowJs": true,
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "jsx": "preserve",
-        "strict": true,
-        "isolatedModules": true,
-        "target": "ESNext",
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "noEmit": true,
-        "skipLibCheck": true,
-        "paths": {
-            "@/*": ["./resources/js/*"],
-            "ziggy-js": ["./vendor/tightenco/ziggy"]
-        }
-    },
-    "include": ["resources/js/**/*.ts", "resources/js/**/*.d.ts", "resources/js/**/*.vue"]
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "Node16",
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
+    "moduleResolution": "node16",
+    "outDir": "dist",
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": [
+      "node",
+      "jest"
+    ],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules"
+    ]
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    ".vscode-test",
+    "dist",
+    "**/*.disabled",
+    "src/integration/**",
+    "src/extension.agentLoop.test.ts"
+  ]
 }

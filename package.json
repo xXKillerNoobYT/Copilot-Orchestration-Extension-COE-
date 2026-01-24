@@ -1,49 +1,689 @@
 {
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "vue-tsc && vite build && vite build --ssr",
-        "test": "npm run test:all",
-        "test:all": "npm run test:context-manager && npm run test:extension && npm run test:report",
-        "test:laravel": "php artisan test --parallel --bail",
-        "test:context-manager": "echo === Context Manager Tests === && cd context-manager && npm test -- --coverage && cd ..",
-        "test:extension": "echo === VS Code Extension Tests === && cd vscode-extension && npm run test:unit -- --coverage && cd ..",
-        "test:report": "node scripts/test-reporter.js",
-        "test:jest": "jest",
-        "test:vscode": "cd vscode-extension && npm run test:jest",
-        "test:watch": "jest --watch",
-        "test:coverage": "jest --coverage",
-        "validate:prd": "node scripts/validate-prd.cjs",
-        "precommit": "npm run validate:prd"
+    "name": "copilot-orchestrator",
+    "displayName": "Copilot Orchestrator",
+    "description": "Foundational VS Code extension scaffold for Copilot Orchestration with GitHub Issues sync.",
+    "version": "0.0.1",
+    "publisher": "your-publisher-id",
+    "icon": "media/icon.png",
+    "engines": {
+        "vscode": "^1.90.0"
     },
-    "devDependencies": {
-        "@inertiajs/vue3": "^2.3.10",
-        "@jest/globals": "^29.7.0",
-        "@tailwindcss/forms": "^0.5.3",
-        "@tailwindcss/postcss": "^4.1.18",
-        "@types/jest": "^29.5.14",
-        "@types/node": "^25.0.9",
-        "@types/ziggy-js": "^1.3.3",
-        "@vitejs/plugin-vue": "^6.0.3",
-        "@vue/server-renderer": "^3.4.0",
-        "autoprefixer": "^10.4.12",
-        "axios": "^1.6.4",
-        "jest": "^29.7.0",
-        "laravel-vite-plugin": "^2.0.1",
-        "mocha": "^11.7.5",
-        "postcss": "^8.4.31",
-        "sinon": "^21.0.1",
-        "tailwindcss": "^4.1.18",
-        "ts-jest": "^29.4.6",
-        "ts-node": "^10.9.2",
-        "typescript": "^5.9.3",
-        "vite": "^7.3.1",
-        "vue": "^3.4.0",
-        "vue-tsc": "^3.2.2"
+    "categories": [
+        "Other"
+    ],
+    "extensionDependencies": [
+        "hiroyannnn.vscode-github-issues-sync",
+        "q4test.q4test"
+    ],
+    "main": "./dist/extension.js",
+    "bin": {
+        "copilot-orchestrator-mcp": "./dist/mcp-server/index.js"
+    },
+    "contributes": {
+        "languages": [
+            {
+                "id": "task-markdown",
+                "aliases": [
+                    "Task Markdown",
+                    "task"
+                ],
+                "extensions": [
+                    ".task.md"
+                ],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "./media/task-icon-light.svg",
+                    "dark": "./media/task-icon-dark.svg"
+                }
+            }
+        ],
+        "grammars": [
+            {
+                "language": "task-markdown",
+                "scopeName": "text.task.markdown",
+                "path": "./syntaxes/task-markdown.json"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "copilotOrchestrator",
+                    "title": "Copilot Orchestrator",
+                    "icon": "media/orchestrator-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "copilotOrchestrator": [
+                {
+                    "id": "copilotOrchestrator.status",
+                    "name": "Status",
+                    "icon": "media/orchestrator-icon.svg",
+                    "contextualTitle": "Orchestrator Status"
+                },
+                {
+                    "id": "copilotOrchestrator.tasks",
+                    "name": "Tasks",
+                    "icon": "media/task-icon-dark.svg",
+                    "contextualTitle": "Active Tasks"
+                },
+                {
+                    "id": "copilotOrchestrator.agents",
+                    "name": "Agents",
+                    "icon": "media/agent-icon.svg",
+                    "contextualTitle": "Agent Teams"
+                },
+                {
+                    "id": "copilotOrchestrator.plans",
+                    "name": "Plans",
+                    "icon": "media/plan-icon.svg",
+                    "contextualTitle": "Project Plans"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "Copilot Orchestrator",
+            "properties": {
+                "copilot-orchestrator.backendUrl": {
+                    "type": "string",
+                    "default": "http://localhost:8000",
+                    "markdownDescription": "Base URL for the orchestrator backend (Laravel) providing agent loop and task APIs.",
+                    "scope": "window",
+                    "pattern": "^https?://.+",
+                    "patternErrorMessage": "Enter a valid http(s) URL (e.g., http://localhost:8000)."
+                },
+                "copilot-orchestrator.llm.baseUrl": {
+                    "type": "string",
+                    "default": "http://localhost:1234/v1",
+                    "markdownDescription": "Base URL for an OpenAI-compatible endpoint (LM Studio default: http://localhost:1234/v1). Must start with http or https. Can be overridden with COPILOT_LLM_BASE_URL environment variable.",
+                    "scope": "window",
+                    "pattern": "^https?://.+",
+                    "patternErrorMessage": "Enter a valid http(s) URL (e.g., http://localhost:1234/v1)."
+                },
+                "copilot-orchestrator.llm.apiKey": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "API key/secret for the endpoint. Leave empty for LM Studio (no key required).",
+                    "scope": "application",
+                    "secret": true
+                },
+                "copilot-orchestrator.llm.defaultModel": {
+                    "type": "string",
+                    "default": "gpt-4.1",
+                    "markdownDescription": "Default model name passed to /v1/chat/completions (e.g., gpt-4.1, gpt-4o-mini, or LM Studio-provided model).",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.temperature": {
+                    "type": "number",
+                    "default": 0.7,
+                    "minimum": 0,
+                    "maximum": 2,
+                    "markdownDescription": "Sampling temperature for chat completions (0–2).",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeoutMs": {
+                    "type": "number",
+                    "default": 30000,
+                    "minimum": 1000,
+                    "maximum": 120000,
+                    "markdownDescription": "Request timeout in milliseconds for LLM calls.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeouts.coldLoadMs": {
+                    "type": "number",
+                    "default": 600000,
+                    "minimum": 60000,
+                    "maximum": 86400000,
+                    "markdownDescription": "Cold model load timeout (disk → RAM/VRAM) in milliseconds. Default: 10 minutes. Range: 1 minute - 1 day.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeouts.modelSwitchMs": {
+                    "type": "number",
+                    "default": 900000,
+                    "minimum": 60000,
+                    "maximum": 86400000,
+                    "markdownDescription": "Model switch timeout (unload + load) in milliseconds. Default: 15 minutes. Range: 1 minute - 1 day.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeouts.testConnectionMs": {
+                    "type": "number",
+                    "default": 120000,
+                    "minimum": 30000,
+                    "maximum": 600000,
+                    "markdownDescription": "Test connection timeout in milliseconds. Default: 2 minutes. Range: 30 seconds - 10 minutes.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeouts.requestMs": {
+                    "type": "number",
+                    "default": 30000,
+                    "minimum": 5000,
+                    "maximum": 300000,
+                    "markdownDescription": "Standard request timeout in milliseconds. Default: 30 seconds. Range: 5 seconds - 5 minutes.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeouts.queuedResponseMs": {
+                    "type": "number",
+                    "default": 900000,
+                    "minimum": 60000,
+                    "maximum": 86400000,
+                    "markdownDescription": "Response wait time between queued requests in milliseconds. Default: 15 minutes. Range: 1 minute - 1 day. Used when multiple agents queue requests to same LLM.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeouts.agentActivationMs": {
+                    "type": "number",
+                    "default": 900000,
+                    "minimum": 60000,
+                    "maximum": 86400000,
+                    "markdownDescription": "Agent activation timeout (includes model loading) in milliseconds. Default: 15 minutes. Range: 1 minute - 1 day.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeouts.agentDeactivationMs": {
+                    "type": "number",
+                    "default": 300000,
+                    "minimum": 30000,
+                    "maximum": 900000,
+                    "markdownDescription": "Agent deactivation timeout (includes model unloading) in milliseconds. Default: 5 minutes. Range: 30 seconds - 15 minutes.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.llm.timeouts.maxQueueDepth": {
+                    "type": "number",
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100,
+                    "markdownDescription": "Maximum queue depth before rejecting requests. Default: 20. Range: 1 - 100.",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.mcp.baseUrl": {
+                    "type": "string",
+                    "default": "http://localhost:8000",
+                    "markdownDescription": "Base URL for the MCP/agent coordination service (e.g., http://localhost:8000 or https://api.githubcopilot.com/mcp).",
+                    "scope": "window",
+                    "pattern": "^https?://.+",
+                    "patternErrorMessage": "Enter a valid http(s) URL (e.g., http://localhost:8000)."
+                },
+                "copilot-orchestrator.mcp.authToken": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Bearer token used when calling the MCP service (required for GitHub Copilot MCP endpoints).",
+                    "scope": "application",
+                    "secret": true
+                },
+                "copilot-orchestrator.task.issueFolder": {
+                    "type": "string",
+                    "default": ".vscode/github-issues",
+                    "markdownDescription": "Folder for task/issue markdown files. Defaults to .vscode/github-issues.",
+                    "scope": "resource"
+                },
+                "copilot-orchestrator.taskRoots": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "_ZENTASKS"
+                    ],
+                    "markdownDescription": "Folders (relative to the workspace) to search for *.task.md files. First existing folder is used.",
+                    "scope": "resource"
+                },
+                "copilot-orchestrator.toolRegistry.path": {
+                    "type": "string",
+                    "default": ".github/copilot-tools.json",
+                    "markdownDescription": "Path to tool registry file (compatible with GitHub Copilot global MCP tool list format).",
+                    "scope": "resource"
+                },
+                "copilot-orchestrator.mcp.localServerEnabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Enable local MCP server for extension-only tools (task status, feedback, etc.).",
+                    "scope": "window"
+                },
+                "copilot-orchestrator.mcp.dockerGatewayEnabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Enable Docker MCP gateway for 3rd-party authenticated tools.",
+                    "scope": "window"
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "copilot-orchestrator.showStatusMenu",
+                "title": "Show Status Menu",
+                "category": "Copilot Orchestrator",
+                "icon": "$(info)"
+            },
+            {
+                "command": "copilot-orchestrator.start",
+                "title": "Start Orchestrator",
+                "category": "Copilot Orchestrator",
+                "icon": "$(play-circle)"
+            },
+            {
+                "command": "copilot-orchestrator.refreshTasks",
+                "title": "Refresh Tasks",
+                "category": "Copilot Orchestrator",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "copilot-orchestrator.showGraph",
+                "title": "Show Task Graph",
+                "category": "Copilot Orchestrator",
+                "icon": "$(git-branch)"
+            },
+            {
+                "command": "copilot-orchestrator.showDependencies",
+                "title": "Show Task Dependencies",
+                "category": "Copilot Orchestrator",
+                "icon": "$(type-hierarchy)"
+            },
+            {
+                "command": "copilot-orchestrator.showPanel",
+                "title": "Show Orchestrator Panel",
+                "category": "Copilot Orchestrator",
+                "icon": {
+                    "light": "media/orchestrator-icon.svg",
+                    "dark": "media/orchestrator-icon.svg"
+                }
+            },
+            {
+                "command": "copilot-orchestrator.executeTask",
+                "title": "Execute Task Now",
+                "category": "Task File"
+            },
+            {
+                "command": "copilot-orchestrator.changeTaskStatus",
+                "title": "Change Task Status",
+                "category": "Task File"
+            },
+            {
+                "command": "copilot-orchestrator.openContextBundle",
+                "title": "Open Context Bundle",
+                "category": "Task File"
+            },
+            {
+                "command": "copilot-orchestrator.createContextBundle",
+                "title": "Create Context Bundle",
+                "category": "Task File"
+            },
+            {
+                "command": "copilot-orchestrator.linkGitHubIssue",
+                "title": "Link GitHub Issue",
+                "category": "Task File"
+            },
+            {
+                "command": "copilot-orchestrator.copyMCPServerPath",
+                "title": "Copilot Orchestrator: Copy MCP Server Path",
+                "category": "Copilot Orchestrator",
+                "icon": "$(copy)"
+            },
+            {
+                "command": "copilot-orchestrator.generateMCPConfig",
+                "title": "Copilot Orchestrator: Generate MCP Config for Coding Agent",
+                "category": "Copilot Orchestrator",
+                "icon": "$(file-code)"
+            },
+            {
+                "command": "copilot-orchestrator.testMCPServer",
+                "title": "Copilot Orchestrator: Test MCP Server",
+                "category": "Copilot Orchestrator",
+                "icon": "$(debug-start)"
+            },
+            {
+                "command": "copilot-orchestrator.runHealthCheck",
+                "title": "Run Health Check",
+                "category": "Copilot Orchestrator",
+                "icon": "$(pulse)"
+            },
+            {
+                "command": "copilot-orchestrator.showHealthDetails",
+                "title": "Show Health Details",
+                "category": "Copilot Orchestrator",
+                "icon": "$(info)"
+            },
+            {
+                "command": "copilot-orchestrator.openGitHubIssue",
+                "title": "Open GitHub Issue",
+                "category": "Task File"
+            },
+            {
+                "command": "copilot-orchestrator.openTaskList",
+                "title": "Open Task List",
+                "category": "Copilot Orchestrator",
+                "icon": "$(checklist)",
+                "keybinding": "ctrl+shift+t"
+            },
+            {
+                "command": "copilot-orchestrator.viewTaskDetails",
+                "title": "View Task Details",
+                "category": "Copilot Orchestrator",
+                "icon": "$(info)"
+            },
+            {
+                "command": "copilot-orchestrator.showTaskMetadata",
+                "title": "Show Task Metadata",
+                "category": "Task File"
+            },
+            {
+                "command": "copilot-orchestrator.manageDependencies",
+                "title": "Manage Task Dependencies",
+                "category": "Task File"
+            },
+            {
+                "command": "copilot-orchestrator.configureLLM",
+                "title": "Copilot Orchestrator: Configure LLM",
+                "category": "Copilot Orchestrator",
+                "icon": "$(gear)"
+            },
+            {
+                "command": "copilot-orchestrator.testConnection",
+                "title": "Copilot Orchestrator: Test LLM Connection",
+                "category": "Copilot Orchestrator",
+                "icon": "$(plug)"
+            },
+            {
+                "command": "copilot-orchestrator.executeLLM",
+                "title": "Copilot Orchestrator: Execute LLM Task",
+                "category": "Copilot Orchestrator",
+                "icon": "$(play)"
+            },
+            {
+                "command": "copilot-orchestrator.executeLLMStreaming",
+                "title": "Copilot Orchestrator: Execute LLM Task (Streaming)",
+                "category": "Copilot Orchestrator",
+                "icon": "$(radio-tower)"
+            },
+            {
+                "command": "copilot-orchestrator.showVisualVerification",
+                "title": "Copilot Orchestrator: Show Visual Verification",
+                "category": "Copilot Orchestrator",
+                "icon": "$(eye)"
+            },
+            {
+                "command": "copilot-orchestrator.startAutoLoop",
+                "title": "Copilot Orchestrator: Start Auto Loop",
+                "category": "Copilot Orchestrator",
+                "icon": "$(sync)"
+            },
+            {
+                "command": "copilot-orchestrator.stopAutoLoop",
+                "title": "Copilot Orchestrator: Stop Auto Loop",
+                "category": "Copilot Orchestrator",
+                "icon": "$(primitive-square)"
+            },
+            {
+                "command": "copilot-orchestrator.autoLoopStatus",
+                "title": "Copilot Orchestrator: Auto Loop Status",
+                "category": "Copilot Orchestrator",
+                "icon": "$(info)"
+            },
+            {
+                "command": "copilot-orchestrator.executeSingleCycle",
+                "title": "Copilot Orchestrator: Execute Single Cycle",
+                "category": "Copilot Orchestrator",
+                "icon": "$(run)"
+            },
+            {
+                "command": "copilot-orchestrator.showAuditDashboard",
+                "title": "Copilot Orchestrator: Show Audit Dashboard",
+                "category": "Copilot Orchestrator",
+                "icon": "$(report)"
+            },
+            {
+                "command": "copilot-orchestrator.showDeadLetterQueue",
+                "title": "Copilot Orchestrator: Show Dead Letter Queue",
+                "category": "Copilot Orchestrator",
+                "icon": "$(error)"
+            },
+            {
+                "command": "copilot-orchestrator.openPlanBuilder",
+                "title": "Copilot Orchestrator: Open Plan Builder",
+                "category": "Plan Builder",
+                "icon": "$(pencil)"
+            },
+            {
+                "command": "copilot-orchestrator.detectPlanDrift",
+                "title": "Copilot Orchestrator: Detect Plan Drift",
+                "category": "Plan Adjustment",
+                "icon": "$(issues)"
+            },
+            {
+                "command": "copilot-orchestrator.openPlanAdjustmentWizard",
+                "title": "Copilot Orchestrator: Open Plan Adjustment Wizard",
+                "category": "Plan Adjustment",
+                "icon": "$(wand)"
+            },
+            {
+                "command": "copilot-orchestrator.showPlanDiff",
+                "title": "Copilot Orchestrator: Show Plan Diff Viewer",
+                "category": "Plan Adjustment",
+                "icon": "$(diff)"
+            },
+            {
+                "command": "copilot-orchestrator.applyPlanAdjustment",
+                "title": "Apply Plan Adjustment",
+                "category": "Plan Adjustment",
+                "icon": "$(check)"
+            },
+            {
+                "command": "copilot-orchestrator.planningPhase",
+                "title": "Planning Phase",
+                "category": "Copilot Orchestrator",
+                "icon": "$(edit)"
+            },
+            {
+                "command": "copilot-orchestrator.aiDevPlanning",
+                "title": "AI Development Planning",
+                "category": "Copilot Orchestrator",
+                "icon": "$(beaker)"
+            },
+            {
+                "command": "copilot-orchestrator.guidanceExecution",
+                "title": "Guidance & Execution",
+                "category": "Copilot Orchestrator",
+                "icon": "$(run-all)"
+            },
+            {
+                "command": "copilot-orchestrator.reviewCompletion",
+                "title": "Review & Completion",
+                "category": "Copilot Orchestrator",
+                "icon": "$(checklist)"
+            },
+            {
+                "command": "copilot-orchestrator.configureWebSocket",
+                "title": "Configure WebSocket",
+                "category": "Copilot Orchestrator",
+                "icon": "$(server)"
+            },
+            {
+                "command": "copilot-orchestrator.connectWebSocket",
+                "title": "Connect WebSocket",
+                "category": "Copilot Orchestrator",
+                "icon": "$(plug)"
+            },
+            {
+                "command": "copilot-orchestrator.disconnectWebSocket",
+                "title": "Disconnect WebSocket",
+                "category": "Copilot Orchestrator",
+                "icon": "$(debug-disconnect)"
+            },
+            {
+                "command": "copilot-orchestrator.refreshAgents",
+                "title": "Refresh Agents",
+                "category": "Copilot Orchestrator",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "copilot-orchestrator.refreshPlans",
+                "title": "Refresh Plans",
+                "category": "Copilot Orchestrator",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "copilot-orchestrator.showConnectionDetails",
+                "title": "Show Connection Details",
+                "category": "Copilot Orchestrator",
+                "icon": "$(info)"
+            },
+            {
+                "command": "copilot-orchestrator.startPlanBuilder",
+                "title": "Start Plan Builder",
+                "category": "Copilot Orchestrator",
+                "icon": "$(pencil)"
+            },
+            {
+                "command": "copilot-orchestrator.testWebSocket",
+                "title": "Test WebSocket",
+                "category": "Copilot Orchestrator",
+                "icon": "$(debug-start)"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "copilot-orchestrator.showPanel",
+                    "when": "true"
+                },
+                {
+                    "command": "copilot-orchestrator.openPlanBuilder",
+                    "when": "true"
+                },
+                {
+                    "command": "copilot-orchestrator.showVisualVerification",
+                    "when": "true"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "copilot-orchestrator.refreshTasks",
+                    "when": "view == copilotOrchestrator.tasks",
+                    "group": "navigation"
+                },
+                {
+                    "command": "copilot-orchestrator.openPlanBuilder",
+                    "when": "view == copilotOrchestrator.plans",
+                    "group": "navigation"
+                },
+                {
+                    "command": "copilot-orchestrator.showGraph",
+                    "when": "view == copilotOrchestrator.tasks",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "copilot-orchestrator.executeTask",
+                    "when": "view == copilotOrchestrator.tasks && viewItem == task",
+                    "group": "inline"
+                },
+                {
+                    "command": "copilot-orchestrator.changeTaskStatus",
+                    "when": "view == copilotOrchestrator.tasks && viewItem == task"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "copilot-orchestrator.executeTask",
+                    "when": "resourceExtname == .task.md",
+                    "group": "navigation"
+                },
+                {
+                    "command": "copilot-orchestrator.showVisualVerification",
+                    "when": "resourceExtname == .task.md",
+                    "group": "navigation"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "copilot-orchestrator.showPanel",
+                "key": "ctrl+shift+o",
+                "mac": "cmd+shift+o",
+                "when": "!terminalFocus"
+            },
+            {
+                "command": "copilot-orchestrator.openTaskList",
+                "key": "ctrl+shift+t",
+                "mac": "cmd+shift+t",
+                "when": "!terminalFocus"
+            },
+            {
+                "command": "copilot-orchestrator.showGraph",
+                "key": "ctrl+shift+g",
+                "mac": "cmd+shift+g",
+                "when": "!terminalFocus"
+            },
+            {
+                "command": "copilot-orchestrator.startAutoLoop",
+                "key": "ctrl+shift+a",
+                "mac": "cmd+shift+a",
+                "when": "!terminalFocus"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "webpack --mode production --stats=errors-only && npm run build:vue && npm run build:mcp",
+        "build": "npm run compile",
+        "build:vue": "vite build",
+        "build:mcp": "tsc -p src/mcp-server/tsconfig.json",
+        "watch": "webpack --watch --mode development --stats=errors-warnings",
+        "lint": "echo 'no lint configured'",
+        "test": "npm run test:unit",
+        "test:watch": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --watch --coverage --maxWorkers=1 --passWithNoTests --watchAll",
+        "test:unit": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --forceExit --passWithNoTests",
+        "test:jest": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --forceExit --passWithNoTests",
+        "test:jest:watch": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --watch --maxWorkers=1 --passWithNoTests --watchAll",
+        "test:jest:coverage": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --coverage --runInBand --passWithNoTests",
+        "test:q4test": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --config jest-q4test.config.js --runInBand --detectOpenHandles --forceExit",
+        "test:q4test:watch": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --config jest-q4test.config.js --watch --maxWorkers=1 --passWithNoTests --watchAll",
+        "test:q4test:coverage": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --config jest-q4test.config.js --coverage --runInBand --passWithNoTests",
+        "test:q4test:debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --config jest-q4test.config.js --runInBand",
+        "q4test:validate": "node scripts/validate-q4test.js",
+        "q4test:merge-coverage": "node scripts/merge-coverage.js",
+        "test:wizard": "vitest run",
+        "test:wizard:watch": "vitest",
+        "test:wizard:coverage": "vitest run --coverage",
+        "test:integration": "npm run compile && node scripts/runIntegrationTests.js",
+        "test:integration:ci": "xvfb-run -a node scripts/runIntegrationTests.js",
+        "test:all": "npm run test:unit && npm run test:wizard && npm run test",
+        "demo": "npm run compile && node dist/taskGraphDemo.js",
+        "report:tests": "node scripts/report-tests.js",
+        "verify:planBuilder": "node -e \"const fs=require('fs');const p='dist/planBuilder/assets';const exists=fs.existsSync(p);const files=exists?fs.readdirSync(p):[];const hasCSS=files.some(f=>f.match(/^main-[a-zA-Z0-9]+\\.css$/));const hasJS=files.some(f=>f.match(/^main-[a-zA-Z0-9]+\\.js$/));if(hasCSS&&hasJS){console.log('✓ Plan Builder assets exist');process.exit(0)}else{console.error('✗ Plan Builder not built - run: npm run build:vue');process.exit(1)}\"",
+        "install-hooks": "git config core.hooksPath .githooks && echo 'Git hooks installed from .githooks/'",
+        "prepare": "npm run install-hooks || echo 'Warning: Could not install git hooks'"
     },
     "dependencies": {
-        "yaml": "^2.8.2",
-        "ziggy-js": "^2.6.0"
+        "@modelcontextprotocol/sdk": "^1.25.2",
+        "better-sqlite3": "^12.6.2",
+        "chart.js": "^4.5.1",
+        "graphlib": "^2.1.8",
+        "laravel-echo": "^2.3.0",
+        "pusher-js": "^8.4.0",
+        "socket.io-client": "^4.7.0",
+        "yaml": "^2.6.0",
+        "zod": "^4.3.5"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4.1.18",
+        "@types/better-sqlite3": "^7.6.13",
+        "@types/graphlib": "^2.1.12",
+        "@types/jest": "^30.0.0",
+        "@types/node": "^25.0.9",
+        "@types/vscode": "^1.108.1",
+        "@vitejs/plugin-vue": "^6.0.3",
+        "@vitest/coverage-v8": "^4.0.17",
+        "@vscode/test-electron": "^2.3.9",
+        "autoprefixer": "^10.4.23",
+        "jest": "^30.2.0",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^4.1.18",
+        "ts-jest": "^29.1.2",
+        "ts-loader": "^9.5.4",
+        "typescript": "^5.4.0",
+        "vite": "^7.3.1",
+        "vitest": "^4.0.17",
+        "vue": "^3.5.26",
+        "webpack": "^5.91.0",
+        "webpack-cli": "^6.0.1"
     }
 }
