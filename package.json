@@ -632,6 +632,7 @@
         "test:watch": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --watch --coverage --maxWorkers=1 --passWithNoTests --watchAll",
         "test:unit": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --forceExit --passWithNoTests",
         "test:jest": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --forceExit --passWithNoTests",
+        "test:jest:debug": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --runInBand --no-coverage",
         "test:jest:watch": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --watch --maxWorkers=1 --passWithNoTests --watchAll",
         "test:jest:coverage": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --coverage --runInBand --passWithNoTests",
         "test:q4test": "node --expose-gc --max-old-space-size=4096 ./node_modules/jest/bin/jest.js --config jest-q4test.config.js --runInBand --detectOpenHandles --forceExit",
