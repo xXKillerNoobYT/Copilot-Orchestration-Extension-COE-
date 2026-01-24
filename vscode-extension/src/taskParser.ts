@@ -425,16 +425,23 @@ export async function parseTasksFromDirectory(directory: string, options: Parser
   const tasks: ParsedTask[] = [];
 
   for (const entry of entries) {
-    if (!entry.isFile()) {
+    // Handle both Dirent objects and strings (for test compatibility)
+    const isDirectory = typeof entry === 'string'
+      ? (await fs.stat(path.join(directory, entry))).isDirectory()
+      : entry.isDirectory();
+
+    const name = typeof entry === 'string' ? entry : entry.name;
+
+    if (isDirectory) {
       continue;
     }
 
-    const ext = path.extname(entry.name).toLowerCase();
+    const ext = path.extname(name).toLowerCase();
     if (!['.md', '.markdown'].includes(ext)) {
       continue;
     }
 
-    const filePath = path.join(directory, entry.name);
+    const filePath = path.join(directory, name);
     const content = await fs.readFile(filePath, 'utf-8');
 
     try {

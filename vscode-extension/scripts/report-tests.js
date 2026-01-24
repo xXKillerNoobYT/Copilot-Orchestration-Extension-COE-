@@ -4,6 +4,11 @@
  * Parse Jest test results and output them in VS Code Problems format
  * Processes test-results.json to show failures and skipped tests in Problems panel
  * 
+ * VS Code Problems format:
+ * file(line,col): severity: message
+ * OR
+ * file:line:col - severity: message
+ * 
  * Usage: npm run report:tests
  */
 
@@ -18,9 +23,17 @@ if (!fs.existsSync(resultsFile)) {
     process.exit(1);
 }
 
-const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
+let results;
+try {
+    results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
+} catch (error) {
+    console.error(`❌ Failed to parse test results: ${error.message}`);
+    process.exit(1);
+}
 
 let problemCount = 0;
+let failureCount = 0;
+let skipCount = 0;
 
 // Report test suite failures
 if (results.testResults) {
@@ -30,23 +43,30 @@ if (results.testResults) {
         // Report individual test failures
         if (suite.assertionResults) {
             for (const test of suite.assertionResults) {
+                const line = test.location?.line || 1;
+                const col = test.location?.column || 1;
+
                 if (test.status === 'failed') {
-                    console.error(
-                        `${fileName}:${test.location?.line || 1}:1 - ` +
-                        `error: ❌ FAILING TEST: ${test.fullName}`
-                    );
+                    // VS Code recognizes this format: file(line,col): severity: message
+                    console.error(`${fileName}(${line},${col}): error: ❌ ${test.fullName}`);
+
+                    // Extract and clean up error message
                     if (test.failureMessages && test.failureMessages.length > 0) {
-                        console.error(`  ${test.failureMessages[0].split('\n')[0]}`);
+                        const errorMsg = test.failureMessages[0]
+                            .split('\n')[0]
+                            .replace(/\u001b\[.*?m/g, '') // Remove ANSI color codes
+                            .substring(0, 200); // Limit length
+                        console.error(`  ${errorMsg}`);
                     }
+                    failureCount++;
                     problemCount++;
                 }
 
-                if (test.status === 'pending') {
-                    console.warn(
-                        `${fileName}:${test.location?.line || 1}:1 - ` +
-                        `warning: ⏭️  SKIPPED TEST: ${test.fullName}`
-                    );
+                if (test.status === 'pending' || test.status === 'todo') {
+                    // Format for warnings
+                    console.warn(`${fileName}(${line},${col}): warning: ⏭️  ${test.fullName} (skipped)`);
                     console.warn(`  Skipped tests must be documented with issue link and timeline`);
+                    skipCount++;
                     problemCount++;
                 }
             }
@@ -56,10 +76,14 @@ if (results.testResults) {
 
 // Summary
 console.log('');
+console.log('='.repeat(60));
 if (problemCount > 0) {
-    console.error(`Found ${problemCount} test issue(s)`);
+    console.error(`Found ${failureCount} failing test(s) and ${skipCount} skipped test(s)`);
+    console.error(`Total: ${problemCount} test issue(s)`);
+    console.log('='.repeat(60));
     process.exit(1);
 } else {
     console.log('✅ All tests passing with no skips');
+    console.log('='.repeat(60));
 }
 

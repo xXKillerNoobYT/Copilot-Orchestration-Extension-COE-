@@ -80,15 +80,21 @@ export class TasksSource implements ITasksSource {
    * Resolve the path to tasks.json by checking workspace roots
    */
   private resolveTaskFilePath(): string {
-    // If workspace root is an absolute path (contains path separator), use it directly
+    // Check each workspace root
     for (const root of this.workspaceRoots) {
+      // If workspace root is an absolute path, use it directly
       if (path.isAbsolute(root)) {
-        return path.join(root, 'tasks.json');
+        return path.join(root, '_ZENTASKS', 'tasks.json');
       }
-      // Otherwise, resolve relative to cwd
-      const candidatePath = path.join(process.cwd(), root, 'tasks.json');
-      return candidatePath;
     }
+
+    // For relative paths, resolve against current working directory
+    // Take first workspace root if available
+    if (this.workspaceRoots.length > 0) {
+      const firstRoot = this.workspaceRoots[0];
+      return path.join(firstRoot, 'tasks.json');
+    }
+
     // Fallback to default
     return path.join(process.cwd(), '_ZENTASKS', 'tasks.json');
   }

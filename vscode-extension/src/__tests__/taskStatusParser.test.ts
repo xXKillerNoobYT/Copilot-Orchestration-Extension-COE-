@@ -16,7 +16,7 @@ id: task-001
 title: Test Task
 type: feature
 priority: high
-status: in-progress
+status: in_progress
 dependencies:
   - task-002
 assignees:
@@ -41,7 +41,7 @@ This is the task description with details.`;
             expect(result.task?.title).toBe('Test Task');
             expect(result.task?.type).toBe('feature');
             expect(result.task?.priority).toBe('high');
-            expect(result.task?.status).toBe('in-progress');
+            expect(result.task?.status).toBe('in_progress');
             expect(result.task?.dependencies).toEqual(['task-002']);
             expect(result.task?.assignees).toEqual(['auto-zen']);
             expect(result.task?.labels).toEqual(['backend']);

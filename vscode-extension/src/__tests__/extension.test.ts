@@ -23,8 +23,39 @@ jest.mock('../panels/DeadLetterQueuePanel');
 jest.mock('../services/deadLetterQueue');
 jest.mock('../services/webSocketConfigManager');
 jest.mock('../services/webSocketClient');
-jest.mock('../services/llmIPMonitor');
-jest.mock('../services/connectionMonitor');
+jest.mock('../services/llmIPMonitor', () => ({
+    getLLMIPMonitor: jest.fn(() => ({
+        start: jest.fn(),
+        stop: jest.fn(),
+        checkConnection: jest.fn(),
+        dispose: jest.fn(),
+    })),
+}));
+jest.mock('../services/connectionMonitor', () => ({
+    ConnectionMonitor: {
+        getInstance: jest.fn(() => ({
+            start: jest.fn(),
+            stop: jest.fn(),
+            dispose: jest.fn(),
+            getState: jest.fn(() => ({
+                mcp: 'connected',
+                websocket: 'connected',
+                docker: 'disconnected',
+                retryCount: 0,
+            })),
+            onDidChangeState: {
+                event: jest.fn(),
+            },
+        })),
+    },
+    createConnectionStatusBarItem: jest.fn(() => ({
+        text: '',
+        show: jest.fn(),
+        hide: jest.fn(),
+        dispose: jest.fn(),
+    })),
+    showConnectionDetails: jest.fn(),
+}));
 jest.mock('../services/mcpClient');
 jest.mock('../services/mcpRouter');
 jest.mock('../services/toolSelector');
@@ -48,7 +79,20 @@ jest.mock('../utils/errorMessages', () => ({
     })),
     disposeErrorLogging: jest.fn(),
 }));
-jest.mock('../services/healthCheck');
+jest.mock('../services/healthCheck', () => ({
+    HealthCheckService: {
+        getInstance: jest.fn(() => ({
+            runHealthCheck: jest.fn().mockResolvedValue({
+                status: 'healthy',
+                checks: [],
+                timestamp: new Date().toISOString(),
+            }),
+            updateStatusBar: jest.fn(),
+            showWelcomeIfUnhealthy: jest.fn(),
+            dispose: jest.fn(),
+        })),
+    },
+}));
 jest.mock('better-sqlite3');
 
 describe('Extension', () => {

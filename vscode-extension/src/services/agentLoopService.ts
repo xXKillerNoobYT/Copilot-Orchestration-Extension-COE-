@@ -42,7 +42,17 @@ export class AgentLoopService {
   private timeoutConfig: LlmTimeoutConfig;
 
   constructor(config: AgentLoopConfig) {
-    this.config = config;
+    // Validate baseUrl is provided and not empty
+    if (!config.baseUrl || config.baseUrl.trim() === '') {
+      throw new Error('AgentLoopService requires a valid baseUrl in config. Received: ' + String(config.baseUrl));
+    }
+
+    // Ensure baseUrl doesn't have trailing slash for consistent URL construction
+    this.config = {
+      ...config,
+      baseUrl: config.baseUrl.trim().replace(/\/$/, ''),
+    };
+
     const llmTimeouts = readLlmTimeoutConfig();
     this.timeoutConfig = llmTimeouts.config;
   }
@@ -101,7 +111,7 @@ export class AgentLoopService {
           'Check Laravel logs for errors'
         ]
       });
-      
+
       throw error;
     }
   }

@@ -137,6 +137,33 @@ export class PromptCache {
   }
 
   /**
+   * Alias for retrieve() - get a cached payload by key
+   */
+  async get(key: string): Promise<any | null> {
+    return this.retrieve(key);
+  }
+
+  /**
+   * Check if a key exists in the cache
+   */
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+
+  /**
+   * Delete an entry from the cache
+   */
+  delete(key: string): void {
+    const entry = this.cache.get(key);
+    if (entry) {
+      const entrySize = JSON.stringify(entry).length;
+      this.stats.totalSize = Math.max(0, this.stats.totalSize - entrySize);
+      this.cache.delete(key);
+      this.stats.totalEntries = this.cache.size;
+    }
+  }
+
+  /**
    * Evict entries older than the specified TTL
    */
   async evictByAge(ttlMs: number): Promise<number> {
@@ -163,7 +190,7 @@ export class PromptCache {
   /**
    * Clear all cache entries
    */
-  async clear(): Promise<void> {
+  clear(): void {
     this.cache.clear();
     this.stats = {
       totalEntries: 0,
@@ -226,7 +253,10 @@ export class PromptCache {
     try {
       if (fs.existsSync(this.cacheFile)) {
         const data = fs.readFileSync(this.cacheFile, 'utf-8');
-        const entries: CacheEntry[] = JSON.parse(data);
+        const parsed = JSON.parse(data);
+
+        // Handle both object with entries array and direct entries array
+        const entries: CacheEntry[] = Array.isArray(parsed) ? parsed : (parsed.entries || []);
 
         for (const entry of entries) {
           this.cache.set(entry.key, entry);

@@ -218,12 +218,33 @@ export const window = {
 };
 
 export const workspace = {
-  getConfiguration: mockFn(() => ({
-    get: mockFn(),
-    update: mockFn(),
-    has: mockFn(),
-    inspect: mockFn(),
-  })),
+  getConfiguration: mockFn((section?: string) => {
+    // Default configuration values for tests
+    const defaultConfig: Record<string, any> = {
+      'copilot-orchestrator.backendUrl': 'http://localhost:8000',
+      'copilot-orchestrator.llm.baseUrl': 'http://localhost:1234/v1',
+      'copilot-orchestrator.llm.apiKey': 'test-api-key',
+      'copilot-orchestrator.llm.model': 'test-model',
+      'copilot-orchestrator.llm.maxTokens': 4096,
+      'copilot-orchestrator.llm.temperature': 0.7,
+      'copilot-orchestrator.llm.enabled': true,
+      'copilot-orchestrator.enableTelemetry': false,
+      'copilot-orchestrator.autoStart': false,
+    };
+
+    return {
+      get: mockFn((key: string, defaultValue?: any) => {
+        const fullKey = section ? `${section}.${key}` : key;
+        return defaultConfig[fullKey] !== undefined ? defaultConfig[fullKey] : defaultValue;
+      }),
+      update: mockFn(),
+      has: mockFn((key: string) => {
+        const fullKey = section ? `${section}.${key}` : key;
+        return defaultConfig[fullKey] !== undefined;
+      }),
+      inspect: mockFn(),
+    };
+  }),
   // Critical: File system watcher for profile watching tests
   // Reference: https://code.visualstudio.com/api/references/vscode-api#workspace.createFileSystemWatcher
   createFileSystemWatcher: jest.fn((pattern) => ({
@@ -307,6 +328,12 @@ export enum ViewColumn {
 export enum StatusBarAlignment {
   Left = 1,
   Right = 2,
+}
+
+export enum ConfigurationTarget {
+  Global = 1,
+  Workspace = 2,
+  WorkspaceFolder = 3,
 }
 
 export enum ProgressLocation {

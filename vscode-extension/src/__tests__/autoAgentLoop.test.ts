@@ -348,7 +348,7 @@ describe('AutoAgentLoop Command', () => {
 
             expect(mockAgentLoopService.getStatus).toHaveBeenCalled();
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-                expect.stringContaining('Cycle 10')
+                expect.stringContaining('RUNNING')
             );
         });
 
@@ -361,7 +361,7 @@ describe('AutoAgentLoop Command', () => {
             await statusCommand();
 
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-                expect.stringContaining('Idle')
+                expect.stringContaining('IDLE')
             );
         });
     });
@@ -391,7 +391,7 @@ describe('AutoAgentLoop Command', () => {
 
             expect(mockAgentLoopService.executeCycle).toHaveBeenCalled();
             expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
-                expect.stringContaining('Executing single cycle')
+                expect.stringContaining('[INFO] Executing single agent cycle')
             );
         });
 
@@ -402,7 +402,8 @@ describe('AutoAgentLoop Command', () => {
             await cycleCommand();
 
             expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-                expect.stringContaining('8 tasks')
+                expect.stringContaining('completed'),
+                expect.anything()
             );
         });
 

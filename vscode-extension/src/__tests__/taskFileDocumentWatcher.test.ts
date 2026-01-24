@@ -20,8 +20,22 @@ describe('TaskFileDocumentWatcher', () => {
 
         mockCodeLensProvider = {} as any;
         mockParser = {
-            parseTaskFile: jest.fn(),
-            buildStatusDisplay: jest.fn(),
+            parseTaskFile: jest.fn(() => ({
+                task: {
+                    id: 'TASK-001',
+                    title: 'Test Task',
+                    description: 'Test description',
+                    status: 'pending',
+                    priority: 'medium',
+                    dependencies: [],
+                    assignees: [],
+                    labels: [],
+                    subtasks: [],
+                    rawFrontMatter: {},
+                },
+                errors: [],
+            })),
+            buildStatusDisplay: jest.fn(() => 'Status: Pending'),
         } as any;
 
         (TaskStatusParser as jest.MockedClass<typeof TaskStatusParser>).mockImplementation(() => mockParser);
@@ -40,7 +54,11 @@ describe('TaskFileDocumentWatcher', () => {
             })),
             showInformationMessage: jest.fn(),
             showWarningMessage: jest.fn(),
+            showErrorMessage: jest.fn(),
             activeTextEditor: undefined,
+            onDidChangeActiveTextEditor: jest.fn((callback) => {
+                return { dispose: jest.fn() };
+            }),
         };
 
         (vscode.workspace as any) = {

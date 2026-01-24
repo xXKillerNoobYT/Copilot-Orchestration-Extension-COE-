@@ -189,6 +189,15 @@ module.exports = {
   verbose: true,
 
   /**
+   * Setup Files
+   * Reference: https://jestjs.io/docs/configuration#setupfilesafterenv-array
+   * 
+   * Files to run after Jest is initialized but before tests execute.
+   * Use for global mocks, test utilities, and environment setup.
+   */
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+
+  /**
    * Custom Reporter for Problems Integration
    * Reports skipped and failing tests so they appear in VS Code Problems panel
    */

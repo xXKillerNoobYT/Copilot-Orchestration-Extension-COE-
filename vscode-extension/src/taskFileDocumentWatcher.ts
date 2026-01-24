@@ -153,11 +153,11 @@ export class TaskFileDocumentWatcher {
 
       const result = this.statusParser.parseTaskFile(uri.fsPath, text);
 
-      if (result.task) {
+      if (result && result.task) {
         this.activeTaskMetadata.set(uri.fsPath, result.task);
       }
 
-      if (result.errors.length > 0) {
+      if (result && result.errors.length > 0) {
         vscode.window.showWarningMessage(
           `Task file parsing warnings: ${result.errors.join('; ')}`
         );
@@ -181,7 +181,7 @@ export class TaskFileDocumentWatcher {
         document.uri.fsPath,
         document.getText()
       );
-      if (result.task) {
+      if (result && result.task) {
         this.activeTaskMetadata.set(document.uri.fsPath, result.task);
       } else {
         this.statusBarItem.hide();

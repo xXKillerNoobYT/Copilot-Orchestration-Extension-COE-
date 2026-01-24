@@ -18,9 +18,9 @@ describe('PromptCache', () => {
         testWorkspaceFolder = '/test/workspace';
 
         // Mock fs operations
-        mockFs.existsSync.mockReturnValue(true);
+        mockFs.existsSync.mockReturnValue(false); // Start with no cache file
         mockFs.mkdirSync.mockReturnValue(undefined);
-        mockFs.readFileSync.mockReturnValue('{}');
+        mockFs.readFileSync.mockReturnValue('[]'); // Return valid empty array JSON
         mockFs.writeFileSync.mockReturnValue(undefined);
 
         cache = new PromptCache(testWorkspaceFolder, 1024 * 1024, 100);
@@ -36,17 +36,35 @@ describe('PromptCache', () => {
         });
 
         it('should create cache directory if it does not exist', () => {
-            mockFs.existsSync.mockReturnValue(false);
+            const originalExistsSyncImpl = mockFs.existsSync.getMockImplementation();
+            mockFs.existsSync.mockImplementation((path: any) => {
+                // Return false for directory check but follow original for file check
+                if (typeof path === 'string' && path.includes('.copilot-cache')) {
+                    return false;
+                }
+                return false;
+            });
 
             new PromptCache(testWorkspaceFolder);
 
             expect(mockFs.mkdirSync).toHaveBeenCalled();
+
+            // Restore
+            if (originalExistsSyncImpl) {
+                mockFs.existsSync.mockImplementation(originalExistsSyncImpl);
+            } else {
+                mockFs.existsSync.mockReturnValue(false);
+            }
         });
 
         it('should not create directory if it exists', () => {
-            mockFs.existsSync.mockReturnValue(true);
+            jest.clearAllMocks(); // Clear from beforeEach cache creation
 
-            new PromptCache(testWorkspaceFolder);
+            // Mock to return true for directory check
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.readFileSync.mockReturnValue('[]'); // Valid JSON
+
+            const testCache = new PromptCache(testWorkspaceFolder);
 
             expect(mockFs.mkdirSync).not.toHaveBeenCalled();
         });
@@ -270,8 +288,7 @@ describe('PromptCache', () => {
         it('should save cache to disk', async () => {
             await cache.store('key-1', { data: 'persist me' });
 
-            cache.saveCache();
-
+            // Save happens automatically in store(), just verify it was called
             expect(mockFs.writeFileSync).toHaveBeenCalled();
         });
 

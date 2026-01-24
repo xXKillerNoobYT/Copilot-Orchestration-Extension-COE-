@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode';
-import { DeadLetterQueuePanel } from '../../DeadLetterQueuePanel';
+import { DeadLetterQueuePanel } from '../DeadLetterQueuePanel';
 
 jest.mock('vscode');
 

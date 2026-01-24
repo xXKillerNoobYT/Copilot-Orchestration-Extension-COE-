@@ -38,6 +38,14 @@ describe('executeLLM Command', () => {
             showInformationMessage: mockShowInformationMessage,
             withProgress: mockWithProgress,
             showTextDocument: mockShowTextDocument,
+            createOutputChannel: jest.fn(() => ({
+                appendLine: jest.fn(),
+                append: jest.fn(),
+                clear: jest.fn(),
+                show: jest.fn(),
+                hide: jest.fn(),
+                dispose: jest.fn(),
+            })),
         };
 
         (vscode.workspace as any) = {
