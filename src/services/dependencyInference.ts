@@ -27,32 +27,32 @@ export class DependencyInferenceEngine {
   private implicitRules: DependencyRule[] = [
     // Database comes before API
     {
-      pattern: /api|endpoint|rest/i,
-      mustComeAfter: /database|schema|migration/i,
+      pattern: /\b(api|endpoint|rest)\b/i,
+      mustComeAfter: /\b(database|schema|migration)\b/i,
       reason: 'API endpoints require database schema',
     },
     // API comes before UI
     {
-      pattern: /ui|component|interface|frontend/i,
-      mustComeAfter: /api|endpoint|backend/i,
+      pattern: /\b(ui|component|interface|frontend)\b/i,
+      mustComeAfter: /\b(api|endpoint|backend)\b/i,
       reason: 'UI components consume API endpoints',
     },
     // Implementation before testing
     {
-      pattern: /test|testing|qa/i,
-      mustComeAfter: /implement|feature|create/i,
+      pattern: /\b(test|testing|qa)\b/i,
+      mustComeAfter: /\b(implement|feature|create)\b/i,
       reason: 'Testing requires implementation to be complete',
     },
     // Implementation/testing before documentation
     {
-      pattern: /document|documentation|docs/i,
-      mustComeAfter: /implement|test/i,
+      pattern: /\b(document|documentation|docs)\b/i,
+      mustComeAfter: /\b(implement|test)\b/i,
       reason: 'Documentation describes implemented features',
     },
     // Infrastructure before features
     {
-      pattern: /feature|implement/i,
-      mustComeAfter: /setup|infrastructure|architecture/i,
+      pattern: /\b(feature|implement)\b/i,
+      mustComeAfter: /\b(setup|infrastructure|architecture)\b/i,
       reason: 'Features require project infrastructure',
     },
   ];
