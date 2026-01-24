@@ -820,21 +820,21 @@ ${testCases.join('\n\n')}
   }
 }
 
-interface FunctionParameter {
+export interface FunctionParameter {
   name: string;
   type?: string;
   defaultValue?: string;
   optional: boolean;
 }
 
-interface FunctionSignature {
+export interface FunctionSignature {
   name: string;
   parameters: FunctionParameter[];
   returnType?: string;
   isAsync: boolean;
 }
 
-interface ClassMethod {
+export interface ClassMethod {
   className: string;
   name: string;
   parameters: FunctionParameter[];
@@ -844,7 +844,7 @@ interface ClassMethod {
   visibility: string;
 }
 
-interface CodeAnalysis {
+export interface CodeAnalysis {
   functions: string[];
   classes: string[];
   exports: string[];
