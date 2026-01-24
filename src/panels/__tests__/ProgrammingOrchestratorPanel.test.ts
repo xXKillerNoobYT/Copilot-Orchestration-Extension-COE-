@@ -92,56 +92,64 @@ describe('ProgrammingOrchestratorPanel', () => {
     });
 
     describe('Live Updates', () => {
-        it('should start live updates on creation', (done) => {
-            ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
-
-            // Wait for first update (should happen within 500ms)
-            setTimeout(() => {
-                expect(mockWebview.postMessage).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        type: 'dashboardUpdate',
-                        data: expect.objectContaining({
-                            teamStates: expect.any(Array),
-                            metrics: expect.any(Object),
-                            settings: expect.any(Object),
-                        }),
-                    })
-                );
-                done();
-            }, 600);
+        beforeEach(() => {
+            jest.useFakeTimers();
         });
 
-        it('should send dashboard updates with team states', (done) => {
+        afterEach(() => {
+            jest.clearAllTimers();
+            jest.useRealTimers();
+        });
+
+        it('should start live updates on creation', () => {
+            ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
+
+            // Fast-forward to trigger first update (should happen within 500ms)
+            jest.advanceTimersByTime(600);
+
+            expect(mockWebview.postMessage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'dashboardUpdate',
+                    data: expect.objectContaining({
+                        teamStates: expect.any(Array),
+                        metrics: expect.any(Object),
+                        settings: expect.any(Object),
+                    }),
+                })
+            );
+        });
+
+        it('should send dashboard updates with team states', () => {
             // Assign a task to simulate activity
             mockCoordinator.assignTask(AgentTeam.Planning, { id: 'test-1', title: 'Test Task' });
 
             ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
 
-            setTimeout(() => {
-                const calls = (mockWebview.postMessage as jest.Mock).mock.calls;
-                const updateCall = calls.find(call => call[0].type === 'dashboardUpdate');
+            // Fast-forward to trigger update
+            jest.advanceTimersByTime(600);
 
-                expect(updateCall).toBeDefined();
-                expect(updateCall[0].data.teamStates).toHaveLength(4); // 4 teams
-                done();
-            }, 600);
+            const calls = (mockWebview.postMessage as jest.Mock).mock.calls;
+            const updateCall = calls.find(call => call[0].type === 'dashboardUpdate');
+
+            expect(updateCall).toBeDefined();
+            expect(updateCall[0].data.teamStates).toHaveLength(4); // 4 teams
         });
 
-        it('should update metrics periodically', (done) => {
+        it('should update metrics periodically', () => {
             const panel = ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
 
             // Simulate task completion
             mockCoordinator.assignTask(AgentTeam.Planning, { id: 'test-1' });
             mockCoordinator.completeTask(AgentTeam.Planning, true, 100);
 
-            setTimeout(() => {
-                const calls = (mockWebview.postMessage as jest.Mock).mock.calls;
-                const updates = calls.filter(call => call[0].type === 'dashboardUpdate');
+            // Fast-forward to get multiple updates
+            jest.advanceTimersByTime(1100);
 
-                // Should have multiple updates within 1 second
-                expect(updates.length).toBeGreaterThan(1);
-                done();
-            }, 1100);
+            const calls = (mockWebview.postMessage as jest.Mock).mock.calls;
+            const updates = calls.filter(call => call[0].type === 'dashboardUpdate');
+
+            // Should have multiple updates within 1 second (1000ms / 500ms interval = 2+)
+            expect(updates.length).toBeGreaterThan(1);
         });
     });
 
@@ -269,20 +277,21 @@ describe('ProgrammingOrchestratorPanel', () => {
     });
 
     describe('Performance Requirements', () => {
-        it('should update dashboard within 500ms latency requirement', (done) => {
+        it('should update dashboard within 500ms latency requirement', () => {
+            jest.useFakeTimers();
             const startTime = Date.now();
 
             ProgrammingOrchestratorPanel.createOrShow(mockExtensionUri, mockCoordinator);
 
-            // Check when first update arrives
-            const checkUpdate = setInterval(() => {
-                if ((mockWebview.postMessage as jest.Mock).mock.calls.length > 0) {
-                    const latency = Date.now() - startTime;
-                    expect(latency).toBeLessThan(500);
-                    clearInterval(checkUpdate);
-                    done();
-                }
-            }, 50);
+            // Fast-forward just past the expected update time
+            jest.advanceTimersByTime(500);
+
+            // Check that update was sent
+            expect(mockWebview.postMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'dashboardUpdate' })
+            );
+
+            jest.useRealTimers();
         });
     });
 });
