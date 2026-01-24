@@ -88,7 +88,10 @@ export class ProgrammingOrchestratorPanel {
      * WebSocket integration would replace this in production
      */
     private _startLiveUpdates(): void {
-        // Update dashboard every 500ms (meets <500ms latency requirement)
+        // Send initial update immediately for instant feedback
+        this._sendDashboardUpdate();
+        
+        // Then update dashboard every 500ms (meets <500ms latency requirement)
         this._updateInterval = setInterval(() => {
             this._sendDashboardUpdate();
         }, 500);
