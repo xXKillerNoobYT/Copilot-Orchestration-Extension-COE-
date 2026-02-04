@@ -660,7 +660,7 @@
         "prepare": "npm run install-hooks || echo 'Warning: Could not install git hooks'"
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.25.2",
+        "@modelcontextprotocol/sdk": "^1.26.0",
         "better-sqlite3": "^12.6.2",
         "chart.js": "^4.5.1",
         "graphlib": "^2.1.8",
